@@ -334,10 +334,13 @@ export async function exportProductToPrintify(
           price: priceToSend,
         };
       }
+      const costCents = pv.cost ?? 0;
+      const priceForDisabled =
+        costCents > 0 && pv.price < costCents ? costCents : pv.price;
       return {
         id: pv.id,
         is_enabled: false,
-        price: pv.price,
+        price: priceForDisabled,
       };
     });
 

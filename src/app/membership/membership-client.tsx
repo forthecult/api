@@ -373,9 +373,9 @@ export function MembershipClient() {
   }, [solAmount, connection, swapDirection]);
 
   const CULT_DECIMALS = 6;
-  // estimate SOL output when CULT amount changes (CULT → SOL)
+  // estimate SOL output when CULT amount changes (CULT → SOL); use API fallback when connection missing or client fails
   useEffect(() => {
-    if (swapDirection !== "cultToSol" || !connection) {
+    if (swapDirection !== "cultToSol") {
       setEstimatedSol(null);
       return;
     }
@@ -385,18 +385,40 @@ export function MembershipClient() {
       return;
     }
     const cultRaw = Math.floor(n * 10 ** CULT_DECIMALS).toString();
+    if (cultRaw === "0") {
+      setEstimatedSol(null);
+      return;
+    }
     let cancelled = false;
     setEstimateLoading(true);
-    estimateSolFromCult(connection, cultRaw)
-      .then((est) => {
-        if (!cancelled) setEstimatedSol(est?.solAmount ?? null);
-      })
-      .catch(() => {
-        if (!cancelled) setEstimatedSol(null);
-      })
-      .finally(() => {
-        if (!cancelled) setEstimateLoading(false);
-      });
+
+    const setResult = (est: string | null) => {
+      if (!cancelled) {
+        setEstimatedSol(est);
+        setEstimateLoading(false);
+      }
+    };
+
+    const tryClient = connection
+      ? estimateSolFromCult(connection, cultRaw)
+          .then((est) => est?.solAmount ?? null)
+          .catch(() => null)
+      : Promise.resolve(null);
+
+    tryClient.then((clientEst) => {
+      if (cancelled) return;
+      if (clientEst != null) {
+        setResult(clientEst);
+        return;
+      }
+      fetch(
+        `/api/swap/cult-sol/estimate?cultAmount=${encodeURIComponent(n)}`,
+      )
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data: { solAmount?: string } | null) => setResult(data?.solAmount ?? null))
+        .catch(() => setResult(null));
+    });
+
     return () => { cancelled = true; };
   }, [cultAmount, connection, swapDirection]);
 
@@ -498,21 +520,6 @@ export function MembershipClient() {
     }
   }, [displayTier, stakedBalanceRaw, selectedTier]);
 
-  // when upgrading with existing 30-day stake, only 12-month is offered — default duration to 12m
-  useEffect(() => {
-    if (
-      displayTier != null &&
-      Number(stakedBalanceRaw) > 0 &&
-      stakedLock?.isLocked &&
-      stakedLock?.lockTier === 0 &&
-      stakeDuration === "30d"
-    ) {
-      setStakeDuration("12m");
-    }
-  }, [displayTier, stakedBalanceRaw, stakedLock?.isLocked, stakedLock?.lockTier, stakeDuration]);
-
-  // keep duration selection as-is; user can choose either 30d or 12m when upgrading
-  // (previously forced 12m when user had a 30-day stake, but now we allow both)
 
   useEffect(() => {
     if (!wallet) {
@@ -1280,8 +1287,7 @@ export function MembershipClient() {
                     );
                   }
 
-                  // when upgrading and user already has 30-day stake, only offer 12 months (no option to stake 30 days again)
-                  const show30Days = !(isUpgrading && hasLockedStake && currentLockTier === 0);
+                  const show30Days = true;
                   const show12Months = true;
                   
                   return (
@@ -1728,16 +1734,6 @@ export function MembershipClient() {
                             {pct}%
                           </Button>
                         ))}
-                        {wallet && cultBalance != null && Number(cultBalance) > 0 && (
-                          <Button
-                            onClick={() => setCultAmount(cultBalance ?? "")}
-                            size="sm"
-                            type="button"
-                            variant="secondary"
-                          >
-                            Max
-                          </Button>
-                        )}
                       </>
                     )}
                   </div>
