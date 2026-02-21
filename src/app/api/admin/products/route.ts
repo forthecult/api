@@ -55,12 +55,12 @@ export async function GET(request: NextRequest) {
 
     const tagParam = request.nextUrl.searchParams.get("tag")?.trim() ?? "";
     const minimal = request.nextUrl.searchParams.get("minimal") === "1";
-    if (tagParam === "SOLUNA" && minimal) {
-      const solunaProductIds = await db
+    if ((tagParam === "SOLUNA" || tagParam === "Crustafarian") && minimal) {
+      const tagProductIds = await db
         .select({ productId: productTagsTable.productId })
         .from(productTagsTable)
-        .where(eq(productTagsTable.tag, "SOLUNA"));
-      const ids = [...new Set(solunaProductIds.map((r) => r.productId))];
+        .where(eq(productTagsTable.tag, tagParam));
+      const ids = [...new Set(tagProductIds.map((r) => r.productId))];
       if (ids.length === 0) {
         return NextResponse.json({ products: [] });
       }
@@ -169,6 +169,7 @@ export async function GET(request: NextRequest) {
       imageUrl: null | string;
       name: string;
       priceCents: number;
+      printifyProductId: null | string;
       productCategories?: {
         category?: { name?: string; slug?: string };
         categoryId?: string;
@@ -292,6 +293,7 @@ export async function GET(request: NextRequest) {
           imageUrl: productsTable.imageUrl,
           name: productsTable.name,
           priceCents: productsTable.priceCents,
+          printifyProductId: productsTable.printifyProductId,
           published: productsTable.published,
           quantity: productsTable.quantity,
           slug: productsTable.slug,
@@ -369,6 +371,7 @@ export async function GET(request: NextRequest) {
         inventory,
         name: p.name,
         priceCents: p.priceCents,
+        printifyProductId: p.printifyProductId ?? null,
         published: p.published,
         slug: p.slug ?? null,
         vendor: p.vendor,

@@ -15,6 +15,7 @@ import {
   PUMP_AMM_SDK,
   buyQuoteInput,
   canonicalPumpPoolPda,
+  sellBaseInput,
 } from "@pump-fun/pump-swap-sdk";
 
 import { getCultSwapMint } from "~/lib/token-config";
@@ -118,6 +119,99 @@ export async function buildSwapSolToCult(
 
   return {
     estimatedCultRaw: base.toString(),
+    transaction: tx,
+  };
+}
+
+export interface SwapCultToSolResult {
+  estimatedSolLamports: number;
+  transaction: Transaction;
+}
+
+/**
+ * Estimate SOL (quote) amount for selling a given CULT (base) amount.
+ */
+export async function estimateSolFromCult(
+  connection: Connection,
+  cultRaw: string,
+  slippagePercent: number = DEFAULT_SLIPPAGE_PERCENT,
+): Promise<{ solLamports: number; solAmount: string } | null> {
+  const baseBn = new BN(cultRaw);
+  if (baseBn.lte(new BN(0))) return null;
+  try {
+    const cultMint = new PublicKey(getCultSwapMint());
+    const sdk = new OnlinePumpAmmSdk(connection);
+    const poolKey = canonicalPumpPoolPda(cultMint);
+    const dummyUser = new PublicKey(
+      "11111111111111111111111111111111",
+    );
+    const state = await sdk.swapSolanaState(poolKey, dummyUser);
+    const { uiQuote } = sellBaseInput({
+      base: baseBn,
+      slippage: slippagePercent,
+      baseReserve: state.poolBaseAmount,
+      quoteReserve: state.poolQuoteAmount,
+      baseMintAccount: state.baseMintAccount,
+      baseMint: state.baseMint,
+      coinCreator: state.pool.coinCreator,
+      creator: state.pool.creator,
+      feeConfig: state.feeConfig,
+      globalConfig: state.globalConfig,
+    });
+    const solLamports = uiQuote.toNumber();
+    const solAmount = (solLamports / 1e9).toFixed(9);
+    return { solLamports, solAmount };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Build a transaction that swaps CULT → SOL for the given user.
+ */
+export async function buildSwapCultToSol(
+  connection: Connection,
+  userPublicKey: PublicKey,
+  cultRaw: string,
+  slippagePercent: number = DEFAULT_SLIPPAGE_PERCENT,
+): Promise<SwapCultToSolResult> {
+  const baseBn = new BN(cultRaw);
+  if (baseBn.lte(new BN(0))) {
+    throw new Error("CULT amount must be positive");
+  }
+  const cultMint = new PublicKey(getCultSwapMint());
+  const sdk = new OnlinePumpAmmSdk(connection);
+  const poolKey = canonicalPumpPoolPda(cultMint);
+  const swapState = await sdk.swapSolanaState(poolKey, userPublicKey);
+
+  const swapIxs = await PUMP_AMM_SDK.sellBaseInput(
+    swapState,
+    baseBn,
+    slippagePercent,
+  );
+
+  const { uiQuote } = sellBaseInput({
+    base: baseBn,
+    slippage: slippagePercent,
+    baseReserve: swapState.poolBaseAmount,
+    quoteReserve: swapState.poolQuoteAmount,
+    baseMintAccount: swapState.baseMintAccount,
+    baseMint: swapState.baseMint,
+    coinCreator: swapState.pool.coinCreator,
+    creator: swapState.pool.creator,
+    feeConfig: swapState.feeConfig,
+    globalConfig: swapState.globalConfig,
+  });
+
+  const tx = new Transaction();
+  tx.add(...swapIxs);
+
+  const { blockhash } = await connection.getLatestBlockhash("confirmed");
+  tx.recentBlockhash = blockhash;
+  tx.feePayer = userPublicKey;
+
+  return {
+    estimatedSolLamports: uiQuote.toNumber(),
     transaction: tx,
   };
 }

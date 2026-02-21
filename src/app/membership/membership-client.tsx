@@ -2,7 +2,9 @@
 
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import {
+  ArrowDown,
   ArrowRight,
+  ArrowUpDown,
   Check,
   ChevronDown,
   Crown,
@@ -29,8 +31,10 @@ import { toast } from "sonner";
 
 import { useStakeTransaction } from "~/hooks/use-stake-transaction";
 import {
+  buildSwapCultToSol,
   buildSwapSolToCult,
   estimateCultFromSol,
+  estimateSolFromCult,
 } from "~/lib/pump-swap-cult";
 import { listUserAccounts, refetchSession, useCurrentUser } from "~/lib/auth-client";
 import { cn } from "~/lib/cn";
@@ -174,12 +178,17 @@ export function MembershipClient() {
   // effective wallet: prefer connected wallet, fall back to linked wallet
   const wallet = connectedWallet ?? linkedSolanaWallet;
 
-  // SOL → CULT swap state
+  // Swap state: both directions SOL ↔ CULT
+  const [swapDirection, setSwapDirection] = useState<"solToCult" | "cultToSol">("solToCult");
   const [solBalanceLamports, setSolBalanceLamports] = useState<number>(0);
   const [solAmount, setSolAmount] = useState("");
+  const [cultAmount, setCultAmount] = useState("");
   const [estimatedCult, setEstimatedCult] = useState<null | string>(null);
+  const [estimatedSol, setEstimatedSol] = useState<null | string>(null);
   const [estimateLoading, setEstimateLoading] = useState(false);
   const [swapPending, setSwapPending] = useState(false);
+  const [cultBalance, setCultBalance] = useState<string | null>(null);
+  const [cultBalanceLoading, setCultBalanceLoading] = useState(false);
   const solBalanceSol = solBalanceLamports / 1e9;
   
   // fetch linked Solana wallet when user is logged in
@@ -244,9 +253,25 @@ export function MembershipClient() {
     return () => { cancelled = true; };
   }, [publicKey, connection]);
 
-  // estimate CULT output when SOL amount changes
+  // fetch CULT wallet balance when wallet is set (so swap section shows balance)
   useEffect(() => {
-    if (!connection) {
+    if (!wallet) {
+      setCultBalance(null);
+      return;
+    }
+    setCultBalanceLoading(true);
+    fetch(`/api/governance/wallet-balance?wallet=${encodeURIComponent(wallet)}`)
+      .then((r) => r.json())
+      .then((data: { balance?: string }) => {
+        setCultBalance(data.balance ?? "0");
+      })
+      .catch(() => setCultBalance(null))
+      .finally(() => setCultBalanceLoading(false));
+  }, [wallet]);
+
+  // estimate CULT output when SOL amount changes (SOL → CULT)
+  useEffect(() => {
+    if (swapDirection !== "solToCult" || !connection) {
       setEstimatedCult(null);
       return;
     }
@@ -269,7 +294,35 @@ export function MembershipClient() {
         if (!cancelled) setEstimateLoading(false);
       });
     return () => { cancelled = true; };
-  }, [solAmount, connection]);
+  }, [solAmount, connection, swapDirection]);
+
+  const CULT_DECIMALS = 6;
+  // estimate SOL output when CULT amount changes (CULT → SOL)
+  useEffect(() => {
+    if (swapDirection !== "cultToSol" || !connection) {
+      setEstimatedSol(null);
+      return;
+    }
+    const n = Number.parseFloat(cultAmount);
+    if (!Number.isFinite(n) || n <= 0) {
+      setEstimatedSol(null);
+      return;
+    }
+    const cultRaw = Math.floor(n * 10 ** CULT_DECIMALS).toString();
+    let cancelled = false;
+    setEstimateLoading(true);
+    estimateSolFromCult(connection, cultRaw)
+      .then((est) => {
+        if (!cancelled) setEstimatedSol(est?.solAmount ?? null);
+      })
+      .catch(() => {
+        if (!cancelled) setEstimatedSol(null);
+      })
+      .finally(() => {
+        if (!cancelled) setEstimateLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [cultAmount, connection, swapDirection]);
 
   // handle SOL → CULT swap
   const handleSwapSolToCult = useCallback(async () => {
@@ -291,15 +344,58 @@ export function MembershipClient() {
       toast.success("Swap submitted: " + sig.slice(0, 8) + "…");
       setSolAmount("");
       setEstimatedCult(null);
-      // refresh SOL balance after swap
       setTimeout(() => {
         connection.getBalance(publicKey).then(setSolBalanceLamports).catch(() => {});
+        if (wallet) {
+          fetch(`/api/governance/wallet-balance?wallet=${encodeURIComponent(wallet)}`)
+            .then((r) => r.json())
+            .then((d: { balance?: string }) => setCultBalance(d.balance ?? "0"))
+            .catch(() => {});
+        }
       }, 2000);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Swap failed");
     }
     setSwapPending(false);
-  }, [publicKey, connection, sendTransaction, solAmount]);
+  }, [publicKey, connection, sendTransaction, solAmount, wallet]);
+
+  const handleSwapCultToSol = useCallback(async () => {
+    if (!publicKey || !connection || !sendTransaction) {
+      openConnectModal?.();
+      return;
+    }
+    const n = Number.parseFloat(cultAmount);
+    if (!Number.isFinite(n) || n <= 0) return;
+    const cultRaw = Math.floor(n * 10 ** 6).toString();
+    setSwapPending(true);
+    try {
+      const { transaction } = await buildSwapCultToSol(connection, publicKey, cultRaw);
+      const sig = await sendTransaction(transaction, connection, {
+        preflightCommitment: "confirmed",
+        skipPreflight: false,
+      });
+      toast.success("Swap submitted: " + sig.slice(0, 8) + "…");
+      setCultAmount("");
+      setEstimatedSol(null);
+      setTimeout(() => {
+        fetch(`/api/governance/wallet-balance?wallet=${encodeURIComponent(publicKey.toBase58())}`)
+          .then((r) => r.json())
+          .then((d: { balance?: string }) => setCultBalance(d.balance ?? "0"))
+          .catch(() => {});
+      }, 2000);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Swap failed");
+    }
+    setSwapPending(false);
+  }, [publicKey, connection, sendTransaction, cultAmount, openConnectModal]);
+
+  const handleSwapDirectionFlip = useCallback(() => {
+    setSwapDirection((d) => (d === "solToCult" ? "cultToSol" : "solToCult"));
+    setSolAmount("");
+    setCultAmount("");
+    setEstimatedCult(null);
+    setEstimatedSol(null);
+  }, []);
 
   /** Current tier from staked balance (1 = best, 3 = entry). Null if no stake or below tier 3. */
   const currentTierFromStake = useMemo(() => {
@@ -1292,7 +1388,7 @@ export function MembershipClient() {
               </div>
             </div>
 
-            {/* Swap SOL → CULT — its own section: enter SOL, see CULT estimate, then swap */}
+            {/* Swap — Sell/Buy layout, both directions; membership + balances */}
             <div
               className={`
               overflow-hidden rounded-2xl border border-border bg-card
@@ -1300,37 +1396,65 @@ export function MembershipClient() {
             `}
             >
               <div className="border-b bg-muted/30 px-6 py-4">
-                <div className="flex items-center gap-2">
-                  <RefreshCw className="h-4 w-4 text-primary" />
-                  <h3 className="font-display text-lg font-semibold text-foreground">
-                    Swap SOL → CULT
-                  </h3>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <h3 className="font-display text-lg font-semibold text-foreground">
+                      Swap
+                    </h3>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Sell one token, buy the other. Use the arrow to flip direction.
+                    </p>
+                  </div>
+                  {wallet && currentTierFromStake != null && (
+                    <div className="flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5">
+                      <Shield className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm font-medium text-foreground">
+                        Your membership: {MEMBERSHIP_TIERS.find((t) => t.id === currentTierFromStake)?.name ?? `Tier ${currentTierFromStake}`}
+                      </span>
+                    </div>
+                  )}
                 </div>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Enter how much SOL you want to spend. We'll show how much CULT you get, then you can swap.
-                </p>
               </div>
-              <div className="space-y-4 p-6">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">
-                    SOL amount
-                  </label>
-                  <div className="flex gap-2">
+              <div className="space-y-3 p-6">
+                {/* Sell row */}
+                <div className="rounded-xl border border-border bg-muted/20 p-4">
+                  <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Sell
+                  </p>
+                  <div className="flex items-center gap-2">
                     <Input
-                      className="font-mono flex-1"
+                      className="font-mono text-lg"
                       min={0}
-                      onChange={(e) => setSolAmount(e.target.value)}
+                      onChange={(e) =>
+                        swapDirection === "solToCult"
+                          ? setSolAmount(e.target.value)
+                          : setCultAmount(e.target.value)
+                      }
                       placeholder="0.00"
                       step="any"
                       type="number"
-                      value={solAmount}
+                      value={swapDirection === "solToCult" ? solAmount : cultAmount}
                     />
+                    <div className="flex min-w-[100px] items-center justify-end gap-1 rounded-lg border border-border bg-background px-3 py-2 font-medium">
+                      {swapDirection === "solToCult" ? "SOL" : tokenSymbol}
+                    </div>
+                  </div>
+                  <p className="mt-1.5 text-xs text-muted-foreground">
+                    {swapDirection === "solToCult"
+                      ? publicKey
+                        ? `Balance: ${solBalanceSol.toFixed(4)} SOL`
+                        : "Connect wallet to see balance"
+                      : wallet
+                        ? cultBalanceLoading
+                          ? "Loading…"
+                          : `Balance: ${cultBalance != null ? Number(cultBalance).toLocaleString(undefined, { maximumFractionDigits: 6 }) : "0"} ${tokenSymbol}`
+                        : "Connect wallet to see balance"}
+                  </p>
+                  {swapDirection === "solToCult" && publicKey && solBalanceSol > 0.01 && (
                     <Button
-                      disabled={!publicKey || swapPending || solBalanceSol <= 0.01}
+                      className="mt-2"
                       onClick={() =>
-                        setSolAmount(
-                          Math.max(0, solBalanceSol - 0.01).toFixed(6),
-                        )
+                        setSolAmount(Math.max(0, solBalanceSol - 0.01).toFixed(6))
                       }
                       size="sm"
                       type="button"
@@ -1338,34 +1462,83 @@ export function MembershipClient() {
                     >
                       Max
                     </Button>
+                  )}
+                  {swapDirection === "cultToSol" && wallet && cultBalance != null && Number(cultBalance) > 0 && (
+                    <Button
+                      className="mt-2"
+                      onClick={() => setCultAmount(cultBalance ?? "")}
+                      size="sm"
+                      type="button"
+                      variant="secondary"
+                    >
+                      Max
+                    </Button>
+                  )}
+                </div>
+
+                {/* Flip direction */}
+                <div className="flex justify-center">
+                  <Button
+                    aria-label="Flip swap direction"
+                    className="h-10 w-10 rounded-full"
+                    onClick={handleSwapDirectionFlip}
+                    size="icon"
+                    type="button"
+                    variant="outline"
+                  >
+                    <ArrowDown className="h-5 w-5" />
+                  </Button>
+                </div>
+
+                {/* Buy row — shows estimated amount you receive */}
+                <div className="rounded-xl border border-border bg-muted/20 p-4">
+                  <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Buy
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <div className="font-mono flex-1 rounded-md border border-border bg-muted/30 px-3 py-2 text-lg text-foreground">
+                      {estimateLoading
+                        ? "…"
+                        : swapDirection === "solToCult"
+                          ? solAmount.trim() && Number.parseFloat(solAmount) > 0
+                            ? estimatedCult ?? "—"
+                            : "0"
+                          : cultAmount.trim() && Number.parseFloat(cultAmount) > 0
+                            ? estimatedSol ?? "—"
+                            : "0"}
+                    </div>
+                    <div className="flex min-w-[100px] items-center justify-end gap-1 rounded-lg border border-border bg-background px-3 py-2 font-medium">
+                      {swapDirection === "solToCult" ? tokenSymbol : "SOL"}
+                    </div>
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    {publicKey
-                      ? `Balance: ${solBalanceSol.toFixed(4)} SOL`
-                      : "Connect your wallet to see balance"}
+                  <p className="mt-1.5 text-xs text-muted-foreground">
+                    {swapDirection === "solToCult"
+                      ? wallet
+                        ? cultBalanceLoading
+                          ? "Balance: …"
+                          : `Balance: ${cultBalance != null ? Number(cultBalance).toLocaleString(undefined, { maximumFractionDigits: 6 }) : "0"} ${tokenSymbol}`
+                        : "Connect wallet to see balance"
+                      : publicKey
+                        ? `Balance: ${solBalanceSol.toFixed(4)} SOL`
+                        : "Connect wallet to see balance"}
                   </p>
                 </div>
-                {estimateLoading && solAmount.trim() && (
-                  <p className="text-sm text-muted-foreground">Estimating…</p>
-                )}
-                {!estimateLoading && solAmount.trim() && Number.parseFloat(solAmount) > 0 && (
-                  <p className="text-sm font-medium text-foreground">
-                    You will receive ≈ {estimatedCult ?? "…"} CULT
-                  </p>
-                )}
+
                 <Button
                   className="w-full"
                   disabled={
                     swapPending ||
-                    !solAmount.trim() ||
-                    Number.parseFloat(solAmount) <= 0
+                    (swapDirection === "solToCult"
+                      ? !solAmount.trim() || Number.parseFloat(solAmount) <= 0
+                      : !cultAmount.trim() || Number.parseFloat(cultAmount) <= 0)
                   }
                   onClick={() => {
                     if (!publicKey || !sendTransaction) {
                       openConnectModal?.();
                       return;
                     }
-                    void handleSwapSolToCult();
+                    if (swapDirection === "solToCult") void handleSwapSolToCult();
+                    else void handleSwapCultToSol();
                   }}
                   size="lg"
                 >
@@ -1373,7 +1546,9 @@ export function MembershipClient() {
                     ? "Connect wallet to swap"
                     : swapPending
                       ? "Swapping…"
-                      : "Swap SOL → CULT"}
+                      : swapDirection === "solToCult"
+                        ? "Swap SOL → CULT"
+                        : `Swap ${tokenSymbol} → SOL`}
                 </Button>
               </div>
             </div>

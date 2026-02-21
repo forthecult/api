@@ -362,7 +362,10 @@ export const PaymentMethodSelector = forwardRef<
     if (visibility.cryptoMonero)
       icons.push({ alt: "Monero", src: "/crypto/monero/monero-xmr-logo.svg" });
     if (visibility.cryptoCrust)
-      icons.push({ alt: "Crust", src: "/crypto/solana/solanaLogoMark.svg" });
+      icons.push({
+        alt: "Crustafarian (CRUST)",
+        src: "/crustafarian.png",
+      });
     if (visibility.cryptoPump)
       icons.push({ alt: "Pump", src: "/crypto/pump/pump-logomark.svg" });
     if (visibility.cryptoTroll)

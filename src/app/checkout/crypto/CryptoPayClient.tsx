@@ -69,7 +69,7 @@ import { openConnectWalletModal } from "./open-wallet-modal";
 const SOL_USD_FALLBACK = 200;
 
 const PAYMENT_LOGO: Record<string, { alt: string; src: string }> = {
-  crust: { alt: "CRUST", src: "/crypto/solana/solanaLogoMark.svg" },
+  crust: { alt: "CRUST", src: "/crustafarian.png" },
   cult: { alt: "CULT", src: "/crypto/cult/cult-logo.svg" },
   pump: { alt: "Pump", src: "/crypto/pump/pump-logomark.svg" },
   seeker: {
