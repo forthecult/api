@@ -341,7 +341,7 @@ export function getPaymentIconPaths(
     if (visibility.cryptoCrust)
       icons.push({
         alt: "CRUST",
-        src: "/crypto/solana/solanaLogoMark.svg",
+        src: "/crypto/crustafarianism/crust-logo.png",
         type: "crypto",
       });
     if (visibility.cryptoPump)
