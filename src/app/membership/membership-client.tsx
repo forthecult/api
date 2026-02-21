@@ -897,7 +897,9 @@ export function MembershipClient() {
                     : `Stake ${tokenSymbol} & Join`}
                 </h2>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  {wallet && Number(stakedBalanceRaw) > 0
+                  {wallet && Number(stakedBalanceRaw) > 0 && currentTierFromStake != null
+                    ? `Your current membership: ${MEMBERSHIP_TIERS.find((t) => t.id === currentTierFromStake)?.name ?? `Tier ${currentTierFromStake}`}. Stake more CULT to upgrade.`
+                    : wallet && Number(stakedBalanceRaw) > 0
                     ? "Stake more CULT to upgrade your tier."
                     : "Select your tier and duration, then connect your wallet to stake."}
                 </p>
@@ -1388,7 +1390,7 @@ export function MembershipClient() {
               </div>
             </div>
 
-            {/* Swap — Sell/Buy layout, both directions; membership + balances */}
+            {/* Swap — own section below membership; sell/buy, both directions */}
             <div
               className={`
               overflow-hidden rounded-2xl border border-border bg-card
@@ -1396,24 +1398,12 @@ export function MembershipClient() {
             `}
             >
               <div className="border-b bg-muted/30 px-6 py-4">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div>
-                    <h3 className="font-display text-lg font-semibold text-foreground">
-                      Swap
-                    </h3>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      Sell one token, buy the other. Use the arrow to flip direction.
-                    </p>
-                  </div>
-                  {wallet && currentTierFromStake != null && (
-                    <div className="flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5">
-                      <Shield className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm font-medium text-foreground">
-                        Your membership: {MEMBERSHIP_TIERS.find((t) => t.id === currentTierFromStake)?.name ?? `Tier ${currentTierFromStake}`}
-                      </span>
-                    </div>
-                  )}
-                </div>
+                <h3 className="font-display text-lg font-semibold text-foreground">
+                  Swap
+                </h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Sell one token, buy the other. Use the arrow to flip direction.
+                </p>
               </div>
               <div className="space-y-3 p-6">
                 {/* Sell row */}

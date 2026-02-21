@@ -550,19 +550,28 @@ export async function listAvailablePrintifyProducts(): Promise<{
 }
 
 /**
- * Build option definitions for storefront (Size, Color, Phone Model, etc.) from Printify product.options.
+ * Build option definitions for storefront from Printify product.options.
+ * Only includes option values that appear in the given enabled variants,
+ * so the store never shows sizes/options that weren't selected in Printify.
  */
-function buildOptionDefinitionsFromPrintify(
+function buildOptionDefinitionsFromEnabledVariants(
   product: PrintifyProduct,
+  enabledVariants: PrintifyProduct["variants"],
 ): { name: string; values: string[] }[] {
-  if (!product.options?.length) return [];
+  if (!product.options?.length || enabledVariants.length === 0) return [];
   return product.options
-    .map((opt) => ({
-      name: opt.name.trim() || "Option",
-      values: (opt.values ?? [])
+    .map((opt, optIndex) => {
+      const valueIds = new Set(
+        enabledVariants
+          .map((v) => v.options[optIndex])
+          .filter((id): id is number => id != null),
+      );
+      const values = (opt.values ?? [])
+        .filter((v) => valueIds.has(v.id))
         .map((v) => v.title?.trim())
-        .filter((t): t is string => Boolean(t)),
-    }))
+        .filter((t): t is string => Boolean(t));
+      return { name: opt.name.trim() || "Option", values };
+    })
     .filter((opt) => opt.values.length > 0);
 }
 
@@ -589,7 +598,7 @@ async function createLocalProductFromPrintify(
     slug = `${baseSlug}-${slugSuffix++}`;
   }
 
-  // Determine price and cost from enabled variants (use lowest price; cost = first/min cost)
+  // Only sync variants that are enabled and available in Printify; never sync disabled/unselected options
   const enabledVariants = printifyProduct.variants.filter(
     (v) => v.is_enabled && v.is_available,
   );
@@ -653,7 +662,10 @@ async function createLocalProductFromPrintify(
   const model = blueprint?.model?.trim() ?? null;
 
   const optionDefs = hasVariants
-    ? buildOptionDefinitionsFromPrintify(printifyProduct)
+    ? buildOptionDefinitionsFromEnabledVariants(
+        printifyProduct,
+        enabledVariants,
+      )
     : [];
   const optionDefinitionsJson =
     optionDefs.length > 0 ? JSON.stringify(optionDefs) : null;
@@ -1040,7 +1052,7 @@ async function updateLocalProductFromPrintify(
     .where(eq(productsTable.id, productId));
   const productCreatedAt = productRow?.createdAt ?? now;
 
-  // Determine price and cost from enabled variants
+  // Only sync variants that are enabled and available in Printify; never sync disabled/unselected options
   const enabledVariants = printifyProduct.variants.filter(
     (v) => v.is_enabled && v.is_available,
   );
@@ -1078,7 +1090,10 @@ async function updateLocalProductFromPrintify(
 
   const optionDefs =
     enabledVariants.length > 1
-      ? buildOptionDefinitionsFromPrintify(printifyProduct)
+      ? buildOptionDefinitionsFromEnabledVariants(
+          printifyProduct,
+          enabledVariants,
+        )
       : [];
   const optionDefinitionsJson =
     optionDefs.length > 0 ? JSON.stringify(optionDefs) : null;

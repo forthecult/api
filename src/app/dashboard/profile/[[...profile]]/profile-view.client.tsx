@@ -338,17 +338,21 @@ export function ProfileViewClient() {
               <p className="text-sm text-muted-foreground">
                 {wallet ? (
                   <>
-                    {walletCultBalance != null && (
-                      <>Wallet: {formatCultBalance(walletCultBalance)} CULT</>
-                    )}
-                    {walletCultBalance != null && stakedCultBalance != null && " · "}
+                    <span>
+                      Wallet:{" "}
+                      {walletCultBalance != null
+                        ? `${formatCultBalance(walletCultBalance)} CULT`
+                        : "…"}
+                    </span>
                     {stakedCultBalance != null && (
-                      <>Staked: {formatCultBalance(stakedCultBalance)} CULT</>
+                      <>
+                        {" · "}
+                        Staked: {formatCultBalance(stakedCultBalance)} CULT
+                      </>
                     )}
-                    {walletCultBalance == null && stakedCultBalance == null && "—"}
                   </>
                 ) : (
-                  <>No wallet linked</>
+                  <>No wallet linked. Connect or link a wallet to see CULT balance.</>
                 )}
               </p>
             </div>

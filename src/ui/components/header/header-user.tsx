@@ -33,8 +33,8 @@ interface HeaderUserDropdownProps {
 }
 
 /**
- * Header dropdown for authenticated users: My Account, Orders, Wishlist,
- * Theme selector, Admin (if applicable), Log out.
+ * Header dropdown for authenticated users: membership tier, My Account, Orders,
+ * Wishlist, Theme selector, Admin (if applicable), Log out.
  */
 export function HeaderUserDropdown({
   isAdmin = false,
@@ -45,9 +45,23 @@ export function HeaderUserDropdown({
   const router = useRouter();
   const { setTheme, theme } = useTheme();
   const [mounted, setMounted] = React.useState(false);
+  const [tierName, setTierName] = React.useState<null | string>(null);
 
   React.useEffect(() => {
     setMounted(true);
+  }, []);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    fetch("/api/user/membership", { credentials: "include" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: { tierName?: null | string } | null) => {
+        if (!cancelled && data?.tierName) setTierName(data.tierName);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const handleLogout = async () => {
@@ -109,6 +123,12 @@ export function HeaderUserDropdown({
             <p className="max-w-[160px] truncate text-xs text-muted-foreground">
               {userEmail}
             </p>
+            {tierName && (
+              <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Shield className="h-3 w-3 shrink-0" />
+                {tierName} Member
+              </p>
+            )}
           </div>
         </div>
         <DropdownMenuSeparator />
