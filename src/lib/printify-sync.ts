@@ -323,10 +323,15 @@ export async function exportProductToPrintify(
     const variantUpdates = printifyProduct.variants.map((pv) => {
       const local = localByPrintifyId.get(String(pv.id));
       if (local) {
+        const costCents = pv.cost ?? 0;
+        const priceToSend =
+          costCents > 0 && local.priceCents < costCents
+            ? Math.max(pv.price, costCents)
+            : local.priceCents;
         return {
           id: pv.id,
           is_enabled: true,
-          price: local.priceCents,
+          price: priceToSend,
         };
       }
       return {

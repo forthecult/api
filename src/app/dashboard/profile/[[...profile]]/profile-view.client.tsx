@@ -146,38 +146,47 @@ export function ProfileViewClient() {
     return () => { cancelled = true; };
   }, [user?.id]);
 
-  // Fetch membership tier from staking balance API (which includes tier) + wallet balance
+  // fetch wallet CULT balance (independent so failure doesn't hide the line)
+  useEffect(() => {
+    if (!wallet) {
+      setWalletCultBalance(null);
+      return;
+    }
+    let cancelled = false;
+    fetch(
+      `/api/governance/wallet-balance?wallet=${encodeURIComponent(wallet)}`,
+    )
+      .then((r) => r.json())
+      .then((data: { balance?: string }) => {
+        if (!cancelled) setWalletCultBalance(data?.balance ?? "0");
+      })
+      .catch(() => {
+        if (!cancelled) setWalletCultBalance("0");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [wallet]);
+
+  // fetch staked balance + membership tier
   useEffect(() => {
     if (!wallet) {
       setMembership(null);
-      setWalletCultBalance(null);
       setStakedCultBalance(null);
       return;
     }
     setMembershipLoading(true);
-    Promise.all([
-      fetch(
-        `/api/governance/staked-balance?wallet=${encodeURIComponent(wallet)}`,
-      ).then((r) => r.json()),
-      fetch(
-        `/api/governance/wallet-balance?wallet=${encodeURIComponent(wallet)}`,
-      ).then((r) => r.json()),
-    ])
+    fetch(
+      `/api/governance/staked-balance?wallet=${encodeURIComponent(wallet)}`,
+    )
+      .then((r) => r.json())
       .then(
-        ([stakingData, walletData]: [
-          {
-            lock?: null | { isLocked?: boolean; unlocksAt?: string };
-            memberTier?: null | number;
-            stakedBalance?: string;
-          },
-          {
-            balance?: string;
-          },
-        ]) => {
-          setWalletCultBalance(walletData.balance ?? "0");
+        (stakingData: {
+          lock?: null | { isLocked?: boolean; unlocksAt?: string };
+          memberTier?: null | number;
+          stakedBalance?: string;
+        }) => {
           setStakedCultBalance(stakingData.stakedBalance ?? "0");
-
-          // set membership from API-provided tier
           const tierId = stakingData.memberTier;
           if (tierId != null) {
             const visual = TIER_VISUALS[tierId] ?? TIER_VISUALS[3];
@@ -199,9 +208,8 @@ export function ProfileViewClient() {
         },
       )
       .catch((e) => {
-        console.error("[profile] Error fetching balances:", e);
+        console.error("[profile] Error fetching staked balance:", e);
         setMembership(null);
-        setWalletCultBalance(null);
         setStakedCultBalance(null);
       })
       .finally(() => setMembershipLoading(false));

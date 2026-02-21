@@ -148,6 +148,7 @@ export function MembershipClient() {
   // Current stake (for "Your stake" + unstake)
   const [stakedBalanceDisplay, setStakedBalanceDisplay] = useState<string>("0");
   const [stakedBalanceRaw, setStakedBalanceRaw] = useState<string>("0");
+  const [memberTierFromApi, setMemberTierFromApi] = useState<null | number>(null);
   const [stakedLock, setStakedLock] = useState<{
     durationLabel: string;
     isLocked: boolean;
@@ -409,6 +410,9 @@ export function MembershipClient() {
     return null;
   }, [stakedBalanceDisplay, pricingData?.pricing?.tiers]);
 
+  /** Tier to show in UI: from pricing thresholds first, else from staked-balance API (so tier shows before pricing loads). */
+  const displayTier = currentTierFromStake ?? memberTierFromApi;
+
   // auto-select appropriate tier based on current stake (can only upgrade)
   useEffect(() => {
     if (currentTierFromStake != null && Number(stakedBalanceRaw) > 0) {
@@ -425,6 +429,15 @@ export function MembershipClient() {
   // keep duration selection as-is; user can choose either 30d or 12m when upgrading
   // (previously forced 12m when user had a 30-day stake, but now we allow both)
 
+  useEffect(() => {
+    if (!wallet) {
+      setStakedBalanceDisplay("0");
+      setStakedBalanceRaw("0");
+      setMemberTierFromApi(null);
+      setStakedLock(null);
+    }
+  }, [wallet]);
+
   const refreshStakedBalance = useCallback(() => {
     if (!wallet) return;
     setStakedBalanceLoading(true);
@@ -440,17 +453,20 @@ export function MembershipClient() {
             unlocksAt: string | null;
             stakedAt: string;
           };
+          memberTier?: null | number;
           stakedBalance?: string;
           stakedBalanceRaw?: string;
         }) => {
           setStakedBalanceDisplay(data.stakedBalance ?? "0");
           setStakedBalanceRaw(data.stakedBalanceRaw ?? "0");
+          setMemberTierFromApi(data.memberTier ?? null);
           setStakedLock(data.lock ?? null);
         },
       )
       .catch(() => {
         setStakedBalanceDisplay("0");
         setStakedBalanceRaw("0");
+        setMemberTierFromApi(null);
         setStakedLock(null);
       })
       .finally(() => setStakedBalanceLoading(false));
@@ -858,10 +874,10 @@ export function MembershipClient() {
             >
               <div className="border-b bg-muted/30 px-6 py-5">
                 {/* Current membership badge - show prominently when user has a stake */}
-                {wallet && Number(stakedBalanceRaw) > 0 && currentTierFromStake != null && (
+                {wallet && Number(stakedBalanceRaw) > 0 && displayTier != null && (
                   <div className="mb-4 flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 p-3">
                     {(() => {
-                      const tierData = MEMBERSHIP_TIERS.find((t) => t.id === currentTierFromStake);
+                      const tierData = MEMBERSHIP_TIERS.find((t) => t.id === displayTier);
                       const TierIcon = tierData?.icon ?? Shield;
                       return (
                         <>
@@ -870,7 +886,7 @@ export function MembershipClient() {
                           </div>
                           <div className="flex-1">
                             <p className="font-semibold text-foreground">
-                              Your tier: {tierData?.name ?? `Tier ${currentTierFromStake}`}
+                              Your tier: {tierData?.name ?? `Tier ${displayTier}`}
                             </p>
                             <p className="text-sm text-muted-foreground">
                               {stakedLock?.durationLabel ?? "30 days"} · {formatTokensPrecise(Number(stakedBalanceDisplay))} {tokenSymbol} staked
@@ -896,9 +912,14 @@ export function MembershipClient() {
                     ? "Upgrade Membership"
                     : `Stake ${tokenSymbol} & Join`}
                 </h2>
+                {wallet && Number(stakedBalanceRaw) > 0 && displayTier != null && (
+                  <p className="mt-2 text-base font-semibold text-foreground" data-member-tier>
+                    You are a {MEMBERSHIP_TIERS.find((t) => t.id === displayTier)?.name ?? `Tier ${displayTier}`} member
+                  </p>
+                )}
                 <p className="mt-1 text-sm text-muted-foreground">
-                  {wallet && Number(stakedBalanceRaw) > 0 && currentTierFromStake != null
-                    ? `Your current membership: ${MEMBERSHIP_TIERS.find((t) => t.id === currentTierFromStake)?.name ?? `Tier ${currentTierFromStake}`}. Stake more CULT to upgrade.`
+                  {wallet && Number(stakedBalanceRaw) > 0 && displayTier != null
+                    ? "Stake more CULT to upgrade your tier."
                     : wallet && Number(stakedBalanceRaw) > 0
                     ? "Stake more CULT to upgrade your tier."
                     : "Select your tier and duration, then connect your wallet to stake."}
@@ -925,10 +946,10 @@ export function MembershipClient() {
                     ) : (
                       <>
                         {/* Prominent membership badge */}
-                        {currentTierFromStake != null && (
+                        {displayTier != null && (
                           <div className="flex items-center gap-3">
                             {(() => {
-                              const tierData = MEMBERSHIP_TIERS.find((t) => t.id === currentTierFromStake);
+                              const tierData = MEMBERSHIP_TIERS.find((t) => t.id === displayTier);
                               const TierIcon = tierData?.icon ?? Shield;
                               return (
                                 <>
@@ -937,7 +958,7 @@ export function MembershipClient() {
                                   </div>
                                   <div>
                                     <p className="font-semibold text-foreground">
-                                      Your tier: {tierData?.name ?? `Tier ${currentTierFromStake}`}
+                                      Your tier: {tierData?.name ?? `Tier ${displayTier}`}
                                     </p>
                                     <p className="text-sm text-muted-foreground">
                                       {stakedLock?.durationLabel ?? "30 days"} membership
@@ -954,8 +975,16 @@ export function MembershipClient() {
                           </div>
                         )}
                         
-                        {/* Staked amount + time until unstake */}
+                        {/* Staked amount + time until unstake — always show current tier on this line */}
                         <div className="text-sm text-muted-foreground">
+                          {displayTier != null && (
+                            <>
+                              <span className="font-semibold text-foreground">
+                                Your membership: {MEMBERSHIP_TIERS.find((t) => t.id === displayTier)?.name ?? `Tier ${displayTier}`}
+                              </span>
+                              {" · "}
+                            </>
+                          )}
                           Staked: <span className="font-medium tabular-nums text-foreground">{formatTokensPrecise(Number(stakedBalanceDisplay))} {tokenSymbol}</span>
                           {stakedLock?.isLocked && stakedLock.secondsRemaining != null && stakedLock.secondsRemaining > 0 ? (
                             <> · {formatTimeUntilUnlock(stakedLock.secondsRemaining)}</>
@@ -1389,159 +1418,6 @@ export function MembershipClient() {
                 </p>
               </div>
             </div>
-
-            {/* Swap — own section below membership; sell/buy, both directions */}
-            <div
-              className={`
-              overflow-hidden rounded-2xl border border-border bg-card
-              shadow-xl
-            `}
-            >
-              <div className="border-b bg-muted/30 px-6 py-4">
-                <h3 className="font-display text-lg font-semibold text-foreground">
-                  Swap
-                </h3>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Sell one token, buy the other. Use the arrow to flip direction.
-                </p>
-              </div>
-              <div className="space-y-3 p-6">
-                {/* Sell row */}
-                <div className="rounded-xl border border-border bg-muted/20 p-4">
-                  <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    Sell
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      className="font-mono text-lg"
-                      min={0}
-                      onChange={(e) =>
-                        swapDirection === "solToCult"
-                          ? setSolAmount(e.target.value)
-                          : setCultAmount(e.target.value)
-                      }
-                      placeholder="0.00"
-                      step="any"
-                      type="number"
-                      value={swapDirection === "solToCult" ? solAmount : cultAmount}
-                    />
-                    <div className="flex min-w-[100px] items-center justify-end gap-1 rounded-lg border border-border bg-background px-3 py-2 font-medium">
-                      {swapDirection === "solToCult" ? "SOL" : tokenSymbol}
-                    </div>
-                  </div>
-                  <p className="mt-1.5 text-xs text-muted-foreground">
-                    {swapDirection === "solToCult"
-                      ? publicKey
-                        ? `Balance: ${solBalanceSol.toFixed(4)} SOL`
-                        : "Connect wallet to see balance"
-                      : wallet
-                        ? cultBalanceLoading
-                          ? "Loading…"
-                          : `Balance: ${cultBalance != null ? Number(cultBalance).toLocaleString(undefined, { maximumFractionDigits: 6 }) : "0"} ${tokenSymbol}`
-                        : "Connect wallet to see balance"}
-                  </p>
-                  {swapDirection === "solToCult" && publicKey && solBalanceSol > 0.01 && (
-                    <Button
-                      className="mt-2"
-                      onClick={() =>
-                        setSolAmount(Math.max(0, solBalanceSol - 0.01).toFixed(6))
-                      }
-                      size="sm"
-                      type="button"
-                      variant="secondary"
-                    >
-                      Max
-                    </Button>
-                  )}
-                  {swapDirection === "cultToSol" && wallet && cultBalance != null && Number(cultBalance) > 0 && (
-                    <Button
-                      className="mt-2"
-                      onClick={() => setCultAmount(cultBalance ?? "")}
-                      size="sm"
-                      type="button"
-                      variant="secondary"
-                    >
-                      Max
-                    </Button>
-                  )}
-                </div>
-
-                {/* Flip direction */}
-                <div className="flex justify-center">
-                  <Button
-                    aria-label="Flip swap direction"
-                    className="h-10 w-10 rounded-full"
-                    onClick={handleSwapDirectionFlip}
-                    size="icon"
-                    type="button"
-                    variant="outline"
-                  >
-                    <ArrowDown className="h-5 w-5" />
-                  </Button>
-                </div>
-
-                {/* Buy row — shows estimated amount you receive */}
-                <div className="rounded-xl border border-border bg-muted/20 p-4">
-                  <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    Buy
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <div className="font-mono flex-1 rounded-md border border-border bg-muted/30 px-3 py-2 text-lg text-foreground">
-                      {estimateLoading
-                        ? "…"
-                        : swapDirection === "solToCult"
-                          ? solAmount.trim() && Number.parseFloat(solAmount) > 0
-                            ? estimatedCult ?? "—"
-                            : "0"
-                          : cultAmount.trim() && Number.parseFloat(cultAmount) > 0
-                            ? estimatedSol ?? "—"
-                            : "0"}
-                    </div>
-                    <div className="flex min-w-[100px] items-center justify-end gap-1 rounded-lg border border-border bg-background px-3 py-2 font-medium">
-                      {swapDirection === "solToCult" ? tokenSymbol : "SOL"}
-                    </div>
-                  </div>
-                  <p className="mt-1.5 text-xs text-muted-foreground">
-                    {swapDirection === "solToCult"
-                      ? wallet
-                        ? cultBalanceLoading
-                          ? "Balance: …"
-                          : `Balance: ${cultBalance != null ? Number(cultBalance).toLocaleString(undefined, { maximumFractionDigits: 6 }) : "0"} ${tokenSymbol}`
-                        : "Connect wallet to see balance"
-                      : publicKey
-                        ? `Balance: ${solBalanceSol.toFixed(4)} SOL`
-                        : "Connect wallet to see balance"}
-                  </p>
-                </div>
-
-                <Button
-                  className="w-full"
-                  disabled={
-                    swapPending ||
-                    (swapDirection === "solToCult"
-                      ? !solAmount.trim() || Number.parseFloat(solAmount) <= 0
-                      : !cultAmount.trim() || Number.parseFloat(cultAmount) <= 0)
-                  }
-                  onClick={() => {
-                    if (!publicKey || !sendTransaction) {
-                      openConnectModal?.();
-                      return;
-                    }
-                    if (swapDirection === "solToCult") void handleSwapSolToCult();
-                    else void handleSwapCultToSol();
-                  }}
-                  size="lg"
-                >
-                  {!publicKey
-                    ? "Connect wallet to swap"
-                    : swapPending
-                      ? "Swapping…"
-                      : swapDirection === "solToCult"
-                        ? "Swap SOL → CULT"
-                        : `Swap ${tokenSymbol} → SOL`}
-                </Button>
-              </div>
-            </div>
             </div>
 
             {/* Right: Benefits for selected tier */}
@@ -1629,6 +1505,172 @@ export function MembershipClient() {
                     </li>
                   ))}
                 </ul>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* --------------------------------------------------------------- */}
+        {/* Swap — separate section below membership & benefits */}
+        {/* --------------------------------------------------------------- */}
+        <section
+          className={`
+          border-t border-border py-16
+          md:py-20
+        `}
+          id="swap"
+        >
+          <div className="mx-auto max-w-xl">
+            <h2
+              className={`
+              font-display text-2xl font-semibold text-foreground
+              md:text-3xl
+            `}
+            >
+              Swap
+            </h2>
+            <p className="mt-2 text-muted-foreground">
+              Sell one token, buy the other. Use the arrow to flip direction.
+            </p>
+            <div
+              className={`
+              mt-6 overflow-hidden rounded-2xl border border-border bg-card
+              shadow-xl
+            `}
+            >
+              <div className="space-y-3 p-6">
+                {/* Sell row */}
+                <div className="rounded-xl border border-border bg-muted/20 p-4">
+                  <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Sell
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      className="font-mono text-lg"
+                      min={0}
+                      onChange={(e) =>
+                        swapDirection === "solToCult"
+                          ? setSolAmount(e.target.value)
+                          : setCultAmount(e.target.value)
+                      }
+                      placeholder="0.00"
+                      step="any"
+                      type="number"
+                      value={swapDirection === "solToCult" ? solAmount : cultAmount}
+                    />
+                    <div className="flex min-w-[100px] items-center justify-end gap-1 rounded-lg border border-border bg-background px-3 py-2 font-medium">
+                      {swapDirection === "solToCult" ? "SOL" : tokenSymbol}
+                    </div>
+                  </div>
+                  <p className="mt-1.5 text-xs text-muted-foreground">
+                    {swapDirection === "solToCult"
+                      ? publicKey
+                        ? `Balance: ${solBalanceSol.toFixed(4)} SOL`
+                        : "Connect wallet to see balance"
+                      : wallet
+                        ? cultBalanceLoading
+                          ? "Loading…"
+                          : `Balance: ${cultBalance != null ? Number(cultBalance).toLocaleString(undefined, { maximumFractionDigits: 6 }) : "0"} ${tokenSymbol}`
+                        : "Connect wallet to see balance"}
+                  </p>
+                  {swapDirection === "solToCult" && publicKey && solBalanceSol > 0.01 && (
+                    <Button
+                      className="mt-2"
+                      onClick={() =>
+                        setSolAmount(Math.max(0, solBalanceSol - 0.01).toFixed(6))
+                      }
+                      size="sm"
+                      type="button"
+                      variant="secondary"
+                    >
+                      Max
+                    </Button>
+                  )}
+                  {swapDirection === "cultToSol" && wallet && cultBalance != null && Number(cultBalance) > 0 && (
+                    <Button
+                      className="mt-2"
+                      onClick={() => setCultAmount(cultBalance ?? "")}
+                      size="sm"
+                      type="button"
+                      variant="secondary"
+                    >
+                      Max
+                    </Button>
+                  )}
+                </div>
+
+                <div className="flex justify-center">
+                  <Button
+                    aria-label="Flip swap direction"
+                    className="h-10 w-10 rounded-full"
+                    onClick={handleSwapDirectionFlip}
+                    size="icon"
+                    type="button"
+                    variant="outline"
+                  >
+                    <ArrowDown className="h-5 w-5" />
+                  </Button>
+                </div>
+
+                <div className="rounded-xl border border-border bg-muted/20 p-4">
+                  <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Buy
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <div className="font-mono flex-1 rounded-md border border-border bg-muted/30 px-3 py-2 text-lg text-foreground">
+                      {estimateLoading
+                        ? "…"
+                        : swapDirection === "solToCult"
+                          ? solAmount.trim() && Number.parseFloat(solAmount) > 0
+                            ? estimatedCult ?? "—"
+                            : "0"
+                          : cultAmount.trim() && Number.parseFloat(cultAmount) > 0
+                            ? estimatedSol ?? "—"
+                            : "0"}
+                    </div>
+                    <div className="flex min-w-[100px] items-center justify-end gap-1 rounded-lg border border-border bg-background px-3 py-2 font-medium">
+                      {swapDirection === "solToCult" ? tokenSymbol : "SOL"}
+                    </div>
+                  </div>
+                  <p className="mt-1.5 text-xs text-muted-foreground">
+                    {swapDirection === "solToCult"
+                      ? wallet
+                        ? cultBalanceLoading
+                          ? "Balance: …"
+                          : `Balance: ${cultBalance != null ? Number(cultBalance).toLocaleString(undefined, { maximumFractionDigits: 6 }) : "0"} ${tokenSymbol}`
+                        : "Connect wallet to see balance"
+                      : publicKey
+                        ? `Balance: ${solBalanceSol.toFixed(4)} SOL`
+                        : "Connect wallet to see balance"}
+                  </p>
+                </div>
+
+                <Button
+                  className="w-full"
+                  disabled={
+                    swapPending ||
+                    (swapDirection === "solToCult"
+                      ? !solAmount.trim() || Number.parseFloat(solAmount) <= 0
+                      : !cultAmount.trim() || Number.parseFloat(cultAmount) <= 0)
+                  }
+                  onClick={() => {
+                    if (!publicKey || !sendTransaction) {
+                      openConnectModal?.();
+                      return;
+                    }
+                    if (swapDirection === "solToCult") void handleSwapSolToCult();
+                    else void handleSwapCultToSol();
+                  }}
+                  size="lg"
+                >
+                  {!publicKey
+                    ? "Connect wallet to swap"
+                    : swapPending
+                      ? "Swapping…"
+                      : swapDirection === "solToCult"
+                        ? "Swap SOL → CULT"
+                        : `Swap ${tokenSymbol} → SOL`}
+                </Button>
               </div>
             </div>
           </div>

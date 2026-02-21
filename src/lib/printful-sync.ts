@@ -453,6 +453,61 @@ export async function exportProductToPrintful(
   })();
 
   try {
+    // Fetch current sync product so we can get catalog variant_id per sync variant and (optional) current retail_price
+    const syncProductFull = await fetchSyncProduct(
+      product.printfulSyncProductId,
+      storeId,
+    );
+    const syncVariantsFromApi = syncProductFull.sync_variants ?? [];
+    const syncVariantById = new Map(
+      syncVariantsFromApi.map((sv) => [sv.id, sv]),
+    );
+
+    // Don't push a retail price below Printful's cost (avoid negative margin).
+    // Fetch catalog variant price (cost) for each variant we're updating; use max(our price, cost).
+    const variantsWithSafePrice = await Promise.all(
+      variants
+        .filter((v) => v.printfulSyncVariantId)
+        .map(async (v) => {
+          const syncVariant = syncVariantById.get(v.printfulSyncVariantId!);
+          const catalogVariantId = syncVariant?.product?.variant_id;
+          let costCents: number | null = null;
+          if (catalogVariantId != null) {
+            try {
+              const priceRes = await fetchVariantPrices(catalogVariantId);
+              const firstTechnique =
+                priceRes?.data?.variant?.techniques?.[0];
+              const priceStr =
+                firstTechnique?.discounted_price ?? firstTechnique?.price;
+              if (priceStr != null) {
+                const costDollars = Number.parseFloat(priceStr);
+                if (!Number.isNaN(costDollars))
+                  costCents = Math.round(costDollars * 100);
+              }
+            } catch {
+              // continue without cost
+            }
+          }
+          const safePriceCents =
+            costCents != null && costCents > 0 && v.priceCents < costCents
+              ? Math.max(
+                  v.priceCents,
+                  costCents,
+                  Math.round(
+                    Number.parseFloat(
+                      String(syncVariant?.retail_price ?? "0"),
+                    ) * 100,
+                  ),
+                )
+              : v.priceCents;
+          return {
+            id: v.printfulSyncVariantId!,
+            retail_price: (safePriceCents / 100).toFixed(2),
+            sku: v.sku || undefined,
+          };
+        }),
+    );
+
     // Update product-level fields (name, thumbnail)
     // Note: Printful V1 Sync Products API only supports: name, thumbnail, external_id, is_ignored
     await updateSyncProduct(
@@ -463,14 +518,7 @@ export async function exportProductToPrintful(
           ...(product.imageUrl && { thumbnail: product.imageUrl }),
         },
         // When updating sync_variants, we must include all variant IDs to keep them
-        // Only specify IDs of existing variants to prevent deletion
-        sync_variants: variants
-          .filter((v) => v.printfulSyncVariantId)
-          .map((v) => ({
-            id: v.printfulSyncVariantId!,
-            retail_price: (v.priceCents / 100).toFixed(2),
-            sku: v.sku || undefined,
-          })),
+        sync_variants: variantsWithSafePrice,
       },
       storeId,
     );
