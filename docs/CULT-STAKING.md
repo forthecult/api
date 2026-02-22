@@ -14,14 +14,14 @@ Program-based staking for the CULT token on Solana. Users stake CULT into a pool
 
 **Rollout:** We’re testing staking with **SOLUNA** (live token) now. When the **CULT** token launches, switch the active token to CULT in `token-config.ts`, set `CULT_TOKEN_MINT_SOLANA`, then deploy (or use a new program) and run the initialize script for the CULT mint. Same code path supports both; CULT will use Token-2022.
 
-### Get CULT (PumpSwap) and token migration
+### Get CULT (PumpSwap) and bonding curve
 
-The **Get CULT** flow (SOL → CULT on the Stake & Vote page and in the mobile app) uses the PumpSwap pool for the current CULT mint. There will be **two pools** over time:
+The **Get CULT** / **CULT Swap** flow (SOL↔CULT on the Membership page and in the mobile app) uses the **same mint** (6jCC…pappump). Two phases:
 
-- **Before migration:** Current CULT mint and its canonical PumpSwap pool (used today).
-- **After migration:** When the token migrates, the LP will change; the new pool details are not yet known.
+- **Bonding curve (pre-migration):** The token trades on the pump.fun bonding curve. The app uses the Pump program (6EF8…) buy/sell instructions so the swap works without a PumpSwap pool.
+- **PumpSwap (post-migration):** When the token migrates, the app uses the pump-swap SDK and the canonical pool for that mint.
 
-When the post-migration pool is live, set **`CULT_SWAP_MINT`** (env) to the new mint address. The swap logic in `pump-swap-cult.ts` uses `getCultSwapMint()` from `token-config.ts`, so Get CULT will use the correct pool without code changes. Leave `CULT_SWAP_MINT` unset to keep using the current (pre-migration) mint.
+No env var is required; the code tries the PumpSwap pool first and falls back to the bonding curve when the pool account is not found.
 
 ## Build & Deploy
 

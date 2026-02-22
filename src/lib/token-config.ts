@@ -49,10 +49,8 @@ export const CULT_MINT_MAINNET =
   "6jCCBeaJD63L62c496VrV4HVPLJF5N3WyTWRwPappump";
 
 /**
- * Mint address used for the PumpSwap "Get CULT" (SOL → CULT) flow.
- * There will be two pools over time: one before token migration (current) and one after.
- * Once the token migrates, the LP will change; set CULT_SWAP_MINT to the new mint when
- * the post-migration pool is live so Get CULT uses the correct pool without code changes.
+ * CULT mint for swap (SOL↔CULT). Always 6jCCBeaJD63L62c496VrV4HVPLJF5N3WyTWRwPappump.
+ * Swap uses either the bonding curve (pre-migration) or PumpSwap pool (post-migration) for this mint.
  */
 export function getCultSwapMint(): string {
   const env =

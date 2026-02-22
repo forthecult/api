@@ -625,7 +625,7 @@ export async function resolveDiscounts(params: {
     expectedTotal = baseTotal;
   }
 
-  // Stack tier-based member discounts (apply on top of coupon/affiliate).
+  // when member has tier discounts: use the better of coupon vs tier (tier overrides when it gives a lower total)
   if (wallet?.trim()) {
     const memberTier = await getMemberTierForWallet(wallet.trim());
     if (memberTier != null) {
@@ -634,7 +634,16 @@ export async function resolveDiscounts(params: {
         shippingFeeCents,
         subtotalCents,
       });
-      expectedTotal = Math.max(0, expectedTotal - tierResult.totalCents);
+      if (tierResult.totalCents > 0) {
+        const totalWithTierOnly = Math.max(
+          0,
+          baseTotal - tierResult.totalCents,
+        );
+        if (totalWithTierOnly <= expectedTotal) {
+          expectedTotal = totalWithTierOnly;
+          couponResult = null;
+        }
+      }
     }
   }
 

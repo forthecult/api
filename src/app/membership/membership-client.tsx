@@ -1612,6 +1612,14 @@ export function MembershipClient() {
                       {selectedTierData.benefits.esimDetail}
                     </span>
                   </li>
+                  {selectedTierData.benefits.extras.includes(
+                    "Monthly VPN subscription",
+                  ) && (
+                    <li className="flex items-start gap-2">
+                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                      <span>Monthly VPN subscription</span>
+                    </li>
+                  )}
                   <li className="flex items-start gap-2">
                     <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                     <span>
@@ -1619,12 +1627,14 @@ export function MembershipClient() {
                       {selectedTierData.benefits.shippingDetail}
                     </span>
                   </li>
-                  {selectedTierData.benefits.extras.map((extra) => (
-                    <li className="flex items-start gap-2" key={extra}>
-                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                      <span>{extra}</span>
-                    </li>
-                  ))}
+                  {selectedTierData.benefits.extras
+                    .filter((extra) => extra !== "Monthly VPN subscription")
+                    .map((extra) => (
+                      <li className="flex items-start gap-2" key={extra}>
+                        <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                        <span>{extra}</span>
+                      </li>
+                    ))}
                 </ul>
               </div>
             </div>
@@ -2503,8 +2513,8 @@ export function MembershipClient() {
                   Stay connected everywhere
                 </h2>
                 <p className="mt-4 text-muted-foreground">
-                  Every membership tier includes eSIM benefits. From 25% off at
-                  Tier 3 to free eSIM and free shipping at Tier 1—stay connected in
+                  Every membership tier includes eSIM benefits. From 15% off at
+                  Tier 3 to first eSIM free and 30% off more at Tier 1—stay connected in
                   200+ countries without hunting for local SIM cards.
                 </p>
                 <ul className="mt-6 space-y-3">

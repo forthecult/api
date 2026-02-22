@@ -372,6 +372,7 @@ export async function PATCH(
       getDiscountValue: updated.getDiscountValue ?? null,
       getQuantity: updated.getQuantity ?? null,
       id: updated.id,
+      label: updated.label ?? null,
       maxUses: updated.maxUses,
       maxUsesPerCustomer: updated.maxUsesPerCustomer,
       maxUsesPerCustomerType: updated.maxUsesPerCustomerType,

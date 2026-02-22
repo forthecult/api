@@ -351,7 +351,114 @@ export default function AdminDiscountDetailPage() {
           };
           throw new Error(data.error ?? "Failed to save");
         }
-        void fetchCoupon();
+        const row = (await res.json()) as {
+          appliesTo: "shipping" | "subtotal";
+          buyQuantity?: null | number;
+          categoryIds: string[];
+          code: string;
+          dateEnd: null | string;
+          dateStart: null | string;
+          discountKind?: DiscountKind;
+          discountType: "fixed" | "percent";
+          discountValue: number;
+          getDiscountType?: "fixed" | "percent" | null;
+          getDiscountValue?: null | number;
+          getQuantity?: null | number;
+          label?: null | string;
+          maxUses: null | number;
+          maxUsesPerCustomer: null | number;
+          maxUsesPerCustomerType: null | string;
+          method?: "automatic" | "code";
+          productIds: string[];
+          ruleAppliesToEsim?: null | number;
+          ruleOrderTotalMaxCents?: null | number;
+          ruleOrderTotalMinCents?: null | number;
+          rulePaymentMethodKey?: null | string;
+          ruleProductCountMax?: null | number;
+          ruleProductCountMin?: null | number;
+          ruleShippingMaxCents?: null | number;
+          ruleShippingMinCents?: null | number;
+          ruleSubtotalMaxCents?: null | number;
+          ruleSubtotalMinCents?: null | number;
+          tokenHolderChain?: null | string;
+          tokenHolderMinBalance?: null | string;
+          tokenHolderTokenAddress?: null | string;
+        };
+        setLabel(row.label ?? "");
+        setMethod(row.method ?? "code");
+        setCode(row.code);
+        setDateStart(row.dateStart ? row.dateStart.slice(0, 16) : "");
+        setDateEnd(row.dateEnd ? row.dateEnd.slice(0, 16) : "");
+        setDiscountKind(row.discountKind ?? "amount_off_order");
+        setDiscountType(row.discountType);
+        setDiscountValue(
+          row.discountType === "percent"
+            ? String(row.discountValue)
+            : (row.discountValue / 100).toFixed(2),
+        );
+        setBuyQuantity(row.buyQuantity != null ? String(row.buyQuantity) : "");
+        setGetQuantity(row.getQuantity != null ? String(row.getQuantity) : "");
+        setGetDiscountType(row.getDiscountType ?? "percent");
+        setGetDiscountValue(
+          row.getDiscountValue != null
+            ? row.getDiscountType === "percent"
+              ? String(row.getDiscountValue)
+              : (row.getDiscountValue / 100).toFixed(2)
+            : "",
+        );
+        setMaxUses(row.maxUses != null ? String(row.maxUses) : "");
+        setMaxUsesPerCustomer(
+          row.maxUsesPerCustomer != null ? String(row.maxUsesPerCustomer) : "",
+        );
+        setMaxUsesPerCustomerType(
+          (row.maxUsesPerCustomerType as
+            | "account"
+            | "phone"
+            | "shipping_address") ?? "",
+        );
+        setTokenHolderChain(row.tokenHolderChain ?? "");
+        setTokenHolderTokenAddress(row.tokenHolderTokenAddress ?? "");
+        setTokenHolderMinBalance(row.tokenHolderMinBalance ?? "");
+        setRulePaymentMethodKey(row.rulePaymentMethodKey ?? "");
+        setRuleSubtotalMin(
+          row.ruleSubtotalMinCents != null
+            ? (row.ruleSubtotalMinCents / 100).toFixed(2)
+            : "",
+        );
+        setRuleSubtotalMax(
+          row.ruleSubtotalMaxCents != null
+            ? (row.ruleSubtotalMaxCents / 100).toFixed(2)
+            : "",
+        );
+        setRuleShippingMin(
+          row.ruleShippingMinCents != null
+            ? (row.ruleShippingMinCents / 100).toFixed(2)
+            : "",
+        );
+        setRuleShippingMax(
+          row.ruleShippingMaxCents != null
+            ? (row.ruleShippingMaxCents / 100).toFixed(2)
+            : "",
+        );
+        setRuleProductCountMin(
+          row.ruleProductCountMin != null ? String(row.ruleProductCountMin) : "",
+        );
+        setRuleProductCountMax(
+          row.ruleProductCountMax != null ? String(row.ruleProductCountMax) : "",
+        );
+        setRuleOrderTotalMin(
+          row.ruleOrderTotalMinCents != null
+            ? (row.ruleOrderTotalMinCents / 100).toFixed(2)
+            : "",
+        );
+        setRuleOrderTotalMax(
+          row.ruleOrderTotalMaxCents != null
+            ? (row.ruleOrderTotalMaxCents / 100).toFixed(2)
+            : "",
+        );
+        setCategoryIds(row.categoryIds ?? []);
+        setProductIds(row.productIds ?? []);
+        setRuleAppliesToEsim(row.ruleAppliesToEsim === 1);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to save");
       } finally {
@@ -384,7 +491,7 @@ export default function AdminDiscountDetailPage() {
       ruleProductCountMax,
       ruleOrderTotalMin,
       ruleOrderTotalMax,
-      fetchCoupon,
+      label,
     ],
   );
 

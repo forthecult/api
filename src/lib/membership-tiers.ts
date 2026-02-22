@@ -40,8 +40,8 @@ export const MEMBERSHIP_TIERS: MembershipTier[] = [
     accentBg: "bg-chart-2/10",
     accentBorder: "border-chart-2/30",
     benefits: {
-      esim: "25% off",
-      esimDetail: "25% discount on all eSIM data plans",
+      esim: "15% off",
+      esimDetail: "15% discount on all eSIM data plans",
       extras: ["Community access", "Governance voting", "Early product access"],
       shipping: "25% off",
       shippingDetail: "25% off all shipping costs",
@@ -56,8 +56,8 @@ export const MEMBERSHIP_TIERS: MembershipTier[] = [
     accentBg: "bg-chart-4/10",
     accentBorder: "border-chart-4/30",
     benefits: {
-      esim: "50% off",
-      esimDetail: "50% discount on all eSIM data plans",
+      esim: "25% off",
+      esimDetail: "25% discount on all eSIM data plans",
       extras: [
         "Community access",
         "Governance voting",
@@ -78,8 +78,8 @@ export const MEMBERSHIP_TIERS: MembershipTier[] = [
     accentBg: "bg-chart-1/10",
     accentBorder: "border-chart-1/30",
     benefits: {
-      esim: "Free eSIM",
-      esimDetail: "Free eSIM card included with your membership",
+      esim: "First eSIM free",
+      esimDetail: "First eSIM free, 30% off additional eSIMs",
       extras: [
         "Community access",
         "Governance voting",
@@ -112,7 +112,7 @@ export const MEMBERSHIP_BENEFIT_ROWS: MembershipBenefitRow[] = [
   {
     icon: Smartphone,
     label: "eSIM Discount",
-    values: { 1: "Free eSIM", 2: "50% off", 3: "25% off" },
+    values: { 1: "1st free, 30% off more", 2: "25% off", 3: "15% off" },
   },
   {
     icon: Truck,
@@ -177,7 +177,7 @@ export const MEMBERSHIP_FAQ = [
     q: "Can I upgrade my tier?",
   },
   {
-    a: "Tier 1 members get a free eSIM card and free shipping. Tier 2 gets 50% off eSIM and shipping; Tier 3 gets 25% off. eSIMs are activated instantly and work in 200+ countries.",
+    a: "Tier 1 members get the first eSIM free and 30% off additional eSIMs, plus free shipping. Tier 2 gets 25% off eSIMs and shipping; Tier 3 gets 15% off eSIMs and shipping. eSIMs are activated instantly and work in 200+ countries.",
     q: "What eSIM card do I get?",
   },
   {

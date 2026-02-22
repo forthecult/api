@@ -399,8 +399,9 @@ export default function TokenPage() {
               Membership
             </h2>
             <p className="max-w-3xl text-muted-foreground">
-              Stake CULT to unlock tiered membership: free eSIM and free
-              shipping at Tier 1, 50% off at Tier 2, and 25% off at Tier 3.
+              Stake CULT to unlock tiered membership: first eSIM free, 30% off
+              additional eSIMs, and free shipping at Tier 1; 25% off at Tier 2;
+              15% off at Tier 3.
             </p>
           </div>
 

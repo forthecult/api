@@ -1,12 +1,16 @@
 import { createId } from "@paralleldrive/cuid2";
 import { createUploadthing, type FileRouter } from "uploadthing/next";
-import { UploadThingError } from "uploadthing/server";
+import { UTApi, UploadThingError } from "uploadthing/server";
 
 import { db } from "~/db";
 import { uploadsTable } from "~/db/schema";
 import { auth } from "~/lib/auth";
+import { getUploadThingToken } from "~/lib/uploadthing-token";
+import { scanFileUrl } from "~/lib/virus-scan";
 
 const f = createUploadthing();
+
+const AVATAR_MAX_SIZE = "1MB";
 // FileRouter for the app, can contain multiple FileRoutes
 export const ourFileRouter = {
   // Define as many FileRoutes as you like, each with a unique routeSlug
@@ -128,6 +132,49 @@ export const ourFileRouter = {
             error,
           );
           throw new UploadThingError("Failed to process upload metadata.");
+        }
+
+        return {
+          fileKey: file.key,
+          fileUrl: file.ufsUrl,
+          uploadedBy: metadata.userId,
+        };
+      },
+    ),
+
+  avatarUploader: f({
+    "image/jpeg": { maxFileCount: 1, maxFileSize: AVATAR_MAX_SIZE },
+    "image/png": { maxFileCount: 1, maxFileSize: AVATAR_MAX_SIZE },
+    "image/webp": { maxFileCount: 1, maxFileSize: AVATAR_MAX_SIZE },
+    "image/gif": { maxFileCount: 1, maxFileSize: AVATAR_MAX_SIZE },
+  })
+    .middleware(async ({ req }: { req: { headers: Headers } }) => {
+      const session = await auth.api.getSession({ headers: req.headers });
+      if (!session?.user?.id) throw new UploadThingError("Unauthorized");
+      return { userId: session.user.id };
+    })
+    .onUploadComplete(
+      async ({
+        file,
+        metadata,
+      }: {
+        file: { key: string; ufsUrl: string };
+        metadata: { userId: string };
+      }) => {
+        const scan = await scanFileUrl(file.ufsUrl);
+        if (!scan.ok) {
+          const token = getUploadThingToken();
+          if (token) {
+            try {
+              const utapi = new UTApi({ token });
+              await utapi.deleteFiles(file.key);
+            } catch {
+              // best-effort delete
+            }
+          }
+          throw new UploadThingError(
+            `File rejected: ${scan.error}. Please upload a different image.`,
+          );
         }
 
         return {

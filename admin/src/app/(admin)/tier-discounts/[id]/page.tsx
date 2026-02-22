@@ -195,7 +195,19 @@ export default function AdminTierDiscountEditPage() {
           };
           throw new Error(data.error ?? "Failed to update");
         }
-        void fetchDiscount();
+        const updated = (await res.json()) as TierDiscount;
+        setMemberTier(updated.memberTier);
+        setLabel(updated.label ?? "");
+        setScope(updated.scope as typeof scope);
+        setDiscountType(updated.discountType as "fixed" | "percent");
+        setDiscountValue(
+          updated.discountType === "percent"
+            ? String(updated.discountValue)
+            : (updated.discountValue / 100).toFixed(2),
+        );
+        setCategoryId(updated.categoryId ?? "");
+        setProductId(updated.productId ?? "");
+        setAppliesToEsim(updated.appliesToEsim === 1);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to update");
       } finally {

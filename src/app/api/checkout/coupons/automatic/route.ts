@@ -120,24 +120,37 @@ export async function POST(request: NextRequest) {
     const result = await resolveAutomaticCouponForCheckout(input);
 
     const automaticDiscountCents = result?.discountCents ?? 0;
-    const totalDiscountCents = automaticDiscountCents + tierDiscountTotalCents;
-    const totalAfterDiscountCents = Math.max(
+    const totalWithAutomaticOnly = Math.max(
       0,
-      orderTotalCents - totalDiscountCents,
+      orderTotalCents - automaticDiscountCents,
     );
+    const totalWithTierOnly = Math.max(
+      0,
+      orderTotalCents - tierDiscountTotalCents,
+    );
+
+    // apply the best single discount: tier overrides automatic when tier gives a lower total
+    const useTierOnly =
+      tierDiscountTotalCents > 0 &&
+      totalWithTierOnly <= totalWithAutomaticOnly;
 
     if (!result && tierDiscountTotalCents === 0) {
       return NextResponse.json({ applied: false });
     }
 
+    if (useTierOnly) {
+      return NextResponse.json({
+        applied: true,
+        tierDiscounts,
+        tierDiscountTotalCents,
+        totalAfterDiscountCents: totalWithTierOnly,
+      });
+    }
+
     return NextResponse.json({
       applied: true,
       ...(result ?? {}),
-      tierDiscounts: tierDiscounts.length > 0 ? tierDiscounts : undefined,
-      tierDiscountTotalCents:
-        tierDiscountTotalCents > 0 ? tierDiscountTotalCents : undefined,
-      totalAfterDiscountCents,
-      totalDiscountCents: totalDiscountCents,
+      totalAfterDiscountCents: totalWithAutomaticOnly,
     });
   } catch (err) {
     console.error("Automatic coupon resolve error:", err);

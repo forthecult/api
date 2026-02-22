@@ -3,14 +3,18 @@
 import { Camera, ChevronLeft } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useRef, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { useCurrentUserOrRedirect } from "~/lib/auth-client";
 import { isRealEmail } from "~/lib/is-real-email";
+import { useUploadThing } from "~/lib/uploadthing";
 import { Button } from "~/ui/primitives/button";
 import { Input } from "~/ui/primitives/input";
 import { Label } from "~/ui/primitives/label";
+
+const AVATAR_MAX_BYTES = 1024 * 1024; // 1MB
+const AVATAR_ACCEPT = "image/jpeg,image/png,image/webp,image/gif";
 
 export function ProfilePageClient() {
   const { isPending, user } = useCurrentUserOrRedirect();
@@ -20,6 +24,58 @@ export function ProfilePageClient() {
   const [phone, setPhone] = useState("");
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [avatarUrlOverride, setAvatarUrlOverride] = useState<null | string>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const { startUpload, isUploading } = useUploadThing("avatarUploader", {
+    onClientUploadComplete: (res) => {
+      const first = Array.isArray(res) ? res[0] : res;
+      let url: string | null = null;
+      if (first && "fileUrl" in first && typeof first.fileUrl === "string") url = first.fileUrl;
+      else if (first && "url" in first && typeof (first as { url: string }).url === "string")
+        url = (first as { url: string }).url;
+      if (url) {
+        setAvatarUrlOverride(url);
+        void updateProfileImage(url);
+      }
+    },
+    onUploadError: (e) => {
+      toast.error(e?.message ?? "Upload failed");
+    },
+  });
+
+  const updateProfileImage = async (url: string) => {
+    try {
+      const res = await fetch("/api/user/profile", {
+        body: JSON.stringify({ image: url }),
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        method: "PATCH",
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(data.error ?? "Failed to update photo");
+      }
+      toast.success("Profile photo updated");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update photo");
+    }
+  };
+
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleAvatarFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (file.size > AVATAR_MAX_BYTES) {
+      toast.error("Image must be 1 MB or smaller");
+      return;
+    }
+    void startUpload([file]);
+  };
 
   // Load profile data from API to get firstName/lastName separately
   useEffect(() => {
@@ -111,6 +167,13 @@ export function ProfilePageClient() {
 
       <form className="space-y-6" onSubmit={handleSubmit}>
         <div className="flex flex-col items-center gap-6">
+          <input
+            accept={AVATAR_ACCEPT}
+            className="hidden"
+            onChange={handleAvatarFileChange}
+            ref={fileInputRef}
+            type="file"
+          />
           <div className="relative">
             <div
               className={`
@@ -118,13 +181,13 @@ export function ProfilePageClient() {
               border-border bg-muted
             `}
             >
-              {user?.image ? (
+              {avatarUrlOverride ?? user?.image ? (
                 <Image
                   alt=""
                   className="object-cover"
                   fill
                   sizes="96px"
-                  src={user.image}
+                  src={avatarUrlOverride ?? user?.image ?? ""}
                 />
               ) : (
                 <span
@@ -148,9 +211,11 @@ export function ProfilePageClient() {
                 absolute right-0 bottom-0 flex size-8 items-center
                 justify-center rounded-full border-2 border-background
                 bg-primary text-primary-foreground shadow
-                hover:bg-primary/90
+                hover:bg-primary/90 disabled:opacity-50
               `}
+              disabled={isUploading}
               type="button"
+              onClick={handleAvatarClick}
             >
               <Camera className="h-4 w-4" />
             </button>

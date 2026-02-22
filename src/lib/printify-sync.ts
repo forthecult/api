@@ -35,6 +35,7 @@ import {
   fetchPrintifyProduct,
   fetchPrintifyProducts,
   fetchPrintifyShippingInfo,
+  fetchPrintifyVariants,
   getPrintifyIfConfigured,
   type PrintifyProduct,
   reportPrintifyPublishingFailed,
@@ -320,11 +321,42 @@ export async function exportProductToPrintify(
         .filter((v) => v.printifyVariantId)
         .map((v) => [String(v.printifyVariantId), v]),
     );
+
+    // GET shop product often omits variant cost; fetch catalog so we have cost for the floor.
+    let catalogCostByVariantId = new Map<number, number>();
+    const missingCost = printifyProduct.variants.some(
+      (pv) => !pv.cost || Number(pv.cost) <= 0,
+    );
+    if (missingCost && printifyProduct.blueprint_id && printifyProduct.print_provider_id) {
+      try {
+        const catalog = await fetchPrintifyVariants(
+          printifyProduct.blueprint_id,
+          printifyProduct.print_provider_id,
+          { showOutOfStock: true },
+        );
+        const withCost = catalog as {
+          variants?: { id: number; cost?: number }[];
+        };
+        if (withCost.variants?.length) {
+          for (const v of withCost.variants) {
+            if (v.cost != null && v.cost > 0)
+              catalogCostByVariantId.set(v.id, v.cost);
+          }
+        }
+      } catch {
+        // continue without catalog costs
+      }
+    }
+
     // Ensure we never send a price below cost (avoids negative margin in Printify).
-    // Use cost + 1 cent as floor so margin stays positive after any rounding.
+    // Floor = cost + 1 cent and at least 5% above cost (handles rounding/fees in Printify UI).
     const variantUpdates = printifyProduct.variants.map((pv) => {
-      const costCents = Number(pv.cost) || 0;
-      const minPriceCents = costCents > 0 ? costCents + 1 : 0;
+      const costCents =
+        Number(pv.cost) || catalogCostByVariantId.get(pv.id) || 0;
+      const minPriceCents =
+        costCents > 0
+          ? Math.max(costCents + 1, Math.ceil(costCents * 1.05))
+          : 0;
 
       const local = localByPrintifyId.get(String(pv.id));
       if (local) {

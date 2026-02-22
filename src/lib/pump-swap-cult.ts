@@ -1,11 +1,7 @@
 /**
- * Build SOL → CULT swap on PumpSwap for the stake page.
- * Uses @pump-fun/pump-swap-sdk (same as buyback-burn and pump-price).
- *
- * Two pools: there is a pool before token migration (current) and one after migration.
- * The LP will change post-migration; we use getCultSwapMint() so that when the new
- * pool is live you can set CULT_SWAP_MINT to the post-migration mint and Get CULT
- * will use the correct pool without code changes.
+ * Build SOL ↔ CULT swap. Uses PumpSwap (AMM) when the token has migrated;
+ * when the token is still on the bonding curve (pre-migration), uses the Pump
+ * program buy/sell instructions so the swap works with the correct pool.
  */
 
 import { Connection, PublicKey, Transaction } from "@solana/web3.js";
@@ -18,6 +14,12 @@ import {
   sellBaseInput,
 } from "@pump-fun/pump-swap-sdk";
 
+import {
+  buildBondingBuyInstructions,
+  buildBondingSellInstructions,
+  estimateCultFromSolBonding,
+  estimateSolFromCultBonding,
+} from "~/lib/pump-bonding-cult";
 import { getCultSwapMint } from "~/lib/token-config";
 
 const CULT_DECIMALS = 6;
@@ -67,7 +69,7 @@ export async function estimateCultFromSol(
     );
     return { cultAmount, cultRaw: base.toString() };
   } catch {
-    return null;
+    return estimateCultFromSolBonding(connection, solLamports, slippagePercent);
   }
 }
 
@@ -84,43 +86,64 @@ export async function buildSwapSolToCult(
   if (solLamports <= 0) {
     throw new Error("SOL amount must be positive");
   }
-  const cultMint = new PublicKey(getCultSwapMint());
-  const sdk = new OnlinePumpAmmSdk(connection);
-  const poolKey = canonicalPumpPoolPda(cultMint);
-  const swapState = await sdk.swapSolanaState(poolKey, userPublicKey);
+  try {
+    const cultMint = new PublicKey(getCultSwapMint());
+    const sdk = new OnlinePumpAmmSdk(connection);
+    const poolKey = canonicalPumpPoolPda(cultMint);
+    const swapState = await sdk.swapSolanaState(poolKey, userPublicKey);
 
-  const quoteBn = new BN(solLamports);
-  const { base } = buyQuoteInput({
-    quote: quoteBn,
-    slippage: slippagePercent,
-    baseReserve: swapState.poolBaseAmount,
-    quoteReserve: swapState.poolQuoteAmount,
-    baseMintAccount: swapState.baseMintAccount,
-    baseMint: swapState.baseMint,
-    coinCreator: swapState.pool.coinCreator,
-    creator: swapState.pool.creator,
-    feeConfig: swapState.feeConfig,
-    globalConfig: swapState.globalConfig,
-  });
+    const quoteBn = new BN(solLamports);
+    const { base } = buyQuoteInput({
+      quote: quoteBn,
+      slippage: slippagePercent,
+      baseReserve: swapState.poolBaseAmount,
+      quoteReserve: swapState.poolQuoteAmount,
+      baseMintAccount: swapState.baseMintAccount,
+      baseMint: swapState.baseMint,
+      coinCreator: swapState.pool.coinCreator,
+      creator: swapState.pool.creator,
+      feeConfig: swapState.feeConfig,
+      globalConfig: swapState.globalConfig,
+    });
 
-  const swapIxs = await PUMP_AMM_SDK.buyQuoteInput(
-    swapState,
-    quoteBn,
-    slippagePercent,
-  );
+    const swapIxs = await PUMP_AMM_SDK.buyQuoteInput(
+      swapState,
+      quoteBn,
+      slippagePercent,
+    );
 
-  const tx = new Transaction();
-  tx.add(...swapIxs);
+    const tx = new Transaction();
+    tx.add(...swapIxs);
 
-  const { blockhash, lastValidBlockHeight } =
-    await connection.getLatestBlockhash("confirmed");
-  tx.recentBlockhash = blockhash;
-  tx.feePayer = userPublicKey;
+    const { blockhash } =
+      await connection.getLatestBlockhash("confirmed");
+    tx.recentBlockhash = blockhash;
+    tx.feePayer = userPublicKey;
 
-  return {
-    estimatedCultRaw: base.toString(),
-    transaction: tx,
-  };
+    return {
+      estimatedCultRaw: base.toString(),
+      transaction: tx,
+    };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.includes("Pool account not found") || msg.includes("not found")) {
+      const { instructions, estimatedCultRaw } =
+        await buildBondingBuyInstructions(
+          connection,
+          userPublicKey,
+          solLamports,
+          slippagePercent,
+        );
+      const tx = new Transaction();
+      tx.add(...instructions);
+      const { blockhash } =
+        await connection.getLatestBlockhash("confirmed");
+      tx.recentBlockhash = blockhash;
+      tx.feePayer = userPublicKey;
+      return { estimatedCultRaw, transaction: tx };
+    }
+    throw err;
+  }
 }
 
 export interface SwapCultToSolResult {
@@ -162,7 +185,7 @@ export async function estimateSolFromCult(
     const solAmount = (solLamports / 1e9).toFixed(9);
     return { solLamports, solAmount };
   } catch {
-    return null;
+    return estimateSolFromCultBonding(connection, cultRaw, slippagePercent);
   }
 }
 
@@ -179,39 +202,59 @@ export async function buildSwapCultToSol(
   if (baseBn.lte(new BN(0))) {
     throw new Error("CULT amount must be positive");
   }
-  const cultMint = new PublicKey(getCultSwapMint());
-  const sdk = new OnlinePumpAmmSdk(connection);
-  const poolKey = canonicalPumpPoolPda(cultMint);
-  const swapState = await sdk.swapSolanaState(poolKey, userPublicKey);
+  try {
+    const cultMint = new PublicKey(getCultSwapMint());
+    const sdk = new OnlinePumpAmmSdk(connection);
+    const poolKey = canonicalPumpPoolPda(cultMint);
+    const swapState = await sdk.swapSolanaState(poolKey, userPublicKey);
 
-  const swapIxs = await PUMP_AMM_SDK.sellBaseInput(
-    swapState,
-    baseBn,
-    slippagePercent,
-  );
+    const swapIxs = await PUMP_AMM_SDK.sellBaseInput(
+      swapState,
+      baseBn,
+      slippagePercent,
+    );
 
-  const { uiQuote } = sellBaseInput({
-    base: baseBn,
-    slippage: slippagePercent,
-    baseReserve: swapState.poolBaseAmount,
-    quoteReserve: swapState.poolQuoteAmount,
-    baseMintAccount: swapState.baseMintAccount,
-    baseMint: swapState.baseMint,
-    coinCreator: swapState.pool.coinCreator,
-    creator: swapState.pool.creator,
-    feeConfig: swapState.feeConfig,
-    globalConfig: swapState.globalConfig,
-  });
+    const { uiQuote } = sellBaseInput({
+      base: baseBn,
+      slippage: slippagePercent,
+      baseReserve: swapState.poolBaseAmount,
+      quoteReserve: swapState.poolQuoteAmount,
+      baseMintAccount: swapState.baseMintAccount,
+      baseMint: swapState.baseMint,
+      coinCreator: swapState.pool.coinCreator,
+      creator: swapState.pool.creator,
+      feeConfig: swapState.feeConfig,
+      globalConfig: swapState.globalConfig,
+    });
 
-  const tx = new Transaction();
-  tx.add(...swapIxs);
+    const tx = new Transaction();
+    tx.add(...swapIxs);
 
-  const { blockhash } = await connection.getLatestBlockhash("confirmed");
-  tx.recentBlockhash = blockhash;
-  tx.feePayer = userPublicKey;
+    const { blockhash } = await connection.getLatestBlockhash("confirmed");
+    tx.recentBlockhash = blockhash;
+    tx.feePayer = userPublicKey;
 
-  return {
-    estimatedSolLamports: uiQuote.toNumber(),
-    transaction: tx,
-  };
+    return {
+      estimatedSolLamports: uiQuote.toNumber(),
+      transaction: tx,
+    };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.includes("Pool account not found") || msg.includes("not found")) {
+      const { instructions, estimatedSolLamports } =
+        await buildBondingSellInstructions(
+          connection,
+          userPublicKey,
+          cultRaw,
+          slippagePercent,
+        );
+      const tx = new Transaction();
+      tx.add(...instructions);
+      const { blockhash } = await connection.getLatestBlockhash("confirmed");
+      tx.recentBlockhash = blockhash;
+      tx.feePayer = userPublicKey;
+      return { estimatedSolLamports, transaction: tx };
+    }
+    throw err;
+  }
 }
