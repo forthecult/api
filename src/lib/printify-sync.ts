@@ -670,15 +670,11 @@ async function createLocalProductFromPrintify(
   );
   const prices = enabledVariants.map((v) => v.price);
   const priceCents = prices.length > 0 ? Math.min(...prices) : 0;
-  // Printify variant cost: typically in cents; if value looks like dollars (< 1000), treat as dollars
+  // Printify variant cost is in cents (same as price).
   const costs = enabledVariants.map((v) => v.cost);
   const costRaw = costs.length > 0 ? Math.min(...costs) : 0;
   const costPerItemCents =
-    costRaw > 0
-      ? costRaw < 1000
-        ? Math.round(costRaw * 100)
-        : Math.round(costRaw)
-      : null;
+    costRaw > 0 ? Math.round(costRaw) : null;
 
   // Weight from first variant (grams)
   const weightGrams =
@@ -1127,11 +1123,7 @@ async function updateLocalProductFromPrintify(
   const costs = enabledVariants.map((v) => v.cost);
   const costRaw = costs.length > 0 ? Math.min(...costs) : 0;
   const costPerItemCents =
-    costRaw > 0
-      ? costRaw < 1000
-        ? Math.round(costRaw * 100)
-        : Math.round(costRaw)
-      : null;
+    costRaw > 0 ? Math.round(costRaw) : null;
   const weightGrams =
     enabledVariants.length > 0 && enabledVariants[0]!.grams > 0
       ? enabledVariants[0]!.grams
