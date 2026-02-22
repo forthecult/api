@@ -424,6 +424,69 @@ export default async function HomePage() {
           />
         </section>
 
+        {/* Featured products — just below the fold */}
+        <section
+          className={`
+          bg-background py-20
+          md:py-28
+        `}
+        >
+          <div
+            className={`
+            container mx-auto max-w-7xl px-4
+            sm:px-6
+            lg:px-8
+          `}
+          >
+            <div className="mb-12 flex flex-col items-center text-center">
+              <h2
+                className={`
+                font-heading text-3xl font-bold tracking-tight
+                text-foreground
+                md:text-4xl
+              `}
+              >
+                Featured products
+              </h2>
+              <div
+                className={`
+                mt-3 h-0.5 w-16 bg-gradient-to-r from-primary to-primary/30
+              `}
+              />
+              <p className="mt-4 max-w-2xl text-muted-foreground">
+                Tech, apparel, wellness, and travel gear for how you live
+              </p>
+            </div>
+            <div
+              className={`
+              grid grid-cols-1 gap-6
+              sm:grid-cols-2
+              lg:grid-cols-3
+              xl:grid-cols-4
+            `}
+            >
+              <FeaturedProductsSection products={featuredProducts} />
+            </div>
+            <div className="mt-12 flex justify-center">
+              <Link href="/products">
+                <Button
+                  className="group h-12 px-8 text-sm tracking-wider uppercase"
+                  size="lg"
+                  variant="outline"
+                >
+                  View all products
+                  <ArrowRight
+                    className={`
+                    ml-2 h-4 w-4 transition-transform duration-300
+                    group-hover:translate-x-1
+                  `}
+                  />
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </section>
+
         {/* Brand statement — immediate, no data needed */}
         <section
           className={`
@@ -671,84 +734,6 @@ export default async function HomePage() {
               )}
             </div>
           </PageContainer>
-        </section>
-
-        {/* Thin divider */}
-        <div
-          className={`
-          mx-auto h-px w-full max-w-7xl bg-gradient-to-r from-transparent
-          via-border to-transparent
-        `}
-        />
-
-        {/* Featured products — streamed (needs products API) */}
-        <section
-          className={`
-          bg-background py-20
-          md:py-28
-        `}
-        >
-          <div
-            className={`
-            container mx-auto max-w-7xl px-4
-            sm:px-6
-            lg:px-8
-          `}
-          >
-            <div className="mb-12 flex flex-col items-center text-center">
-              <p
-                className={`
-                text-xs font-medium tracking-[0.2em] text-primary uppercase
-              `}
-              >
-                Staff picks
-              </p>
-              <h2
-                className={`
-                font-heading mt-3 text-3xl font-bold tracking-tight
-                text-foreground
-                md:text-4xl
-              `}
-              >
-                Featured products
-              </h2>
-              <div
-                className={`
-                mt-3 h-0.5 w-16 bg-gradient-to-r from-primary to-primary/30
-              `}
-              />
-              <p className="mt-4 max-w-2xl text-muted-foreground">
-                Tech, apparel, wellness, and travel gear for how you live
-              </p>
-            </div>
-            <div
-              className={`
-              grid grid-cols-1 gap-6
-              sm:grid-cols-2
-              lg:grid-cols-3
-              xl:grid-cols-4
-            `}
-            >
-              <FeaturedProductsSection products={featuredProducts} />
-            </div>
-            <div className="mt-12 flex justify-center">
-              <Link href="/products">
-                <Button
-                  className="group h-12 px-8 text-sm tracking-wider uppercase"
-                  size="lg"
-                  variant="outline"
-                >
-                  View all products
-                  <ArrowRight
-                    className={`
-                    ml-2 h-4 w-4 transition-transform duration-300
-                    group-hover:translate-x-1
-                  `}
-                  />
-                </Button>
-              </Link>
-            </div>
-          </div>
         </section>
 
         {/* Why choose us — immediate, no data needed */}
