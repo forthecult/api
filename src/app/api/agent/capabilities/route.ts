@@ -48,7 +48,7 @@ export async function GET() {
         "View product details including variants (size, color)",
         "Estimate cart totals before checkout",
         "Create orders with card or crypto payment",
-        "x402 autonomous checkout (USDC on Solana) — fully agent-driven, no wallet popups",
+        "x402 checkout (USDC on Solana) — fully agent-driven, no wallet popups",
         "Track order status in real-time",
         "Get shipping estimates by country",
         "Agent identity: include X-Moltbook-Identity header to link orders to your agent. See /api/agent/me for details.",
@@ -187,7 +187,7 @@ export async function GET() {
         checkout: "POST /api/checkout",
         checkoutX402: {
           endpoint: "POST /api/checkout/x402",
-          description: "x402 autonomous checkout — returns 402 with payment requirements, retry with X-PAYMENT header",
+          description: "x402 checkout — returns 402 with payment requirements, retry with X-PAYMENT header",
         },
         shop: {
           endpoint: "POST /api/agent/shop",
@@ -268,7 +268,7 @@ export async function GET() {
           },
         ],
         x402Flow: {
-          description: "Autonomous checkout via x402 protocol (USDC on Solana)",
+          description: "x402 checkout via HTTP 402 protocol (USDC on Solana)",
           steps: [
             {
               action: "Create order (returns 402)",

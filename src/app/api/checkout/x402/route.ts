@@ -105,7 +105,7 @@ function buildX402PaymentRequirements(
 }
 
 /**
- * x402 autonomous checkout endpoint.
+ * x402 checkout endpoint.
  * POST /api/checkout/x402
  *
  * Flow:
