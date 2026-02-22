@@ -47,6 +47,7 @@ interface CreateEthOrderBody {
   couponCode?: string;
   email: string;
   emailMarketingConsent?: boolean;
+  memberTier?: number;
   orderItems: {
     productId: string;
     productVariantId?: string;
@@ -94,6 +95,7 @@ export async function POST(request: NextRequest) {
       couponCode,
       email,
       emailMarketingConsent,
+      memberTier,
       orderItems: rawItems,
       shipping,
       shippingFeeCents = 0,
@@ -196,6 +198,7 @@ export async function POST(request: NextRequest) {
           productId: i.productId,
           quantity: i.quantity,
         })),
+        memberTier: memberTier ?? undefined,
         paymentMethodKey,
         productIds,
         shippingFeeCents: shippingRounded,

@@ -20,7 +20,12 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 import { db } from "~/db";
-import { accountTable, sessionTable, userTable } from "~/db/schema";
+import {
+  accountTable,
+  sessionTable,
+  solanaWalletStakeClaimedTable,
+  userTable,
+} from "~/db/schema";
 import { getCurrentUser } from "~/lib/auth";
 import { createId } from "@paralleldrive/cuid2";
 
@@ -60,6 +65,26 @@ export async function POST(request: Request) {
         ),
       )
       .limit(1);
+
+    // wallet unlinked after staking can only be re-linked by the same user
+    const stakeClaimed = await db
+      .select({ userId: solanaWalletStakeClaimedTable.userId })
+      .from(solanaWalletStakeClaimedTable)
+      .where(eq(solanaWalletStakeClaimedTable.wallet, wallet))
+      .limit(1);
+    if (stakeClaimed.length > 0) {
+      const claimedBy = stakeClaimed[0]!.userId;
+      if (!user?.id || user.id !== claimedBy) {
+        return NextResponse.json(
+          {
+            error:
+              "This wallet was previously used for staking and cannot be linked to another account.",
+            linked: false,
+          },
+          { status: 409 },
+        );
+      }
+    }
 
     // if user is logged in, try to link the wallet
     if (user?.id) {

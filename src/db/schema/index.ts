@@ -2,6 +2,8 @@ export * from "./addresses/relations";
 export * from "./addresses/tables";
 export * from "./addresses/types";
 
+export * from "./admin-membership-grant/tables";
+
 export * from "./affiliates/relations";
 export * from "./affiliates/tables";
 
@@ -60,6 +62,7 @@ export * from "./size-charts/relations";
 export * from "./size-charts/tables";
 
 export * from "./size-charts/types";
+export * from "./solana-wallet-stake-claimed/tables";
 export * from "./support-chat/relations";
 
 export * from "./support-chat/tables";

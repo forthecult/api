@@ -69,6 +69,8 @@ export const createOrderSchema = z.object({
   userId: z.string().nullable().optional(),
   // Staking wallet for CULT member tier discounts (stacked with coupon/affiliate).
   wallet: z.string().trim().max(64).optional(),
+  // When wallet is not sent (e.g. user unlinked), tier 1–3 from tier history so tier discounts still apply.
+  memberTier: z.number().int().min(1).max(3).optional(),
 });
 
 export type CreateOrderInput = z.infer<typeof createOrderSchema>;

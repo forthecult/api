@@ -20,6 +20,10 @@ export interface UseCouponsArgs {
     quantity?: number;
   }[];
   /**
+   * When wallet is not connected (e.g. user unlinked), tier 1–3 from /api/user/membership so tier discounts still apply in UI and API.
+   */
+  memberTier?: null | number;
+  /**
    * The selected payment method key (from PAYMENT_METHOD_DEFAULTS).
    * Used to match automatic discounts with a payment method restriction.
    * e.g. "crypto_troll", "crypto_solana", "stripe", etc.
@@ -50,6 +54,7 @@ export interface UseCouponsResult {
 
 export function useCoupons({
   items,
+  memberTier,
   paymentMethodKey,
   shippingCents,
   subtotal,
@@ -170,6 +175,7 @@ export function useCoupons({
         shippingFeeCents: Math.round(shippingCents),
         subtotalCents: Math.round(subtotal * 100),
         wallet: wallet?.trim() || undefined,
+        ...(wallet?.trim() ? {} : { memberTier: memberTier != null && memberTier >= 1 && memberTier <= 3 ? memberTier : undefined }),
       }),
       credentials: "include",
       headers: { "Content-Type": "application/json" },
@@ -227,6 +233,7 @@ export function useCoupons({
     shippingCents,
     paymentMethodKey,
     wallet,
+    memberTier,
     discountEvalKey,
   ]);
 

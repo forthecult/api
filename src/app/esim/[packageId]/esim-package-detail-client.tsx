@@ -112,11 +112,15 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState(false);
   const [guestEmail, setGuestEmail] = useState("");
-  /** When user selects a payment method with an automatic eSIM discount (e.g. Seeker). */
+  /** When user selects a payment method with an automatic eSIM discount (e.g. Seeker) or tier discount. */
   const [discountPreview, setDiscountPreview] = useState<{
     discountCents: number;
     totalAfterDiscountCents: number;
   } | null>(null);
+  /** Linked Solana wallet for tier-based discount (from /api/user/membership). */
+  const [memberWallet, setMemberWallet] = useState<null | string>(null);
+  /** Member tier (1–3) when no wallet linked, from tier history (from /api/user/membership). */
+  const [memberTier, setMemberTier] = useState<null | number>(null);
 
   // Visibility flags from admin settings
   const showCard = paymentVisibility?.creditCard !== false;
@@ -366,7 +370,37 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
     return null;
   }, [resolvedPayment]);
 
-  // Fetch automatic discount preview when package and payment method are set (e.g. 5% with Seeker).
+  // Fetch membership (wallet + tier) for tier-based discount when user is logged in
+  useEffect(() => {
+    if (!user?.id) {
+      setMemberWallet(null);
+      setMemberTier(null);
+      return;
+    }
+    let cancelled = false;
+    fetch("/api/user/membership", { credentials: "include" })
+      .then((r) => r.json())
+      .then(
+        (data: { memberTier?: number; wallet?: string } | null) => {
+          if (cancelled) return;
+          setMemberWallet(data?.wallet ?? null);
+          setMemberTier(
+            typeof data?.memberTier === "number" && data.memberTier >= 1 && data.memberTier <= 3
+              ? data.memberTier
+              : null,
+          );
+        },
+      )
+      .catch(() => {
+        if (!cancelled) {
+          setMemberWallet(null);
+          setMemberTier(null);
+        }
+      });
+    return () => { cancelled = true; };
+  }, [user?.id]);
+
+  // Fetch automatic discount preview when package and payment method are set (includes tier discount when wallet is present).
   useEffect(() => {
     if (!pkg || !paymentMethodKey) {
       setDiscountPreview(null);
@@ -378,11 +412,13 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
     fetch("/api/checkout/coupons/automatic", {
       body: JSON.stringify({
         items: [{ priceCents: subtotalCents, productId, quantity: 1 }],
+        memberTier: memberWallet ? undefined : memberTier ?? undefined,
         paymentMethodKey,
         productCount: 1,
         productIds: [productId],
         shippingFeeCents: 0,
         subtotalCents,
+        wallet: memberWallet ?? undefined,
       }),
       credentials: "include",
       headers: { "Content-Type": "application/json" },
@@ -416,7 +452,7 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
           setDiscountPreview(null);
       });
     return () => ac.abort();
-  }, [pkg, packageId, paymentMethodKey]);
+  }, [pkg, packageId, paymentMethodKey, memberWallet, memberTier]);
 
   const handlePurchase = useCallback(async () => {
     if (!pkg) return;

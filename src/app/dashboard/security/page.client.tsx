@@ -267,10 +267,24 @@ export function SecurityPageClient() {
     if (!canUnlink) return;
     setUnlinkingId(id ?? accountId);
     try {
-      const res = await authClient.unlinkAccount({ accountId, providerId });
-      if (res.error) {
-        setError(res.error.message ?? "Failed to unlink");
-        return;
+      if (providerId === "solana") {
+        const res = await fetch("/api/auth/unlink-solana-wallet", {
+          body: JSON.stringify({ accountId }),
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          method: "POST",
+        });
+        const data = (await res.json()) as { error?: string };
+        if (!res.ok) {
+          setError(data.error ?? "Failed to unlink");
+          return;
+        }
+      } else {
+        const res = await authClient.unlinkAccount({ accountId, providerId });
+        if (res.error) {
+          setError(res.error.message ?? "Failed to unlink");
+          return;
+        }
       }
       await fetchAccounts();
     } finally {

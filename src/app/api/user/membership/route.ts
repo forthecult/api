@@ -11,7 +11,11 @@ import { auth } from "~/lib/auth";
 import { db } from "~/db";
 import { accountTable } from "~/db/schema";
 import { userWalletsTable } from "~/db/schema/wallets/tables";
-import { getMemberTierForWallet } from "~/lib/get-member-tier";
+import {
+  getAdminGrantedTier,
+  getMemberTierForUser,
+  getMemberTierForWallet,
+} from "~/lib/get-member-tier";
 
 const TIER_NAMES: Record<number, string> = { 1: "APEX", 2: "PRIME", 3: "BASE" };
 
@@ -53,17 +57,26 @@ export async function GET(request: NextRequest) {
     }
 
     const wallet = solanaAddresses[0] ?? null;
-    if (!wallet) {
-      return NextResponse.json({ memberTier: null, tierName: null, wallet: null });
+    let memberTier: number | null;
+    if (wallet) {
+      const [walletTier, adminTier] = await Promise.all([
+        getMemberTierForWallet(wallet),
+        getAdminGrantedTier(userId),
+      ]);
+      // best tier: lower number = better; admin grant can supplement or override
+      if (walletTier != null && adminTier != null)
+        memberTier = Math.min(walletTier, adminTier);
+      else memberTier = walletTier ?? adminTier ?? null;
+    } else {
+      memberTier = await getMemberTierForUser(userId);
     }
-
-    const memberTier = await getMemberTierForWallet(wallet);
-    const tierName = memberTier != null ? (TIER_NAMES[memberTier] ?? `Tier ${memberTier}`) : null;
+    const tierName =
+      memberTier != null ? (TIER_NAMES[memberTier] ?? `Tier ${memberTier}`) : null;
 
     return NextResponse.json({
       memberTier,
       tierName,
-      wallet,
+      wallet: wallet ?? null,
     });
   } catch (e) {
     console.error("[api/user/membership] error:", e);

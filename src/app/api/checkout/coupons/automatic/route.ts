@@ -48,12 +48,22 @@ const validateSchema = {
     typeof v === "number" && Number.isFinite(v) && v >= 0 ? Math.round(v) : 0,
   subtotalCents: (v: unknown) =>
     typeof v === "number" && Number.isFinite(v) && v >= 0 ? Math.round(v) : 0,
+  /** Optional tier (1–3) when wallet is not sent; e.g. from tier history after user unlinked wallet. */
+  memberTier: (v: unknown) =>
+    typeof v === "number" &&
+    Number.isFinite(v) &&
+    v >= 1 &&
+    v <= 3 &&
+    Math.round(v) === v
+      ? Math.round(v)
+      : undefined,
 };
 
 /**
  * POST /api/checkout/coupons/automatic
  * Public API: get the best automatic discount for the current cart. Returns discount info if one applies.
- * Optional body.wallet: when provided, member tier is resolved and tier-based discounts are applied and stacked with the automatic coupon.
+ * Optional body.wallet: when provided, member tier is resolved from chain and tier discounts applied.
+ * Optional body.memberTier: when wallet is not provided (e.g. user unlinked), send tier 1–3 from /api/user/membership so tier discounts still apply.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -72,6 +82,7 @@ export async function POST(request: NextRequest) {
       typeof body?.wallet === "string" && body.wallet.trim().length > 0
         ? body.wallet.trim()
         : undefined;
+    const memberTierParam = validateSchema.memberTier(body?.memberTier);
 
     const items = validateSchema.items(body?.items);
 
@@ -96,7 +107,7 @@ export async function POST(request: NextRequest) {
 
     const orderTotalCents = subtotalCents + shippingFeeCents;
 
-    // Resolve tier-based discounts when wallet is provided (stack with automatic coupon)
+    // Resolve tier-based discounts: from wallet (live stake) or from body.memberTier (e.g. tier history when user unlinked)
     let tierDiscounts: {
       discountCents: number;
       id: string;
@@ -104,17 +115,20 @@ export async function POST(request: NextRequest) {
       scope: string;
     }[] = [];
     let tierDiscountTotalCents = 0;
+    let resolvedTier: number | null = null;
     if (wallet) {
-      const memberTier = await getMemberTierForWallet(wallet);
-      if (memberTier != null) {
-        const tierResult = await resolveTierDiscountsForCheckout(memberTier, {
-          items: items.length > 0 ? items : [],
-          shippingFeeCents,
-          subtotalCents,
-        });
-        tierDiscounts = tierResult.discounts;
-        tierDiscountTotalCents = tierResult.totalCents;
-      }
+      resolvedTier = await getMemberTierForWallet(wallet);
+    } else if (memberTierParam != null) {
+      resolvedTier = memberTierParam;
+    }
+    if (resolvedTier != null) {
+      const tierResult = await resolveTierDiscountsForCheckout(resolvedTier, {
+        items: items.length > 0 ? items : [],
+        shippingFeeCents,
+        subtotalCents,
+      });
+      tierDiscounts = tierResult.discounts;
+      tierDiscountTotalCents = tierResult.totalCents;
     }
 
     const result = await resolveAutomaticCouponForCheckout(input);
@@ -141,6 +155,7 @@ export async function POST(request: NextRequest) {
     if (useTierOnly) {
       return NextResponse.json({
         applied: true,
+        discountCents: tierDiscountTotalCents,
         tierDiscounts,
         tierDiscountTotalCents,
         totalAfterDiscountCents: totalWithTierOnly,

@@ -515,14 +515,17 @@ export async function resolveDiscounts(params: {
   /** Tolerance in cents when matching client total to automatic-coupon total (default 100). */
   toleranceCents?: number;
   userId?: null | string;
-  /** Staking wallet for member tier; when set, tier-based discounts are applied and stacked with coupon/affiliate. */
+  /** Staking wallet for member tier; when set, tier is resolved from chain. */
   wallet?: null | string;
+  /** When wallet is not set (e.g. user unlinked), tier 1–3 from /api/user/membership (tier history) so tier discounts still apply. */
+  memberTier?: null | number;
 }): Promise<DiscountResult> {
   const {
     affiliateCode,
     clientTotalCents,
     couponCode,
     items,
+    memberTier: memberTierParam,
     paymentMethodKey,
     productIds,
     shippingFeeCents,
@@ -579,19 +582,19 @@ export async function resolveDiscounts(params: {
     });
     if (automaticResult) {
       let expectedFromAutomatic = automaticResult.totalAfterDiscountCents;
-      if (wallet?.trim()) {
-        const memberTier = await getMemberTierForWallet(wallet.trim());
-        if (memberTier != null) {
-          const tierResult = await resolveTierDiscountsForCheckout(memberTier, {
-            items: items ?? [],
-            shippingFeeCents,
-            subtotalCents,
-          });
-          expectedFromAutomatic = Math.max(
-            0,
-            expectedFromAutomatic - tierResult.totalCents,
-          );
-        }
+      const resolvedTier = wallet?.trim()
+        ? await getMemberTierForWallet(wallet.trim())
+        : memberTierParam ?? null;
+      if (resolvedTier != null) {
+        const tierResult = await resolveTierDiscountsForCheckout(resolvedTier, {
+          items: items ?? [],
+          shippingFeeCents,
+          subtotalCents,
+        });
+        expectedFromAutomatic = Math.max(
+          0,
+          expectedFromAutomatic - tierResult.totalCents,
+        );
       }
       const expectedRounded = Math.round(expectedFromAutomatic);
       if (
@@ -626,23 +629,23 @@ export async function resolveDiscounts(params: {
   }
 
   // when member has tier discounts: use the better of coupon vs tier (tier overrides when it gives a lower total)
-  if (wallet?.trim()) {
-    const memberTier = await getMemberTierForWallet(wallet.trim());
-    if (memberTier != null) {
-      const tierResult = await resolveTierDiscountsForCheckout(memberTier, {
-        items: items ?? [],
-        shippingFeeCents,
-        subtotalCents,
-      });
-      if (tierResult.totalCents > 0) {
-        const totalWithTierOnly = Math.max(
-          0,
-          baseTotal - tierResult.totalCents,
-        );
-        if (totalWithTierOnly <= expectedTotal) {
-          expectedTotal = totalWithTierOnly;
-          couponResult = null;
-        }
+  const resolvedTier = wallet?.trim()
+    ? await getMemberTierForWallet(wallet.trim())
+    : memberTierParam ?? null;
+  if (resolvedTier != null) {
+    const tierResult = await resolveTierDiscountsForCheckout(resolvedTier, {
+      items: items ?? [],
+      shippingFeeCents,
+      subtotalCents,
+    });
+    if (tierResult.totalCents > 0) {
+      const totalWithTierOnly = Math.max(
+        0,
+        baseTotal - tierResult.totalCents,
+      );
+      if (totalWithTierOnly <= expectedTotal) {
+        expectedTotal = totalWithTierOnly;
+        couponResult = null;
       }
     }
   }

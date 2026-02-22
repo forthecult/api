@@ -5,11 +5,11 @@
  */
 
 import { Connection } from "@solana/web3.js";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, gt } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
-import { accountTable } from "~/db/schema";
+import { accountTable, adminMembershipGrantTable } from "~/db/schema";
 import { membershipTierHistoryTable } from "~/db/schema/membership-tier-history/tables";
 import { userWalletsTable } from "~/db/schema/wallets/tables";
 import { adminAuthFailureResponse, getAdminAuth } from "~/lib/admin-api-auth";
@@ -44,6 +44,8 @@ export interface TierPeriod {
 }
 
 export interface MembershipResponse {
+  /** Admin-granted membership (active = expiresAt > now). */
+  adminGrant: null | { expiresAt: string; tier: number };
   bestTier: null | number;
   history: {
     periods: TierPeriod[];
@@ -126,9 +128,34 @@ export async function GET(
     }
     const wallets = Array.from(allWalletAddresses).map((address) => ({ address }));
 
+    const now = new Date();
+    const adminGrantRow = await db
+      .select({
+        expiresAt: adminMembershipGrantTable.expiresAt,
+        tier: adminMembershipGrantTable.tier,
+      })
+      .from(adminMembershipGrantTable)
+      .where(
+        and(
+          eq(adminMembershipGrantTable.userId, userId),
+          gt(adminMembershipGrantTable.expiresAt, now),
+        ),
+      )
+      .limit(1);
+    const adminGrant =
+      adminGrantRow.length > 0 &&
+      adminGrantRow[0]!.tier >= 1 &&
+      adminGrantRow[0]!.tier <= 3
+        ? {
+            expiresAt: adminGrantRow[0]!.expiresAt.toISOString(),
+            tier: adminGrantRow[0]!.tier,
+          }
+        : null;
+
     if (wallets.length === 0) {
       return NextResponse.json({
-        bestTier: null,
+        adminGrant,
+        bestTier: adminGrant?.tier ?? null,
         history: { periods: [], rows: [] },
         memberSince: null,
         tokenSymbol: token.symbol,
@@ -198,6 +225,10 @@ export async function GET(
       });
     }
 
+    if (adminGrant && (bestTier === null || adminGrant.tier < bestTier)) {
+      bestTier = adminGrant.tier;
+    }
+
     // Tier history from daily snapshots (membership_tier_history)
     const historyRows = await db
       .select({
@@ -233,6 +264,7 @@ export async function GET(
     const periods = buildTierPeriods(bestTierByDate);
 
     return NextResponse.json({
+      adminGrant,
       bestTier,
       history: { periods, rows },
       memberSince:

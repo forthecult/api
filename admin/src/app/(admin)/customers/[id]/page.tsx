@@ -162,8 +162,9 @@ export default function AdminCustomerDetailPage() {
   const [orders, setOrders] = useState<CustomerOrder[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
 
-  // Membership (tier + staking from on-chain + tier history from snapshots)
+  // Membership (tier + staking from on-chain + tier history from snapshots + admin grant)
   const [membership, setMembership] = useState<{
+    adminGrant: null | { expiresAt: string; tier: number };
     bestTier: null | number;
     history: {
       periods: { startDate: string; endDate: string; tier: number }[];
@@ -185,6 +186,14 @@ export default function AdminCustomerDetailPage() {
     }[];
   } | null>(null);
   const [membershipLoading, setMembershipLoading] = useState(false);
+  const [grantDuration, setGrantDuration] = useState<"30d" | "1y">("30d");
+  const [grantTier, setGrantTier] = useState<1 | 2 | 3>(3);
+  const [grantLoading, setGrantLoading] = useState(false);
+  const [grantMessage, setGrantMessage] = useState<null | {
+    text: string;
+    type: "error" | "success";
+  }>(null);
+  const [revokeLoading, setRevokeLoading] = useState(false);
 
   // Comments
   const [comments, setComments] = useState<CustomerComment[]>([]);
@@ -409,6 +418,7 @@ export default function AdminCustomerDetailPage() {
       );
       if (!res.ok) throw new Error("Failed to load membership");
       const data = (await res.json()) as {
+        adminGrant: null | { expiresAt: string; tier: number };
         bestTier: null | number;
         history: {
           periods: { startDate: string; endDate: string; tier: number }[];
@@ -436,6 +446,62 @@ export default function AdminCustomerDetailPage() {
       setMembershipLoading(false);
     }
   }, [id]);
+
+  const handleGrantMembership = useCallback(async () => {
+    if (!id) return;
+    setGrantMessage(null);
+    setGrantLoading(true);
+    try {
+      const res = await fetch(
+        `${API_BASE}/api/admin/customers/${id}/membership/grant`,
+        {
+          body: JSON.stringify({ duration: grantDuration, tier: grantTier }),
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          method: "POST",
+        },
+      );
+      const data = (await res.json()) as { error?: string };
+      if (!res.ok) {
+        setGrantMessage({
+          text: data.error ?? "Failed to grant membership",
+          type: "error",
+        });
+        return;
+      }
+      setGrantMessage({
+        text: `Membership granted (Tier ${grantTier}) for ${grantDuration === "1y" ? "1 year" : "30 days"}.`,
+        type: "success",
+      });
+      void fetchMembership();
+    } finally {
+      setGrantLoading(false);
+    }
+  }, [id, grantDuration, grantTier, fetchMembership]);
+
+  const handleRemoveMembership = useCallback(async () => {
+    if (!id) return;
+    setGrantMessage(null);
+    setRevokeLoading(true);
+    try {
+      const res = await fetch(
+        `${API_BASE}/api/admin/customers/${id}/membership/grant`,
+        { credentials: "include", method: "DELETE" },
+      );
+      if (!res.ok) {
+        const data = (await res.json()) as { error?: string };
+        setGrantMessage({
+          text: data.error ?? "Failed to remove membership",
+          type: "error",
+        });
+        return;
+      }
+      setGrantMessage({ text: "Admin membership removed.", type: "success" });
+      void fetchMembership();
+    } finally {
+      setRevokeLoading(false);
+    }
+  }, [id, fetchMembership]);
 
   useEffect(() => {
     if (customer) {
@@ -1308,8 +1374,8 @@ export default function AdminCustomerDetailPage() {
             Membership & staking
           </CardTitle>
           <p className="text-sm text-muted-foreground">
-            Tier and lock from on-chain stake. Tier history is recorded daily
-            and shown below.
+            Tier and lock from on-chain stake. Tier history is recorded daily.
+            You can grant or remove admin-granted membership (time-limited).
           </p>
         </CardHeader>
         <CardContent>
@@ -1353,6 +1419,104 @@ export default function AdminCustomerDetailPage() {
                   </p>
                 </div>
               </div>
+
+              {/* Admin-granted membership */}
+              <div className="space-y-3 border-t pt-4">
+                <span
+                  className={`
+                    text-xs font-medium tracking-wider text-muted-foreground
+                    uppercase
+                  `}
+                >
+                  Admin-granted membership
+                </span>
+                {grantMessage && (
+                  <p
+                    className={cn(
+                      "rounded-md border px-3 py-2 text-sm",
+                      grantMessage.type === "success"
+                        ? "border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950/30 dark:text-green-200"
+                        : "border-red-200 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-950/30 dark:text-red-200",
+                    )}
+                  >
+                    {grantMessage.text}
+                  </p>
+                )}
+                {membership.adminGrant ? (
+                  <div className="flex flex-wrap items-center gap-3">
+                    <p className="text-sm">
+                      Tier {membership.adminGrant.tier} until{" "}
+                      {new Date(
+                        membership.adminGrant.expiresAt,
+                      ).toLocaleDateString(undefined, {
+                        dateStyle: "medium",
+                      })}
+                    </p>
+                    <Button
+                      disabled={revokeLoading}
+                      onClick={() => void handleRemoveMembership()}
+                      size="sm"
+                      type="button"
+                      variant="destructive"
+                    >
+                      {revokeLoading ? "Removing…" : "Remove membership"}
+                    </Button>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    No admin grant. Use the form below to grant membership.
+                  </p>
+                )}
+                <div className="flex flex-wrap items-end gap-3">
+                  <label className="flex flex-col gap-1">
+                    <span className="text-xs text-muted-foreground">
+                      Duration
+                    </span>
+                    <select
+                      className={inputClass}
+                      onChange={(e) =>
+                        setGrantDuration(
+                          e.target.value === "1y" ? "1y" : "30d",
+                        )
+                      }
+                      value={grantDuration}
+                    >
+                      <option value="30d">30 days</option>
+                      <option value="1y">1 year</option>
+                    </select>
+                  </label>
+                  <label className="flex flex-col gap-1">
+                    <span className="text-xs text-muted-foreground">
+                      Tier
+                    </span>
+                    <select
+                      className={inputClass}
+                      onChange={(e) =>
+                        setGrantTier(
+                          Math.min(
+                            3,
+                            Math.max(1, parseInt(e.target.value, 10) || 3),
+                          ) as 1 | 2 | 3
+                        )
+                      }
+                      value={grantTier}
+                    >
+                      <option value={1}>1 (APEX)</option>
+                      <option value={2}>2 (PRIME)</option>
+                      <option value={3}>3 (BASE)</option>
+                    </select>
+                  </label>
+                  <Button
+                    disabled={grantLoading}
+                    onClick={() => void handleGrantMembership()}
+                    size="sm"
+                    type="button"
+                  >
+                    {grantLoading ? "Granting…" : "Grant membership"}
+                  </Button>
+                </div>
+              </div>
+
               {membership.wallets.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
                   No Solana wallet linked. Customer can link a wallet in their

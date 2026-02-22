@@ -183,6 +183,8 @@ export function CheckoutClient() {
   // publicKey: null via getter) instead of useWallet() which console.errors.
   // On /checkout/[invoiceId] a full provider IS present.
   const wallet = useOptionalWalletAddress();
+  /** When user is logged in but has no connected wallet (e.g. unlinked), tier from history for order payload. */
+  const [memberTierFromApi, setMemberTierFromApi] = useState<null | number>(null);
   const isMobile = useIsMobile();
   const isLoggedIn = Boolean(user?.email);
   const isDigitalOnly =
@@ -214,6 +216,28 @@ export function CheckoutClient() {
   useEffect(() => {
     preloadStripe();
   }, []);
+
+  // When logged in and no connected wallet, fetch tier from membership (tier history) so create-order can apply tier discount
+  useEffect(() => {
+    if (!user?.id || wallet) {
+      setMemberTierFromApi(null);
+      return;
+    }
+    let cancelled = false;
+    fetch("/api/user/membership", { credentials: "include" })
+      .then((r) => r.json())
+      .then((data: { memberTier?: number } | null) => {
+        if (cancelled) return;
+        const t = data?.memberTier;
+        setMemberTierFromApi(
+          typeof t === "number" && t >= 1 && t <= 3 ? t : null,
+        );
+      })
+      .catch(() => {
+        if (!cancelled) setMemberTierFromApi(null);
+      });
+    return () => { cancelled = true; };
+  }, [user?.id, wallet]);
 
   const [shipping, setShipping] = useState<ShippingUpdate>({
     canShipToCountry: true,
@@ -266,6 +290,7 @@ export function CheckoutClient() {
 
   const coupons = useCoupons({
     items,
+    memberTier: memberTierFromApi ?? undefined,
     paymentMethodKey: selectedPaymentMethodKey,
     shippingCents,
     subtotal,
@@ -335,7 +360,7 @@ export function CheckoutClient() {
         ...getTelegramOrderPayload(),
         ...getAffiliatePayload(),
         ...(appliedCoupon?.code ? { couponCode: appliedCoupon.code } : {}),
-        ...(wallet ? { wallet } : {}),
+        ...(wallet ? { wallet } : memberTierFromApi != null ? { memberTier: memberTierFromApi } : {}),
       },
       email,
       emailNewsVal,
@@ -357,6 +382,7 @@ export function CheckoutClient() {
     userReceiveSmsMarketing,
     appliedCoupon,
     wallet,
+    memberTierFromApi,
     tierDiscountTotalCents,
   ]);
 

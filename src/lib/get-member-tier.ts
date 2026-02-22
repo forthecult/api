@@ -1,11 +1,17 @@
 /**
- * Server-only: resolve CULT member tier (1–3) from a staking wallet.
+ * Server-only: resolve CULT member tier (1–3) from a staking wallet or from tier history (when wallet is unlinked).
  * Returns null if staking is not configured or wallet has no stake.
  * Falls back to default token thresholds if market data is unavailable.
  */
 
 import { Connection } from "@solana/web3.js";
+import { and, desc, eq, gt } from "drizzle-orm";
 
+import { db } from "~/db";
+import {
+  adminMembershipGrantTable,
+  membershipTierHistoryTable,
+} from "~/db/schema";
 import { fetchUserStake, getStakingProgramId } from "~/lib/cult-staking";
 import { fetchTokenMarketData } from "~/lib/market-cap";
 import { computeTierPricing } from "~/lib/membership-pricing";
@@ -68,6 +74,61 @@ export async function getMemberTierForWallet(
   if (stakedHuman >= FALLBACK_TOKEN_THRESHOLDS[3]) return 3;
 
   return null;
+}
+
+/**
+ * Active admin-granted tier for a user (expiresAt > now). Returns null if none or expired.
+ */
+export async function getAdminGrantedTier(
+  userId: string,
+): Promise<null | number> {
+  if (!userId?.trim()) return null;
+  const now = new Date();
+  const row = await db
+    .select({ tier: adminMembershipGrantTable.tier })
+    .from(adminMembershipGrantTable)
+    .where(
+      and(
+        eq(adminMembershipGrantTable.userId, userId),
+        gt(adminMembershipGrantTable.expiresAt, now),
+      ),
+    )
+    .limit(1);
+  const tier = row[0]?.tier;
+  return typeof tier === "number" && tier >= 1 && tier <= 3 ? tier : null;
+}
+
+/**
+ * Resolve member tier from the last known snapshot (membership_tier_history).
+ * Used when the user is logged in but has no linked wallet (e.g. they staked then unlinked).
+ * Returns the best tier from the most recent snapshot date for this user.
+ * Admin-granted membership (active) takes precedence over tier history.
+ */
+export async function getMemberTierForUser(
+  userId: string,
+): Promise<null | number> {
+  if (!userId?.trim()) return null;
+  const adminTier = await getAdminGrantedTier(userId);
+  if (adminTier != null) return adminTier;
+  const rows = await db
+    .select({
+      snapshotDate: membershipTierHistoryTable.snapshotDate,
+      tier: membershipTierHistoryTable.tier,
+    })
+    .from(membershipTierHistoryTable)
+    .where(eq(membershipTierHistoryTable.userId, userId))
+    .orderBy(desc(membershipTierHistoryTable.snapshotDate))
+    .limit(100);
+
+  if (rows.length === 0) return null;
+  const mostRecentDate = rows[0]!.snapshotDate;
+  let bestTier: null | number = null;
+  for (const r of rows) {
+    if (r.snapshotDate !== mostRecentDate) break;
+    if (r.tier != null && (bestTier === null || r.tier < bestTier))
+      bestTier = r.tier;
+  }
+  return bestTier;
 }
 
 function detectTierFromPricing(

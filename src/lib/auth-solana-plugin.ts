@@ -15,7 +15,11 @@ import nacl from "tweetnacl";
 import { z } from "zod";
 
 import { db } from "~/db";
-import { accountTable, userTable } from "~/db/schema";
+import {
+  accountTable,
+  solanaWalletStakeClaimedTable,
+  userTable,
+} from "~/db/schema";
 import { withFkRetry } from "~/lib/auth-db-retry";
 import { linkOrdersToUserByWallet } from "~/lib/link-orders-to-user";
 
@@ -174,6 +178,18 @@ export function solanaAuthPlugin() {
                   message: "This wallet is already linked to another account",
                 });
               }
+              const sessionUserId = (session.user as { id: string }).id;
+              const stakeClaimed = await db
+                .select({ userId: solanaWalletStakeClaimedTable.userId })
+                .from(solanaWalletStakeClaimedTable)
+                .where(eq(solanaWalletStakeClaimedTable.wallet, addressTrim))
+                .limit(1);
+              if (stakeClaimed.length > 0 && stakeClaimed[0]!.userId !== sessionUserId) {
+                throw new APIError("BAD_REQUEST", {
+                  message:
+                    "This wallet was previously used for staking and cannot be linked to another account",
+                });
+              }
               await (
                 ctx.context.internalAdapter as {
                   linkAccount: (data: {
@@ -216,6 +232,21 @@ export function solanaAuthPlugin() {
                 model: "user",
                 where: [{ field: "id", value: existingAccount.userId }],
               })) as null | UserRecord;
+            }
+
+            // sign-in with wallet that was unlinked after staking: only the original account can re-link; block creating a new account
+            if (!link && !existingAccount) {
+              const stakeClaimedSignIn = await db
+                .select({ userId: solanaWalletStakeClaimedTable.userId })
+                .from(solanaWalletStakeClaimedTable)
+                .where(eq(solanaWalletStakeClaimedTable.wallet, addressTrim))
+                .limit(1);
+              if (stakeClaimedSignIn.length > 0) {
+                throw new APIError("BAD_REQUEST", {
+                  message:
+                    "This wallet was previously used for staking. Sign in to the account that used it to re-link.",
+                });
+              }
             }
 
             if (!user) {
