@@ -1,6 +1,6 @@
 "use client";
 
-import { Globe, Loader2, MapPin, Search, Signal, Wifi } from "lucide-react";
+import { Globe, Loader2, MapPin, Minus, Plus, Search, Signal, Wifi } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -23,6 +23,8 @@ import { Button } from "~/ui/primitives/button";
 import { Card, CardContent } from "~/ui/primitives/card";
 import { Input } from "~/ui/primitives/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/ui/primitives/tabs";
+
+import { EsimDeviceCompatibilityModal } from "~/app/esim/esim-device-compatibility-modal";
 
 // ---------- Types ----------
 
@@ -560,7 +562,18 @@ export function EsimStorePage() {
   const [filterData, setFilterData] = useState<DataFilter>(() =>
     parseData(searchParams.get("data")),
   );
+  const [deviceCompatibilityOpen, setDeviceCompatibilityOpen] = useState(false);
+  const [faqOpenIds, setFaqOpenIds] = useState<Set<string>>(new Set());
   const restoredFromUrlRef = useRef(false);
+
+  const toggleFaq = (id: string) => {
+    setFaqOpenIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   // Fetch countries
   useEffect(() => {
@@ -1335,7 +1348,114 @@ export function EsimStorePage() {
             </div>
           </div>
         </section>
+
+        {/* FAQ */}
+        <section className="mt-16 border-t border-border pt-12">
+          <h2
+            className={`
+            mb-10 text-center text-3xl font-bold text-[#1A1611]
+            dark:text-[#F5F1EB]
+          `}
+          >
+            Frequently asked questions
+          </h2>
+          <div className="mx-auto max-w-3xl space-y-3">
+            {[
+              {
+                id: "devices",
+                q: "What devices support eSIM?",
+                a: (
+                  <>
+                    eSIMs are compatible with many devices but not all. To
+                    check if you can use eSIMs on your device, please have a
+                    look at our{" "}
+                    <button
+                      className="font-medium text-primary underline hover:no-underline"
+                      onClick={() => setDeviceCompatibilityOpen(true)}
+                      type="button"
+                    >
+                      device compatibility list
+                    </button>
+                    .
+                  </>
+                ),
+              },
+              {
+                id: "use",
+                q: "How do I use my eSIM?",
+                a: "To install the eSIM, a stable internet connection is necessary. You can install your eSIM with QR code or manually. You can access our installation guide after purchase in your account. Consider setting up the eSIM before traveling abroad.",
+              },
+              {
+                id: "many",
+                q: "How many eSIMs can I have?",
+                a: "Some devices allow you to install multiple eSIMs; the number of active eSIMs at the same time can vary depending on the device model. You can continue using your regular SIM card while using an eSIM.",
+              },
+              {
+                id: "phone-number",
+                q: "Does my eSIM come with a phone number?",
+                a: "Data-only eSIM plans do not include a phone number. If you need voice or SMS, look for DATA-VOICE-SMS packages in the store.",
+              },
+              {
+                id: "how-long",
+                q: "How long can I use an eSIM?",
+                a: "Validity depends on the plan you buy (e.g. 7, 14, or 30 days, or longer). Your plan is active from the moment you activate it, so activate when you're ready to use it.",
+              },
+              {
+                id: "data-usage",
+                q: "How can I check my current data usage?",
+                a: "After purchase, you can view your eSIM and data usage in your account under My eSIMs. Your provider may also send usage alerts.",
+              },
+              {
+                id: "hotspot",
+                q: "How do I share data with my eSIM or activate a hotspot?",
+                a: "If your plan and device support it, you can turn on hotspot or tethering in your device settings. Support depends on your phone and the eSIM plan; check your plan details before buying.",
+              },
+              {
+                id: "returns",
+                q: "eSIM returns",
+                a: "eSIMs are digital products. Once activated, they cannot be refunded. If you have not yet activated your eSIM and need a refund, contact us within 14 days of purchase at support@forthecult.store or via our Contact page.",
+              },
+            ].map((faq) => {
+              const isOpen = faqOpenIds.has(faq.id);
+              return (
+                <div
+                  key={faq.id}
+                  className={cn(
+                    "rounded-lg border border-border bg-card transition-colors",
+                    isOpen && "bg-muted/30",
+                  )}
+                >
+                  <button
+                    aria-expanded={isOpen}
+                    className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left font-medium text-foreground"
+                    onClick={() => toggleFaq(faq.id)}
+                    type="button"
+                  >
+                    <span>{faq.q}</span>
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border">
+                      {isOpen ? (
+                        <Minus className="h-4 w-4" />
+                      ) : (
+                        <Plus className="h-4 w-4" />
+                      )}
+                    </span>
+                  </button>
+                  {isOpen && (
+                    <div className="border-t border-border px-5 py-4 text-sm text-muted-foreground">
+                      {faq.a}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </section>
       </div>
+
+      <EsimDeviceCompatibilityModal
+        onOpenChange={setDeviceCompatibilityOpen}
+        open={deviceCompatibilityOpen}
+      />
     </div>
   );
 }

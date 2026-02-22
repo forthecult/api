@@ -97,13 +97,13 @@ const PAYMENT_TITLE: Record<string, string> = {
   whitewhale: "Pay with WhiteWhale (Solana)",
 };
 
-/** Short label for the payment token (for error messages). */
+/** Short label for the payment token (for error messages and display). */
 const TOKEN_LABEL: Record<string, string> = {
   crust: "CRUST",
   cult: "CULT",
   pump: "PUMP",
   seeker: "SKR",
-  solana: "SOL",
+  solana: "SOL (Solana network)",
   soluna: "SOLUNA",
   troll: "TROLL",
   usdc: "USDC",
@@ -791,12 +791,14 @@ export function CryptoPayClient({
             : token === "cult"
               ? "CULT"
               : token === "usdc"
-              ? "USDC"
-              : token === "whitewhale"
-                ? "WhiteWhale"
-                : token === "troll"
-                  ? "TROLL"
-                  : "SOL";
+                ? "USDC"
+                : token === "whitewhale"
+                  ? "WhiteWhale"
+                  : token === "troll"
+                    ? "TROLL"
+                    : token === "solana"
+                      ? "SOL (Solana network)"
+                      : "SOL";
 
   const copyAmount = useCallback(() => {
     void navigator.clipboard.writeText(`${amountDisplayStr} ${amountUnit}`);
@@ -1687,7 +1689,7 @@ export function CryptoPayClient({
                     <div className="space-y-5">
                       <div>
                         <p className="mb-1.5 text-sm text-muted-foreground">
-                          Payment unique address
+                          Pay to
                         </p>
                         <div className="flex flex-wrap items-center gap-2">
                           <code

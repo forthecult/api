@@ -403,8 +403,8 @@ export default function TokenPage() {
             </h2>
             <p className="max-w-3xl text-muted-foreground">
               Stake CULT to unlock tiered membership: first eSIM free, 30% off
-              additional eSIMs, and free shipping at APEX; 25% off at PRIME; 15%
-              off at BASE.
+              additional eSIMs, free shipping, and VPN subscription at APEX;
+              25% off at PRIME; 15% off at BASE.
             </p>
           </div>
 

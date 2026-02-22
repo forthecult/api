@@ -522,7 +522,7 @@ export default async function HomePage() {
                 drops, and early access to new arrivals. This isn&apos;t just a
                 store — it&apos;s a signal.
               </p>
-              <Link href="/signup">
+              <Link href="/membership">
                 <Button
                   className="text-sm tracking-wider uppercase"
                   size="lg"
@@ -542,85 +542,6 @@ export default async function HomePage() {
           via-border to-transparent
         `}
         />
-
-        {/* Lookbook — immediate, no data needed */}
-        <section
-          className={`
-          bg-background py-20
-          md:py-28
-        `}
-        >
-          <PageContainer>
-            <div className="mx-auto max-w-3xl space-y-4 text-center">
-              <p
-                className={`
-                text-xs font-medium tracking-[0.2em] text-primary uppercase
-              `}
-              >
-                Lookbook
-              </p>
-              <h2
-                className={`
-                font-heading text-2xl font-bold tracking-tight text-foreground
-                md:text-3xl
-              `}
-              >
-                Quality that looks good and does good
-              </h2>
-              <p
-                className={`
-                text-muted-foreground
-                md:text-lg
-              `}
-              >
-                What you wear and use should look great and support how you
-                feel. Apparel we&apos;d use ourselves.
-              </p>
-              <Link href="/lookbook">
-                <Button
-                  className="mt-2 text-sm tracking-wider uppercase"
-                  size="lg"
-                  variant="outline"
-                >
-                  View lookbook
-                </Button>
-              </Link>
-            </div>
-            <div className="mx-auto mt-12 max-w-4xl">
-              <Link
-                className={`
-                  group relative block overflow-hidden rounded-lg border
-                  border-border transition-all duration-300
-                  hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5
-                `}
-                href="/lookbook"
-              >
-                <div
-                  className={`
-                  absolute inset-0 z-10 bg-gradient-to-t from-background/60
-                  via-transparent to-transparent
-                `}
-                />
-                <Image
-                  alt="Culture lookbook — premium apparel and lifestyle photography. Photos by George J. Patterson."
-                  className={`
-                    h-auto w-full object-cover transition-transform duration-700
-                    group-hover:scale-[1.02]
-                  `}
-                  height={600}
-                  priority
-                  sizes="(max-width: 896px) 100vw, 900px"
-                  src="/lookbook/culture-lookbook-lifestyle-and-apparel.jpg"
-                  title="Culture lookbook"
-                  width={900}
-                />
-              </Link>
-              <p className="mt-3 text-center text-xs text-muted-foreground">
-                Photos by George J. Patterson
-              </p>
-            </div>
-          </PageContainer>
-        </section>
 
         {/* Featured categories — streamed (needs categories API) */}
         <section
@@ -736,6 +657,93 @@ export default async function HomePage() {
           </PageContainer>
         </section>
 
+        {/* Thin divider */}
+        <div
+          className={`
+          mx-auto h-px w-full max-w-7xl bg-gradient-to-r from-transparent
+          via-border to-transparent
+        `}
+        />
+
+        {/* Lookbook — immediate, no data needed */}
+        <section
+          className={`
+          bg-background py-20
+          md:py-28
+        `}
+        >
+          <PageContainer>
+            <div className="mx-auto max-w-3xl space-y-4 text-center">
+              <p
+                className={`
+                text-xs font-medium tracking-[0.2em] text-primary uppercase
+              `}
+              >
+                Lookbook
+              </p>
+              <h2
+                className={`
+                font-heading text-2xl font-bold tracking-tight text-foreground
+                md:text-3xl
+              `}
+              >
+                Quality that looks good and does good
+              </h2>
+              <p
+                className={`
+                text-muted-foreground
+                md:text-lg
+              `}
+              >
+                What you wear and use should look great and support how you
+                feel. Apparel we&apos;d use ourselves.
+              </p>
+              <Link href="/lookbook">
+                <Button
+                  className="mt-2 text-sm tracking-wider uppercase"
+                  size="lg"
+                  variant="outline"
+                >
+                  View lookbook
+                </Button>
+              </Link>
+            </div>
+            <div className="mx-auto mt-12 max-w-4xl">
+              <Link
+                className={`
+                  group relative block overflow-hidden rounded-lg border
+                  border-border transition-all duration-300
+                  hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5
+                `}
+                href="/lookbook"
+              >
+                <div
+                  className={`
+                  absolute inset-0 z-10 bg-gradient-to-t from-background/60
+                  via-transparent to-transparent
+                `}
+                />
+                <Image
+                  alt="Culture lookbook — premium apparel and lifestyle photography. Photos by George J. Patterson."
+                  className={`
+                    h-auto w-full object-cover transition-transform duration-700
+                    group-hover:scale-[1.02]
+                  `}
+                  height={600}
+                  priority
+                  sizes="(max-width: 896px) 100vw, 900px"
+                  src="/lookbook/culture-lookbook-lifestyle-and-apparel.jpg"
+                  title="Culture lookbook"
+                  width={900}
+                />
+              </Link>
+              <p className="mt-3 text-center text-xs text-muted-foreground">
+                Photos by George J. Patterson
+              </p>
+            </div>
+          </PageContainer>
+        </section>
+
         {/* Why choose us — immediate, no data needed */}
         <section
           className={`
@@ -835,10 +843,10 @@ export default async function HomePage() {
         `}
         />
 
-        {/* Testimonials — streamed (needs reviews API) */}
+        {/* Testimonials — streamed (needs reviews API); full-bleed dark bg, content stays in container */}
         <section
           className={`
-          bg-background py-20
+          w-full bg-[#0D0D0D] py-20
           md:py-28
         `}
         >
