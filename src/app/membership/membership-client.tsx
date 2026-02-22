@@ -38,6 +38,10 @@ import {
 } from "~/ui/components/auth/auth-wallet-modal-events";
 import { LOCK_12_MONTHS, LOCK_30_DAYS } from "~/lib/cult-staking";
 import { formatEsimPackageName } from "~/lib/esim-format";
+import {
+  buildSwapSolToCult,
+  estimateCultFromSol,
+} from "~/lib/pump-swap-cult";
 import { formatMarketCap, formatTokens, formatTokensPrecise, formatUsd } from "~/lib/format";
 import { MEMBERSHIP_HOW_IT_WORKS } from "~/lib/membership-copy";
 import {
@@ -103,6 +107,14 @@ const STAKING_AVAILABLE_NEXT_HOUR = false;
 /** When true, hide the CULT price and market cap bar. Set to false to show live price/MC (from token-config mint). */
 const HIDE_TOKEN_PRICE_AND_MC = false;
 
+/** Show "Get CULT" when wallet CULT balance is below this (raw units). 0.01 CULT = 10_000. */
+const GET_CULT_THRESHOLD_RAW = 10_000;
+const LAMPORTS_PER_SOL = 1e9;
+const SEND_OPTS = {
+  preflightCommitment: "confirmed" as const,
+  skipPreflight: false,
+};
+
 export function MembershipClient() {
   const searchParams = useSearchParams();
   const initialTier = (() => {
@@ -155,6 +167,14 @@ export function MembershipClient() {
   const [stakedBalanceLoading, setStakedBalanceLoading] = useState(false);
   const [stakeMoreAmount, setStakeMoreAmount] = useState("");
   const [restakeDuration, setRestakeDuration] = useState<"30d" | "12m">("30d");
+
+  // Get CULT (swap SOL → CULT) — show when wallet CULT balance is low
+  const [walletCultBalanceRaw, setWalletCultBalanceRaw] = useState<number | null>(null);
+  const [solBalanceLamports, setSolBalanceLamports] = useState(0);
+  const [solAmount, setSolAmount] = useState("");
+  const [estimatedCult, setEstimatedCult] = useState<null | string>(null);
+  const [estimateLoading, setEstimateLoading] = useState(false);
+  const [swapPending, setSwapPending] = useState(false);
 
   // Live pricing state
   const [pricingData, setPricingData] = useState<
@@ -326,6 +346,72 @@ export function MembershipClient() {
     refreshStakedBalance();
   }, [wallet, refreshStakedBalance]);
 
+  // Wallet CULT balance (for Get CULT visibility)
+  useEffect(() => {
+    if (!wallet) {
+      setWalletCultBalanceRaw(null);
+      return;
+    }
+    let cancelled = false;
+    fetch(`/api/governance/wallet-balance?wallet=${encodeURIComponent(wallet)}`)
+      .then((r) => r.json())
+      .then((data: { balanceRaw?: string } | null) => {
+        if (!cancelled && data?.balanceRaw != null) {
+          setWalletCultBalanceRaw(Number(data.balanceRaw));
+        } else if (!cancelled) {
+          setWalletCultBalanceRaw(0);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setWalletCultBalanceRaw(0);
+      });
+    return () => { cancelled = true; };
+  }, [wallet]);
+
+  // SOL balance (for Get CULT)
+  useEffect(() => {
+    if (!publicKey || !connection) {
+      setSolBalanceLamports(0);
+      return;
+    }
+    let cancelled = false;
+    connection.getBalance(publicKey).then((bal) => {
+      if (!cancelled) setSolBalanceLamports(bal);
+    }).catch(() => {
+      if (!cancelled) setSolBalanceLamports(0);
+    });
+    return () => { cancelled = true; };
+  }, [connection, publicKey]);
+
+  // Estimate CULT from SOL amount (debounced)
+  useEffect(() => {
+    const raw = solAmount.trim();
+    const solNum = Number.parseFloat(raw);
+    if (!raw || !Number.isFinite(solNum) || solNum <= 0) {
+      setEstimatedCult(null);
+      return;
+    }
+    const lamports = Math.floor(solNum * LAMPORTS_PER_SOL);
+    if (lamports <= 0) {
+      setEstimatedCult(null);
+      return;
+    }
+    let cancelled = false;
+    setEstimateLoading(true);
+    estimateCultFromSol(connection, lamports)
+      .then((res) => {
+        if (!cancelled && res) setEstimatedCult(res.cultAmount);
+        else if (!cancelled) setEstimatedCult(null);
+      })
+      .catch(() => {
+        if (!cancelled) setEstimatedCult(null);
+      })
+      .finally(() => {
+        if (!cancelled) setEstimateLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [connection, solAmount]);
+
   // Fetch claim status when wallet is connected
   useEffect(() => {
     if (!wallet) {
@@ -442,6 +528,68 @@ export function MembershipClient() {
     const ok = await restake(oldLockTier, restakeLockDuration);
     if (ok) refreshStakedBalance();
   }, [restake, stakedLock, restakeLockDuration, refreshStakedBalance]);
+
+  const showGetCult =
+    !!wallet &&
+    (walletCultBalanceRaw === null || walletCultBalanceRaw < GET_CULT_THRESHOLD_RAW);
+  const solBalanceSol = solBalanceLamports / LAMPORTS_PER_SOL;
+
+  const handleSwapSolToCult = useCallback(async () => {
+    if (!publicKey || !sendTransaction) {
+      openConnectModal();
+      return;
+    }
+    const raw = solAmount.trim();
+    const solNum = Number.parseFloat(raw);
+    if (!Number.isFinite(solNum) || solNum <= 0) {
+      toast.error("Enter a positive SOL amount");
+      return;
+    }
+    const lamports = Math.floor(solNum * LAMPORTS_PER_SOL);
+    if (lamports <= 0) {
+      toast.error("Amount too small");
+      return;
+    }
+    if (lamports > solBalanceLamports) {
+      toast.error("Insufficient SOL balance");
+      return;
+    }
+    setSwapPending(true);
+    try {
+      const { transaction } = await buildSwapSolToCult(
+        connection,
+        publicKey,
+        lamports,
+      );
+      const sig = await sendTransaction(transaction, connection, SEND_OPTS);
+      toast.success("Swap submitted: " + sig.slice(0, 8) + "…");
+      setSolAmount("");
+      setEstimatedCult(null);
+      refreshStakedBalance();
+      if (wallet) {
+        fetch(`/api/governance/wallet-balance?wallet=${encodeURIComponent(wallet)}`)
+          .then((r) => r.json())
+          .then((data: { balanceRaw?: string } | null) => {
+            if (data?.balanceRaw != null) setWalletCultBalanceRaw(Number(data.balanceRaw));
+          })
+          .catch(() => {});
+      }
+      connection.getBalance(publicKey).then(setSolBalanceLamports);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Swap failed");
+    } finally {
+      setSwapPending(false);
+    }
+  }, [
+    connection,
+    publicKey,
+    sendTransaction,
+    solAmount,
+    solBalanceLamports,
+    openConnectModal,
+    refreshStakedBalance,
+    wallet,
+  ]);
 
   const formatTimeUntilUnlock = useCallback(
     (sec: number): string => {
@@ -749,6 +897,61 @@ export function MembershipClient() {
                 {STAKING_SIGNUP_DISABLED && (
                   <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-center text-sm font-medium text-foreground">
                     Membership signup will be available shortly.
+                  </div>
+                )}
+                {/* Get CULT: swap SOL → CULT when wallet has no / low CULT */}
+                {showGetCult && (
+                  <div className="space-y-3 rounded-xl border border-primary/30 bg-primary/5 p-4">
+                    <p className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                      <RefreshCw className="h-4 w-4 text-primary" />
+                      Get {tokenSymbol}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Swap SOL for {tokenSymbol} on PumpSwap to stake. Keep a little SOL for fees.
+                    </p>
+                    <div className="flex gap-2">
+                      <Input
+                        className="font-mono"
+                        min={0}
+                        onChange={(e) => setSolAmount(e.target.value)}
+                        placeholder="0"
+                        step="any"
+                        type="number"
+                        value={solAmount}
+                      />
+                      <Button
+                        disabled={swapPending}
+                        onClick={() =>
+                          setSolAmount(String(Math.max(0, solBalanceSol - 0.01).toFixed(6)))
+                        }
+                        type="button"
+                        variant="secondary"
+                      >
+                        Max
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Balance: {solBalanceSol.toFixed(4)} SOL
+                    </p>
+                    {estimateLoading && solAmount.trim() && (
+                      <p className="text-sm text-muted-foreground">Estimating…</p>
+                    )}
+                    {!estimateLoading && estimatedCult != null && (
+                      <p className="text-sm font-medium text-foreground">
+                        You will receive ≈ {estimatedCult} {tokenSymbol} (before slippage)
+                      </p>
+                    )}
+                    <Button
+                      disabled={
+                        swapPending ||
+                        !solAmount.trim() ||
+                        Number.parseFloat(solAmount) <= 0 ||
+                        (!!solAmount.trim() && estimatedCult == null)
+                      }
+                      onClick={() => void handleSwapSolToCult()}
+                    >
+                      {swapPending ? "Swapping…" : `Swap SOL → ${tokenSymbol}`}
+                    </Button>
                   </div>
                 )}
                 {/* Your membership — show when wallet connected and has stake */}
