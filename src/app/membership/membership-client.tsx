@@ -143,6 +143,8 @@ export function MembershipClient() {
   const [stakedBalanceDisplay, setStakedBalanceDisplay] = useState<string>("0");
   const [stakedBalanceRaw, setStakedBalanceRaw] = useState<string>("0");
   const [memberTierFromApi, setMemberTierFromApi] = useState<null | number>(null);
+  /** Tier from /api/user/membership (admin grant or tier history when no wallet / no stake). */
+  const [userMembershipTier, setUserMembershipTier] = useState<null | number>(null);
   const [stakedLock, setStakedLock] = useState<{
     durationLabel: string;
     isLocked: boolean;
@@ -232,8 +234,15 @@ export function MembershipClient() {
     return null;
   }, [stakedBalanceDisplay, pricingData?.pricing?.tiers]);
 
-  /** Tier to show in UI: from pricing thresholds first, else from staked-balance API (so tier shows before pricing loads). */
-  const displayTier = currentTierFromStake ?? memberTierFromApi;
+  /** Tier to show in UI: stake-based first, then staked-balance API, then /api/user/membership (admin grant / tier history). */
+  const displayTier = currentTierFromStake ?? memberTierFromApi ?? userMembershipTier;
+
+  // when user has a current tier, show that tier's benefits (so "Your benefits" matches their membership)
+  useEffect(() => {
+    if (displayTier != null && selectedTier > displayTier) {
+      setSelectedTier(displayTier);
+    }
+  }, [displayTier]);
 
   // auto-select appropriate tier when upgrading: only tiers above current (use displayTier so API tier applies before pricing loads)
   useEffect(() => {
@@ -323,6 +332,28 @@ export function MembershipClient() {
     }
     refreshStakedBalance();
   }, [wallet, refreshStakedBalance]);
+
+  // Fetch membership tier when logged in (admin grant / tier history so page shows current tier even with no stake)
+  useEffect(() => {
+    if (!user?.id) {
+      setUserMembershipTier(null);
+      return;
+    }
+    let cancelled = false;
+    fetch("/api/user/membership", { credentials: "include" })
+      .then((r) => r.json())
+      .then((data: { memberTier?: number } | null) => {
+        if (cancelled) return;
+        const t = data?.memberTier;
+        setUserMembershipTier(
+          typeof t === "number" && t >= 1 && t <= 3 ? t : null,
+        );
+      })
+      .catch(() => {
+        if (!cancelled) setUserMembershipTier(null);
+      });
+    return () => { cancelled = true; };
+  }, [user?.id]);
 
   // Fetch claim status when wallet is connected
   useEffect(() => {
@@ -669,13 +700,14 @@ export function MembershipClient() {
             `}
             >
               <div className="border-b bg-muted/30 px-6 py-5">
-                {/* Current membership badge - show prominently when user has a stake */}
-                {wallet && Number(stakedBalanceRaw) > 0 && displayTier != null && (
+                {/* Current membership badge - show when user has a tier (from stake or admin/tier history) */}
+                {displayTier != null && (
                   <div className="mb-4 space-y-3 rounded-xl border border-primary/20 bg-primary/5 p-3">
                     <div className="flex items-center gap-3">
                       {(() => {
                         const tierData = MEMBERSHIP_TIERS.find((t) => t.id === displayTier);
                         const TierIcon = tierData?.icon ?? Shield;
+                        const hasStake = wallet && Number(stakedBalanceRaw) > 0;
                         return (
                           <>
                             <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-xl", tierData?.accentBg ?? "bg-muted")}>
@@ -686,20 +718,17 @@ export function MembershipClient() {
                                 Your tier: {tierData?.name ?? `Tier ${displayTier}`}
                               </p>
                               <p className="text-sm text-muted-foreground">
-                                {stakedLock?.durationLabel ?? "30 days"} · {formatTokensPrecise(Number(stakedBalanceDisplay))} {tokenSymbol} staked
-                                {stakedLock?.isLocked && stakedLock.secondsRemaining != null && stakedLock.secondsRemaining > 0
-                                  ? ` · ${formatTimeUntilUnlock(stakedLock.secondsRemaining)}`
-                                  : stakedLock && !stakedLock.isLocked
-                                    ? " · Unlocked"
-                                    : null}
+                                {hasStake
+                                  ? `${stakedLock?.durationLabel ?? "30 days"} · ${formatTokensPrecise(Number(stakedBalanceDisplay))} ${tokenSymbol} staked${stakedLock?.isLocked && stakedLock.secondsRemaining != null && stakedLock.secondsRemaining > 0 ? ` · ${formatTimeUntilUnlock(stakedLock.secondsRemaining)}` : stakedLock && !stakedLock.isLocked ? " · Unlocked" : ""}`
+                                  : "Membership from admin or tier history. Stake below to lock in your benefits."}
                               </p>
                             </div>
                           </>
                         );
                       })()}
                     </div>
-                    {/* Restake / Unstake when lock has ended */}
-                    {stakedLock && !stakedLock.isLocked && (
+                    {/* Restake / Unstake when lock has ended (only when they have an on-chain stake) */}
+                    {wallet && Number(stakedBalanceRaw) > 0 && stakedLock && !stakedLock.isLocked && (
                       <div className="flex flex-wrap items-center gap-2 border-t border-primary/20 pt-3">
                         <div className="flex gap-1">
                           <Button
@@ -748,19 +777,18 @@ export function MembershipClient() {
                 >
                   {wallet && Number(stakedBalanceRaw) > 0
                     ? "Upgrade Membership"
-                    : `Stake ${tokenSymbol} & Join`}
+                    : displayTier != null
+                      ? "Your membership"
+                      : `Stake ${tokenSymbol} & Join`}
                 </h2>
-                {wallet && Number(stakedBalanceRaw) > 0 && displayTier != null && (
-                  <p className="mt-2 text-base font-semibold text-foreground" data-member-tier>
-                    You are a {MEMBERSHIP_TIERS.find((t) => t.id === displayTier)?.name ?? `Tier ${displayTier}`} member
-                  </p>
-                )}
                 <p className="mt-1 text-sm text-muted-foreground">
                   {wallet && Number(stakedBalanceRaw) > 0 && displayTier != null
                     ? "Stake more CULT to upgrade your tier."
-                    : wallet && Number(stakedBalanceRaw) > 0
-                    ? "Stake more CULT to upgrade your tier."
-                    : "Select your tier and duration, then connect your wallet to stake."}
+                    : displayTier != null
+                      ? "You're already a member. Stake below to lock in your tier or add more to upgrade."
+                      : wallet
+                        ? "Select your tier and duration, then stake."
+                        : "Select your tier and duration, then connect your wallet to stake."}
                 </p>
               </div>
 
@@ -770,10 +798,20 @@ export function MembershipClient() {
                     Membership signup will be available shortly.
                   </div>
                 )}
-                {/* When wallet connected but no stake, show short message */}
-                {wallet && Number(stakedBalanceRaw) === 0 && (
+                {/* When wallet connected but no stake (or no wallet): message depends on whether they already have a tier */}
+                {wallet && Number(stakedBalanceRaw) === 0 && displayTier == null && (
                   <p className="text-sm text-muted-foreground">
                     You have no staked balance. Stake below to join.
+                  </p>
+                )}
+                {wallet && Number(stakedBalanceRaw) === 0 && displayTier != null && (
+                  <p className="text-sm text-muted-foreground">
+                    You're a {MEMBERSHIP_TIERS.find((t) => t.id === displayTier)?.name ?? `Tier ${displayTier}`} member. Stake below to lock in your benefits or add more to upgrade.
+                  </p>
+                )}
+                {!wallet && displayTier != null && (
+                  <p className="text-sm text-muted-foreground">
+                    You're a {MEMBERSHIP_TIERS.find((t) => t.id === displayTier)?.name ?? `Tier ${displayTier}`} member. Connect your wallet and stake below to lock in your benefits.
                   </p>
                 )}
 
