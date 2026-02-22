@@ -13,7 +13,7 @@ import { accountTable } from "~/db/schema";
 import { userWalletsTable } from "~/db/schema/wallets/tables";
 import { getMemberTierForWallet } from "~/lib/get-member-tier";
 
-const TIER_NAMES: Record<number, string> = { 1: "Tier 1", 2: "Tier 2", 3: "Tier 3" };
+const TIER_NAMES: Record<number, string> = { 1: "APEX", 2: "PRIME", 3: "BASE" };
 
 export async function GET(request: NextRequest) {
   const session = await auth.api.getSession({ headers: request.headers });

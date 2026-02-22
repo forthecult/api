@@ -322,7 +322,7 @@ export default function AdminTierDiscountEditPage() {
                   className={inputClass}
                   id="label"
                   onChange={(e) => setLabel(e.target.value)}
-                  placeholder="e.g. Tier 3: 20% off shipping"
+                  placeholder="e.g. BASE: 20% off shipping"
                   type="text"
                   value={label}
                 />

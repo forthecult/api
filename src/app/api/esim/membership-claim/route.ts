@@ -1,7 +1,7 @@
 /**
  * POST /api/esim/membership-claim
  *
- * Allows Tier 1 stakers to claim their free membership eSIM.
+ * Allows APEX (tier 1) stakers to claim their free membership eSIM.
  *
  * Body: { wallet: string, packageId: string }
  *   - wallet:    Solana wallet address (used to verify staking tier)
@@ -10,7 +10,7 @@
  * Flow:
  *   1. Verify user is authenticated
  *   2. Fetch on-chain staking data for the wallet
- *   3. Determine membership tier (must be Tier 1)
+ *   3. Determine membership tier (must be APEX / tier 1)
  *   4. Check they haven't already claimed for this staking period
  *   5. Create order + esim_order records (paid via "membership_claim")
  *   6. Provision the eSIM immediately (no payment step)
@@ -43,8 +43,13 @@ import { getActiveToken } from "~/lib/token-config";
 // Tier detection using live pricing
 // ---------------------------------------------------------------------------
 
-/** Tier required to claim a free eSIM (Tier 1 = free eSIM). */
+/** Tier required to claim a free eSIM (tier id 1 = APEX = free eSIM). */
 const MIN_CLAIM_TIER = 1;
+
+const TIER_NAMES: Record<number, string> = { 1: "APEX", 2: "PRIME", 3: "BASE" };
+function tierName(tierId: number): string {
+  return TIER_NAMES[tierId] ?? `Tier ${tierId}`;
+}
 
 /**
  * Detect tier by comparing staked token count against the live tier thresholds
@@ -145,7 +150,7 @@ export async function POST(request: Request) {
   if (tier === null || tier !== MIN_CLAIM_TIER) {
     return NextResponse.json(
       {
-        message: `Tier 1 required to claim a free eSIM. Your current stake qualifies for ${tier ? `Tier ${tier}` : "no tier"}.`,
+        message: `APEX required to claim a free eSIM. Your current stake qualifies for ${tier != null ? tierName(tier) : "no tier"}.`,
         status: false,
       },
       { status: 403 },

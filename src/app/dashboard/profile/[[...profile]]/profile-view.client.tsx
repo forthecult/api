@@ -65,9 +65,9 @@ const TIER_VISUALS: Record<
   number,
   { accent: string; icon: typeof Crown; name: string }
 > = {
-  1: { accent: "text-chart-1", icon: Crown, name: "Tier 1" },
-  2: { accent: "text-chart-4", icon: Star, name: "Tier 2" },
-  3: { accent: "text-chart-2", icon: Shield, name: "Tier 3" },
+  1: { accent: "text-chart-1", icon: Crown, name: "APEX" },
+  2: { accent: "text-chart-4", icon: Star, name: "PRIME" },
+  3: { accent: "text-chart-2", icon: Shield, name: "BASE" },
 };
 
 interface MembershipInfo {

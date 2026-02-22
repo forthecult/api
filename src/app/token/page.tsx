@@ -13,6 +13,7 @@ import Link from "next/link";
 import { SEO_CONFIG } from "~/app";
 import { MEMBERSHIP_HOW_IT_WORKS } from "~/lib/membership-copy";
 import { CULT_MINT_MAINNET } from "~/lib/token-config";
+import { CultSwapBlock } from "~/ui/components/cult-swap-block";
 import { Button } from "~/ui/primitives/button";
 import {
   Card,
@@ -382,6 +383,8 @@ export default function TokenPage() {
           </div>
         </section>
 
+        <CultSwapBlock />
+
         {/* Membership */}
         <section
           className={`
@@ -400,8 +403,8 @@ export default function TokenPage() {
             </h2>
             <p className="max-w-3xl text-muted-foreground">
               Stake CULT to unlock tiered membership: first eSIM free, 30% off
-              additional eSIMs, and free shipping at Tier 1; 25% off at Tier 2;
-              15% off at Tier 3.
+              additional eSIMs, and free shipping at APEX; 25% off at PRIME; 15%
+              off at BASE.
             </p>
           </div>
 

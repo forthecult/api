@@ -189,7 +189,7 @@ export default function AdminTierDiscountCreatePage() {
           <CardHeader>
             <CardTitle>Tier discount</CardTitle>
             <p className="text-sm text-muted-foreground">
-              Discounts stack per tier (e.g. Tier 3 can have 20% off shipping
+              Discounts stack per tier (e.g. BASE can have 20% off shipping
               and 15% off eSIMs).
             </p>
           </CardHeader>
@@ -212,7 +212,8 @@ export default function AdminTierDiscountCreatePage() {
                 >
                   {[1, 2, 3].map((t) => (
                     <option key={t} value={t}>
-                      Tier {t} {t === 1 ? "(best)" : t === 3 ? "(entry)" : ""}
+                      {t === 1 ? "APEX" : t === 2 ? "PRIME" : "BASE"}
+                      {t === 1 ? " (best)" : t === 3 ? " (entry)" : ""}
                     </option>
                   ))}
                 </select>
@@ -225,7 +226,7 @@ export default function AdminTierDiscountCreatePage() {
                   className={inputClass}
                   id="label"
                   onChange={(e) => setLabel(e.target.value)}
-                  placeholder="e.g. Tier 3: 20% off shipping"
+                  placeholder="e.g. BASE: 20% off shipping"
                   type="text"
                   value={label}
                 />

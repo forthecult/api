@@ -55,9 +55,9 @@ const TIER_CONFIG: Record<
   number,
   { accent: string; bg: string; icon: React.ComponentType<{ className?: string }>; name: string }
 > = {
-  1: { accent: "text-amber-500", bg: "bg-amber-500/10", icon: Crown, name: "Tier 1" },
-  2: { accent: "text-purple-500", bg: "bg-purple-500/10", icon: Star, name: "Tier 2" },
-  3: { accent: "text-blue-500", bg: "bg-blue-500/10", icon: Zap, name: "Tier 3" },
+  1: { accent: "text-amber-500", bg: "bg-amber-500/10", icon: Crown, name: "APEX" },
+  2: { accent: "text-purple-500", bg: "bg-purple-500/10", icon: Star, name: "PRIME" },
+  3: { accent: "text-blue-500", bg: "bg-blue-500/10", icon: Zap, name: "BASE" },
 };
 
 function getTierConfig(tier: null | number) {
@@ -228,9 +228,9 @@ export default function AdminMembershipPage() {
               value={tierFilter}
             >
               <option value="">All tiers</option>
-              <option value="1">Tier 1</option>
-              <option value="2">Tier 2</option>
-              <option value="3">Tier 3</option>
+              <option value="1">APEX</option>
+              <option value="2">PRIME</option>
+              <option value="3">BASE</option>
             </select>
           </div>
         </CardHeader>

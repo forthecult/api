@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 
 // ---------------------------------------------------------------------------
-// Tier definitions (display order: Tier 3 → Tier 1)
+// Tier definitions (display order: BASE → APEX; id 3 = BASE, 2 = PRIME, 1 = APEX)
 // ---------------------------------------------------------------------------
 
 export interface MembershipTier {
@@ -48,7 +48,7 @@ export const MEMBERSHIP_TIERS: MembershipTier[] = [
     },
     icon: Shield,
     id: 3,
-    name: "Tier 3",
+    name: "BASE",
     tagline: "Level up your membership",
   },
   {
@@ -69,7 +69,7 @@ export const MEMBERSHIP_TIERS: MembershipTier[] = [
     },
     icon: Star,
     id: 2,
-    name: "Tier 2",
+    name: "PRIME",
     popular: true,
     tagline: "Unlock serious value",
   },
@@ -93,7 +93,7 @@ export const MEMBERSHIP_TIERS: MembershipTier[] = [
     },
     icon: Crown,
     id: 1,
-    name: "Tier 1",
+    name: "APEX",
     tagline: "The ultimate membership",
   },
 ];
@@ -177,7 +177,7 @@ export const MEMBERSHIP_FAQ = [
     q: "Can I upgrade my tier?",
   },
   {
-    a: "Tier 1 members get the first eSIM free and 30% off additional eSIMs, plus free shipping. Tier 2 gets 25% off eSIMs and shipping; Tier 3 gets 15% off eSIMs and shipping. eSIMs are activated instantly and work in 200+ countries.",
+    a: "APEX members get the first eSIM free and 30% off additional eSIMs, plus free shipping. PRIME gets 25% off eSIMs and shipping; BASE gets 15% off eSIMs and shipping. eSIMs are activated instantly and work in 200+ countries.",
     q: "What eSIM card do I get?",
   },
   {
