@@ -145,6 +145,8 @@ export function MembershipClient() {
   const [memberTierFromApi, setMemberTierFromApi] = useState<null | number>(null);
   /** Tier from /api/user/membership (admin grant or tier history when no wallet / no stake). */
   const [userMembershipTier, setUserMembershipTier] = useState<null | number>(null);
+  /** True after first /api/user/membership response (avoids flash of unstaked UI for admin-granted users). */
+  const [userMembershipFetched, setUserMembershipFetched] = useState(false);
   const [stakedLock, setStakedLock] = useState<{
     durationLabel: string;
     isLocked: boolean;
@@ -337,8 +339,10 @@ export function MembershipClient() {
   useEffect(() => {
     if (!user?.id) {
       setUserMembershipTier(null);
+      setUserMembershipFetched(false);
       return;
     }
+    setUserMembershipFetched(false);
     let cancelled = false;
     fetch("/api/user/membership", { credentials: "include" })
       .then((r) => r.json())
@@ -348,9 +352,13 @@ export function MembershipClient() {
         setUserMembershipTier(
           typeof t === "number" && t >= 1 && t <= 3 ? t : null,
         );
+        setUserMembershipFetched(true);
       })
       .catch(() => {
-        if (!cancelled) setUserMembershipTier(null);
+        if (!cancelled) {
+          setUserMembershipTier(null);
+          setUserMembershipFetched(true);
+        }
       });
     return () => { cancelled = true; };
   }, [user?.id]);
@@ -700,8 +708,8 @@ export function MembershipClient() {
             `}
             >
               <div className="border-b bg-muted/30 px-6 py-5">
-                {/* Current membership badge - show when user has a tier (from stake or admin/tier history) */}
-                {displayTier != null && (
+                {/* Current membership badge - show when user has a tier (from stake or admin/tier history). Avoid showing badge until membership fetched when logged in to prevent jump. */}
+                {displayTier != null && !(user?.id && !userMembershipFetched) && (
                   <div className="mb-4 space-y-3 rounded-xl border border-primary/20 bg-primary/5 p-3">
                     <div className="flex items-center gap-3">
                       {(() => {
@@ -777,18 +785,20 @@ export function MembershipClient() {
                 >
                   {wallet && Number(stakedBalanceRaw) > 0
                     ? "Upgrade Membership"
-                    : displayTier != null
+                    : displayTier != null && !(user?.id && !userMembershipFetched)
                       ? "Your membership"
                       : `Stake ${tokenSymbol} & Join`}
                 </h2>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  {wallet && Number(stakedBalanceRaw) > 0 && displayTier != null
-                    ? "Stake more CULT to upgrade your tier."
-                    : displayTier != null
-                      ? "You're already a member. Stake below to lock in your tier or add more to upgrade."
-                      : wallet
-                        ? "Select your tier and duration, then stake."
-                        : "Select your tier and duration, then connect your wallet to stake."}
+                  {user?.id && !userMembershipFetched
+                    ? "Loading membership…"
+                    : wallet && Number(stakedBalanceRaw) > 0 && displayTier != null
+                      ? "Stake more CULT to upgrade your tier."
+                      : displayTier != null
+                        ? "You're already a member. Stake below to lock in your tier or add more to upgrade."
+                        : wallet
+                          ? "Select your tier and duration, then stake."
+                          : "Select your tier and duration, then connect your wallet to stake."}
                 </p>
               </div>
 
@@ -798,8 +808,8 @@ export function MembershipClient() {
                     Membership signup will be available shortly.
                   </div>
                 )}
-                {/* When wallet connected but no stake (or no wallet): message depends on whether they already have a tier */}
-                {wallet && Number(stakedBalanceRaw) === 0 && displayTier == null && (
+                {/* When wallet connected but no stake (or no wallet): message depends on whether they already have a tier. Wait for membership fetch when logged in to avoid flash. */}
+                {wallet && Number(stakedBalanceRaw) === 0 && displayTier == null && !(user?.id && !userMembershipFetched) && (
                   <p className="text-sm text-muted-foreground">
                     You have no staked balance. Stake below to join.
                   </p>
@@ -815,11 +825,11 @@ export function MembershipClient() {
                   </p>
                 )}
 
-                {/* Inline tier selector — only show tiers above current (use displayTier so API tier applies before pricing loads) */}
+                {/* Inline tier selector — when user has a tier, only show that tier (lock in) and higher (upgrade). No BASE/PRIME signup when already APEX. */}
                 {(() => {
                   const availableTiers = MEMBERSHIP_TIERS.filter((tier) => {
-                    if (displayTier == null || Number(stakedBalanceRaw) === 0) return true;
-                    return tier.id < displayTier;
+                    if (displayTier == null) return true;
+                    return tier.id <= displayTier;
                   });
 
                   if (availableTiers.length === 0) return null;
@@ -827,7 +837,11 @@ export function MembershipClient() {
                   return (
                     <div>
                       <p className="mb-2 text-sm font-medium text-foreground">
-                        {displayTier != null && Number(stakedBalanceRaw) > 0 ? "Upgrade to" : "Tier"}
+                        {displayTier != null && Number(stakedBalanceRaw) > 0
+                          ? "Upgrade to"
+                          : displayTier != null
+                            ? "Stake to lock in"
+                            : "Tier"}
                       </p>
                       <div className="flex flex-wrap gap-2">
                         {availableTiers.map((tier) => {
@@ -1183,6 +1197,22 @@ export function MembershipClient() {
                     <span>
                       <strong>eSIM:</strong>{" "}
                       {selectedTierData.benefits.esimDetail}
+                      {selectedTierData.id === 1 && (
+                        <>
+                          {" "}
+                          <button
+                            className="font-medium text-primary underline underline-offset-2 hover:no-underline"
+                            onClick={() =>
+                              document
+                                .getElementById("claim-free-esim")
+                                ?.scrollIntoView({ behavior: "smooth" })
+                            }
+                            type="button"
+                          >
+                            Claim your free eSIM
+                          </button>
+                        </>
+                      )}
                     </span>
                   </li>
                   {selectedTierData.benefits.extras.includes(
@@ -2128,14 +2158,15 @@ export function MembershipClient() {
         </section>
 
         {/* --------------------------------------------------------------- */}
-        {/* Claim Free eSIM (APEX) */}
+        {/* Claim Free eSIM (APEX) — show when eligible/claimed or when user is APEX (so admin-granted members see it) */}
         {/* --------------------------------------------------------------- */}
-        {wallet && (claimEligible || claimAlreadyClaimed) && (
+        {(displayTier === 1 && user?.id) || (wallet && (claimEligible || claimAlreadyClaimed)) ? (
           <section
             className={`
             py-16
             md:py-20
           `}
+            id="claim-free-esim"
           >
             <div className="mx-auto max-w-4xl">
               <Card
@@ -2159,15 +2190,30 @@ export function MembershipClient() {
                       : "Claim Your Free eSIM"}
                   </CardTitle>
                   <CardDescription className="text-base">
-                    {claimAlreadyClaimed
-                      ? claimSuccess
-                        ? "Your free eSIM has been provisioned. Activate it in your dashboard or check your email for the link."
-                        : "You've already claimed your free eSIM for this staking period. Visit your eSIM dashboard to manage and activate it."
-                      : `As a Tier ${claimTier} member, you can claim one 30-day eSIM at no cost. Pick data-only or data with minutes + SMS, then click Claim to activate.`}
+                    {!wallet
+                      ? "Connect your wallet above to claim your free APEX eSIM."
+                      : claimAlreadyClaimed
+                        ? claimSuccess
+                          ? "Your free eSIM has been provisioned. Activate it in your dashboard or check your email for the link."
+                          : "You've already claimed your free eSIM for this staking period. Visit your eSIM dashboard to manage and activate it."
+                        : `As a Tier ${claimTier ?? 1} member, you can claim one 30-day eSIM at no cost. Pick data-only or data with minutes + SMS, then click Claim to activate.`}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col items-center gap-6 pb-8">
-                  {claimAlreadyClaimed ? (
+                  {!wallet ? (
+                    <Button
+                      className="gap-2"
+                      onClick={() => {
+                        window.dispatchEvent(
+                          new CustomEvent("open-link-wallet-modal"),
+                        );
+                      }}
+                      size="lg"
+                    >
+                      <Wallet className="h-5 w-5" />
+                      Connect wallet to claim
+                    </Button>
+                  ) : claimAlreadyClaimed ? (
                     <Button
                       asChild
                       className="gap-2"
@@ -2286,7 +2332,7 @@ export function MembershipClient() {
               </Card>
             </div>
           </section>
-        )}
+        ) : null}
 
         {/* --------------------------------------------------------------- */}
         {/* FAQ */}

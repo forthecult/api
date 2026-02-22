@@ -1269,16 +1269,12 @@ export default function AdminOrderDetailsPage() {
             <span className="tabular-nums">{formatCents(totalCents)}</span>
           </div>
           <div className="text-sm text-muted-foreground">
-            Payment method: {order.paymentMethod}
-            {order.cryptoPayment?.currency && (
-              <span>
-                {" "}
-                &middot; {order.cryptoPayment.currency}
-                {order.cryptoPayment.network
-                  ? ` (${order.cryptoPayment.network})`
-                  : ""}
-              </span>
-            )}
+            Payment method:{" "}
+            {order.cryptoPayment?.currency && order.cryptoPayment?.network
+              ? `${order.cryptoPayment.currency} - ${order.cryptoPayment.network}`
+              : order.cryptoPayment?.currency
+                ? `${order.paymentMethod} · ${order.cryptoPayment.currency}`
+                : order.paymentMethod}
           </div>
         </CardContent>
       </Card>

@@ -1,3 +1,4 @@
+import BigNumber from "bignumber.js";
 import { createId } from "@paralleldrive/cuid2";
 import { inArray } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
@@ -17,12 +18,22 @@ import {
   RATE_LIMITS,
   rateLimitResponse,
 } from "~/lib/rate-limit";
+import { Connection, PublicKey } from "@solana/web3.js";
+import { getCoinGeckoSimplePrice } from "~/lib/coingecko";
+import { getPumpTokenPriceInSol } from "~/lib/pump-price";
 import { deriveDepositAddress } from "~/lib/solana-deposit";
 import {
+  CULT_MINT_MAINNET,
   getSolanaPayLabel,
+  getSolanaRpcUrlServer,
+  tokenAmountFromUsdWithPrice,
   USDC_MINT_MAINNET,
   usdcAmountFromUsd,
 } from "~/lib/solana-pay";
+
+const CULT_DECIMALS = 6;
+const LAMPORTS_PER_SOL = 1e9;
+const SOL_USD_FALLBACK = 200;
 
 const PAYMENT_WINDOW_MS = 60 * 60 * 1000;
 
@@ -119,14 +130,20 @@ export async function POST(request: NextRequest) {
         ),
       );
     }
-    if (payment.token !== "USDC") {
+    const paymentToken =
+      payment.token === "SOL"
+        ? "SOL"
+        : payment.token === "CULT"
+          ? "CULT"
+          : payment.token;
+    if (paymentToken !== "USDC" && paymentToken !== "SOL" && paymentToken !== "CULT") {
       return withPublicApiCors(
         NextResponse.json(
           {
             error: {
               code: "INVALID_REQUEST",
               message:
-                "Only USDC is supported for agent checkout; use payment.token: 'USDC'",
+                "payment.token must be 'SOL', 'USDC', or 'CULT' for Solana checkout",
             },
           },
           { status: 400 },
@@ -315,18 +332,53 @@ export async function POST(request: NextRequest) {
       })),
     );
 
-    const token = payment.token === "USDC" ? "USDC" : payment.token;
-    const tokenMint =
-      token === "USDC" ? USDC_MINT_MAINNET : (payment.tokenMint ?? null);
-    const decimals = token === "USDC" ? 6 : 9;
-    const amountBn = usdcAmountFromUsd(totalUsd);
-    const amountBaseUnits = amountBn.toFixed(0);
     const label = getSolanaPayLabel();
     const message = "Thank you for your order.";
 
+    let amountBaseUnits: string;
+    let decimals: number;
+
+    if (paymentToken === "SOL") {
+      const cg = await getCoinGeckoSimplePrice(["solana"]);
+      const solUsd =
+        typeof cg?.solana?.usd === "number" && cg.solana.usd > 0
+          ? cg.solana.usd
+          : SOL_USD_FALLBACK;
+      const lamports = Math.ceil((totalUsd / solUsd) * LAMPORTS_PER_SOL);
+      amountBaseUnits = String(lamports);
+      decimals = 9;
+    } else if (paymentToken === "CULT") {
+      const [cg, cultSolPerToken] = await Promise.all([
+        getCoinGeckoSimplePrice(["solana"]),
+        (async () => {
+          const connection = new Connection(getSolanaRpcUrlServer());
+          return getPumpTokenPriceInSol(
+            connection,
+            new PublicKey(CULT_MINT_MAINNET),
+          );
+        })(),
+      ]);
+      const solUsd =
+        typeof cg?.solana?.usd === "number" && cg.solana.usd > 0
+          ? cg.solana.usd
+          : SOL_USD_FALLBACK;
+      const amountBn = tokenAmountFromUsdWithPrice(
+        totalUsd,
+        cultSolPerToken > 0 ? cultSolPerToken : 1e-9,
+        solUsd,
+        CULT_DECIMALS,
+      );
+      amountBaseUnits = amountBn.integerValue(BigNumber.ROUND_CEIL).toFixed(0);
+      decimals = CULT_DECIMALS;
+    } else {
+      amountBaseUnits = usdcAmountFromUsd(totalUsd).toFixed(0);
+      decimals = 6;
+    }
+
     const params = new URLSearchParams();
     params.set("amount", amountBaseUnits);
-    if (tokenMint) params.set("spl-token", tokenMint);
+    if (paymentToken === "USDC") params.set("spl-token", USDC_MINT_MAINNET);
+    else if (paymentToken === "CULT") params.set("spl-token", CULT_MINT_MAINNET);
     params.set("label", `Order ${orderId}`);
     params.set("message", message);
     const solanaPayUrl = `solana:${depositAddress}?${params.toString()}`;
@@ -345,8 +397,7 @@ export async function POST(request: NextRequest) {
             message,
             method: "solana_pay",
             recipient: depositAddress,
-            token,
-            tokenMint: tokenMint ?? undefined,
+            token: paymentToken,
             url: solanaPayUrl,
           },
           status: "awaiting_payment",

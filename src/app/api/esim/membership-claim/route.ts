@@ -31,6 +31,7 @@ import {
   ordersTable,
 } from "~/db/schema";
 import { getCurrentUser } from "~/lib/auth";
+import { getAdminGrantedTier } from "~/lib/get-member-tier";
 import { fetchUserStake, getStakingProgramId } from "~/lib/cult-staking";
 import { getEsimPackageDetail } from "~/lib/esim-api";
 import { fulfillEsimOrder } from "~/lib/esim-fulfillment";
@@ -84,7 +85,6 @@ export async function POST(request: Request) {
     );
   }
 
-  // 2. Parse body
   let body: unknown;
   try {
     body = await request.json();
@@ -107,58 +107,60 @@ export async function POST(request: Request) {
   }
   const { packageId, wallet } = parsed.data;
 
-  // 3. Verify on-chain staking
   const programId = getStakingProgramId();
-  if (!programId) {
-    return NextResponse.json(
-      { message: "Staking program not configured", status: false },
-      { status: 503 },
-    );
-  }
-
   const token = getActiveToken();
-  const connection = new Connection(getSolanaRpcUrlServer());
-  const stakeData = await fetchUserStake(connection, programId, wallet);
-  if (!stakeData || stakeData.amount === 0n) {
-    return NextResponse.json(
-      { message: "No active stake found for this wallet", status: false },
-      { status: 403 },
-    );
-  }
+  const connection =
+    programId != null
+      ? new Connection(getSolanaRpcUrlServer())
+      : null;
+  const stakeData =
+    programId != null && connection
+      ? await fetchUserStake(connection, programId, wallet)
+      : null;
 
-  // Fetch live market data to compute tier thresholds
-  const market = await fetchTokenMarketData(token.mint);
-  if (!market || market.priceUsd <= 0) {
-    return NextResponse.json(
-      {
-        message: "Unable to fetch token price data. Please try again.",
-        status: false,
-      },
-      { status: 503 },
+  let stakePeriodKey: string;
+  let tier: number;
+  if (stakeData && stakeData.amount > 0n) {
+    const market = await fetchTokenMarketData(token.mint);
+    if (!market || market.priceUsd <= 0) {
+      return NextResponse.json(
+        {
+          message: "Unable to fetch token price data. Please try again.",
+          status: false,
+        },
+        { status: 503 },
+      );
+    }
+    const stakedHuman = Number(stakeData.amount) / 10 ** token.decimals;
+    const pricing = computeTierPricing(
+      token,
+      market.priceUsd,
+      market.marketCapUsd,
+      0,
     );
+    const detectedTier = detectTierFromPricing(stakedHuman, pricing.tiers);
+    if (detectedTier === null || detectedTier !== MIN_CLAIM_TIER) {
+      return NextResponse.json(
+        {
+          message: `APEX required to claim a free eSIM. Your current stake qualifies for ${detectedTier != null ? tierName(detectedTier) : "no tier"}.`,
+          status: false,
+        },
+        { status: 403 },
+      );
+    }
+    tier = detectedTier;
+    stakePeriodKey = `${wallet}:${stakeData.lockStart}`;
+  } else {
+    const adminTier = await getAdminGrantedTier(user.id);
+    if (adminTier !== 1) {
+      return NextResponse.json(
+        { message: "No active stake found for this wallet", status: false },
+        { status: 403 },
+      );
+    }
+    tier = 1; // admin-granted APEX
+    stakePeriodKey = `admin:${user.id}`;
   }
-
-  const stakedHuman = Number(stakeData.amount) / 10 ** token.decimals;
-  // stakerCount=0 here since we just need the MC-based thresholds
-  const pricing = computeTierPricing(
-    token,
-    market.priceUsd,
-    market.marketCapUsd,
-    0,
-  );
-  const tier = detectTierFromPricing(stakedHuman, pricing.tiers);
-  if (tier === null || tier !== MIN_CLAIM_TIER) {
-    return NextResponse.json(
-      {
-        message: `APEX required to claim a free eSIM. Your current stake qualifies for ${tier != null ? tierName(tier) : "no tier"}.`,
-        status: false,
-      },
-      { status: 403 },
-    );
-  }
-
-  // 4. Build a unique key for this staking period (wallet + lock_start timestamp)
-  const stakePeriodKey = `${wallet}:${stakeData.lockStart}`;
 
   // Check for existing claim in this staking period
   const existingClaims = await db
