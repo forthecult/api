@@ -76,6 +76,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
   }
 
+  async function fetchBlogSlugs(): Promise<string[]> {
+    try {
+      const res = await fetch(`${getPublicSiteUrl()}/api/blog/slugs`, {
+        next: { revalidate: 3600 },
+      });
+      if (!res.ok) return [];
+      const data = (await res.json()) as { slugs?: string[] };
+      return data.slugs ?? [];
+    } catch {
+      return [];
+    }
+  }
+
   async function fetchEsimPackageIds(): Promise<string[]> {
     const ids: string[] = [];
     const maxPages = 5;
@@ -100,18 +113,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const getCachedSitemapData = unstable_cache(
     async () => {
-      const [products, categories, esimPackageIds] = await Promise.all([
-        fetchAllProducts(),
-        fetchAllCategories(),
-        fetchEsimPackageIds(),
-      ]);
-      return { products, categories, esimPackageIds };
+      const [products, categories, esimPackageIds, blogSlugs] =
+        await Promise.all([
+          fetchAllProducts(),
+          fetchAllCategories(),
+          fetchEsimPackageIds(),
+          fetchBlogSlugs(),
+        ]);
+      return { products, categories, esimPackageIds, blogSlugs };
     },
     ["sitemap-data"],
     { revalidate: 3600 },
   );
 
-  const { products, categories, esimPackageIds } = await getCachedSitemapData();
+  const { products, categories, esimPackageIds, blogSlugs } =
+    await getCachedSitemapData();
 
   const staticPages: MetadataRoute.Sitemap = [
     { changeFrequency: "daily", lastModified: now, priority: 1, url: siteUrl },
@@ -150,6 +166,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: now,
       priority: 0.6,
       url: `${siteUrl}/membership`,
+    },
+    {
+      changeFrequency: "weekly",
+      lastModified: now,
+      priority: 0.6,
+      url: `${siteUrl}/blog`,
     },
     {
       changeFrequency: "weekly",
@@ -278,11 +300,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     url: `${siteUrl}/esim/${id}`,
   }));
 
+  const blogPostPages: MetadataRoute.Sitemap = blogSlugs.map((slug) => ({
+    changeFrequency: "weekly" as const,
+    lastModified: now,
+    priority: 0.6,
+    url: `${siteUrl}/blog/${slug}`,
+  }));
+
   const all = [
     ...staticPages,
     ...categoryPages,
     ...productPages,
     ...esimPackagePages,
+    ...blogPostPages,
   ];
   // Exclude test pages and malformed URLs (e.g. /test, or base URL with trailing &)
   const filtered = all.filter((entry) => {

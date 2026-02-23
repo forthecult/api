@@ -100,7 +100,7 @@ export function ProductReviewsCarousel({
         >
           <div
             className={`
-            group flex flex-row overflow-hidden p-2
+            marquee-edge-fade group flex flex-row overflow-hidden p-2
             [gap:var(--gap)]
             [--gap:1rem]
           `}
@@ -122,22 +122,6 @@ export function ProductReviewsCarousel({
               )}
             </div>
           </div>
-
-          {/* Gradient fades on edges */}
-          <div
-            className={`
-            pointer-events-none absolute inset-y-0 left-0 hidden w-1/3
-            bg-gradient-to-r from-background
-            sm:block
-          `}
-          />
-          <div
-            className={`
-            pointer-events-none absolute inset-y-0 right-0 hidden w-1/3
-            bg-gradient-to-l from-background
-            sm:block
-          `}
-          />
         </div>
       )}
     </section>

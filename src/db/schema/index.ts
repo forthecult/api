@@ -11,6 +11,10 @@ export * from "./affiliates/types";
 export * from "./agent-preferences/tables";
 export * from "./agent-preferences/types";
 
+export * from "./blog/relations";
+export * from "./blog/tables";
+export * from "./blog/types";
+
 export * from "./brands/relations";
 export * from "./brands/tables";
 export * from "./brands/types";

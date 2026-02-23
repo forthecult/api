@@ -6,6 +6,7 @@ import {
   Circle,
   CreditCard,
   Crown,
+  FileText,
   FolderTree,
   Globe,
   Headphones,
@@ -139,6 +140,14 @@ const ADMIN_SECTIONS: NavSection[] = [
     href: "/notifications",
     icon: Mail,
     label: "Notifications",
+  },
+  {
+    children: [
+      { href: "/blog", label: "Blog posts" },
+      { href: "/blog/create", label: "Create post" },
+    ],
+    icon: FileText,
+    label: "Blog",
   },
   {
     href: "/site-settings",

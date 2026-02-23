@@ -15,6 +15,7 @@ import { toast } from "sonner";
 
 import { cn } from "~/lib/cn";
 import { useCart } from "~/lib/hooks/use-cart";
+import { sanitizeProductDescription } from "~/lib/sanitize-product-description";
 import { useCountryCurrency } from "~/lib/hooks/use-country-currency";
 import { useWishlist } from "~/lib/hooks/use-wishlist";
 import { isShippingExcluded } from "~/lib/shipping-restrictions";
@@ -404,16 +405,20 @@ export function ProductQuickView({
                       </p>
                     )}
 
-                    {/* Description */}
+                    {/* Description — sanitized HTML so inline tags (e.g. from Printify) render correctly */}
                     {product.description && (
-                      <p
+                      <div
                         className={`
                         line-clamp-4 text-sm leading-relaxed
                         text-muted-foreground
+                        [&_a]:underline [&_a]:hover:no-underline
                       `}
-                      >
-                        {product.description}
-                      </p>
+                        dangerouslySetInnerHTML={{
+                          __html: sanitizeProductDescription(
+                            product.description,
+                          ),
+                        }}
+                      />
                     )}
 
                     {/* Features */}

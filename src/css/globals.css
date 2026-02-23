@@ -348,6 +348,24 @@
   animation: marquee-half 80s linear infinite;
 }
 
+/* soft edge fade so content fades into background (no hard line) */
+.marquee-edge-fade {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 18%,
+    black 82%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 18%,
+    black 82%,
+    transparent 100%
+  );
+}
+
 .group:hover .animate-marquee-testimonials {
   animation-play-state: paused;
 }
