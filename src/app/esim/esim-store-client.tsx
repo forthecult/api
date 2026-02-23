@@ -551,8 +551,11 @@ const MOST_POPULAR_COUNTRY_ALIASES: string[][] = [
   ["Indonesia"],
 ];
 
+const MOST_POPULAR_EXCLUDE = new Set(["united states virgin islands"]);
+
 function getPopularIndex(country: Country): number {
   const name = country.name.toLowerCase();
+  if (MOST_POPULAR_EXCLUDE.has(name)) return -1;
   for (let i = 0; i < MOST_POPULAR_COUNTRY_ALIASES.length; i++) {
     const matched = MOST_POPULAR_COUNTRY_ALIASES[i]!.some(
       (alias) =>

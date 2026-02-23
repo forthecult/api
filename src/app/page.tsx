@@ -596,29 +596,27 @@ export default async function HomePage() {
                     href={`/${category.slug ?? category.id}`}
                     key={category.id}
                   >
-                    {category.image ? (
-                      <div
-                        className={`
-                        relative aspect-[4/3] w-full shrink-0 bg-white
+                    <div
+                      className={`
+                        relative aspect-[4/3] w-full shrink-0 bg-muted
                       `}
-                      >
-                        <Image
-                          alt=""
-                          className={`
-                            object-contain transition-transform duration-300
-                            group-hover:scale-105
-                          `}
-                          fill
-                          priority={index < 2}
-                          sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 192px"
-                          src={category.image}
-                          unoptimized={
-                            category.image.startsWith("data:") ||
-                            category.image.startsWith("http://")
-                          }
-                        />
-                      </div>
-                    ) : null}
+                    >
+                      <Image
+                        alt=""
+                        className={`
+                          object-contain transition-transform duration-300
+                          group-hover:scale-105
+                        `}
+                        fill
+                        priority={index < 2}
+                        sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 192px"
+                        src={category.image ?? "/placeholder.svg"}
+                        unoptimized={
+                          (category.image ?? "").startsWith("data:") ||
+                          (category.image ?? "").startsWith("http://")
+                        }
+                      />
+                    </div>
                     <div className="flex flex-col p-5">
                       <div
                         className={`
