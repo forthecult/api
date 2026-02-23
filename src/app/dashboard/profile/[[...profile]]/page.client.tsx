@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRef, useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import { compressAvatarImage } from "~/lib/avatar-image-compress";
 import { useCurrentUserOrRedirect } from "~/lib/auth-client";
 import { isRealEmail } from "~/lib/is-real-email";
 import { useUploadThing } from "~/lib/uploadthing";
@@ -66,7 +67,7 @@ export function ProfilePageClient() {
     fileInputRef.current?.click();
   };
 
-  const handleAvatarFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
@@ -74,7 +75,13 @@ export function ProfilePageClient() {
       toast.error("Image must be 1 MB or smaller");
       return;
     }
-    void startUpload([file]);
+    let toUpload = file;
+    try {
+      toUpload = await compressAvatarImage(file);
+    } catch {
+      // use original if compression fails (e.g. unsupported format)
+    }
+    void startUpload([toUpload]);
   };
 
   // Load profile data from API to get firstName/lastName separately
