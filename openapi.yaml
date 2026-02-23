@@ -4,16 +4,16 @@ info:
   title: For the Cult API
   version: "1.0"
   description: |
-    The most AI-agent-friendly eCommerce API for quality lifestyle products.
+    Shopping API with multi-chain and x402 crypto payments. Quality wellness, smart home, and lifestyle products and gifts.
     
     Designed for seamless integration with Agentic AI.
     
     **Key Features:**
-    - AI-first design with semantic search
-    - Multi-chain crypto payments (Solana, Ethereum, Base, Bitcoin, Dogecoin, Monero)
+    - Semantic search - agentic-friendly
+    - Multi-chain crypto payments (USDC, Solana, Ethereum, Base, Bitcoin, Dogecoin, Monero)
     - Structured errors with helpful suggestions
     - Privacy-first, optional account creation, auto-delete customer PII after 90 days
-    - Token holder discounts (hold CULT for free shipping, discounts, and perks)
+    - Membership discounts (hold CULT for free shipping, discounts, and perks)
     
     **Quick Start:**
     1. Call `GET /api/agent/capabilities` to understand what you can do
@@ -25,6 +25,7 @@ info:
     name: For the Cult
     email: dev@forthecult.store
     url: https://forthecult.store
+  x-support-discord: https://discord.gg/pMPwfQQX6c
   
   x-ai-friendly: true
   x-privacy-first: true
@@ -32,7 +33,7 @@ info:
 
 servers:
   - url: https://forthecult.store/api
-    description: Production API
+    description: Shopping API
 
 tags:
   - name: Health
@@ -41,8 +42,10 @@ tags:
     description: Browse categories, featured products
   - name: Products
     description: Search and retrieve product information
-  - name: Chains
-    description: Supported blockchain networks and tokens
+  - name: Payment Methods
+    description: Get all supported payment methods (chains and tokens)
+  - name: Cart
+    description: Preview totals and shipping before checkout
   - name: Checkout
     description: Create orders and generate payment requests
   - name: Orders
@@ -97,7 +100,7 @@ paths:
                     example: For the Cult
                   tagline:
                     type: string
-                    example: Quality lifestyle products for the modern human
+                    example: Quality lifestyle, wellness, and smart home products for the modern human
                   capabilities:
                     type: array
                     items:
@@ -127,44 +130,126 @@ paths:
                       type: string
                     example: [SOL, ETH, USDC, USDT, BTC, DOGE, XMR, CULT]
 
-  /chains:
+  /payment-methods:
     get:
-      tags: [Chains]
-      summary: List supported payment chains
+      tags: [Payment Methods]
+      summary: Get all supported payment methods
       description: |
-        Get all blockchain networks and tokens accepted for payment.
-        
-        **Returns:** Chain details including supported tokens, decimals, and contract addresses.
-        
-        Call this before checkout to verify a payment method is supported.
-      operationId: getChains
+        Returns enabled payment method settings (for UI) and supported chains/tokens (for API/agents).
+        Call before checkout to verify a payment method is supported.
+      operationId: getPaymentMethods
       responses:
         '200':
-          description: List of payment chains and tokens
+          description: Payment method settings and supported chains/tokens
           content:
             application/json:
               schema:
                 type: object
-                required: [chains]
+                required: [data, chains]
                 properties:
+                  data:
+                    type: array
+                    description: Enabled payment method settings (display order, label, methodKey)
+                    items:
+                      type: object
+                      properties:
+                        displayOrder: { type: "integer" }
+                        enabled: { type: "boolean" }
+                        label: { type: "string" }
+                        methodKey: { type: "string" }
                   chains:
                     type: array
+                    description: Supported blockchain networks and tokens
                     items:
                       $ref: '#/components/schemas/Chain'
-              example:
-                chains:
-                  - id: solana
-                    name: Solana
-                    tokens:
-                      - symbol: SOL
-                        name: Solana
-                        type: native
-                        decimals: 9
-                      - symbol: USDC
-                        name: USD Coin
-                        type: spl
-                        decimals: 6
-                        mint: EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
+
+  /cart/estimate:
+    post:
+      tags: [Cart]
+      summary: Preview cart totals before checkout
+      description: |
+        Returns subtotal, shipping estimate, and crypto conversion amounts. Use to show users an approximate total before creating an order. Final amounts are calculated at checkout.
+      operationId: estimateCart
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [items]
+              properties:
+                items:
+                  type: array
+                  description: Cart line items
+                  items:
+                    type: object
+                    required: [productId, quantity]
+                    properties:
+                      productId: { type: string }
+                      quantity: { type: integer, minimum: 1 }
+                      variantId: { type: string, description: Optional variant id }
+                shipping:
+                  type: object
+                  properties:
+                    countryCode: { type: string, description: ISO 2-letter country for shipping estimate }
+                    postalCode: { type: string, description: Postal / ZIP code for shipping estimate }
+      responses:
+        '200':
+          description: Cart estimate with subtotal, shipping, total, and crypto amounts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  subtotal: { type: object, properties: { usd: { type: number } } }
+                  shipping: { type: object, properties: { usd: { type: number }, method: { type: string }, estimatedDays: { type: string } } }
+                  total: { type: object, properties: { usd: { type: number } } }
+                  crypto: { type: object, description: Approximate amounts in ETH, SOL, USDC, USDT }
+                  expiresAt: { type: string, format: date-time }
+                  _note: { type: string, example: "Prices are estimates. Final amounts calculated at checkout." }
+
+  /shipping/calculate:
+    post:
+      tags: [Cart]
+      summary: Calculate exact shipping (and tax) for a cart
+      description: |
+        Returns exact shipping cost and tax estimate (when applicable) for given items and destination. Use for accurate totals before checkout.
+      operationId: calculateShipping
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [countryCode]
+              properties:
+                countryCode: { type: string, description: ISO 2-letter country code }
+                items:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      productId: { type: string }
+                      productVariantId: { type: string }
+                      quantity: { type: integer, minimum: 1 }
+                orderValueCents: { type: integer, minimum: 0, description: Cart subtotal in cents }
+                couponCode: { type: string }
+                stateCode: { type: string }
+                postalCode: { type: string, description: Postal / ZIP code }
+                address1: { type: string }
+                city: { type: string }
+      responses:
+        '200':
+          description: Shipping cost and optional tax estimate
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  shippingCents: { type: integer }
+                  label: { type: string, nullable: true }
+                  taxCents: { type: integer }
+                  freeShipping: { type: boolean }
 
   /categories:
     get:
@@ -193,7 +278,7 @@ paths:
                   - id: cat_mens
                     name: Mens
                     slug: mens
-                    description: Quality menswear for the sovereign individual
+                    description: Quality menswear for the health wellness individual
                     productCount: 45
                     subcategories:
                       - id: cat_mens_tees
@@ -263,12 +348,14 @@ paths:
           schema:
             type: number
           example: 100
-        - name: inStock
+        - name: sort
           in: query
-          description: Only show in-stock items
+          description: Sort order. newest = recently added, popular = best seller, rating = best rated
           schema:
-            type: boolean
-          example: true
+            type: string
+            enum: [newest, popular, rating, price_asc, price_desc]
+            default: newest
+          example: newest
         - name: limit
           in: query
           description: Results per page
@@ -471,7 +558,7 @@ paths:
                     properties:
                       tier:
                         type: string
-                        example: Diamond
+                        example: APEX
                       percentage:
                         type: number
                         example: 20

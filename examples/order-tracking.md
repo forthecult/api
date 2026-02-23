@@ -117,7 +117,7 @@ curl https://forthecult.store/api/orders/order_abc123
   },
   "_actions": {
     "next": "Track your shipment using the tracking number",
-    "help": "Contact support: weare@forthecult.store"
+    "help": "Contact support: weare@forthecult.store or Discord https://discord.gg/pMPwfQQX6c"
   }
 }
 ```

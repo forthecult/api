@@ -437,9 +437,9 @@ class ShoppingAgent:
         response = requests.get(f"{self.api_base}/products/{slug}")
         return response.json()
     
-    def get_chains(self):
-        """Get supported payment chains and tokens"""
-        response = requests.get(f"{self.api_base}/chains")
+    def get_payment_methods(self):
+        """Get supported payment methods; response has 'data' (settings) and 'chains' (networks and tokens)"""
+        response = requests.get(f"{self.api_base}/payment-methods")
         return response.json()
     
     def create_order(self, product_id, variant_id, email, shipping_address,
@@ -671,7 +671,7 @@ GET /api/products/search?q=privacy+books+for+beginners
 # Good -- specific
 GET /api/products/search?q=water+filter
 
-# Unnecessary -- API handles this internally
+# Unnecessary -- use natural language; the API handles query parsing
 GET /api/products/search?q=privacy+OR+books+AND+beginners
 ```
 
@@ -798,11 +798,9 @@ MOCK_PRODUCTS = {
 def mock_search(query):
     return MOCK_PRODUCTS
 
-# Use mocks in development
-if os.getenv("ENV") == "development":
-    search_products = mock_search
-else:
-    search_products = real_api_search
+# Optionally use mocks when running in development
+use_mocks = False  # set per your environment
+search_products = mock_search if use_mocks else real_api_search
 ```
 
 ---
@@ -810,6 +808,7 @@ else:
 ## Support
 
 - **Email:** dev@forthecult.store
+- **Discord (API support):** https://discord.gg/pMPwfQQX6c
 - **GitHub Issues:** https://github.com/forthecult/api/issues
 
 ---

@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "For the Cult API",
-    "description": "AI-friendly eCommerce API with multi-chain crypto payments",
+    "description": "Shopping API with multi-chain and x402 crypto payments. Quality wellness, smart home, and lifestyle products and gifts.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "forthecult"
   },
@@ -39,7 +39,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["agent", "capabilities"]
             },
-            "description": "Get what the API can do (for AI agents)"
+            "description": "Get what the API can do for agents"
           }
         },
         {
@@ -79,7 +79,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/products/search?q=dark roasted coffee&inStock=true&limit=10",
+              "raw": "{{baseUrl}}/products/search?q=dark roasted coffee&sort=newest&limit=10",
               "host": ["{{baseUrl}}"],
               "path": ["products", "search"],
               "query": [
@@ -107,9 +107,9 @@
                   "disabled": true
                 },
                 {
-                  "key": "inStock",
-                  "value": "true",
-                  "description": "Only in-stock items"
+                  "key": "sort",
+                  "value": "newest",
+                  "description": "Sort: newest (recently added), popular (best seller), rating (best rated), price_asc, price_desc"
                 },
                 {
                   "key": "limit",
@@ -150,19 +150,68 @@
       ]
     },
     {
-      "name": "Payment Chains",
+      "name": "Payment Methods",
       "item": [
         {
-          "name": "Get Supported Chains",
+          "name": "Get all supported payment methods",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/chains",
+              "raw": "{{baseUrl}}/payment-methods",
               "host": ["{{baseUrl}}"],
-              "path": ["chains"]
+              "path": ["payment-methods"]
             },
-            "description": "Get all supported blockchain networks and tokens"
+            "description": "Get all supported payment methods"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cart & Shipping",
+      "item": [
+        {
+          "name": "Estimate cart totals",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    { \"productId\": \"prod_privacy_book\", \"quantity\": 1 },\n    { \"productId\": \"prod_ethereum_hoodie\", \"variantId\": \"var_navy_l\", \"quantity\": 2 }\n  ],\n  \"shipping\": { \"countryCode\": \"US\" }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/cart/estimate",
+              "host": ["{{baseUrl}}"],
+              "path": ["cart", "estimate"]
+            },
+            "description": "Preview subtotal, shipping estimate, and crypto amounts before checkout. Final amounts calculated at checkout."
+          }
+        },
+        {
+          "name": "Calculate shipping",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"countryCode\": \"US\",\n  \"items\": [\n    { \"productId\": \"prod_privacy_book\", \"quantity\": 1 },\n    { \"productId\": \"prod_ethereum_hoodie\", \"quantity\": 2 }\n  ],\n  \"orderValueCents\": 9999\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/shipping/calculate",
+              "host": ["{{baseUrl}}"],
+              "path": ["shipping", "calculate"]
+            },
+            "description": "Exact shipping cost and tax estimate for a cart and destination. Use for accurate totals before checkout."
           }
         }
       ]
@@ -226,7 +275,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"items\": [\n    {\n      \"productId\": \"prod_ethereum_hoodie\",\n      \"variantId\": \"var_navy_l\",\n      \"quantity\": 1\n    }\n  ],\n  \"chain\": \"ethereum\",\n  \"token\": \"USDC\",\n  \"email\": \"holder@example.com\",\n  \"walletAddress\": \"0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb\",\n  \"shippingAddress\": {\n    \"name\": \"Token Holder\",\n    \"line1\": \"789 Crypto St\",\n    \"city\": \"Miami\",\n    \"state\": \"FL\",\n    \"postalCode\": \"33101\",\n    \"country\": \"US\"\n  }\n}"
+              "raw": "{\n  \"items\": [\n    {\n      \"productId\": \"prod_ethereum_hoodie\",\n      \"variantId\": \"var_navy_l\",\n      \"quantity\": 1\n    }\n  ],\n  \"chain\": \"ethereum\",\n  \"token\": \"USDC\",\n  \"email\": \"holder@example.com\",\n  \"wallet\": \"7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU\",\n  \"walletMessage\": \"<from GET /api/checkout/wallet-verify-message>\",\n  \"walletSignatureBase58\": \"<user signs walletMessage with wallet>\",\n  \"shippingAddress\": {\n    \"name\": \"Token Holder\",\n    \"line1\": \"789 Crypto St\",\n    \"city\": \"Miami\",\n    \"state\": \"FL\",\n    \"postalCode\": \"33101\",\n    \"country\": \"US\"\n  }\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/checkout",
@@ -284,24 +333,5 @@
       ]
     }
   ],
-  "event": [
-    {
-      "listen": "prerequest",
-      "script": {
-        "type": "text/javascript",
-        "exec": [
-          ""
-        ]
-      }
-    },
-    {
-      "listen": "test",
-      "script": {
-        "type": "text/javascript",
-        "exec": [
-          ""
-        ]
-      }
-    }
-  ]
+  "event": []
 }

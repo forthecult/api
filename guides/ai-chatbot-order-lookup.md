@@ -7,10 +7,10 @@ This document defines a **single, consistent** order-access model that is secure
 ## Principle: one endpoint, behavior by auth + verification
 
 - **`GET /orders/{orderId}`** is the only endpoint for fetching order details.
-- **Unauthenticated:** Caller must prove they are linked to the order by passing **one of** `email`, `walletAddress`, or `postalCode` (same verification as refund). Response is **Order Summary only (no PII)**. *Note: Unauthenticated lookup by email/wallet/postalCode is the target design; current implementation may use session or confirmation token (`ct`) for non-admin access.*
-- **Authenticated:** Caller has a valid session (or agent identity). Response is **full order details including PII**, but **only if the order belongs to that customer**. Otherwise 404.
+- **Unauthenticated:** Caller must prove they are linked to the order by passing **one of** `email`, `walletAddress`, or `postalCode` (same verification as refund). Response is **Order Summary only (no PII)**.
+- **Authenticated:** Caller has valid authentication (session or agent identity). Response is **full order details including PII**, but **only if the order belongs to that customer**. Otherwise 404.
 
-No separate "order lookup" endpoint: verification is done via the same `GET` with query params, and the backend can **reuse the same verification logic** already used by the refund flow (`POST /api/refund/lookup`).
+No separate "order lookup" endpoint: verification is done via the same `GET` with query params, using the same verification rules as the refund flow (`POST /api/refund/lookup`).
 
 ---
 
@@ -18,7 +18,7 @@ No separate "order lookup" endpoint: verification is done via the same `GET` wit
 
 1. **Unauthenticated** users get **non-PII** order info only after proving linkage (orderId + email, or wallet, or postal code).
 2. **Authenticated** users get **full details including PII** for **their own orders only**. The AI must never return another customer's data.
-3. **No redundancy:** one endpoint; verification logic shared with refund (and optionally track).
+3. **No redundancy:** one endpoint; same verification rules as refund (and optionally track).
 
 ---
 
@@ -42,7 +42,7 @@ No separate "order lookup" endpoint: verification is done via the same `GET` wit
 
 ### Exposed only to the authenticated owner
 
-- All of the above PII, but **only for orders that belong to the authenticated customer**. The backend must scope by `userId` / `email` (or agent id) and return 404 for other customers' orders.
+- All of the above PII, but **only for orders that belong to the authenticated customer**. Other customers' orders are not accessible (404).
 
 ---
 
@@ -56,18 +56,15 @@ No separate "order lookup" endpoint: verification is done via the same `GET` wit
   - `email` — billing email
   - `walletAddress` — payment (wallet) address used at checkout
   - `postalCode` — shipping postal / ZIP code
-- Backend: load order by `orderId`; if not found → 404.
-- Backend: verify that the provided value matches the order's `email`, `payerWalletAddress`, or `shippingZip` (same normalization as `POST /api/refund/lookup`: case-insensitive email, normalized postal).
-- If verification fails → 404 with a generic message ("Order not found or the details you entered don't match").
+- If the order is not found → 404.
+- The provided value must match the order (same normalization as `POST /api/refund/lookup`: case-insensitive email, normalized postal). If verification fails → 404 with a generic message ("Order not found or the details you entered don't match").
 - If verification succeeds → return **Order Summary (no PII)** (see shape below).
 
-**When the caller is authenticated** (session or agent identity)
+**When the caller is authenticated**
 
-- Ignore query params for authorization. Resolve the current user/agent.
-- If the order's `userId` / `email` (or linked agent id) does **not** match the authenticated identity → 404.
-- If it matches → return **full order details** (including PII) for that order.
-
-**Admin** (if applicable) can continue to get full details for any order via existing admin auth.
+- Ignore query params for authorization. The request is tied to the current user/agent.
+- If the order does **not** belong to the authenticated identity → 404.
+- If it belongs to that identity → return **full order details** (including PII) for that order.
 
 ---
 
@@ -126,8 +123,8 @@ Same as your current full order response (items, totals, status, tracking, **plu
 
 | Flow | Current behavior | Alignment |
 |------|------------------|-----------|
-| **Refund** | `POST /api/refund/lookup` with `orderId` + `lookupValue` (email, wallet, or postal). Verifies; returns `{ isCrypto }`. | Keep as-is. Backend should use a **shared verification helper**: given `orderId` and one of `email` / `walletAddress` / `postalCode`, return whether the order exists and matches. Use this in refund lookup and in `GET /orders/{orderId}` when unauthenticated. |
-| **Track (email link)** | `POST /api/orders/track` (orderId + email or paymentAddress) → token. `GET /api/orders/{orderId}/track?t=token` → full order (with PII). | Optional: add `postalCode` to `POST /api/orders/track` so verification matches refund (email, wallet, or postal). Token-based track can keep returning full PII for "magic link" use. |
+| **Refund** | `POST /api/refund/lookup` with `orderId` + `lookupValue` (email, wallet, or postal). Verifies; returns `{ isCrypto }`. | Same verification rules: given `orderId` and one of `email` / `walletAddress` / `postalCode`, the order must exist and match. Used in refund lookup and in `GET /orders/{orderId}` when unauthenticated. |
+| **Track (email link)** | `POST /api/orders/track` (orderId + email or paymentAddress); then use the returned link to view full order (with PII). | Same verification rules (email, wallet, or postal) can be used where applicable. |
 | **Chatbot (unauthenticated)** | — | Use **`GET /orders/{orderId}?email=...`** (or `walletAddress=...` or `postalCode=...`). Same verification; response is Order Summary only. |
 | **Chatbot (authenticated)** | `GET /api/orders/{orderId}` already requires session and returns full for owner. | No change. Ensure "my orders" list is available via `GET /orders/me` or `GET /agent/me/orders` so the AI can choose an order then call `GET /orders/{orderId}` with auth. |
 
@@ -157,21 +154,8 @@ The API returns PII only when the **current** user is authenticated. Agents must
 
 ---
 
-## Backend implementation checklist
-
-- [ ] **Shared verification helper**  
-  `verifyOrderByProof(orderId, { email?, walletAddress?, postalCode? })`: same logic as `POST /api/refund/lookup` (normalize email, wallet, postal; match against order). Use in refund lookup and in `GET /orders/{orderId}`.
-- [ ] **`GET /orders/{orderId}`**  
-  - If unauthenticated: require one of `email`, `walletAddress`, `postalCode`. Call shared helper; on success return Order Summary (no PII); on failure → 404.  
-  - If authenticated: resolve user/agent; if order belongs to them return full order; else 404.
-- [ ] **Optional:** Add `postalCode` to `POST /api/orders/track` so verification is identical to refund (email, wallet, or postal).
-- [ ] **Optional:** If you prefer the chatbot not to send email in the URL, support **POST** to the same resource (e.g. body `{ orderId, email }` or `{ orderId, walletAddress }` or `{ orderId, postalCode }`) that returns Order Summary when verification succeeds. Either way, same verification logic and same response shape.
-- [ ] Document in OpenAPI/skill: `GET /orders/{orderId}` with optional query params and the two response shapes (summary vs full) by auth.
-
----
-
 ## Security summary
 
 - **Unauthenticated:** Only orderId + one verified factor (email/wallet/postal) → Order Summary only, no PII.  
 - **Authenticated:** Only that customer's orders → full details.  
-- **Same verification as refund** → one mental model, one shared implementation, no redundant endpoints.
+- **Same verification as refund** → one mental model, no redundant endpoints.

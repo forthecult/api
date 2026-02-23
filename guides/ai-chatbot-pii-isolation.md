@@ -1,6 +1,6 @@
 # AI Chatbot — PII Expectations (Third-Party Agents)
 
-When your agent uses the For the Cult API to answer order or account questions, the API returns **personally identifiable information (PII)** only when the **current** user is authenticated and the request is authorized for that user. To protect customer data, agents must handle PII appropriately.
+When your agent uses For the Cult's API to answer order or account questions, the API returns **personally identifiable information (PII)** only when the **current** user is authenticated and the request is authorized for that user. To protect customer data, agents must handle PII appropriately.
 
 ---
 

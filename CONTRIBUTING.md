@@ -112,7 +112,7 @@ We welcome examples in any language! Priority:
 
 1. JavaScript/TypeScript (most common)
 2. Python (popular for AI/ML)
-3. Go, Rust, Ruby, PHP, Java, etc.
+3. Go, Rust, Ruby, Java, etc.
 
 ---
 

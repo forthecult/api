@@ -1,6 +1,6 @@
-# For the Cult eCommerce API Documentation
+# For the Cult Shopping API Documentation
 
-> **The most AI-agent-friendly eCommerce API.** Quality lifestyle products with multi-chain crypto payments.
+> **Shopping API with Agentic-friendly features.** Quality lifestyle, wellness, and smart home products and gifts with multi-chain crypto payments.
 
 [![OpenAPI 3.0](https://img.shields.io/badge/OpenAPI-3.0-green.svg)](./openapi.yaml)
 [![AI Friendly](https://img.shields.io/badge/AI-Friendly-blue.svg)](./guides/ai-agents.md)
@@ -11,7 +11,7 @@
 
 ## Overview
 
-For the Cult API is designed for seamless integration with Agentic AI. Shop quality lifestyle products with support for multi-chain crypto payments including Solana, Ethereum, Base, Bitcoin, and more.
+Shop quality lifestyle, wellness, and smart home products with multi-chain crypto and x402 payments including USDC, Solana, Ethereum, Base, Bitcoin, and more. For the Cult's Shopping API is designed for seamless integration with Agentic AI.
 
 **Base URL**: `https://forthecult.store/api`
 
@@ -21,7 +21,7 @@ For the Cult API is designed for seamless integration with Agentic AI. Shop qual
 
 ## Quick Start
 
-### For AI Agents
+### For Agents
 
 Start here
 
@@ -95,7 +95,7 @@ console.log(order.payment.amount);  // Amount in USDC
 | **[AI Agents Guide](./guides/ai-agents.md)** | AI/LLM developers | Claude, ChatGPT, LangChain integration |
 | **[OpenClaw Integration](./guides/openclaw-integration.md)** | Agent framework users | Moltbook's OpenClaw framework guide |
 | **[Developer Guide](./guides/developers.md)** | Web/app developers | REST API integration, frontend/backend examples |
-| **[AI Chatbot Order Lookup](./guides/ai-chatbot-order-lookup.md)** | Backend / AI integration | PII-safe order lookup contract for chatbot (unauthenticated + authenticated) |
+| **[AI Chatbot Order Lookup](./guides/ai-chatbot-order-lookup.md)** | AI integration | PII-safe order lookup for chatbot (unauthenticated + authenticated) |
 | **[AI Chatbot PII Expectations](./guides/ai-chatbot-pii-isolation.md)** | Third-party AI agents | Do not store or share PII; use only for current user; follow session isolation best practices |
 | **[Agent Skills](./skills/README.md)** | Molt / OpenClaw / AgentSkills | Skill pack for agents to shop, checkout, and track orders |
 
@@ -127,7 +127,7 @@ console.log(order.payment.amount);  // Amount in USDC
 | `/agent/capabilities` | GET | Get AI-friendly capabilities description |
 | `/agent/products` | GET | Agent-optimized product list (?q=, ?limit=, ?offset=) |
 | `/agent/me` | GET | Verified Moltbook agent profile (requires `X-Moltbook-Identity`) |
-| `/chains` | GET | List supported payment chains and tokens |
+| `/payment-methods` | GET | List supported payment methods (settings + chains/tokens) |
 
 **For AI agents:** Use the agent-facing base URL when configured (e.g. [ai.forthecult.store](https://ai.forthecult.store)): [ai.forthecult.store/for-agents](https://ai.forthecult.store/for-agents) — quick start, auth instructions, my orders, preferences, and key endpoints. Set `NEXT_PUBLIC_AGENT_APP_URL=https://ai.forthecult.store` so capabilities and links use the subdomain.
 
@@ -153,15 +153,20 @@ console.log(order.payment.amount);  // Amount in USDC
 | `category` | string | Filter by category slug |
 | `priceMin` | number | Minimum price in USD |
 | `priceMax` | number | Maximum price in USD |
-| `inStock` | boolean | Only show in-stock items |
+| `sort` | string | `newest` (recently added), `popular` (best seller), `rating` (best rated), `price_asc`, `price_desc` (default: newest) |
 | `limit` | integer | Results per page (default: 20, max: 100) |
 | `offset` | integer | Pagination offset |
 
-### Checkout & Orders
+Search returns only in-stock items.
+
+### Cart & Checkout
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
+| `/cart/estimate` | POST | **Preview totals before checkout** — subtotal, shipping estimate, and crypto amounts. Send `items` (productId, quantity, optional variantId) and optional `shipping.countryCode`. Final amounts are calculated at checkout. |
+| `/shipping/calculate` | POST | Exact shipping cost (and tax estimate when applicable) for a cart and destination. Use for accurate shipping before checkout. |
 | `/checkout` | POST | Create order and generate crypto payment request |
+| `/checkout/wallet-verify-message` | GET | Message for wallet ownership verification (sign and send with `walletMessage` + `walletSignature` or `walletSignatureBase58`) |
 | `/orders/{orderId}/status` | GET | Check order payment and shipping status |
 | `/orders/{orderId}` | GET | Get full order details |
 
@@ -173,7 +178,7 @@ console.log(order.payment.amount);  // Amount in USDC
 
 ```bash
 # Natural language search -- the API understands intent
-GET /api/products/search?q=privacy+book+for+beginners
+GET /api/products/search?q=gifts+under+$100
 GET /api/products/search?q=birthday+gift+for+my+companion
 
 # Helpful error messages with suggestions for agents
@@ -218,13 +223,12 @@ Support for 9+ blockchains and 20+ tokens:
 | **Dogecoin** | DOGE |
 | **Monero** | XMR |
 
-Check `/chains` endpoint for current token availability and contract addresses.
+Check `GET /payment-methods` for supported payment methods and token availability (response includes `chains`).
 
 ### Privacy-First
 
 - **Guest checkout optional** -- No user accounts required
 - **Auto-delete PII** -- Customer data optionally deleted after 90 days
-- **No tracking scripts** -- No Google Analytics, Facebook Pixel, etc.
 
 ### CULT Member Benefits
 
@@ -235,7 +239,7 @@ Hold and stake CULT tokens for discounts and perks:
 - Exclusive products and early access
 - Vote on new products
 
-Include your `walletAddress` in checkout requests to verify holdings and apply discounts automatically.
+You may include an optional wallet address for member tier discounts. **Ownership is verified**: either (1) the customer is authenticated and the wallet is linked to their account, or (2) the client signs the message from `GET /api/checkout/wallet-verify-message` and sends `walletMessage` + `walletSignature` (or `walletSignatureBase58`) with the request. Without verification, the API returns `400` with `code: "WALLET_VERIFICATION_REQUIRED"`.
 
 ---
 
@@ -244,7 +248,7 @@ Include your `walletAddress` in checkout requests to verify holdings and apply d
 ### Step 1: Search for Products
 
 ```bash
-curl "https://forthecult.store/api/products/search?q=coffee&inStock=true"
+curl "https://forthecult.store/api/products/search?q=coffee&sort=newest"
 ```
 
 ```json
@@ -361,15 +365,13 @@ curl https://forthecult.store/api/orders/order_abc123xyz/status
 2. **Use semantic search** -- Natural language queries work better than keyword matching
 3. **Follow action hints** -- Use the `_actions` fields to guide next steps
 4. **Handle errors gracefully** -- Error responses include helpful `suggestions` arrays
-5. **Recommend stablecoins** -- USDC/USDT for predictable pricing
 
 ### For Developers
 
 1. **Check health first** -- Verify API availability with `/health`
-2. **Validate chains/tokens** -- Call `/chains` before checkout to ensure payment method is supported
+2. **Validate chains/tokens** -- Call `GET /payment-methods` before checkout (use response `chains`) to ensure payment method is supported
 3. **Store order IDs** -- You'll need them to track order status
-4. **Set reasonable timeouts** -- Payment windows are time-limited (15 minutes)
-5. **Cache static data** -- Categories and chains don't change frequently
+4. **Cache static data** -- Categories and chains don't change frequently
 
 ### Rate Limits
 
@@ -414,7 +416,7 @@ This `/api` folder is the **single source of truth** for API documentation.
 |----------|--------|-------------|
 | `/health` | GET | Health check |
 | `/agent/capabilities` | GET | AI capabilities description |
-| `/chains` | GET | Supported payment chains and tokens |
+| `/payment-methods` | GET | Supported payment methods (data + chains/tokens) |
 | `/categories` | GET | Product categories |
 | `/products/featured` | GET | Featured products |
 | `/products/search` | GET | Search products (semantic + filters) |
@@ -442,7 +444,7 @@ To validate endpoints against a running instance, call the base URL (e.g. `https
 | **Production API** | https://forthecult.store/api |
 | **Store** | https://forthecult.store |
 | **GitHub** | https://github.com/forthecult/api |
-| **Support** | weare@forthecult.store |
+| **Support** | weare@forthecult.store · [Discord](https://discord.gg/pMPwfQQX6c) |
 
 ---
 
@@ -464,7 +466,7 @@ This API documentation is licensed under MIT. See [LICENSE](./LICENSE).
 
 ## Tags for AI Discovery
 
-`#ai-agents` `#ecommerce-api` `#crypto-payments` `#solana` `#ethereum` `#bitcoin` `#privacy-first` `#openapi` `#rest-api` `#web3-shopping` `#no-auth-required`
+`#agentic-commerce` `#ai-shopping` `#ecommerce-api` `#crypto-payments` `#solana` `#ethereum` `#bitcoin` `#privacy-first` `#openapi` `#rest-api` `#web3-shopping` `#no-auth-required`
 
 ---
 

@@ -1,6 +1,6 @@
 # Developer Guide
 
-> **Complete guide to integrating For the Cult API into your application.**
+> **Guide to integrating Shopping API into your application.**
 
 ---
 
@@ -18,32 +18,7 @@ All public endpoints are open -- no API key needed for browsing or checkout.
 
 ### Sign in with Moltbook (optional)
 
-For endpoints that should accept **AI agent identity** (e.g. agent-specific features, karma-gated actions), the API supports [Sign in with Moltbook](https://moltbook.com/developers.md).
-
-**Server environment variables:**
-
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `MOLTBOOK_APP_KEY` | Yes (for Moltbook auth) | **Set this to your app’s API key** from [Moltbook Developer Dashboard](https://moltbook.com/developers/dashboard). The key starts with `moltdev_`. Create an app there, copy the key, and put it in your server `.env` or host environment (do not commit the key). Example in `.env`: `MOLTBOOK_APP_KEY=moltdev_xxxx...` |
-| `MOLTBOOK_AUDIENCE` | No (recommended) | Your service domain (e.g. `forthecult.store`) so tokens are restricted to your app. |
-| `NEXT_PUBLIC_AGENT_APP_URL` | No | Agent-facing base URL (e.g. `https://ai.forthecult.store`). When set, capabilities and the for-agents page use this for all agent links so agents can use a dedicated subdomain. |
-
-**Flow:** The agent sends header `X-Moltbook-Identity` with a temporary identity token. The server verifies it with `POST https://moltbook.com/api/v1/agents/verify-identity` (using `X-Moltbook-App-Key` and optional `audience`). If valid, the route receives the verified agent profile (`id`, `name`, `karma`, `owner.x_handle`, etc.). Invalid or expired tokens return `401` with `error` codes such as `identity_token_expired`, `invalid_token`, or `invalid_app_key`.
-
-**Example (Next.js route):** Extract token, verify, then use the agent in your handler:
-
-```ts
-import { getMoltbookAgentFromRequest } from "~/lib/moltbook-auth";
-
-export async function GET(request: NextRequest) {
-  const result = await getMoltbookAgentFromRequest(request);
-  if (result.error) return result.error;
-  const agent = result.agent; // id, name, karma, owner, etc.
-  return NextResponse.json({ agent });
-}
-```
-
-**Example endpoint:** `GET /api/agent/me` returns the current verified Moltbook agent when `X-Moltbook-Identity` is present and valid.
+For endpoints that accept **AI agent identity** (e.g. agent-specific features, karma-gated actions), the API supports [Sign in with Moltbook](https://moltbook.com/developers.md). Configure your server with your Moltbook app key from the [Moltbook Developer Dashboard](https://moltbook.com/developers/dashboard); see Moltbook’s documentation for setup. The agent sends header `X-Moltbook-Identity` with an identity token; when valid, your routes receive the verified agent profile. Invalid or expired tokens return `401`. **Example endpoint:** `GET /api/agent/me` returns the current verified Moltbook agent when `X-Moltbook-Identity` is present and valid.
 
 ### CORS (AI agents, browser clients)
 
@@ -221,9 +196,14 @@ async function waitForPayment(orderId) {
 
 ### Token Holder Discounts
 
-Include wallet address to verify CULT token holdings:
+For member tier discounts, include a wallet only if you can verify ownership: (1) customer is authenticated and the wallet is linked to their account, or (2) get the message from `GET /api/checkout/wallet-verify-message`, have the customer sign it with their wallet, then send `wallet`, `walletMessage`, and `walletSignature` (or `walletSignatureBase58`) in the request. Without verification, the API returns 400.
 
 ```javascript
+// 1. Get message to sign (valid 5 min)
+const { message } = await fetch('https://forthecult.store/api/checkout/wallet-verify-message').then(r => r.json());
+// 2. User signs `message` with their wallet (e.g. Phantom), get signature
+// 3. Include in checkout or automatic-coupon request:
+//    wallet: address, walletMessage: message, walletSignatureBase58: signature
 const response = await fetch('https://forthecult.store/api/checkout', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
@@ -239,6 +219,7 @@ const response = await fetch('https://forthecult.store/api/checkout', {
       zip: '33101',
       countryCode: 'US'
     }
+    // wallet, walletMessage, walletSignatureBase58 when using signed-message verification
   })
 });
 
@@ -487,7 +468,7 @@ curl "https://forthecult.store/api/products/search?q=smart+home"
 curl "https://forthecult.store/api/products/medium-roast-coffee"
 
 # Get supported chains
-curl https://forthecult.store/api/chains
+curl https://forthecult.store/api/payment-methods
 
 # Create order (use product id from search or product detail)
 curl -X POST https://forthecult.store/api/checkout \
@@ -636,6 +617,7 @@ monitor.start();
 ## Support
 
 - **Email:** dev@forthecult.store
+- **Discord (API support):** https://discord.gg/pMPwfQQX6c
 - **GitHub Issues:** https://github.com/forthecult/api/issues
 
 ---

@@ -24,6 +24,9 @@ env/
 *~
 .DS_Store
 
+# Generated / alternate docs (canonical docs live in guides, skills, README, openapi.yaml)
+docs/
+
 # Build outputs
 dist/
 build/

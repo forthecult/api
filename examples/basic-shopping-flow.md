@@ -156,7 +156,7 @@ curl https://forthecult.store/api/products/premium-black-hoodie
 ## Step 5: Check Available Payment Methods
 
 ```bash
-curl https://forthecult.store/api/chains
+curl https://forthecult.store/api/payment-methods
 ```
 
 **Response:**
@@ -332,7 +332,7 @@ curl https://forthecult.store/api/orders/order_abc123xyz
   },
   "_actions": {
     "next": "Track your shipment using the tracking number",
-    "help": "Contact support: weare@forthecult.store"
+    "help": "Contact support: weare@forthecult.store or Discord https://discord.gg/pMPwfQQX6c"
   }
 }
 ```
@@ -367,7 +367,7 @@ async function completeShoppingFlow() {
     console.log('Selected variant:', variant.name);
 
     // 4. Get payment chains
-    const chains = await fetch(`${API_BASE}/chains`).then(r => r.json());
+    const { chains } = await fetch(`${API_BASE}/payment-methods`).then(r => r.json());
     console.log('Available chains:', chains.chains.map(c => c.name));
 
     // 5. Create order — productId must be product.id from search/details

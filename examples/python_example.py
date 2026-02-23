@@ -17,7 +17,7 @@ BASE_URL = "https://forthecult.store/api"
 
 
 class CultAPI:
-    """Simple Python client for the For the Cult API."""
+    """Simple Python client For the Cult Shopping API."""
 
     def __init__(self, base_url: str = BASE_URL):
         self.base_url = base_url
@@ -70,9 +70,9 @@ class CultAPI:
         response.raise_for_status()
         return response.json()
 
-    def get_chains(self) -> Dict:
-        """Get supported payment chains and tokens."""
-        response = self.session.get(f"{self.base_url}/chains")
+    def get_payment_methods(self) -> Dict:
+        """Get supported payment methods. Response has 'data' and 'chains'; use response['chains'] for chain/token list."""
+        response = self.session.get(f"{self.base_url}/payment-methods")
         response.raise_for_status()
         return response.json()
 

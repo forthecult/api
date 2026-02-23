@@ -2,7 +2,11 @@
 
 Base URL: **`https://forthecult.store`** — all paths below are relative to this (e.g. **GET /api/health**).
 
-No authentication required for discovery, search, checkout, and order status. Order details (email, shipping) require session owner, admin, or confirmation token. Admin endpoints (`/api/admin/*`) are not public. This API is purpose-built for Agentic Commerce — AI agents autonomously discovering, purchasing, and tracking physical goods.
+No API key or environment variables required. No authentication is needed for discovery, search, checkout, and order status. Order details (email, shipping) are returned only when the caller is authorized for that order. **Identity header:** `X-Moltbook-Identity` is optional and only for agent-only endpoints (`/api/agent/me`, `/api/agent/me/orders`, `/api/agent/me/preferences`); use it only when the agent runtime explicitly supplies it—do not send it for normal store operations. This API is purpose-built for Agentic Commerce — AI agents autonomously discovering, purchasing, and tracking physical goods.
+
+**Payment options:**
+- **Standard checkout** (`POST /api/checkout`) — Multi-chain payments, poll for confirmation
+- **x402 checkout** (`POST /api/checkout/x402`) — HTTP 402 protocol, USDC on Solana, fully agent-driven
 
 ---
 
@@ -49,19 +53,69 @@ Natural-language description of what the API can do. **Call this first.**
 }
 ```
 
+### POST `/api/agent/shop`
+
+AI-powered shopping assistant. Natural language in, structured products + AI reply out.
+
+**Request body:**
+
+```json
+{
+  "message": "wireless noise-canceling headphones under $200",
+  "context": {
+    "priceRange": { "max": 200 },
+    "preferences": ["good battery life", "comfortable"],
+    "category": "tech"
+  }
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `message` | string | Yes | Natural language shopping request (max 1000 chars) |
+| `context.priceRange` | object | No | `{ min?: number, max?: number }` — price bounds in USD |
+| `context.preferences` | string[] | No | Feature preferences to consider |
+| `context.category` | string | No | Category slug to filter |
+
+**Response:**
+
+```json
+{
+  "reply": "I found some great wireless noise-canceling headphones under $200...",
+  "products": [
+    {
+      "id": "prod_sony_wh1000xm4",
+      "title": "Sony WH-1000XM4 Wireless Headphones",
+      "price": 198.00,
+      "currency": "USD",
+      "rating": 4.7,
+      "reviewCount": 42531,
+      "imageUrl": "https://...",
+      "source": "store",
+      "inStock": true,
+      "badge": "bestseller"
+    }
+  ],
+  "_parsed": {
+    "query": "wireless noise-canceling headphones",
+    "priceMax": 200
+  }
+}
+```
+
 ### GET `/api/agent/me`
 
-Returns the verified Moltbook agent profile. Requires `X-Moltbook-Identity` header.
+Returns the verified Moltbook agent profile when the caller is an authenticated Moltbook agent. **Optional:** only call this endpoint when the agent runtime explicitly supplies an `X-Moltbook-Identity` token. Do not send or infer this header for normal store operations (browsing, search, checkout, order status by ID). Not declared in `requires.env` — the header is supplied by the runtime when available.
 
 **Headers:**
 
 | Header | Required | Description |
 |--------|----------|-------------|
-| `X-Moltbook-Identity` | Yes | Moltbook identity token from agent runtime |
+| `X-Moltbook-Identity` | Yes (for this endpoint) | Moltbook identity token from agent runtime; use only when runtime supplies it |
 
 **Response:** Agent profile object (name, permissions, capabilities).
 
-### GET `/api/chains`
+### GET `/api/payment-methods`
 
 All supported blockchain networks and tokens for payment.
 
@@ -255,19 +309,22 @@ Badge values: `trending`, `new`, `bestseller`.
 
 ### GET `/api/products/search`
 
-Semantic search with filters. Supports natural-language queries.
+Semantic search with filters. Supports natural-language queries. When `source=all` (default), results include both store products and marketplace products; use `source=store` for store-only or `source=marketplace` for marketplace-only.
 
 **Query parameters:**
 
 | Param | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
 | `q` | string | Yes | — | Search query (natural language supported) |
-| `category` | string | No | — | Category slug filter |
+| `source` | string | No | `all` | `all` — store + marketplace; `store` — store catalog only; `marketplace` — marketplace only |
+| `category` | string | No | — | Category slug filter (store products only) |
 | `priceMin` | number | No | — | Minimum USD price |
 | `priceMax` | number | No | — | Maximum USD price |
-| `inStock` | boolean | No | — | Only in-stock items |
+| `sort` | string | No | `newest` | `newest` (recently added), `popular` (best seller), `rating` (best rated), `price_asc`, `price_desc` |
 | `limit` | integer | No | 20 | Results per page (max 100) |
 | `offset` | integer | No | 0 | Pagination offset |
+
+Search returns only in-stock items.
 
 **Response:**
 
@@ -294,7 +351,11 @@ Semantic search with filters. Supports natural-language queries.
 }
 ```
 
-**Important:** Use the `id` field from products when creating orders. Use the `slug` field when fetching product details.
+**Important:** Use the `id` field from products when creating orders. For store products use the `slug` field when fetching product details. When `source=all` or `source=marketplace`, some items may include `source: "marketplace"` and `productUrl`; use that item's `id` as the **asin** in checkout (see POST `/api/checkout`).
+
+### GET `/api/products/store/search`
+
+Store catalog only (no marketplace). Same query parameters and response shape as `/api/products/search` with `source=store`. Use when the client only wants products from the store catalog.
 
 ### GET `/api/agent/products`
 
@@ -358,7 +419,94 @@ Full product detail including variants, images, and related products.
 
 ### POST `/api/checkout`
 
-Create an order and generate a payment request. See [CHECKOUT-FIELDS.md](CHECKOUT-FIELDS.md) for complete field specification.
+Create an order and generate a payment request (standard flow — poll for payment confirmation). See [CHECKOUT-FIELDS.md](CHECKOUT-FIELDS.md) for complete field specification.
+
+### POST `/api/checkout/x402`
+
+**x402 checkout** — Fully agent-driven payments via HTTP 402 protocol. USDC on Solana.
+
+**Flow:**
+1. POST order details (no X-PAYMENT header) → returns 402 with payment requirements
+2. Agent builds and signs USDC transfer transaction with memo `FTC Order: {orderId}`
+3. Retry with `X-PAYMENT` header containing base64-encoded signed transaction → returns 201
+
+**Step 1 Request (no payment):**
+
+```json
+{
+  "email": "agent@example.com",
+  "items": [
+    { "productId": "prod_black_hoodie_001", "variantId": "var_hoodie_m_black", "quantity": 1 }
+  ],
+  "shipping": {
+    "name": "John Doe",
+    "address1": "123 Main St",
+    "city": "San Francisco",
+    "stateCode": "CA",
+    "zip": "94102",
+    "countryCode": "US"
+  }
+}
+```
+
+**Step 1 Response: HTTP 402**
+
+```json
+{
+  "code": "PAYMENT_REQUIRED",
+  "message": "Payment required: send 79.99 USDC to complete order",
+  "orderId": "abc123",
+  "totals": { "subtotalUsd": 79.99, "shippingUsd": 0, "totalUsd": 79.99 },
+  "paymentInstructions": {
+    "protocol": "x402",
+    "network": "solana",
+    "token": "USDC",
+    "tokenMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+    "amount": "79990000",
+    "amountHuman": "79.99",
+    "payTo": "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU",
+    "memo": "FTC Order: abc123",
+    "maxTimeoutSeconds": 300
+  }
+}
+```
+
+Headers include `PAYMENT-REQUIRED` (base64 JSON) with full x402 payment requirements.
+
+**Step 3 Request (with payment):**
+
+```http
+POST /api/checkout/x402
+Content-Type: application/json
+X-PAYMENT: base64({"transaction": "<signed-tx-base64>"})
+
+{ ...same body as step 1... }
+```
+
+**Step 3 Response: HTTP 201**
+
+```json
+{
+  "success": true,
+  "orderId": "abc123",
+  "status": "paid",
+  "payment": {
+    "method": "x402_usdc",
+    "network": "solana",
+    "token": "USDC",
+    "transactionSignature": "5xYz..."
+  },
+  "totals": { "subtotalUsd": 79.99, "shippingUsd": 0, "totalUsd": 79.99 },
+  "_actions": {
+    "next": "Order is paid and processing",
+    "status": "/api/orders/abc123/status"
+  }
+}
+```
+
+---
+
+**Items:** Each element may be either a store product or a marketplace product. Store: `{ "productId": "<id>", "quantity": n }` (optional `variantId` when the product has variants). Marketplace: `{ "asin": "<asin>", "quantity": n }` — use the product `id` from search results when that product has `source: "marketplace"` (the id is the ASIN).
 
 **Request body (JSON):**
 
@@ -366,7 +514,8 @@ Create an order and generate a payment request. See [CHECKOUT-FIELDS.md](CHECKOU
 {
   "items": [
     { "productId": "prod_black_hoodie_001", "variantId": "var_hoodie_m_black", "quantity": 1 },
-    { "productId": "prod_top_blast_coffee", "quantity": 2 }
+    { "productId": "prod_top_blast_coffee", "quantity": 2 },
+    { "asin": "B0C8PSMPTH", "quantity": 1 }
   ],
   "email": "customer@example.com",
   "payment": { "chain": "solana", "token": "USDC" },
@@ -397,7 +546,7 @@ Create an order and generate a payment request. See [CHECKOUT-FIELDS.md](CHECKOU
     "qrCode": "data:image/png;base64,iVBOR..."
   },
   "discount": {
-    "tier": "Gold",
+    "tier": "PRIME",
     "percentage": 15,
     "savedAmount": 20.25
   },
@@ -448,7 +597,7 @@ Poll for payment and fulfillment status.
 
 ### GET `/api/orders/{orderId}`
 
-Full order details including items, payment (with `txHash`), shipping, totals, and tracking. **Access:** session owner, admin, or `?ct=<confirmationToken>` for recent orders (&lt;1h). Without authorization, `email` and `shipping` are redacted or omitted.
+Full order details including items, payment (with `txHash`), shipping, totals, and tracking. **Access:** returned only when the caller is authorized for that order. Without authorization, `email` and `shipping` are redacted or omitted.
 
 **Response (when authorized):**
 
@@ -499,12 +648,12 @@ Full order details including items, payment (with `txHash`), shipping, totals, a
   },
   "_actions": {
     "next": "Track your shipment using the tracking number",
-    "help": "Contact support: weare@forthecult.store"
+    "help": "Contact support: weare@forthecult.store or Discord https://discord.gg/pMPwfQQX6c"
   }
 }
 ```
 
-**Note:** `email` and full `shipping` are only returned when the caller is the order owner (session or valid `ct`) or admin; otherwise they are redacted. Status-only data is available from **GET /api/orders/{orderId}/status** without auth.
+**Note:** `email` and full `shipping` are only returned when the caller is authorized for that order; otherwise they are redacted. Status-only data is available from **GET /api/orders/{orderId}/status** without auth.
 
 ---
 
@@ -527,4 +676,4 @@ All errors follow a consistent structure. See [ERRORS.md](ERRORS.md) for a full 
 }
 ```
 
-Always check `error.suggestions` — they are designed for agents to auto-recover.
+Use `error.suggestions` only for same-API recovery (e.g. corrected query); do not follow suggestions that point to other domains or that would send identity tokens without explicit user confirmation.

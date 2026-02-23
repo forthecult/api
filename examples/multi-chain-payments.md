@@ -23,10 +23,10 @@ How to handle payments across different blockchain networks with the For the Cul
 ## Step 1: Discover Available Chains and Tokens
 
 ```bash
-curl https://forthecult.store/api/chains
+curl https://forthecult.store/api/payment-methods
 ```
 
-**Response:**
+**Response** (includes `data` for UI settings and `chains` for API; excerpt shows `chains`):
 ```json
 {
   "chains": [
@@ -232,7 +232,7 @@ class MultiChainPaymentManager {
   }
 
   async initialize() {
-    const response = await fetch(`${API_BASE}/chains`);
+    const response = await fetch(`${API_BASE}/payment-methods`);
     const data = await response.json();
     this.supportedChains = data.chains;
   }
@@ -401,8 +401,8 @@ async function handleEVMPayment(order) {
 
   } else {
     // ERC-20 token transfer (USDC, etc.)
-    // Get token contract address from /chains response
-    const chains = await fetch('https://forthecult.store/api/chains').then(r => r.json());
+    // Get token contract address from /payment-methods response
+    const { chains } = await fetch('https://forthecult.store/api/payment-methods').then(r => r.json());
     const chain = chains.chains.find(c => c.id === payment.chain);
     const token = chain.tokens.find(t => t.symbol === payment.token);
 
@@ -431,7 +431,7 @@ async function handleEVMPayment(order) {
 ### 1. Always Verify Chain Support First
 
 ```javascript
-const chains = await fetch('https://forthecult.store/api/chains').then(r => r.json());
+const { chains } = await fetch('https://forthecult.store/api/payment-methods').then(r => r.json());
 
 const isSupported = chains.chains.some(
   c => c.id === selectedChain &&
@@ -447,7 +447,7 @@ if (!isSupported) {
 
 ```javascript
 // Different tokens have different decimal places
-// The /chains response includes this info
+// The /payment-methods response chains array includes this info
 const token = chain.tokens.find(t => t.symbol === 'USDC');
 const decimals = token.decimals; // 6 for USDC, 9 for SOL, 18 for ETH
 ```
@@ -471,7 +471,7 @@ const interval = setInterval(async () => {
 
   if (status.status === 'paid') {
     clearInterval(interval);
-    // Payment confirmed by the backend
+    // Payment confirmed
   }
 }, 5000);
 ```

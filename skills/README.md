@@ -1,39 +1,39 @@
 # For the Cult — Agentic Commerce Skills
 
-This directory contains [Agent Skills](https://agentskills.io/specification)-compatible skill packages that enable **Agentic Commerce** — AI agents (Molt, OpenClaw, Claude, ChatGPT, and other compatible runtimes) autonomously shopping the For the Cult store, placing orders, and tracking shipments on behalf of users.
+This directory contains [Agent Skills](https://agentskills.io/specification)-compatible skill packages that enable **Agentic Commerce** — AI agents (Molt, OpenClaw, Claude, ChatGPT, and other compatible runtimes) shopping the For the Cult store, placing orders, and tracking shipments on behalf of users.
 
 ## Skills
 
 | Skill | Version | Description |
 |-------|---------|-------------|
-| **[agentic-commerce-forthecult](./agentic-commerce-forthecult/)** | 2.0 | Agentic Commerce: browse lifestyle, wellness, and longevity products, semantic search, product details and variants, multi-chain checkout (8+ blockchains), CULT holder discounts, order tracking from payment to delivery. |
+| **[shop-culture](./shop-culture/)** | 1.0.1 | Agentic Commerce: browse lifestyle, wellness, and smart home products, semantic search, product details and variants, multi-chain checkout (8+ blockchains), CULT holder discounts, order tracking from payment to delivery. |
 
 ## Installation
 
 ### ClawHub (recommended)
 
 ```bash
-clawhub install agentic-commerce-forthecult
+clawhub install shop-culture
 ```
 
-Or browse [clawhub.com/skills/agentic-commerce-forthecult](https://clawhub.com/skills/agentic-commerce-forthecult).
+Or browse [clawhub.com/skills/shop-culture](https://clawhub.com/skills/shop-culture).
 
 ### Workspace (any AgentSkills-compatible runtime)
 
 Drop this `skills` folder into your agent workspace:
 
 ```
-<workspace>/skills/agentic-commerce-forthecult/SKILL.md
+<workspace>/skills/shop-culture/SKILL.md
 ```
 
-Molt, OpenClaw, and other runtimes that support workspace-level skills will discover and load `agentic-commerce-forthecult` automatically.
+OpenClaw and other runtimes that support workspace-level skills will discover and load `shop-culture` automatically.
 
 ### Local / machine-wide (OpenClaw)
 
 Copy the skill to your local skills directory:
 
 ```bash
-cp -r agentic-commerce-forthecult ~/.openclaw/skills/
+cp -r shop-culture ~/.openclaw/skills/
 ```
 
 All OpenClaw agents on the machine will have access.
@@ -41,7 +41,7 @@ All OpenClaw agents on the machine will have access.
 ## Skill structure
 
 ```
-agentic-commerce-forthecult/
+shop-culture/
 ├── SKILL.md                         # Main instructions (loaded when skill activates)
 └── references/
     ├── API.md                       # Complete endpoint reference with response shapes
@@ -65,5 +65,5 @@ See the [API README](../README.md) and [OpenAPI spec](../openapi.yaml) for the m
 | Agent entry point | https://forthecult.store/for-agents |
 | API base | https://forthecult.store/api |
 | OpenAPI spec | [openapi.yaml](../openapi.yaml) |
-| Support | weare@forthecult.store |
+| Support | weare@forthecult.store · [Discord](https://discord.gg/pMPwfQQX6c) |
 | Agent Skills spec | https://agentskills.io/specification |

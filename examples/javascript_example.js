@@ -89,10 +89,10 @@ class CultAPI {
   }
 
   /**
-   * Get supported payment chains and tokens.
+   * Get supported payment methods. Response has { data, chains }; use .chains for chain/token list.
    */
-  async getChains() {
-    const response = await fetch(`${this.baseUrl}/chains`);
+  async getPaymentMethods() {
+    const response = await fetch(`${this.baseUrl}/payment-methods`);
     if (!response.ok) throw new Error(`API error: ${response.status}`);
     return response.json();
   }

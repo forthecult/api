@@ -1,6 +1,6 @@
 # OpenClaw (Moltbook) Integration Guide
 
-> **How to integrate For the Cult API with OpenClaw/Moltbook AI agents**
+> **How to integrate Agentic Shopping For the Cult API with OpenClaw/Moltbook AI agents**
 
 OpenClaw is an open-source AI agent framework that enables autonomous agents to interact with web APIs, databases, and other services.
 
@@ -8,7 +8,7 @@ OpenClaw is an open-source AI agent framework that enables autonomous agents to 
 
 ## What is OpenClaw?
 
-**OpenClaw** is Moltbook's AI agent framework for building autonomous systems that can:
+**OpenClaw** is an AI agent framework for building autonomous systems that can:
 - Interact with REST APIs
 - Execute multi-step workflows
 - Make decisions based on context
@@ -45,7 +45,7 @@ import os
 
 agent = Agent(
     name="CultShopper",
-    description="AI shopping assistant for For the Cult store",
+    description="AI shopping assistant For the Culture store",
     model="gpt-4-turbo"
 )
 ```
@@ -191,7 +191,137 @@ class CultProductDetailsTool(Tool):
 agent.add_tool(CultProductDetailsTool())
 ```
 
-### Tool 3: Create Order
+### Tool 3: Estimate cart totals
+
+```python
+class CultCartEstimateTool(Tool):
+    name = "estimate_forthecult_cart"
+    description = """
+    Preview cart totals before checkout. Returns subtotal, shipping estimate,
+    and approximate crypto amounts. Use to show the user 'Your total will be about $X.'
+    Final amounts are calculated at checkout.
+    """
+    
+    parameters = {
+        "type": "object",
+        "properties": {
+            "items": {
+                "type": "array",
+                "description": "Cart items: list of {productId, quantity, variantId?}",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "productId": {"type": "string"},
+                        "quantity": {"type": "integer", "minimum": 1},
+                        "variantId": {"type": "string"}
+                    },
+                    "required": ["productId", "quantity"]
+                }
+            },
+            "country_code": {
+                "type": "string",
+                "description": "ISO 2-letter country for shipping estimate (optional)"
+            }
+        },
+        "required": ["items"]
+    }
+    
+    def execute(self, items, country_code=None):
+        payload = {"items": items}
+        if country_code:
+            payload["shipping"] = {"countryCode": country_code}
+        
+        response = requests.post(f"{API_BASE}/cart/estimate", json=payload)
+        
+        if not response.ok:
+            return {"success": False, "error": response.json().get("error", {}).get("message", "Estimate failed")}
+        
+        data = response.json()
+        return {
+            "success": True,
+            "subtotal_usd": data.get("subtotal", {}).get("usd"),
+            "shipping_usd": data.get("shipping", {}).get("usd"),
+            "total_usd": data.get("total", {}).get("usd"),
+            "shipping_method": data.get("shipping", {}).get("method"),
+            "estimated_days": data.get("shipping", {}).get("estimatedDays"),
+            "crypto": data.get("crypto", {}),
+            "expires_at": data.get("expiresAt"),
+            "note": data.get("_note")
+        }
+
+agent.add_tool(CultCartEstimateTool())
+```
+
+### Tool 4: Calculate shipping
+
+```python
+class CultShippingCalculateTool(Tool):
+    name = "calculate_forthecult_shipping"
+    description = """
+    Get exact shipping cost (and tax estimate when applicable) for a cart and destination.
+    Use for accurate totals before checkout. Call after building the cart.
+    """
+    
+    parameters = {
+        "type": "object",
+        "properties": {
+            "country_code": {
+                "type": "string",
+                "description": "ISO 2-letter country code"
+            },
+            "items": {
+                "type": "array",
+                "description": "Cart items: list of {productId, quantity, productVariantId?}",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "productId": {"type": "string"},
+                        "quantity": {"type": "integer", "minimum": 1},
+                        "productVariantId": {"type": "string"}
+                    },
+                    "required": ["productId", "quantity"]
+                }
+            },
+            "order_value_cents": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Cart subtotal in cents"
+            },
+            "state_code": {"type": "string", "description": "State/region (optional)"},
+            "postal_code": {"type": "string", "description": "Postal code (optional)"}
+        },
+        "required": ["country_code", "items", "order_value_cents"]
+    }
+    
+    def execute(self, country_code, items, order_value_cents, state_code=None, postal_code=None):
+        payload = {
+            "countryCode": country_code,
+            "items": items,
+            "orderValueCents": order_value_cents
+        }
+        if state_code:
+            payload["stateCode"] = state_code
+        if postal_code:
+            payload["postalCode"] = postal_code
+        
+        response = requests.post(f"{API_BASE}/shipping/calculate", json=payload)
+        
+        if not response.ok:
+            return {"success": False, "error": "Shipping calculation failed"}
+        
+        data = response.json()
+        return {
+            "success": True,
+            "shipping_cents": data.get("shippingCents", 0),
+            "label": data.get("label"),
+            "tax_cents": data.get("taxCents", 0),
+            "free_shipping": data.get("freeShipping", False)
+        }
+
+agent.add_tool(CultShippingCalculateTool())
+```
+
+### Tool 5: Create Order
 
 ```python
 class CultCreateOrderTool(Tool):
@@ -293,7 +423,7 @@ class CultCreateOrderTool(Tool):
 agent.add_tool(CultCreateOrderTool())
 ```
 
-### Tool 4: Check Order Status
+### Tool 6: Check Order Status
 
 ```python
 class CultOrderStatusTool(Tool):
@@ -563,13 +693,11 @@ class TokenBalanceChecker(Tool):
         balance = 5000  # Example
         
         if balance >= 10000:
-            tier = {"name": "Diamond", "discount": 20}
+            tier = {"name": "APEX", "discount": 20}
         elif balance >= 2000:
-            tier = {"name": "Gold", "discount": 15}
-        elif balance >= 500:
-            tier = {"name": "Silver", "discount": 10}
+            tier = {"name": "PRIME", "discount": 15}
         elif balance >= 100:
-            tier = {"name": "Bronze", "discount": 5}
+            tier = {"name": "BASE", "discount": 5}
         else:
             tier = None
         
@@ -641,12 +769,7 @@ CMD ["python", "forthecult_agent.py"]
 
 ### Environment Variables
 
-```bash
-# .env
-FORTHECULT_API_URL=https://forthecult.store/api
-OPENAI_API_KEY=your-key
-AGENT_MODEL=gpt-4-turbo
-```
+Set your API base URL and any keys required by your agent runtime (e.g. for the LLM provider) in your environment or `.env` as needed. Base URL: `https://forthecult.store/api`.
 
 ---
 
@@ -692,7 +815,7 @@ class TestCultAgent(AgentTestCase):
 ### For the Cult API
 - **API Docs:** https://github.com/forthecult/api
 - **OpenAPI Spec:** [openapi.yaml](../openapi.yaml)
-- **Support:** dev@forthecult.store
+- **Support:** dev@forthecult.store · [Discord](https://discord.gg/pMPwfQQX6c)
 
 ---
 

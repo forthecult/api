@@ -12,7 +12,10 @@ Complete field specification for creating an order. This is the core Agentic Com
 | `email` | string | **Yes** | Customer email for order confirmation |
 | `payment` | object | **Yes** | Cryptocurrency, credit, or debit card for payment |
 | `shipping` | object | **Yes** | Delivery address |
-| `walletAddress` | string | No | Customer wallet for CULT token-holder discount |
+| `wallet` / `walletAddress` | string | No | Solana wallet for CULT tier discount (ownership verified) |
+| `walletMessage` | string | No | Message from `GET /api/checkout/wallet-verify-message` (signed-message verification) |
+| `walletSignature` | string | No | Base64 signature of `walletMessage` by the wallet |
+| `walletSignatureBase58` | string | No | Base58 signature of `walletMessage` (alternative to `walletSignature`) |
 
 ---
 
@@ -44,7 +47,7 @@ An array of one or more products to order.
 | `chain` | string | **Yes** | Blockchain network ID |
 | `token` | string | **Yes** | Token symbol on that chain |
 
-**Supported values** (verify with `GET /chains` before checkout):
+**Supported values** (verify with `GET /payment-methods` response `chains` before checkout):
 
 | Chain | Tokens |
 |-------|--------|
@@ -77,11 +80,14 @@ An array of one or more products to order.
 
 ---
 
-## `walletAddress` (optional)
+## `wallet` / `walletAddress` (optional)
 
-A blockchain wallet address (any supported chain). If provided, the API checks on-chain CULT token balance and automatically applies the highest eligible discount tier.
+Solana wallet address for CULT member tier discounts. **Ownership is verified** in one of two ways:
 
-The response `discount` object shows the applied tier, percentage, and amount saved.
+1. **Linked account** — The requester is authenticated and this wallet is linked to their account.
+2. **Signed message** — Send `walletMessage` (from `GET /api/checkout/wallet-verify-message`) and `walletSignature` or `walletSignatureBase58` (the wallet’s signature of that message). Message is valid for 5 minutes.
+
+If you send a wallet without verification, the API returns `400` with `code: "WALLET_VERIFICATION_REQUIRED"`. The response `discount` object shows the applied tier, percentage, and amount saved.
 
 ---
 
@@ -107,6 +113,8 @@ The response `discount` object shows the applied tier, percentage, and amount sa
 
 ## Complete multi-item example with wallet discount
 
+CULT tier discounts use a **Solana** wallet (CULT is on Solana); the wallet must be **verified** (linked to the user’s account or signed via `GET /api/checkout/wallet-verify-message`). Customer payment can be on any supported chain (e.g. Ethereum). Example with signed-message verification:
+
 ```json
 {
   "items": [
@@ -124,9 +132,13 @@ The response `discount` object shows the applied tier, percentage, and amount sa
     "zip": "90001",
     "countryCode": "US"
   },
-  "walletAddress": "0x742d35Cc6634C0532925a3b844Bc9e7595f2bD18"
+  "wallet": "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU",
+  "walletMessage": "FortheCult tier verification\n2026-02-10T14:30:00Z",
+  "walletSignatureBase58": "<signature from wallet of walletMessage>"
 }
 ```
+
+If the wallet is **linked** to the user’s account (authenticated), you can omit `walletMessage` and `walletSignatureBase58`.
 
 ---
 
