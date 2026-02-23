@@ -72,13 +72,13 @@ export function TestimonialsSection({
 
         <div
           className={`
-            relative flex w-full flex-col items-center justify-center
+            marquee-edge-fade relative flex w-full flex-col items-center justify-center
             overflow-hidden
           `}
         >
           <div
             className={`
-              marquee-edge-fade group flex flex-row overflow-hidden p-2
+              group flex flex-row overflow-hidden p-2
               [gap:var(--gap)]
               [--gap:1rem]
             `}

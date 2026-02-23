@@ -348,22 +348,23 @@
   animation: marquee-half 80s linear infinite;
 }
 
-/* soft edge fade: long gradual fade into background (fades to black, no hard line) */
+/* soft edge fade: content and cards gradually fade to background (like example) */
 .marquee-edge-fade {
-  -webkit-mask-image: linear-gradient(
+  --marquee-fade: linear-gradient(
     to right,
     transparent 0%,
-    black 35%,
-    black 65%,
+    black 28%,
+    black 72%,
     transparent 100%
   );
-  mask-image: linear-gradient(
-    to right,
-    transparent 0%,
-    black 35%,
-    black 65%,
-    transparent 100%
-  );
+  -webkit-mask-image: var(--marquee-fade);
+  mask-image: var(--marquee-fade);
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: 0 0;
+  mask-position: 0 0;
 }
 
 .group:hover .animate-marquee-testimonials {

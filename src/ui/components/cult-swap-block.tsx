@@ -10,7 +10,7 @@ import {
 } from "@solana/web3.js";
 import { ArrowDown } from "lucide-react";
 import Image from "next/image";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { useStakeTransaction } from "~/hooks/use-stake-transaction";
@@ -33,6 +33,11 @@ export function CultSwapBlock() {
   const wallet = publicKey?.toBase58() ?? null;
   const conn = connection as Connection | undefined;
   const pk = publicKey ? new PublicKey(publicKey.toBase58()) : null;
+
+  const connRef = useRef(conn);
+  const pkRef = useRef(pk);
+  connRef.current = conn;
+  pkRef.current = pk;
 
   const [tokenSymbol, setTokenSymbol] = useState("CULT");
   const [swapDirection, setSwapDirection] = useState<"solToCult" | "cultToSol">("solToCult");
@@ -78,6 +83,8 @@ export function CultSwapBlock() {
       setCultBalance(null);
       return;
     }
+    const conn = connRef.current;
+    const pk = pkRef.current;
     setCultBalanceLoading(true);
     if (conn && pk) {
       let cancelled = false;
@@ -132,7 +139,7 @@ export function CultSwapBlock() {
         if (!cancelled) setCultBalanceLoading(false);
       });
     return () => { cancelled = true; };
-  }, [wallet, conn, pk]);
+  }, [wallet]);
 
   useEffect(() => {
     if (swapDirection !== "solToCult") {
