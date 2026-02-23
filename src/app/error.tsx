@@ -19,26 +19,31 @@ const isChunkLoadError = (err: Error) =>
   err.name === "ChunkLoadError" ||
   (err.message && /loading chunk .* failed/i.test(err.message));
 
+const isNetworkError = (err: Error) =>
+  err.message === "network error" ||
+  err.message === "Failed to fetch" ||
+  (err.name === "TypeError" && /network error|failed to fetch/i.test(err.message));
+
 /**
  * Root error boundary for the application.
  * Catches errors in the entire app and displays a user-friendly error page.
  */
 export default function RootError({ error, reset }: ErrorPageProps) {
   const isChunk = isChunkLoadError(error);
+  const isNetwork = isNetworkError(error);
 
-  // One-time auto-reload for chunk errors (e.g. stale cache after deploy, network blip).
-  // Uses same session key as ChunkLoadErrorHandler to avoid reload loops.
+  // One-time auto-reload for chunk or network errors (stale cache, ERR_NETWORK_CHANGED, etc.).
   useEffect(() => {
     console.error("Application error:", error);
     if (
-      isChunk &&
+      (isChunk || isNetwork) &&
       typeof sessionStorage !== "undefined" &&
       !sessionStorage.getItem(CHUNK_ERROR_RELOAD_KEY)
     ) {
       sessionStorage.setItem(CHUNK_ERROR_RELOAD_KEY, "1");
       window.location.reload();
     }
-  }, [error, isChunk]);
+  }, [error, isChunk, isNetwork]);
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-8">
@@ -61,6 +66,11 @@ export default function RootError({ error, reset }: ErrorPageProps) {
                 update. Please do a <strong>full refresh</strong> (Ctrl+Shift+R
                 or Cmd+Shift+R) or clear your browser cache and try again.
               </>
+            ) : isNetwork ? (
+              <>
+                A network request failed—this can happen with an unstable
+                connection or a brief outage. Try again or reload the page.
+              </>
             ) : (
               <>
                 We apologize for the inconvenience. An unexpected error
@@ -82,7 +92,7 @@ export default function RootError({ error, reset }: ErrorPageProps) {
           sm:flex-row
         `}
         >
-          {isChunk ? (
+          {isChunk || isNetwork ? (
             <Button
               variant="default"
               onClick={() => {

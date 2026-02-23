@@ -1,9 +1,6 @@
 "use client";
 
-import type { Wallet } from "@solana/wallet-adapter-react";
-
-import { WalletReadyState } from "@solana/wallet-adapter-base";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useSolanaWallet } from "~/app/checkout/crypto/solana-wallet-stub";
 import { Lock, Wallet as WalletIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -11,6 +8,16 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "~/lib/cn";
 import { Button } from "~/ui/primitives/button";
 import { Spinner } from "~/ui/primitives/spinner";
+
+/** same string values as @solana/wallet-adapter-base WalletReadyState so we avoid pulling that dep in this chunk */
+const READY_INSTALLED = "Installed";
+const READY_LOADABLE = "Loadable";
+
+/** minimal wallet shape used here; real provider supplies full Wallet */
+type WalletLike = {
+  adapter: { icon?: string; name?: string };
+  readyState?: number | string;
+};
 
 const API_BASE =
   typeof window !== "undefined"
@@ -59,12 +66,10 @@ export function TokenGateGuard({
   const hasChildren = React.Children.count(children) > 0;
 
   const { connect, connected, publicKey, select, signMessage, wallets } =
-    useWallet();
+    useSolanaWallet();
 
   const solanaWallets = wallets.filter(
-    (w) =>
-      w.readyState === WalletReadyState.Installed ||
-      w.readyState === WalletReadyState.Loadable,
+    (w) => w.readyState === READY_INSTALLED || w.readyState === READY_LOADABLE,
   );
 
   useEffect(() => {
@@ -90,7 +95,7 @@ export function TokenGateGuard({
   }, [resourceType, resourceId]);
 
   const handleSelectWallet = useCallback(
-    async (wallet: Wallet) => {
+    async (wallet: WalletLike) => {
       setError("");
       try {
         select(wallet.adapter.name);
@@ -371,9 +376,7 @@ export function TokenGateGuard({
                   .map((wallet) => (
                     <WalletOption
                       disabled={false}
-                      isDetected={
-                        wallet.readyState === WalletReadyState.Installed
-                      }
+                      isDetected={wallet.readyState === READY_INSTALLED}
                       key={wallet.adapter.name}
                       onClick={() => handleSelectWallet(wallet)}
                       wallet={wallet}
@@ -423,7 +426,7 @@ function WalletOption({
   disabled: boolean;
   isDetected: boolean;
   onClick: () => void;
-  wallet: Wallet;
+  wallet: WalletLike;
 }) {
   const icon = wallet.adapter.icon;
   return (

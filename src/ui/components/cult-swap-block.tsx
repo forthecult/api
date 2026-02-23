@@ -1,8 +1,13 @@
 "use client";
 
 import { getAssociatedTokenAddressSync } from "@solana/spl-token";
-import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import { PublicKey } from "@solana/web3.js";
+import { useSolanaConnection, useSolanaWallet } from "~/app/checkout/crypto/solana-wallet-stub";
+import {
+  type Connection,
+  type RpcResponseAndContext,
+  type TokenAmount,
+  PublicKey,
+} from "@solana/web3.js";
 import { ArrowDown } from "lucide-react";
 import Image from "next/image";
 import { useCallback, useEffect, useState } from "react";
@@ -22,10 +27,12 @@ import { Input } from "~/ui/primitives/input";
 const CULT_DECIMALS = 6;
 
 export function CultSwapBlock() {
-  const { connection } = useConnection();
-  const { publicKey, sendTransaction } = useWallet();
+  const { connection } = useSolanaConnection();
+  const { publicKey, sendTransaction } = useSolanaWallet();
   const { openConnectModal, wallet: connectedWallet } = useStakeTransaction();
   const wallet = publicKey?.toBase58() ?? null;
+  const conn = connection as Connection | undefined;
+  const pk = publicKey ? new PublicKey(publicKey.toBase58()) : null;
 
   const [tokenSymbol, setTokenSymbol] = useState("CULT");
   const [swapDirection, setSwapDirection] = useState<"solToCult" | "cultToSol">("solToCult");
@@ -53,18 +60,18 @@ export function CultSwapBlock() {
   }, []);
 
   useEffect(() => {
-    if (!publicKey || !connection) {
+    if (!pk || !conn) {
       setSolBalanceLamports(0);
       return;
     }
     let cancelled = false;
-    connection.getBalance(publicKey).then((bal) => {
+    conn.getBalance(pk).then((bal) => {
       if (!cancelled) setSolBalanceLamports(bal);
     }).catch(() => {
       if (!cancelled) setSolBalanceLamports(0);
     });
     return () => { cancelled = true; };
-  }, [publicKey, connection]);
+  }, [pk, conn]);
 
   useEffect(() => {
     if (!wallet) {
@@ -72,7 +79,7 @@ export function CultSwapBlock() {
       return;
     }
     setCultBalanceLoading(true);
-    if (connection && publicKey) {
+    if (conn && pk) {
       let cancelled = false;
       const mint = new PublicKey(CULT_MINT_MAINNET);
       const programs = [
@@ -89,13 +96,13 @@ export function CultSwapBlock() {
         };
         const ata = getAssociatedTokenAddressSync(
           mint,
-          publicKey,
+          pk,
           false,
           programs[i]!,
         );
-        connection
+        conn
           .getTokenAccountBalance(ata)
-          .then((info) => {
+          .then((info: RpcResponseAndContext<TokenAmount>) => {
             if (cancelled) return;
             const v = info.value;
             const balance =
@@ -125,7 +132,7 @@ export function CultSwapBlock() {
         if (!cancelled) setCultBalanceLoading(false);
       });
     return () => { cancelled = true; };
-  }, [wallet, connection, publicKey]);
+  }, [wallet, conn, pk]);
 
   useEffect(() => {
     if (swapDirection !== "solToCult") {
@@ -157,8 +164,8 @@ export function CultSwapBlock() {
       .then((data: { cultAmount?: string } | null) => data?.cultAmount ?? null)
       .catch(() => null);
     const clientPromise =
-      connection != null
-        ? estimateCultFromSol(connection, solLamports)
+      conn != null
+        ? estimateCultFromSol(conn, solLamports)
             .then((est) => est?.cultAmount ?? null)
             .catch(() => null)
         : Promise.resolve(null);
@@ -182,7 +189,7 @@ export function CultSwapBlock() {
       });
     });
     return () => { cancelled = true; };
-  }, [solAmount, connection, swapDirection]);
+  }, [solAmount, conn, swapDirection]);
 
   useEffect(() => {
     if (swapDirection !== "cultToSol") {
@@ -214,8 +221,8 @@ export function CultSwapBlock() {
       .then((data: { solAmount?: string } | null) => data?.solAmount ?? null)
       .catch(() => null);
     const clientPromise =
-      connection != null
-        ? estimateSolFromCult(connection, cultRaw)
+      conn != null
+        ? estimateSolFromCult(conn, cultRaw)
             .then((est) => est?.solAmount ?? null)
             .catch(() => null)
         : Promise.resolve(null);
@@ -239,10 +246,10 @@ export function CultSwapBlock() {
       });
     });
     return () => { cancelled = true; };
-  }, [cultAmount, connection, swapDirection]);
+  }, [cultAmount, conn, swapDirection]);
 
   const handleSwapSolToCult = useCallback(async () => {
-    if (!publicKey || !connection || !sendTransaction) {
+    if (!pk || !conn || !sendTransaction) {
       toast.error("Connect your wallet first");
       return;
     }
@@ -251,8 +258,8 @@ export function CultSwapBlock() {
     const solLamports = Math.floor(solAmountNum * 1e9);
     setSwapPending(true);
     try {
-      const { transaction } = await buildSwapSolToCult(connection, publicKey, solLamports);
-      const sig = await sendTransaction(transaction, connection, {
+      const { transaction } = await buildSwapSolToCult(conn, pk, solLamports);
+      const sig = await sendTransaction(transaction, conn, {
         preflightCommitment: "confirmed",
         skipPreflight: false,
       });
@@ -260,7 +267,7 @@ export function CultSwapBlock() {
       setSolAmount("");
       setEstimatedCult(null);
       setTimeout(() => {
-        fetch(`/api/governance/wallet-balance?wallet=${encodeURIComponent(publicKey.toBase58())}`)
+        fetch(`/api/governance/wallet-balance?wallet=${encodeURIComponent(pk.toBase58())}`)
           .then((r) => r.json())
           .then((d: { balance?: string }) => setCultBalance(d.balance ?? "0"))
           .catch(() => {});
@@ -269,10 +276,10 @@ export function CultSwapBlock() {
       toast.error(e instanceof Error ? e.message : "Swap failed");
     }
     setSwapPending(false);
-  }, [publicKey, connection, sendTransaction, solAmount]);
+  }, [pk, conn, sendTransaction, solAmount]);
 
   const handleSwapCultToSol = useCallback(async () => {
-    if (!publicKey || !connection || !sendTransaction) {
+    if (!pk || !conn || !sendTransaction) {
       openConnectModal?.();
       return;
     }
@@ -281,8 +288,8 @@ export function CultSwapBlock() {
     const cultRaw = Math.floor(n * 10 ** CULT_DECIMALS).toString();
     setSwapPending(true);
     try {
-      const { transaction } = await buildSwapCultToSol(connection, publicKey, cultRaw);
-      const sig = await sendTransaction(transaction, connection, {
+      const { transaction } = await buildSwapCultToSol(conn, pk, cultRaw);
+      const sig = await sendTransaction(transaction, conn, {
         preflightCommitment: "confirmed",
         skipPreflight: false,
       });
@@ -290,7 +297,7 @@ export function CultSwapBlock() {
       setCultAmount("");
       setEstimatedSol(null);
       setTimeout(() => {
-        fetch(`/api/governance/wallet-balance?wallet=${encodeURIComponent(publicKey.toBase58())}`)
+        fetch(`/api/governance/wallet-balance?wallet=${encodeURIComponent(pk.toBase58())}`)
           .then((r) => r.json())
           .then((d: { balance?: string }) => setCultBalance(d.balance ?? "0"))
           .catch(() => {});
@@ -299,7 +306,7 @@ export function CultSwapBlock() {
       toast.error(e instanceof Error ? e.message : "Swap failed");
     }
     setSwapPending(false);
-  }, [publicKey, connection, sendTransaction, cultAmount, openConnectModal]);
+  }, [pk, conn, sendTransaction, cultAmount, openConnectModal]);
 
   const handleSwapDirectionFlip = useCallback(() => {
     setSwapDirection((d) => (d === "solToCult" ? "cultToSol" : "solToCult"));

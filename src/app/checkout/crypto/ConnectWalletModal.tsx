@@ -4,7 +4,13 @@ import type { Wallet } from "@solana/wallet-adapter-react";
 
 import { useConnectWallet, useWallets } from "@mysten/dapp-kit";
 import { WalletReadyState } from "@solana/wallet-adapter-base";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useSolanaWallet } from "~/app/checkout/crypto/solana-wallet-stub";
+
+/** minimal wallet shape from useSolanaWallet (stub or real); real provider gives full Wallet */
+type WalletListItem = {
+  adapter: { icon?: string; name?: string };
+  readyState?: number | string;
+};
 import { ChevronRight } from "lucide-react";
 import Image from "next/image";
 import { useParams, useSearchParams } from "next/navigation";
@@ -34,12 +40,15 @@ function getTokenFromUrl(): string {
 
 const SUGGESTED_NAMES = ["Phantom", "Solflare"];
 
-function isSuggestedWallet(wallet: Wallet, chain: null | string): boolean {
+function isSuggestedWallet(
+  wallet: { adapter: { name?: string } },
+  chain: null | string,
+): boolean {
+  const name = wallet.adapter.name;
+  if (!name) return false;
   if (chain === "solana")
-    return (
-      wallet.adapter.name === "Phantom" || wallet.adapter.name === "Solflare"
-    );
-  return SUGGESTED_NAMES.includes(wallet.adapter.name);
+    return name === "Phantom" || name === "Solflare";
+  return SUGGESTED_NAMES.includes(name);
 }
 
 /** step 1: wallet list with "Detected" badge when extension is installed */
@@ -52,7 +61,7 @@ function WalletOption({
   disabled: boolean;
   isDetected: boolean;
   onClick: () => void;
-  wallet: Wallet;
+  wallet: WalletListItem;
 }) {
   const icon = wallet.adapter.icon;
 
@@ -133,13 +142,14 @@ export function ConnectWalletModal({
   const [step, setStep] = useState<"network" | "requesting" | "wallet">(
     "wallet",
   );
-  const [selectedWallet, setSelectedWallet] = useState<null | Wallet>(null);
+  const [selectedWallet, setSelectedWallet] =
+    useState<null | WalletListItem>(null);
   const [connectingToNetwork, setConnectingToNetwork] = useState<
     "solana" | "sui" | null
   >(null);
   const isMetaMaskDetected = useIsMetaMaskDetected();
   const { connect, connected, connecting, publicKey, select, wallets } =
-    useWallet();
+    useSolanaWallet();
   const suiWallets = useWallets();
   const { mutateAsync: connectSui } = useConnectWallet();
   const connectedRef = useRef(connected);
@@ -184,10 +194,11 @@ export function ConnectWalletModal({
   const chain = tokenToChain(token);
   const allowedNames = chain ? CHAIN_WALLET_NAMES[chain] : [];
   const walletsToShow = wallets.filter((w) => {
-    if (!allowedNames.includes(w.adapter.name)) return false;
+    const name = w.adapter.name;
+    if (!name || !allowedNames.includes(name)) return false;
     // On desktop, only show Solflare when the extension is detected
     // On mobile, show it regardless (MWA can handle connection)
-    if (w.adapter.name === "Solflare" && !isMobile)
+    if (name === "Solflare" && !isMobile)
       return w.readyState === WalletReadyState.Installed;
     return true;
   });
@@ -195,7 +206,7 @@ export function ConnectWalletModal({
   const others = walletsToShow.filter((w) => !isSuggestedWallet(w, chain));
 
   const handleSelectNetwork = useCallback(
-    async (networkId: string, walletOverride?: Wallet) => {
+    async (networkId: string, walletOverride?: WalletListItem) => {
       const wallet = walletOverride ?? selectedWallet;
       if (!wallet) return;
       if (networkId === "evms") {
@@ -203,12 +214,13 @@ export function ConnectWalletModal({
         return;
       }
       if (networkId === "sui") {
+        const walletName = wallet.adapter.name;
+        if (!walletName) return;
         setConnectError(null);
-        setConnectingWallet(wallet.adapter.name);
+        setConnectingWallet(walletName);
         setConnectingToNetwork("sui");
         setStep("requesting");
         try {
-          const walletName = wallet.adapter.name;
           const suiWallet = suiWallets.find(
             (w) =>
               w.name.toLowerCase() === walletName.toLowerCase() ||
@@ -237,7 +249,7 @@ export function ConnectWalletModal({
       }
       if (networkId === "solana") {
         setConnectError(null);
-        setConnectingWallet(wallet.adapter.name);
+        setConnectingWallet(wallet.adapter.name ?? null);
         setConnectingToNetwork("solana");
         setStep("requesting");
         try {
@@ -252,7 +264,7 @@ export function ConnectWalletModal({
             ? mwaAdapter.adapter.name
             : wallet.adapter.name;
 
-          select(adapterName);
+          select(adapterName ?? undefined);
           // Give the adapter time to register the selected wallet before connect() to reduce WalletNotSelectedError
           await new Promise((r) => setTimeout(r, 400));
           const connectPromise = connect();
@@ -269,7 +281,7 @@ export function ConnectWalletModal({
               `Connection is taking a while. Open the ${timeoutName} extension to approve, or use Back to try again.`,
             );
             // Solana-only wallets (e.g. MWA) never showed the network step; go back to wallet list
-            if (SOLANA_ONLY_WALLETS.includes(wallet.adapter.name)) {
+            if (wallet.adapter.name && SOLANA_ONLY_WALLETS.includes(wallet.adapter.name)) {
               setStep("wallet");
               setSelectedWallet(null);
             } else {
@@ -289,7 +301,7 @@ export function ConnectWalletModal({
               : `Connection failed. Open the ${catchName} extension and try again, or use another wallet.`,
           );
           // Solana-only wallets (e.g. MWA) never showed the network step; go back to wallet list
-          if (SOLANA_ONLY_WALLETS.includes(wallet.adapter.name)) {
+          if (wallet.adapter.name && SOLANA_ONLY_WALLETS.includes(wallet.adapter.name)) {
             setStep("wallet");
             setSelectedWallet(null);
           } else {
@@ -314,12 +326,13 @@ export function ConnectWalletModal({
   );
 
   const handleSelectWallet = useCallback(
-    (wallet: Wallet) => {
+    (wallet: WalletListItem) => {
       setSelectedWallet(wallet);
+      const name = wallet.adapter.name;
       // Solana-only wallets (e.g. MWA): skip network step and connect to Solana directly
-      if (SOLANA_ONLY_WALLETS.includes(wallet.adapter.name)) {
+      if (name && SOLANA_ONLY_WALLETS.includes(name)) {
         setConnectError(null);
-        setConnectingWallet(wallet.adapter.name);
+        setConnectingWallet(name);
         setConnectingToNetwork("solana");
         setStep("requesting");
         void handleSelectNetwork("solana", wallet);
@@ -335,6 +348,7 @@ export function ConnectWalletModal({
       // Solana-only wallets (e.g. MWA) skip network step, so Back goes to wallet list
       const goToNetwork =
         selectedWallet &&
+        selectedWallet.adapter.name &&
         !SOLANA_ONLY_WALLETS.includes(selectedWallet.adapter.name);
       setStep(goToNetwork ? "network" : "wallet");
       if (!goToNetwork) setSelectedWallet(null);
@@ -553,7 +567,8 @@ export function ConnectWalletModal({
                 Network
               </p>
               <div className="flex flex-col gap-2">
-                {(EVM_SOLANA_ONLY_WALLETS.includes(selectedWallet.adapter.name)
+                {(selectedWallet.adapter.name &&
+                EVM_SOLANA_ONLY_WALLETS.includes(selectedWallet.adapter.name)
                   ? NETWORK_OPTIONS.filter((n) => n.id !== "sui")
                   : NETWORK_OPTIONS
                 ).map((network) =>

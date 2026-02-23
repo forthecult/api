@@ -1,8 +1,13 @@
 "use client";
 
 import { getAssociatedTokenAddressSync } from "@solana/spl-token";
-import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import { PublicKey } from "@solana/web3.js";
+import { useSolanaConnection, useSolanaWallet } from "~/app/checkout/crypto/solana-wallet-stub";
+import {
+  type Connection,
+  type RpcResponseAndContext,
+  type TokenAmount,
+  PublicKey,
+} from "@solana/web3.js";
 import {
   ArrowRight,
   ChevronRight,
@@ -81,8 +86,9 @@ interface MembershipInfo {
 
 export function ProfileViewClient() {
   const { isPending, user } = useCurrentUserOrRedirect();
-  const { publicKey } = useWallet();
-  const { connection } = useConnection();
+  const { publicKey } = useSolanaWallet();
+  const { connection: connectionRaw } = useSolanaConnection();
+  const connection = connectionRaw as Connection | undefined;
   const connectedWallet = publicKey?.toBase58() ?? null;
 
   // linked Solana wallet from user's account (for when wallet adapter isn't connected)
@@ -190,7 +196,7 @@ export function ProfileViewClient() {
         );
         connection
           .getTokenAccountBalance(ata)
-          .then((info) => {
+          .then((info: RpcResponseAndContext<TokenAmount>) => {
             if (cancelled) return;
             const v = info.value;
             const balance =

@@ -5,9 +5,11 @@ import {
   WalletAdapterNetwork,
 } from "@solana/wallet-adapter-base";
 import {
+  ConnectionContext,
   ConnectionProvider,
   useConnection,
   useWallet,
+  WalletContext,
   WalletProvider,
 } from "@solana/wallet-adapter-react";
 import {
@@ -26,8 +28,8 @@ const EXPECTED_GENESIS_HASH = "5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d";
 
 /**
  * Solana wallet provider with network validation.
- * We pass Solflare; on mobile we also add the Mobile Wallet Adapter (MWA) so
- * users opening the site in a wallet's in-app browser (e.g. Phantom) can connect via MWA.
+ * We pass Solflare; on mobile only we dynamically import and add the Mobile Wallet Adapter (MWA)
+ * so the @solana-mobile chunk is never loaded on desktop.
  * WalletProvider also merges in Standard Wallets (Phantom, Trust, etc.).
  */
 export function SolanaWalletProvider({
@@ -39,37 +41,12 @@ export function SolanaWalletProvider({
   // Get RPC endpoint from config (ANKR default; override via NEXT_PUBLIC_SOLANA_RPC_URL)
   const rpcEndpoint = useMemo(() => getSolanaRpcUrl(), []);
 
-  const wallets = useMemo((): WalletAdapter[] => {
+  // base list: Phantom, Solflare, optional WalletConnect. no @solana-mobile so desktop never loads that chunk.
+  const baseWallets = useMemo((): WalletAdapter[] => {
     const list: WalletAdapter[] = [
       new PhantomWalletAdapter(),
       new SolflareWalletAdapter(),
     ];
-    if (typeof window !== "undefined" && isMobile) {
-      try {
-        const mobile = require("@solana-mobile/wallet-adapter-mobile");
-        list.push(
-          new mobile.SolanaMobileWalletAdapter({
-            addressSelector: mobile.createDefaultAddressSelector(),
-            appIdentity: {
-              icon: `${window.location.origin}/favicon.ico`,
-              name: "For the Cult",
-              uri: window.location.origin,
-            },
-            authorizationResultCache:
-              mobile.createDefaultAuthorizationResultCache(),
-            chain: "solana:mainnet",
-            onWalletNotFound: mobile.createDefaultWalletNotFoundHandler(),
-          }),
-        );
-      } catch (e) {
-        // MWA not available (e.g. non-Android or build issue)
-        if (process.env.NODE_ENV === "development") {
-          console.warn("[Solana] Mobile Wallet Adapter not available", e);
-        }
-      }
-    }
-    // WalletConnect for Solana: Trust, Rainbow, etc. can connect via WalletConnect.
-    // Set NEXT_PUBLIC_SOLANA_WALLETCONNECT_ENABLED=false to disable (stops pulse.walletconnect.org from loading).
     const wcEnabled =
       process.env.NEXT_PUBLIC_SOLANA_WALLETCONNECT_ENABLED !== "false";
     const wcProjectId =
@@ -92,12 +69,55 @@ export function SolanaWalletProvider({
       }
     }
     return list;
+  }, []);
+
+  // load @solana-mobile only on mobile (dynamic import = separate chunk, never requested on desktop)
+  const [mobileAdapter, setMobileAdapter] = useState<WalletAdapter | null>(
+    null,
+  );
+  useEffect(() => {
+    if (!isMobile || typeof window === "undefined") return;
+    import("@solana-mobile/wallet-adapter-mobile")
+      .then((mobile) => {
+        setMobileAdapter(
+          new mobile.SolanaMobileWalletAdapter({
+            addressSelector: mobile.createDefaultAddressSelector(),
+            appIdentity: {
+              icon: `${window.location.origin}/favicon.ico`,
+              name: "For the Cult",
+              uri: window.location.origin,
+            },
+            authorizationResultCache:
+              mobile.createDefaultAuthorizationResultCache(),
+            chain: "solana:mainnet",
+            onWalletNotFound: mobile.createDefaultWalletNotFoundHandler(),
+          }),
+        );
+      })
+      .catch((e) => {
+        if (process.env.NODE_ENV === "development") {
+          console.warn("[Solana] Mobile Wallet Adapter not available", e);
+        }
+      });
   }, [isMobile]);
+
+  const wallets = useMemo(
+    () => (mobileAdapter ? [...baseWallets, mobileAdapter] : baseWallets),
+    [baseWallets, mobileAdapter],
+  );
 
   // Error handler for wallet connection issues
   const onError = useCallback((error: Error) => {
     console.error("[Solana Wallet]", error);
     toast.error(error.message || "Wallet connection error");
+  }, []);
+
+  // so useSolanaWallet/useSolanaConnection in the stub file can read real context when this provider is mounted
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      (window as unknown as { __SOLANA_WALLET_CONTEXT?: typeof WalletContext }).__SOLANA_WALLET_CONTEXT = WalletContext;
+      (window as unknown as { __SOLANA_CONNECTION_CONTEXT?: typeof ConnectionContext }).__SOLANA_CONNECTION_CONTEXT = ConnectionContext;
+    }
   }, []);
 
   return (

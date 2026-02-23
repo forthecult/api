@@ -1,6 +1,7 @@
 "use client";
 
-import { useConnection, useWallet } from "@solana/wallet-adapter-react";
+import { useSolanaConnection, useSolanaWallet } from "~/app/checkout/crypto/solana-wallet-stub";
+import { type Connection, PublicKey } from "@solana/web3.js";
 import {
   ArrowRight,
   CheckCircle2,
@@ -88,8 +89,10 @@ interface StakeFormProps {
 // ─── ProposalCard ───────────────────────────────────────────────────
 
 export function StakeVoteClient() {
-  const { connection } = useConnection();
-  const { publicKey, sendTransaction } = useWallet();
+  const { connection } = useSolanaConnection();
+  const { publicKey, sendTransaction } = useSolanaWallet();
+  const conn = connection as Connection | undefined;
+  const pk = publicKey ? new PublicKey(publicKey.toBase58()) : null;
   const {
     openConnectModal,
     stake,
@@ -159,12 +162,12 @@ export function StakeVoteClient() {
 
   // Fetch SOL balance when wallet changes (for Get CULT)
   useEffect(() => {
-    if (!publicKey) return;
-    connection
-      .getBalance(publicKey)
+    if (!pk || !conn) return;
+    conn
+      .getBalance(pk)
       .then(setSolBalanceLamports)
       .catch(() => setSolBalanceLamports(0));
-  }, [connection, publicKey]);
+  }, [conn, pk]);
 
   // Estimate CULT when SOL amount changes (debounced)
   useEffect(() => {
@@ -181,7 +184,11 @@ export function StakeVoteClient() {
     }
     let cancelled = false;
     setEstimateLoading(true);
-    estimateCultFromSol(connection, lamports)
+    if (!conn) {
+      setEstimateLoading(false);
+      return () => { cancelled = true; };
+    }
+    estimateCultFromSol(conn, lamports)
       .then((res) => {
         if (!cancelled && res) setEstimatedCult(res.cultAmount);
         else if (!cancelled) setEstimatedCult(null);
@@ -195,7 +202,7 @@ export function StakeVoteClient() {
     return () => {
       cancelled = true;
     };
-  }, [connection, solAmount]);
+  }, [conn, solAmount]);
 
   // Fetch proposals on mount
   useEffect(() => {
@@ -293,7 +300,7 @@ export function StakeVoteClient() {
   const solBalanceSol = solBalanceLamports / LAMPORTS_PER_SOL;
 
   const handleSwapSolToCult = useCallback(async () => {
-    if (!publicKey || !sendTransaction) {
+    if (!pk || !conn || !sendTransaction) {
       openConnectModal();
       return;
     }
@@ -314,25 +321,21 @@ export function StakeVoteClient() {
     }
     setSwapPending(true);
     try {
-      const { transaction } = await buildSwapSolToCult(
-        connection,
-        publicKey,
-        lamports,
-      );
-      const sig = await sendTransaction(transaction, connection, SEND_OPTS);
+      const { transaction } = await buildSwapSolToCult(conn, pk, lamports);
+      const sig = await sendTransaction(transaction, conn, SEND_OPTS);
       toast.success("Swap submitted: " + sig.slice(0, 8) + "…");
       setSolAmount("");
       setEstimatedCult(null);
       await refreshBalances();
-      connection.getBalance(publicKey).then(setSolBalanceLamports);
+      conn.getBalance(pk).then(setSolBalanceLamports);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Swap failed");
     } finally {
       setSwapPending(false);
     }
   }, [
-    connection,
-    publicKey,
+    conn,
+    pk,
     sendTransaction,
     solAmount,
     solBalanceLamports,

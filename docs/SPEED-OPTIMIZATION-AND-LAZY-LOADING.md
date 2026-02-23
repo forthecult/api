@@ -99,7 +99,7 @@ The homepage is an **async server component** that fetches all data up front, th
 
 Heavy or non–first-paint UI is loaded with `next/dynamic` (or equivalent) so it lives in separate chunks. Below is where this is used and how to preserve or extend it.
 
-**Deferring non-critical work:** Use `whenIdle(cb, timeoutMs)` from `~/lib/when-idle` (requestIdleCallback with setTimeout fallback) for non-critical init (prefetcher, SpeedInsights, crypto price fetch, LazySolanaWalletProvider, DeferredHeader) so the main thread isn’t blocked. For below-the-fold sections whose chunks should load only when the user scrolls, wrap content in `ViewportAware` from `~/ui/components/viewport-aware` (IntersectionObserver); the homepage featured products and testimonials use this.
+**Deferring non-critical work:** Use `whenIdle(cb, timeoutMs)` from `~/lib/when-idle` (requestIdleCallback with setTimeout fallback) for non-critical init (prefetcher, SpeedInsights, crypto price fetch, LazySolanaWalletProvider, DeferredHeader) so the main thread isn’t blocked. **Solana stub and auth:** The main shell does not import `@solana/wallet-adapter-react`; it uses a stub context so the initial bundle stays small. The real `SolanaWalletProvider` loads after idle (or on PRELOAD_SOLANA_WALLET). Once loaded, it mounts and sets `window.__SOLANA_*_CONTEXT`, so `useSolanaWallet`/`useSolanaConnection` return the real context — authentication and Solana (connect, sign, sendTransaction) work normally after that; only the first few seconds use stub values. `ViewportAware` exists in `~/ui/components/viewport-aware` for viewport-based chunk loading but is not used on the homepage (it regressed mobile LCP/TBT when sections entered view quickly).
 
 ### 5.1 Layout and global UI
 
@@ -121,7 +121,7 @@ Heavy or non–first-paint UI is loaded with `next/dynamic` (or equivalent) so i
 
 | Area | Component / behavior | Notes |
 |------|----------------------|--------|
-| **Home page** | `app/page.tsx` | Default export is async; fetches categories, featured products, and testimonials in `Promise.all` then renders (no Suspense). `FeaturedProductsSection` and `TestimonialsSection` are loaded via `next/dynamic` and wrapped in `ViewportAware`: their chunks load only when the user scrolls the section into (or near) the viewport, reducing initial TBT. Skeletons show until then. |
+| **Home page** | `app/page.tsx` | Default export is async; fetches categories, featured products, and testimonials in `Promise.all` then renders (no Suspense). `FeaturedProductsSection` and `TestimonialsSection` are loaded via `next/dynamic` with skeletons (separate chunks). Viewport-aware loading was tried and reverted (mobile regression). |
 
 ### 5.4 Products and catalog
 
@@ -311,7 +311,7 @@ When running desktop PageSpeed, the following have been addressed or documented.
 
 ### Prioritized actions (Lighthouse score ~76, TBT and long tasks)
 
-- **Total Blocking Time (TBT) ~450 ms (red):** Main lever is reducing long main-thread tasks. Run `bun run analyze`, find the largest client chunks (e.g. 8886, 93794, 4bd1b696), and split or defer more code with `next/dynamic` so work is spread across frames. **Implemented:** Homepage featured products and testimonials use `ViewportAware` so their chunks load only when the section is near the viewport; crypto price fetch and other non-critical init use `whenIdle` from `~/lib/when-idle` (requestIdleCallback or short setTimeout fallback).
+- **Total Blocking Time (TBT) ~450 ms desktop, ~1 s mobile (red):** Main lever is reducing long main-thread tasks and JS execution time. Run `bun run analyze`, find the largest client chunks (e.g. 8886, 93794, 4bd1b696), and split or defer more code with `next/dynamic`. **Implemented:** Crypto price fetch and other non-critical init use `whenIdle` from `~/lib/when-idle`. **Reverted:** Viewport-aware loading for homepage featured products and testimonials was reverted — on mobile it regressed performance (LCP/TBT/SI worse); small viewports load those sections into view quickly so we still paid chunk cost plus observer/layout overhead.
 - **Long main-thread tasks (4+ tasks, e.g. 685 ms + 224 ms + 214 ms + 147 ms):** Chunk IDs (8886, 93794, 4bd1b696, etc.) change per build; use the bundle analyzer to map them to modules. Break up heavy synchronous work: move non-UI work to a Web Worker where feasible, defer non-critical init with `whenIdle()` (see `~/lib/when-idle.ts`; used by prefetcher, SpeedInsights, LazySolanaWalletProvider, crypto fetch, DeferredHeader), and ensure heavy libs (Stripe, wallet adapters, etc.) load only on the routes that need them (see §2).
 - **Forced reflow (~136 ms from chunks 93794, 66609, unattributed):** Never read layout (e.g. `offsetWidth`, `getBoundingClientRect`, `scrollHeight`) immediately after DOM or style changes. Batch all layout reads, then all writes; or wrap reads in `requestAnimationFrame` so they run after the browser has applied layout. Already done in `data-table-filter.tsx` (scroll) and `product-image-gallery.tsx` (zoom); support-chat scroll-to-bottom is deferred in rAF. Any remaining reflow is likely from framework or third-party chunks.
 - **Speed Index (~2.1 s, orange):** Improving TBT and reflow will help. Also ensure above-the-fold content (hero, LCP element) is not blocked by large JS; keep hero minimal and defer footer, testimonials, and heavy widgets (see §5).
@@ -325,19 +325,47 @@ When running desktop PageSpeed, the following have been addressed or documented.
 | **Reduce unused JavaScript / long main-thread tasks** | Code-splitting and lazy loading are in place (sections 2–5). Homepage: `FeaturedProductsSection` and `TestimonialsSection` are loaded via `next/dynamic` so their JS is in separate chunks. Run `bun run analyze` to see which modules land in which chunks and find further split opportunities. |
 | **Forced reflow** | Avoid reading layout (e.g. `getBoundingClientRect`, `offsetWidth`) immediately after DOM writes; batch reads or use `requestAnimationFrame`. Some reflows come from third-party chunks. |
 
-### Desktop (PageSpeed desktop)
+### Desktop change suggestions (consolidated)
 
-- **Reduce the download time of images (est. ~497–998 KiB):** Addressed by (1) enabling Next Image Optimization for all **https** remote images (only `data:` and `http:` use `unoptimized`), so Printful/ufs.sh/etc. are resized and served as WebP/AVIF; (2) adding `imageSizes` 192 and 320 in `next.config.ts` for 138px/284px displays; (3) tightening `sizes` on product cards to `284px` and category grid to `192px` so the browser requests smaller sources. Legacy JavaScript (12 KiB polyfills) and unused JS (~361 KiB) remain; `browserslist` is already modern-only; further savings require dependency or chunk analysis.
-- **LCP breakdown:** Element render delay (~2.69 s) — LCP element is the hero `<h1>` (“Where culture and technology converge”). Reducing main-thread work (unused JS, long tasks) is the primary lever; fonts use `display: "swap"`.
-- **Forced reflow:** Layout reads in `data-table-filter.tsx` are wrapped in `requestAnimationFrame`; remaining reflow is from framework/deps chunks.
-- **Reduce unused JavaScript (~361 KiB est.):** Chunks 8886 (~267 KiB), 49821, 30156, 3a91511d. Prefetcher prefetches only `/products`; checkout/crypto loads on intent. Run `bun run analyze` for further split opportunities.
-- **Legacy JavaScript (12 KiB):** Polyfills for `Array.prototype.at`, `Object.fromEntries`, etc. `browserslist` is modern-only; remaining polyfills may come from dependencies.
-- **Use efficient cache lifetimes:** Static assets use long cache; third-party CDN (ufs.sh, etc.) set their own headers.
+| Audit | Value / detail | Action / status |
+|-------|----------------|------------------|
+| **Minimize main-thread work** | 4.8 s total (Script Evaluation 2,269 ms, Other 897 ms, Style & Layout 694 ms, Script Parsing 526 ms, Rendering 254 ms) | Reduce JS payloads and execution; chunk splits and stub (8886) help; target 93794, 4bd1b696 next. |
+| **LCP breakdown** | Element render delay **5,600 ms**; LCP element = hero `<h1>` “Where culture and technology converge” | Same lever: less main-thread work so hero can paint sooner; fonts use `display: "swap"`. |
+| **Forced reflow** | 17 ms (93794) + 24 ms unattributed + 17 ms (66609) | Our code uses rAF for layout reads (data-table-filter, product-image-gallery, support-chat); rest is framework/deps in 93794, 66609. |
+| **Legacy JavaScript** | Est. savings **12 KiB**; chunk **93794**; polyfills: `Array.at`, `Array.flat`, `Array.flatMap`, `Object.fromEntries`, `Object.hasOwn`, `String.trimStart`/`trimEnd` | `browserslist` is already modern (chrome ≥87, etc.); polyfills likely from dependencies; audit deps or wait for Next.js to respect browserslist for client bundles. |
+| **Reduce unused JavaScript** | **367 KiB** est. savings; forthecult.store 449 KiB transfer | **8886** (315.8 KiB, 267.1 savings): deferred via Solana stub. **24759** (53.3 KiB), **49821** (51 KiB), **3a91511d** (29.1 KiB): run `bun run analyze` to map and split. |
+| **Avoid long main-thread tasks** | 4 long tasks; total 508 ms (8886: 223 ms; 93794: 135 + 98 + 52 ms) | Deferring 8886 helps; 93794 is the largest remaining; split or lazy-load what’s inside it. |
+| **Reduce JavaScript execution time** | ~2.5 s opportunity; total CPU 3,982 ms (eval 2,184, parse 304) | **93794** 1,559 ms, **8886** 608 ms, **4bd1b696** 366 ms, layout 78 ms, unattributable 450 ms. Stub removes 8886 from critical path; target 93794 and 4bd1b696. |
+| **Use efficient cache lifetimes** | — | Static assets use long cache; third-party CDN sets its own. |
+
+### Analyzer chunk mapping (what’s inside 93794, 4bd1b696, 24759, 49821, 3a91511d)
+
+After `bun run analyze`, open `.next/analyze/client.html` and search by chunk ID (or use the script that parses `window.chartData` to list chunk → modules). Build-specific IDs may shift; below is from a recent run.
+
+| Chunk ID | Contents (modules/packages) | Cost | What to do |
+|----------|-----------------------------|------|------------|
+| **93794** | `@swc/helpers/esm`, `next/dist`, `process` | Biggest: CPU, long tasks, reflow, legacy polyfills (~12 KiB) | Framework + SWC runtime + process polyfill. Cannot split; it’s the app shell + Next runtime. Legacy polyfills (Array.at, Object.fromEntries, etc.) likely come from a dependency; audit deps or track Next.js “no legacy polyfills for modern browsers.” |
+| **4bd1b696** | `react-dom-client.production.js` | Second-largest execution | React DOM. Core; no split. |
+| **24759** | `@solana/*`, `bignumber.js`, `bn.js`, `borsh`, `eventemitter3` | Reduce unused JS | Solana stack. **Done:** `TokenGateGuard` no longer imports `@solana/wallet-adapter-base`; it uses local `READY_INSTALLED`/`READY_LOADABLE` and a `WalletLike` type so product-card, `[slug]`, and `products/[id]` don’t pull 24759. |
+| **49821** | `@lit/reactive-element`, `@walletconnect`, `big.js`, `bs58`, `dayjs` | Reduce unused JS | WalletConnect / Lit. Likely from Reown/WalletConnect modal. Lazy-load with auth wallet modal or checkout. |
+| **3a91511d** | `@solana/web3.js` (`index.browser.esm.js`) | Reduce unused JS | Solana RPC client. No client-side `@solana/web3.js` in the app shell; it’s only used in checkout, membership, token, dashboard profile, and cult-swap (all deferred or route-specific). Keeps 3a91511d out of the main bundle. |
+
+**Legacy 12 KiB:** Browserslist is already modern; the polyfills in 93794 are likely from a dependency (e.g. core-js via Babel/SWC or a lib that targets older browsers). Options: (1) Audit which deps pull them in (`npm ls` / bundle analyzer “why is this module included”). (2) Track Next.js support for “no legacy polyfills for modern browsers” and enable when available.
+
+### Desktop (PageSpeed desktop) — summary
+
+- **Reduce the download time of images:** Addressed via Next Image Optimization, `imageSizes` 192/320, tight `sizes` on cards/categories.
+- **LCP / main-thread:** Hero `<h1>` is the LCP; element render delay (e.g. 5.6 s) is driven by main-thread work. Reducing JS parse and execution (smaller payloads, chunk splits, deferred 8886) is the main lever.
+- **Forced reflow:** Our layout reads use `requestAnimationFrame`; remaining reflow is in chunks 93794, 66609.
+- **Reduce unused JavaScript:** 8886 deferred via Solana stub; analyze 24759, 49821, 3a91511d for further splits.
+- **Legacy JavaScript (12 KiB):** Polyfills in 93794; `browserslist` is modern; savings require dependency audit or tooling support.
+- **Use efficient cache lifetimes:** Static assets covered; third-party CDN unchanged.
 
 ### Mobile-specific (PageSpeed mobile)
 
+- **Main-thread work / score:** Mobile can show ~4.8 s main-thread work (script evaluation ~2.3 s, style & layout ~694 ms, parse ~526 ms), LCP ~5 s, TBT ~1 s, Speed Index ~5.5 s. The main lever is **smaller JS payloads** and **reducing script evaluation**; heaviest chunks are 93794 (~1.5 s CPU), 8886 (~608 ms), 4bd1b696 (~366 ms). Viewport-based deferral on the homepage was reverted (mobile regression: sections enter view quickly, so we still load chunks plus observer/layout overhead).
 - **LCP breakdown:** Element render delay (~2.85 s) is the main cost; TTFB is 0 ms. The LCP element is the brand `<h2>` (“We curate tech, apparel, wellness, and travel gear that fits how you live…”). The delay is main-thread blocking: reduce JS parse/execution before first paint. **Mitigations:** (1) **LazySolanaWalletProvider** uses a longer idle timeout on mobile (4 s). (2) **DeferredCriticalRoutePrefetcher** uses 3.5 s idle on mobile (2 s on desktop). (3) **DeferredSpeedInsights** and **TestimonialsSection** remain lazy; prefetcher does not prefetch `/checkout`. (A deferred header was tried but reverted — it caused header flash on first load and scroll lag.)
-- **Reduce unused JavaScript (~339 KiB est. mobile, ~361 KiB desktop):** Largest chunk: **8886** (~316 KiB transfer, ~246–267 KiB est. savings). Others: 49821, 30156, 3a91511d. Run `bun run analyze` (see §1) to see which modules remain in the largest chunks and split further. Checkout/crypto loads only on intent.
+- **Reduce unused JavaScript (~339 KiB est. mobile, ~361 KiB desktop):** Chunk **8886** (was ~316 KiB, dominated by @solana-mobile) is no longer in the main bundle: the Solana stub was refactored to avoid importing `@solana/wallet-adapter-react`; use `useSolanaWallet`/`useSolanaConnection` from the stub; the real provider loads after idle. Run `bun run analyze` for 93794, 4bd1b696, and other chunks. Checkout/crypto loads only on intent.
 - **Forced reflow:** Chunks 93794 and 66609 contribute reflow time. **Mitigation:** Product image gallery zoom (`product-image-gallery.tsx`) wraps `getBoundingClientRect` in `requestAnimationFrame`; `data-table-filter.tsx` uses rAF for scroll/layout reads; support-chat scroll-to-bottom is deferred in rAF. Remaining reflow is from framework/deps.
 - **Improve image delivery (mobile):** Same as desktop (responsive `sizes`, Next Image Optimization for https remotes, `imageSizes` 192/320).
 - **Legacy JavaScript / cache:** Same as desktop; ufs.sh cache is third-party.

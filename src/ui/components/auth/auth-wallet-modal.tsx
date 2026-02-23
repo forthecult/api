@@ -1,9 +1,7 @@
 "use client";
 
-import type { Wallet } from "@solana/wallet-adapter-react";
-
 import { WalletReadyState } from "@solana/wallet-adapter-base";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useSolanaWallet } from "~/app/checkout/crypto/solana-wallet-stub";
 import { ChevronRight } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -67,6 +65,12 @@ function isMultiChainWallet(name: string): boolean {
 }
 
 const SUGGESTED_SOLANA_NAMES = ["Phantom", "Solflare"];
+
+/** minimal wallet shape from stub or real adapter (so we don't depend on full Wallet type here) */
+type SolanaWalletOption = {
+  adapter: { icon?: string; name?: string };
+  readyState?: string | number;
+};
 
 function EthereumOptionButton({
   disabled,
@@ -176,7 +180,7 @@ export function AuthWalletModal({
     signMessage,
     wallet: currentWallet,
     wallets,
-  } = useWallet();
+  } = useSolanaWallet();
 
   const signFlowStarted = useRef(false);
   /** Prevent duplicate connect() when effect re-runs before adapter state updates. */
@@ -185,7 +189,8 @@ export function AuthWalletModal({
     "wallet",
   );
   const [error, setError] = useState("");
-  const [selectedWallet, setSelectedWallet] = useState<null | Wallet>(null);
+  const [selectedWallet, setSelectedWallet] =
+    useState<SolanaWalletOption | null>(null);
   const [selectedChain, setSelectedChain] = useState<
     "ethereum" | "solana" | null
   >(null);
@@ -236,20 +241,19 @@ export function AuthWalletModal({
   );
 
   const handleSelectWallet = useCallback(
-    (wallet: Wallet) => {
+    (wallet: SolanaWalletOption) => {
       setError("");
       setSelectedWallet(wallet);
       solanaConnectStartedRef.current = false;
-      const name = wallet.adapter.name;
+      const name = wallet.adapter.name ?? "";
       // In solanaOnly mode, skip the network selection step even for multi-chain wallets
       if (!solanaOnly && isMultiChainWallet(name)) {
         setStep("network");
         return;
       }
       setSelectedChain("solana");
-      // Defer select() to next tick to avoid Phantom's "Cannot redefine property: phantom"
-      // conflict when extension and adapter run in the same synchronous click stack.
       const adapterName = wallet.adapter.name;
+      if (!adapterName) return;
       setPendingSolanaConnect(true);
       setTimeout(() => {
         select(adapterName);
@@ -271,9 +275,8 @@ export function AuthWalletModal({
       }
       solanaConnectStartedRef.current = false;
       const adapterName = wallet.adapter.name;
+      if (!adapterName) return;
       setPendingSolanaConnect(true);
-      // Defer select() so the wallet extension (e.g. Phantom) has time to settle and
-      // we avoid "Cannot redefine property: phantom" / first-click-does-nothing.
       const DEFER_MS = 50;
       setTimeout(() => {
         select(adapterName);
@@ -1037,6 +1040,7 @@ export function AuthWalletModal({
                 {solanaWallets
                   .filter(
                     (w, i, self) =>
+                      w.adapter.name != null &&
                       SUGGESTED_SOLANA_NAMES.includes(w.adapter.name) &&
                       i ===
                         self.findIndex(
@@ -1049,7 +1053,7 @@ export function AuthWalletModal({
                       isDetected={
                         wallet.readyState === WalletReadyState.Installed
                       }
-                      key={`${wallet.adapter.name}-${index}`}
+                      key={`${wallet.adapter.name ?? ""}-${index}`}
                       onClick={() => handleSelectWallet(wallet)}
                       wallet={wallet}
                     />
@@ -1076,6 +1080,7 @@ export function AuthWalletModal({
                 {solanaWallets
                   .filter(
                     (wallet, index, self) =>
+                      wallet.adapter.name != null &&
                       !SUGGESTED_SOLANA_NAMES.includes(wallet.adapter.name) &&
                       index ===
                         self.findIndex(
@@ -1088,7 +1093,7 @@ export function AuthWalletModal({
                       isDetected={
                         wallet.readyState === WalletReadyState.Installed
                       }
-                      key={`${wallet.adapter.name}-${index}`}
+                      key={`${wallet.adapter.name ?? ""}-${index}`}
                       onClick={() => handleSelectWallet(wallet)}
                       wallet={wallet}
                     />
@@ -1177,7 +1182,7 @@ function WalletOption({
   disabled: boolean;
   isDetected: boolean;
   onClick: () => void;
-  wallet: Wallet;
+  wallet: SolanaWalletOption;
 }) {
   const icon = wallet.adapter.icon;
   return (
@@ -1213,7 +1218,7 @@ function WalletOption({
           />
         </div>
       )}
-      <span className="flex-1 font-medium">{wallet.adapter.name}</span>
+      <span className="flex-1 font-medium">{wallet.adapter.name ?? "Wallet"}</span>
       {isDetected && (
         <span
           className={`

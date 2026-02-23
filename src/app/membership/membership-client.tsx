@@ -1,6 +1,6 @@
 "use client";
 
-import { useConnection, useWallet } from "@solana/wallet-adapter-react";
+import { useSolanaConnection, useSolanaWallet } from "~/app/checkout/crypto/solana-wallet-stub";
 import {
   ArrowRight,
   ArrowUpDown,
@@ -172,8 +172,8 @@ export function MembershipClient() {
   const { openConnectModal, restake, restakePending, stake, stakePending, unstake, unstakePending, wallet: connectedWallet } =
     useStakeTransaction();
   const { user } = useCurrentUser();
-  const { connection } = useConnection();
-  const { publicKey, sendTransaction } = useWallet();
+  const { connection } = useSolanaConnection();
+  const { publicKey, sendTransaction } = useSolanaWallet();
   
   // linked Solana wallet from user's account (for when wallet adapter isn't connected)
   const [linkedSolanaWallet, setLinkedSolanaWallet] = useState<string | null>(null);

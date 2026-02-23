@@ -10,9 +10,11 @@ import {
   TOKEN_2022_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
-import { useConnection, useWallet } from "@solana/wallet-adapter-react";
+import { useSolanaConnection, useSolanaWallet } from "~/app/checkout/crypto/solana-wallet-stub";
 import { Keypair, PublicKey } from "@solana/web3-compat";
 import {
+  type Connection as ConnectionType,
+  PublicKey as PublicKeyFromWeb3,
   type PublicKey as PublicKeyType,
   SystemProgram,
   Transaction,
@@ -127,7 +129,8 @@ type PayStatus =
 export function CryptoPayClient({
   initialOrder,
 }: { initialOrder?: InitialOrderLike } = {}) {
-  const { connection } = useConnection();
+  const { connection: connectionRaw } = useSolanaConnection();
+  const connection = connectionRaw as ConnectionType | undefined;
   const {
     connect,
     connected,
@@ -138,7 +141,7 @@ export function CryptoPayClient({
     sendTransaction,
     wallet,
     wallets,
-  } = useWallet();
+  } = useSolanaWallet();
   const params = useParams();
   const router = useRouter();
   const pathId = (params?.invoiceId as string) ?? "";
@@ -814,17 +817,19 @@ export function CryptoPayClient({
   const handlePayWithWallet = useCallback(async () => {
     if (!publicKey || !connection || !sendTransaction || !order?.depositAddress)
       return;
+    const conn = connection as ConnectionType;
+    const pubkey = new PublicKeyFromWeb3(publicKey.toBase58());
     setPayError(null);
     setPayStatus("sending");
     try {
-      const recipient = new PublicKey(order.depositAddress);
+      const recipient = new PublicKeyFromWeb3(order.depositAddress);
       const transaction = new Transaction();
 
       if (token === "solana") {
         // Native SOL transfer - no recipient account check needed
         transaction.add(
           SystemProgram.transfer({
-            fromPubkey: publicKey,
+            fromPubkey: pubkey,
             lamports: requiredLamports,
             toPubkey: recipient,
           }),
@@ -847,7 +852,7 @@ export function CryptoPayClient({
             rate,
             6,
           );
-          splTokenMint = new PublicKey(CRUST_MINT_MAINNET);
+          splTokenMint = new PublicKeyFromWeb3(CRUST_MINT_MAINNET);
         } else if (token === "pump") {
           if (pumpSolPerToken == null || pumpSolPerToken <= 0 || rate <= 0) {
             setPayError("Pump price unavailable. Please try again.");
@@ -860,7 +865,7 @@ export function CryptoPayClient({
             rate,
             6,
           );
-          splTokenMint = new PublicKey(PUMP_MINT_MAINNET);
+          splTokenMint = new PublicKeyFromWeb3(PUMP_MINT_MAINNET);
         } else if (token === "soluna") {
           if (
             solunaSolPerToken == null ||
@@ -877,7 +882,7 @@ export function CryptoPayClient({
             rate,
             6,
           );
-          splTokenMint = new PublicKey(SOLUNA_MINT_MAINNET);
+          splTokenMint = new PublicKeyFromWeb3(SOLUNA_MINT_MAINNET);
         } else if (token === "seeker") {
           if (
             seekerSolPerToken == null ||
@@ -894,7 +899,7 @@ export function CryptoPayClient({
             rate,
             6,
           );
-          splTokenMint = new PublicKey(SKR_MINT_MAINNET);
+          splTokenMint = new PublicKeyFromWeb3(SKR_MINT_MAINNET);
         } else if (token === "cult") {
           if (
             cultSolPerToken == null ||
@@ -911,17 +916,17 @@ export function CryptoPayClient({
             rate,
             6,
           );
-          splTokenMint = new PublicKey(CULT_MINT_MAINNET);
+          splTokenMint = new PublicKeyFromWeb3(CULT_MINT_MAINNET);
         } else if (token === "usdc") {
           amountBigNumber = usdcAmountFromUsd(amountUsd);
-          splTokenMint = new PublicKey(USDC_MINT_MAINNET);
+          splTokenMint = new PublicKeyFromWeb3(USDC_MINT_MAINNET);
         } else if (token === "troll") {
           amountBigNumber = tokenAmountFromUsd(amountUsd);
-          splTokenMint = new PublicKey(TROLL_MINT_MAINNET);
+          splTokenMint = new PublicKeyFromWeb3(TROLL_MINT_MAINNET);
         } else {
           // whitewhale
           amountBigNumber = tokenAmountFromUsd(amountUsd);
-          splTokenMint = new PublicKey(WHITEWHALE_MINT_MAINNET);
+          splTokenMint = new PublicKeyFromWeb3(WHITEWHALE_MINT_MAINNET);
         }
 
         // Try to get mint info from both Token Program and Token-2022 Program
@@ -930,7 +935,7 @@ export function CryptoPayClient({
 
         try {
           mint = await getMint(
-            connection,
+            conn,
             splTokenMint,
             undefined,
             TOKEN_PROGRAM_ID,
@@ -939,7 +944,7 @@ export function CryptoPayClient({
           // Try Token-2022 Program if standard Token Program fails
           try {
             mint = await getMint(
-              connection,
+              conn,
               splTokenMint,
               undefined,
               TOKEN_2022_PROGRAM_ID,
@@ -955,7 +960,7 @@ export function CryptoPayClient({
         // Get sender's Associated Token Account (ATA) using the detected program
         const senderATA = getAssociatedTokenAddressSync(
           splTokenMint,
-          publicKey,
+          pubkey,
           false,
           tokenProgramId,
         );
@@ -969,12 +974,12 @@ export function CryptoPayClient({
         );
 
         // Check if recipient ATA exists; if not, create it
-        const recipientATAInfo = await connection.getAccountInfo(recipientATA);
+        const recipientATAInfo = await conn.getAccountInfo(recipientATA);
         if (!recipientATAInfo) {
           // Add instruction to create the recipient's ATA (payer = sender)
           transaction.add(
             createAssociatedTokenAccountInstruction(
-              publicKey, // payer
+              pubkey, // payer
               recipientATA, // ATA to create
               recipient, // owner of the ATA
               splTokenMint, // token mint
@@ -1010,7 +1015,7 @@ export function CryptoPayClient({
             senderATA,
             splTokenMint,
             recipientATA,
-            publicKey,
+            pubkey,
             tokens,
             mint.decimals,
             [],
@@ -1020,12 +1025,12 @@ export function CryptoPayClient({
       }
 
       // Set transaction metadata
-      transaction.feePayer = publicKey;
-      const { blockhash } = await connection.getLatestBlockhash("confirmed");
+      transaction.feePayer = pubkey;
+      const { blockhash } = await conn.getLatestBlockhash("confirmed");
       transaction.recentBlockhash = blockhash;
 
       // Send the transaction
-      await sendTransaction(transaction, connection, {
+      await sendTransaction(transaction, conn, {
         preflightCommitment: "confirmed",
         skipPreflight: false,
       });
@@ -1080,8 +1085,10 @@ export function CryptoPayClient({
   }> => {
     if (!publicKey || !connection)
       return { reason: "token", sufficient: false };
+    const conn = connection as ConnectionType;
+    const pubkey = new PublicKeyFromWeb3(publicKey.toBase58());
     try {
-      const solBalance = await connection.getBalance(publicKey);
+      const solBalance = await conn.getBalance(pubkey);
       if (token === "solana") {
         return {
           reason: solBalance >= requiredLamports ? undefined : "token",
@@ -1103,7 +1110,7 @@ export function CryptoPayClient({
           rate,
           6,
         );
-        splTokenMint = new PublicKey(CRUST_MINT_MAINNET);
+        splTokenMint = new PublicKeyFromWeb3(CRUST_MINT_MAINNET);
       } else if (token === "pump") {
         if (pumpSolPerToken == null || pumpSolPerToken <= 0 || rate <= 0)
           return { reason: "token", sufficient: false };
@@ -1113,7 +1120,7 @@ export function CryptoPayClient({
           rate,
           6,
         );
-        splTokenMint = new PublicKey(PUMP_MINT_MAINNET);
+        splTokenMint = new PublicKeyFromWeb3(PUMP_MINT_MAINNET);
       } else if (token === "soluna") {
         if (solunaSolPerToken == null || solunaSolPerToken <= 0 || rate <= 0)
           return { reason: "token", sufficient: false };
@@ -1123,7 +1130,7 @@ export function CryptoPayClient({
           rate,
           6,
         );
-        splTokenMint = new PublicKey(SOLUNA_MINT_MAINNET);
+        splTokenMint = new PublicKeyFromWeb3(SOLUNA_MINT_MAINNET);
       } else if (token === "seeker") {
         if (seekerSolPerToken == null || seekerSolPerToken <= 0 || rate <= 0)
           return { reason: "token", sufficient: false };
@@ -1133,7 +1140,7 @@ export function CryptoPayClient({
           rate,
           6,
         );
-        splTokenMint = new PublicKey(SKR_MINT_MAINNET);
+        splTokenMint = new PublicKeyFromWeb3(SKR_MINT_MAINNET);
       } else if (token === "cult") {
         if (cultSolPerToken == null || cultSolPerToken <= 0 || rate <= 0)
           return { reason: "token", sufficient: false };
@@ -1143,26 +1150,26 @@ export function CryptoPayClient({
           rate,
           6,
         );
-        splTokenMint = new PublicKey(CULT_MINT_MAINNET);
+        splTokenMint = new PublicKeyFromWeb3(CULT_MINT_MAINNET);
       } else if (token === "usdc") {
         amountBaseUnits = usdcAmountFromUsd(amountUsd);
-        splTokenMint = new PublicKey(USDC_MINT_MAINNET);
+        splTokenMint = new PublicKeyFromWeb3(USDC_MINT_MAINNET);
       } else if (token === "whitewhale") {
         amountBaseUnits = tokenAmountFromUsd(amountUsd);
-        splTokenMint = new PublicKey(WHITEWHALE_MINT_MAINNET);
+        splTokenMint = new PublicKeyFromWeb3(WHITEWHALE_MINT_MAINNET);
       } else if (token === "troll") {
         amountBaseUnits = tokenAmountFromUsd(amountUsd);
-        splTokenMint = new PublicKey(TROLL_MINT_MAINNET);
+        splTokenMint = new PublicKeyFromWeb3(TROLL_MINT_MAINNET);
       } else {
         return { reason: "token", sufficient: false };
       }
       let tokenProgramId = TOKEN_PROGRAM_ID;
       try {
-        await getMint(connection, splTokenMint, undefined, TOKEN_PROGRAM_ID);
+        await getMint(conn, splTokenMint, undefined, TOKEN_PROGRAM_ID);
       } catch {
         try {
           await getMint(
-            connection,
+            conn,
             splTokenMint,
             undefined,
             TOKEN_2022_PROGRAM_ID,
@@ -1174,14 +1181,14 @@ export function CryptoPayClient({
       }
       const senderATA = getAssociatedTokenAddressSync(
         splTokenMint,
-        publicKey,
+        pubkey,
         false,
         tokenProgramId,
       );
       let balance: bigint;
       try {
         const account = await getTokenAccount(
-          connection,
+          conn,
           senderATA,
           "confirmed",
           tokenProgramId,

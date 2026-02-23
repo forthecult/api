@@ -405,22 +405,6 @@ export function ProductQuickView({
                       </p>
                     )}
 
-                    {/* Description — sanitized HTML so inline tags (e.g. from Printify) render correctly */}
-                    {product.description && (
-                      <div
-                        className={`
-                        line-clamp-4 text-sm leading-relaxed
-                        text-muted-foreground
-                        [&_a]:underline [&_a]:hover:no-underline
-                      `}
-                        dangerouslySetInnerHTML={{
-                          __html: sanitizeProductDescription(
-                            product.description,
-                          ),
-                        }}
-                      />
-                    )}
-
                     {/* Features */}
                     {product.features && product.features.length > 0 && (
                       <ul className="space-y-1.5 text-sm text-muted-foreground">
@@ -436,6 +420,22 @@ export function ProductQuickView({
                           </li>
                         ))}
                       </ul>
+                    )}
+
+                    {/* Description — sanitized HTML so inline tags (e.g. from Printify) render correctly */}
+                    {product.description && (
+                      <div
+                        className={`
+                        line-clamp-4 text-sm leading-relaxed
+                        text-muted-foreground
+                        [&_a]:underline [&_a]:hover:no-underline
+                      `}
+                        dangerouslySetInnerHTML={{
+                          __html: sanitizeProductDescription(
+                            product.description,
+                          ),
+                        }}
+                      />
                     )}
 
                     {/* Variant selector — key by product id so state resets when opening a different product */}

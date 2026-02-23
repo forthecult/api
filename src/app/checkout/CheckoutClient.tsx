@@ -1,13 +1,12 @@
 "use client";
 
-import { WalletContext } from "@solana/wallet-adapter-react";
+import { useSolanaWallet } from "~/app/checkout/crypto/solana-wallet-stub";
 import { ArrowLeft, Loader2, Lock } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import {
   forwardRef,
   useCallback,
-  useContext,
   useEffect,
   useImperativeHandle,
   useReducer,
@@ -135,41 +134,11 @@ const DigitalOnlyStubRef = function DigitalOnlyStubRef({
   return null;
 };
 
-/** Get property descriptor from obj or its prototype chain (getOwnPropertyDescriptor is own-only). */
-function getDescriptor(obj: object, key: string): PropertyDescriptor | undefined {
-  let current: object | null = obj;
-  while (current) {
-    const d = Object.getOwnPropertyDescriptor(current, key);
-    if (d) return d;
-    current = Object.getPrototypeOf(current);
-  }
-  return undefined;
-}
-
-/**
- * Safe wallet address reader that avoids the console.error noise from the
- * Solana wallet adapter's default context.
- *
- * When no SolanaWalletProvider is in the tree (e.g. on /checkout), the adapter's
- * default context defines `publicKey` as a getter that calls console.error before
- * returning null. We detect this by checking if `publicKey` is a getter (own or
- * on prototype) and skip the read entirely.
- *
- * When a real provider IS present (e.g. /checkout/[invoiceId]), publicKey is a
- * regular property set by the provider, and we read it normally.
- */
+/** Wallet address for tier-based discounts; uses stub hook so main bundle doesn't pull in @solana. */
 function useOptionalWalletAddress(): string | undefined {
-  const ctx = useContext(WalletContext);
-  if (!ctx) return undefined;
-  // Default context (no provider) uses a getter that console.errors. Check
-  // own and prototype chain so we never trigger it.
-  const desc = getDescriptor(ctx, "publicKey");
-  if (desc?.get) return undefined;
-  try {
-    return ctx.publicKey?.toBase58() ?? undefined;
-  } catch {
-    return undefined;
-  }
+  const { publicKey } = useSolanaWallet();
+  const pk = publicKey as { toBase58?: () => string } | null;
+  return pk?.toBase58?.() ?? undefined;
 }
 
 export function CheckoutClient() {
@@ -178,10 +147,7 @@ export function CheckoutClient() {
   const { isPending: authPending, user } = useCurrentUser();
   const { selectedCountry } = useCountryCurrency();
   // Wallet address for tier-based discounts (staking balance → coupon).
-  // On /checkout there is no SolanaWalletProvider, so we read the wallet
-  // context directly with useContext (safe — returns default context with
-  // publicKey: null via getter) instead of useWallet() which console.errors.
-  // On /checkout/[invoiceId] a full provider IS present.
+  // useSolanaWallet is from the stub (no @solana in main bundle); real provider sets globals when it loads.
   const wallet = useOptionalWalletAddress();
   /** When user is logged in but has no connected wallet (e.g. unlinked), tier from history for order payload. */
   const [memberTierFromApi, setMemberTierFromApi] = useState<null | number>(null);

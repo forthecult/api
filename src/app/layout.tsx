@@ -25,6 +25,7 @@ import { SupportChatWidgetWrapper } from "~/ui/components/support-chat/support-c
 import { ThemePersistSync } from "~/ui/components/theme-persist-sync";
 import { ThemeProvider } from "~/ui/components/theme-provider";
 import { ChunkLoadErrorHandler } from "~/ui/components/chunk-load-error-handler";
+import { ConsoleSecurityWarning } from "~/ui/components/console-security-warning";
 import { WalletErrorBoundary } from "~/ui/components/wallet-error-boundary";
 import { LazyWagmiProvider } from "~/lib/lazy-wagmi-provider";
 import { Toaster } from "~/ui/primitives/sonner";
@@ -140,6 +141,7 @@ export default async function RootLayout({
             selection:bg-primary/30
           `}
         >
+          <ConsoleSecurityWarning />
           <ChunkLoadErrorHandler />
           <ThemeProvider
             attribute="class"
@@ -170,6 +172,7 @@ export default async function RootLayout({
         `}
         suppressHydrationWarning
       >
+        <ConsoleSecurityWarning />
         <ChunkLoadErrorHandler />
         <ThemeProvider
           attribute="class"

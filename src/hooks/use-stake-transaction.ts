@@ -1,6 +1,6 @@
 "use client";
 
-import { useConnection, useWallet } from "@solana/wallet-adapter-react";
+import { useSolanaConnection, useSolanaWallet } from "~/app/checkout/crypto/solana-wallet-stub";
 import { Transaction } from "@solana/web3.js";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -29,8 +29,8 @@ export interface UseStakeTransactionOptions {
  * - Restake = unstake old tier + stake to new tier in one tx
  */
 export function useStakeTransaction(options: UseStakeTransactionOptions = {}) {
-  const { connection } = useConnection();
-  const { publicKey, sendTransaction } = useWallet();
+  const { connection } = useSolanaConnection();
+  const { publicKey, sendTransaction } = useSolanaWallet();
   const wallet = publicKey?.toBase58() ?? null;
 
   const [stakePending, setStakePending] = useState(false);
@@ -46,7 +46,7 @@ export function useStakeTransaction(options: UseStakeTransactionOptions = {}) {
 
   const executeStake = useCallback(
     async (amount: string, lockDuration: number): Promise<boolean> => {
-      if (!wallet || !sendTransaction) {
+      if (!wallet || !connection || !sendTransaction) {
         return false;
       }
       const trimmed = amount.trim();
@@ -135,7 +135,7 @@ export function useStakeTransaction(options: UseStakeTransactionOptions = {}) {
    */
   const unstake = useCallback(
     async (lockTier: number): Promise<boolean> => {
-      if (!wallet || !sendTransaction) {
+      if (!wallet || !connection || !sendTransaction) {
         openConnectModal();
         return false;
       }
@@ -185,7 +185,7 @@ export function useStakeTransaction(options: UseStakeTransactionOptions = {}) {
    */
   const restake = useCallback(
     async (lockTier: number, newLockDuration: number): Promise<boolean> => {
-      if (!wallet || !sendTransaction) {
+      if (!wallet || !connection || !sendTransaction) {
         openConnectModal();
         return false;
       }

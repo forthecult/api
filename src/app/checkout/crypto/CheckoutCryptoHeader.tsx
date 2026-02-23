@@ -1,6 +1,6 @@
 "use client";
 
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useSolanaWallet } from "~/app/checkout/crypto/solana-wallet-stub";
 import { ChevronDown, Wallet } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -28,7 +28,7 @@ interface ConnectedWallet {
 }
 
 export function CheckoutCryptoHeader() {
-  const { connected, disconnect, publicKey, wallet } = useWallet();
+  const { connected, disconnect, publicKey, wallet } = useSolanaWallet();
   const openModalFromContext = useOpenConnectWalletModal();
   const [connectedWallets, setConnectedWallets] = useState<ConnectedWallet[]>(
     [],
@@ -45,7 +45,7 @@ export function CheckoutCryptoHeader() {
         ...prev,
         {
           icon: wallet.adapter.icon,
-          name: wallet.adapter.name,
+          name: wallet.adapter.name ?? "Wallet",
           publicKey: key,
         },
       ];
