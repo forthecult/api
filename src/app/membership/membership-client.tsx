@@ -150,6 +150,10 @@ export function MembershipClient() {
   const [memberTierFromApi, setMemberTierFromApi] = useState<null | number>(null);
   /** Tier from /api/user/membership (admin grant or tier history when no wallet / no stake). */
   const [userMembershipTier, setUserMembershipTier] = useState<null | number>(null);
+  /** Expiry of admin grant (ISO string) for "X days left" when no stake. */
+  const [membershipExpiresAt, setMembershipExpiresAt] = useState<null | string>(null);
+  /** "30d" | "1y" when tier is from admin grant; used to disable matching staking duration. */
+  const [membershipDuration, setMembershipDuration] = useState<null | "30d" | "1y">(null);
   /** True after first /api/user/membership response (avoids flash of unstaked UI for admin-granted users). */
   const [userMembershipFetched, setUserMembershipFetched] = useState(false);
   const [stakedLock, setStakedLock] = useState<{
@@ -351,17 +355,35 @@ export function MembershipClient() {
     let cancelled = false;
     fetch("/api/user/membership", { credentials: "include" })
       .then((r) => r.json())
-      .then((data: { memberTier?: number } | null) => {
-        if (cancelled) return;
-        const t = data?.memberTier;
-        setUserMembershipTier(
-          typeof t === "number" && t >= 1 && t <= 3 ? t : null,
-        );
-        setUserMembershipFetched(true);
-      })
+      .then(
+        (data: {
+          memberTier?: number;
+          membershipDuration?: "30d" | "1y";
+          membershipExpiresAt?: string | null;
+        } | null) => {
+          if (cancelled) return;
+          const t = data?.memberTier;
+          setUserMembershipTier(
+            typeof t === "number" && t >= 1 && t <= 3 ? t : null,
+          );
+          setMembershipExpiresAt(
+            typeof data?.membershipExpiresAt === "string"
+              ? data.membershipExpiresAt
+              : null,
+          );
+          setMembershipDuration(
+            data?.membershipDuration === "1y" || data?.membershipDuration === "30d"
+              ? data.membershipDuration
+              : null,
+          );
+          setUserMembershipFetched(true);
+        },
+      )
       .catch(() => {
         if (!cancelled) {
           setUserMembershipTier(null);
+          setMembershipExpiresAt(null);
+          setMembershipDuration(null);
           setUserMembershipFetched(true);
         }
       });
@@ -482,6 +504,22 @@ export function MembershipClient() {
     },
     [],
   );
+
+  const formatMembershipTimeLeft = useCallback((expiresAtIso: string): string => {
+    const end = new Date(expiresAtIso).getTime();
+    const now = Date.now();
+    const ms = Math.max(0, end - now);
+    const days = Math.floor(ms / (24 * 60 * 60 * 1000));
+    if (days < 60) return `${days} day${days === 1 ? "" : "s"} left`;
+    const months = Math.floor(days / 30);
+    return `${months} month${months === 1 ? "" : "s"} left`;
+  }, []);
+
+  // Default staking duration when user has admin grant: hide matching option so they don't re-stake same period
+  useEffect(() => {
+    if (membershipDuration === "30d") setStakeDuration("12m");
+    else if (membershipDuration === "1y") setStakeDuration("30d");
+  }, [membershipDuration]);
 
   // Fetch countries and regions when eligible to claim (for dropdowns)
   useEffect(() => {
@@ -757,7 +795,9 @@ export function MembershipClient() {
                               <p className="text-sm text-muted-foreground">
                                 {hasStake
                                   ? `${stakedLock?.durationLabel ?? "30 days"} · ${formatTokensPrecise(Number(stakedBalanceDisplay))} ${tokenSymbol} staked${stakedLock?.isLocked && stakedLock.secondsRemaining != null && stakedLock.secondsRemaining > 0 ? ` · ${formatTimeUntilUnlock(stakedLock.secondsRemaining)}` : stakedLock && !stakedLock.isLocked ? " · Unlocked" : ""}`
-                                  : "Membership from admin or tier history. Staking is optional—only if you want to lock your tier on-chain."}
+                                  : membershipExpiresAt
+                                    ? `${formatMembershipTimeLeft(membershipExpiresAt)}. Staking is optional—only if you want to lock your tier on-chain.`
+                                    : "Staking is optional—only if you want to lock your tier on-chain."}
                               </p>
                             </div>
                           </>
@@ -934,8 +974,8 @@ export function MembershipClient() {
                     );
                   }
 
-                  const show30Days = true;
-                  const show12Months = true;
+                  const show30Days = membershipDuration !== "30d";
+                  const show12Months = membershipDuration !== "1y";
                   
                   return (
                     <div>

@@ -336,7 +336,7 @@ export default async function HomePage() {
               </div>
               <h1
                 className={`
-                font-heading text-4xl leading-tight font-extrabold
+                font-heading-lcp text-4xl leading-tight font-extrabold
                 tracking-tight text-foreground
                 sm:text-5xl
                 md:text-7xl
@@ -598,7 +598,8 @@ export default async function HomePage() {
                   >
                     <div
                       className={`
-                        relative aspect-[4/3] w-full shrink-0 bg-muted
+                        relative aspect-[4/3] w-full shrink-0 overflow-hidden
+                        bg-card
                       `}
                     >
                       <Image
@@ -610,7 +611,12 @@ export default async function HomePage() {
                         fill
                         priority={index < 2}
                         sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 192px"
-                        src={category.image ?? "/placeholder.svg"}
+                        src={
+                          category.image ??
+                          (category.slug === "featured"
+                            ? "/featured-placeholder.svg"
+                            : "/placeholder.svg")
+                        }
                         unoptimized={
                           (category.image ?? "").startsWith("data:") ||
                           (category.image ?? "").startsWith("http://")

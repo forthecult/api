@@ -4,12 +4,12 @@
  * Used by the header dropdown to show "Tier X Member".
  */
 
-import { and, eq, or } from "drizzle-orm";
+import { and, eq, gt, or } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 
 import { auth } from "~/lib/auth";
 import { db } from "~/db";
-import { accountTable } from "~/db/schema";
+import { accountTable, adminMembershipGrantTable } from "~/db/schema";
 import { userWalletsTable } from "~/db/schema/wallets/tables";
 import {
   getAdminGrantedTier,
@@ -73,8 +73,33 @@ export async function GET(request: NextRequest) {
     const tierName =
       memberTier != null ? (TIER_NAMES[memberTier] ?? `Tier ${memberTier}`) : null;
 
+    const now = new Date();
+    const grantRows = await db
+      .select({
+        createdAt: adminMembershipGrantTable.createdAt,
+        expiresAt: adminMembershipGrantTable.expiresAt,
+      })
+      .from(adminMembershipGrantTable)
+      .where(
+        and(
+          eq(adminMembershipGrantTable.userId, userId),
+          gt(adminMembershipGrantTable.expiresAt, now),
+        ),
+      )
+      .limit(1);
+    const grant = grantRows[0];
+    const membershipExpiresAt = grant?.expiresAt?.toISOString() ?? null;
+    const membershipDuration =
+      grant?.expiresAt && grant?.createdAt
+        ? grant.expiresAt.getTime() - grant.createdAt.getTime() > 60 * 24 * 60 * 60 * 1000
+          ? "1y"
+          : "30d"
+        : null;
+
     return NextResponse.json({
       memberTier,
+      membershipDuration,
+      membershipExpiresAt,
       tierName,
       wallet: wallet ?? null,
     });
