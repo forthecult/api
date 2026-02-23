@@ -845,11 +845,6 @@ export function MembershipClient() {
                     You have no staked balance. Stake below to join.
                   </p>
                 )}
-                {wallet && Number(stakedBalanceRaw) === 0 && displayTier != null && (
-                  <p className="text-sm text-muted-foreground">
-                    You're a {MEMBERSHIP_TIERS.find((t) => t.id === displayTier)?.name ?? `Tier ${displayTier}`} member. Staking is optional—only if you want to lock your tier on-chain.
-                  </p>
-                )}
                 {!wallet && displayTier != null && (
                   <p className="text-sm text-muted-foreground">
                     You're a {MEMBERSHIP_TIERS.find((t) => t.id === displayTier)?.name ?? `Tier ${displayTier}`} member. Connect your wallet only if you want to stake and lock your tier on-chain (optional).
