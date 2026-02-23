@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { useState } from "react";
 
 import { getFooterPaymentItems } from "~/lib/checkout-payment-options";
 import { usePaymentMethodSettings } from "~/lib/hooks/use-payment-method-settings";
@@ -21,7 +22,16 @@ const CARD_OR_PAYPAL_NAMES = new Set([
   "Visa",
 ]);
 
+const SOLANA_ECOSYSTEM_NAMES = new Set([
+  "Solana",
+  "Crustafarian",
+  "Pump",
+  "Troll",
+  "Seeker (SKR)",
+]);
+
 export function FooterPaymentsBar() {
+  const [solanaHover, setSolanaHover] = useState(false);
   const { visibility } = usePaymentMethodSettings();
   const paymentItems = getFooterPaymentItems(visibility);
   const cryptoItems = paymentItems.filter(
@@ -30,6 +40,15 @@ export function FooterPaymentsBar() {
   const cardItems = paymentItems.filter((item) =>
     CARD_OR_PAYPAL_NAMES.has(item.name),
   );
+
+  const solanaItem = cryptoItems.find((i) => i.name === "Solana");
+  const otherSolanaEcosystem = cryptoItems.filter(
+    (i) => SOLANA_ECOSYSTEM_NAMES.has(i.name) && i.name !== "Solana",
+  );
+  const otherCryptoItems = cryptoItems.filter(
+    (i) => !SOLANA_ECOSYSTEM_NAMES.has(i.name),
+  );
+  const showSolanaExpand = Boolean(solanaItem && otherSolanaEcosystem.length > 0);
 
   const renderItem = (
     item: { name: string; src: string; title?: string },
@@ -70,7 +89,33 @@ export function FooterPaymentsBar() {
           className={`flex flex-wrap items-center justify-center ${logoGap}`}
           role="list"
         >
-          {cryptoItems.map((item) => renderItem(item, CRYPTO_ICON_WIDTH))}
+          {otherCryptoItems.map((item) =>
+            renderItem(item, CRYPTO_ICON_WIDTH),
+          )}
+          {showSolanaExpand && solanaItem && (
+            <li
+              className="flex shrink-0 items-center"
+              onMouseEnter={() => setSolanaHover(true)}
+              onMouseLeave={() => setSolanaHover(false)}
+              role="listitem"
+            >
+              <ul
+                aria-label="Solana ecosystem"
+                className={`flex flex-wrap items-center ${logoGap}`}
+                role="list"
+              >
+                {renderItem(solanaItem, CRYPTO_ICON_WIDTH)}
+                {solanaHover &&
+                  otherSolanaEcosystem.map((item) =>
+                    renderItem(item, CRYPTO_ICON_WIDTH),
+                  )}
+              </ul>
+            </li>
+          )}
+          {!showSolanaExpand &&
+            cryptoItems
+              .filter((i) => SOLANA_ECOSYSTEM_NAMES.has(i.name))
+              .map((item) => renderItem(item, CRYPTO_ICON_WIDTH))}
         </ul>
       )}
       {cardItems.length > 0 && (

@@ -147,7 +147,7 @@ export function ShopMegaMenu({
             `
               accent-underline inline-flex items-center gap-1 rounded-md
               bg-transparent py-1.5 text-base font-medium tracking-wider
-              uppercase transition-colors
+              transition-colors
               hover:text-[#C4873A]
             `,
             isActive ? "font-semibold text-[#C4873A]" : "text-[#8A857E]",

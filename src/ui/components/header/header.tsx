@@ -588,7 +588,7 @@ export function Header({ isAdmin: isAdminProp, showAuth = true }: HeaderProps) {
                           className={cn(
                             `
                               accent-underline text-base font-medium
-                              tracking-wider uppercase transition-colors
+                              tracking-wider transition-colors
                               hover:text-primary
                             `,
                             pathname === "/about"

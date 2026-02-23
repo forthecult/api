@@ -18,6 +18,7 @@ import {
   categoriesTable,
   orderItemsTable,
   productCategoriesTable,
+  productImagesTable,
   productsTable,
 } from "~/db/schema";
 import { sortSubcategories } from "~/lib/category-sort";
@@ -148,6 +149,42 @@ export async function getCategoriesWithProductsAndDisplayImage(opts?: {
   );
   const fallbackByCategoryId = new Map<string, string>();
 
+  /** Resolve display image for product IDs: use product.imageUrl or first product_image.url. */
+  async function resolveProductImageUrls(
+    productIds: string[],
+  ): Promise<Map<string, string>> {
+    const out = new Map<string, string>();
+    if (productIds.length === 0) return out;
+    const products = await db
+      .select({ id: productsTable.id, imageUrl: productsTable.imageUrl })
+      .from(productsTable)
+      .where(inArray(productsTable.id, productIds));
+    for (const p of products) {
+      const url = p.imageUrl?.trim();
+      if (url) out.set(p.id, url);
+    }
+    const needFromMedia = productIds.filter((id) => !out.has(id));
+    if (needFromMedia.length > 0) {
+      const rows = await db
+        .select({
+          productId: productImagesTable.productId,
+          url: productImagesTable.url,
+        })
+        .from(productImagesTable)
+        .where(inArray(productImagesTable.productId, needFromMedia))
+        .orderBy(
+          asc(productImagesTable.productId),
+          asc(productImagesTable.sortOrder),
+          asc(productImagesTable.id),
+        );
+      for (const row of rows) {
+        if (row.productId && row.url?.trim() && !out.has(row.productId))
+          out.set(row.productId, row.url.trim());
+      }
+    }
+    return out;
+  }
+
   if (needFallback.length > 0) {
     const needIds = needFallback.map((c) => c.id);
 
@@ -191,16 +228,10 @@ export async function getCategoriesWithProductsAndDisplayImage(opts?: {
       }
     }
     if (topProductIds.length > 0) {
-      const products = await db
-        .select({ id: productsTable.id, imageUrl: productsTable.imageUrl })
-        .from(productsTable)
-        .where(inArray(productsTable.id, topProductIds));
-      for (const p of products) {
-        const url = p.imageUrl?.trim();
-        if (url) {
-          const catId = categoryForProduct.get(p.id);
-          if (catId) fallbackByCategoryId.set(catId, url);
-        }
+      const imageByProduct = await resolveProductImageUrls(topProductIds);
+      for (const [productId, url] of imageByProduct) {
+        const catId = categoryForProduct.get(productId);
+        if (catId && url) fallbackByCategoryId.set(catId, url);
       }
     }
 
@@ -242,16 +273,10 @@ export async function getCategoriesWithProductsAndDisplayImage(opts?: {
         }
       }
       if (newestProductIds.length > 0) {
-        const products = await db
-          .select({ id: productsTable.id, imageUrl: productsTable.imageUrl })
-          .from(productsTable)
-          .where(inArray(productsTable.id, newestProductIds));
-        for (const p of products) {
-          const url = p.imageUrl?.trim();
-          if (url) {
-            const catId = categoryForNewest.get(p.id);
-            if (catId) fallbackByCategoryId.set(catId, url);
-          }
+        const imageByProduct = await resolveProductImageUrls(newestProductIds);
+        for (const [productId, url] of imageByProduct) {
+          const catId = categoryForNewest.get(productId);
+          if (catId && url) fallbackByCategoryId.set(catId, url);
         }
       }
     }

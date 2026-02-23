@@ -107,7 +107,7 @@ export function ShopByCryptoMenu({
             `
               accent-underline inline-flex items-center gap-1 rounded-md
               bg-transparent py-1.5 text-base font-medium tracking-wider
-              uppercase transition-colors
+              transition-colors
               hover:text-[#C4873A]
             `,
             "text-[#8A857E]",
@@ -117,7 +117,7 @@ export function ShopByCryptoMenu({
           onMouseLeave={handleTriggerLeave}
           type="button"
         >
-          Shop by Crypto
+          Shop by crypto
           <ChevronDown
             aria-hidden
             className={cn("h-4 w-4 transition-transform", open && "rotate-180")}
