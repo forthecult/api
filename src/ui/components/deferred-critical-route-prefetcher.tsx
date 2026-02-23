@@ -2,15 +2,7 @@
 
 import type { ComponentType } from "react";
 import { useEffect, useState } from "react";
-
-function whenIdle(cb: () => void, timeout: number): () => void {
-  if (typeof requestIdleCallback !== "undefined") {
-    const id = requestIdleCallback(cb, { timeout });
-    return () => cancelIdleCallback(id);
-  }
-  const t = setTimeout(cb, 0);
-  return () => clearTimeout(t);
-}
+import { whenIdle } from "~/lib/when-idle";
 
 /**
  * Loads CriticalRoutePrefetcher after the main thread is idle so prefetch logic

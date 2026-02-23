@@ -361,10 +361,13 @@ export function SupportChatWidget() {
     setInput(prompt);
   };
 
-  // Scroll messages to bottom when typing indicator appears or when a new message arrives
+  // scroll to bottom when typing indicator or new message; defer in rAF to avoid forced reflow (PageSpeed)
   React.useEffect(() => {
-    const el = messagesScrollRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
+    const rafId = requestAnimationFrame(() => {
+      const el = messagesScrollRef.current;
+      if (el) el.scrollTop = el.scrollHeight;
+    });
+    return () => cancelAnimationFrame(rafId);
   }, [loading, messages.length]);
 
   return (

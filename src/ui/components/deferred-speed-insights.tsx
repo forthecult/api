@@ -2,15 +2,7 @@
 
 import type { ComponentType } from "react";
 import { useEffect, useState } from "react";
-
-function whenIdle(cb: () => void, timeout: number): () => void {
-  if (typeof requestIdleCallback !== "undefined") {
-    const id = requestIdleCallback(cb, { timeout });
-    return () => cancelIdleCallback(id);
-  }
-  const t = setTimeout(cb, 0);
-  return () => clearTimeout(t);
-}
+import { whenIdle } from "~/lib/when-idle";
 
 /**
  * Renders Vercel SpeedInsights only after the main thread is idle, so it doesn't

@@ -99,6 +99,8 @@ The homepage is an **async server component** that fetches all data up front, th
 
 Heavy or non–first-paint UI is loaded with `next/dynamic` (or equivalent) so it lives in separate chunks. Below is where this is used and how to preserve or extend it.
 
+**Deferring non-critical work:** Use `whenIdle(cb, timeoutMs)` from `~/lib/when-idle` (requestIdleCallback with setTimeout fallback) for non-critical init (prefetcher, SpeedInsights, crypto price fetch, LazySolanaWalletProvider, DeferredHeader) so the main thread isn’t blocked. For below-the-fold sections whose chunks should load only when the user scrolls, wrap content in `ViewportAware` from `~/ui/components/viewport-aware` (IntersectionObserver); the homepage featured products and testimonials use this.
+
 ### 5.1 Layout and global UI
 
 | Area | Component / behavior | Notes |
@@ -119,7 +121,7 @@ Heavy or non–first-paint UI is loaded with `next/dynamic` (or equivalent) so i
 
 | Area | Component / behavior | Notes |
 |------|----------------------|--------|
-| **Home page** | `app/page.tsx` | Default export is async; fetches categories, featured products, and testimonials in `Promise.all` then renders (no Suspense). `FeaturedProductsSection` and `TestimonialsSection` are loaded via `next/dynamic` with skeletons (separate chunks, faster initial parse). |
+| **Home page** | `app/page.tsx` | Default export is async; fetches categories, featured products, and testimonials in `Promise.all` then renders (no Suspense). `FeaturedProductsSection` and `TestimonialsSection` are loaded via `next/dynamic` and wrapped in `ViewportAware`: their chunks load only when the user scrolls the section into (or near) the viewport, reducing initial TBT. Skeletons show until then. |
 
 ### 5.4 Products and catalog
 
@@ -305,7 +307,14 @@ The invoice layout renders **all** wallet providers (WagmiProvider, MetaMaskProv
 
 ## 13. Google PageSpeed Insights – desktop findings and mitigations
 
-When running desktop PageSpeed, the following have been addressed or documented:
+When running desktop PageSpeed, the following have been addressed or documented.
+
+### Prioritized actions (Lighthouse score ~76, TBT and long tasks)
+
+- **Total Blocking Time (TBT) ~450 ms (red):** Main lever is reducing long main-thread tasks. Run `bun run analyze`, find the largest client chunks (e.g. 8886, 93794, 4bd1b696), and split or defer more code with `next/dynamic` so work is spread across frames. **Implemented:** Homepage featured products and testimonials use `ViewportAware` so their chunks load only when the section is near the viewport; crypto price fetch and other non-critical init use `whenIdle` from `~/lib/when-idle` (requestIdleCallback or short setTimeout fallback).
+- **Long main-thread tasks (4+ tasks, e.g. 685 ms + 224 ms + 214 ms + 147 ms):** Chunk IDs (8886, 93794, 4bd1b696, etc.) change per build; use the bundle analyzer to map them to modules. Break up heavy synchronous work: move non-UI work to a Web Worker where feasible, defer non-critical init with `whenIdle()` (see `~/lib/when-idle.ts`; used by prefetcher, SpeedInsights, LazySolanaWalletProvider, crypto fetch, DeferredHeader), and ensure heavy libs (Stripe, wallet adapters, etc.) load only on the routes that need them (see §2).
+- **Forced reflow (~136 ms from chunks 93794, 66609, unattributed):** Never read layout (e.g. `offsetWidth`, `getBoundingClientRect`, `scrollHeight`) immediately after DOM or style changes. Batch all layout reads, then all writes; or wrap reads in `requestAnimationFrame` so they run after the browser has applied layout. Already done in `data-table-filter.tsx` (scroll) and `product-image-gallery.tsx` (zoom); support-chat scroll-to-bottom is deferred in rAF. Any remaining reflow is likely from framework or third-party chunks.
+- **Speed Index (~2.1 s, orange):** Improving TBT and reflow will help. Also ensure above-the-fold content (hero, LCP element) is not blocked by large JS; keep hero minimal and defer footer, testimonials, and heavy widgets (see §5).
 
 | Finding | Mitigation |
 |--------|------------|
@@ -329,7 +338,7 @@ When running desktop PageSpeed, the following have been addressed or documented:
 
 - **LCP breakdown:** Element render delay (~2.85 s) is the main cost; TTFB is 0 ms. The LCP element is the brand `<h2>` (“We curate tech, apparel, wellness, and travel gear that fits how you live…”). The delay is main-thread blocking: reduce JS parse/execution before first paint. **Mitigations:** (1) **LazySolanaWalletProvider** uses a longer idle timeout on mobile (4 s). (2) **DeferredCriticalRoutePrefetcher** uses 3.5 s idle on mobile (2 s on desktop). (3) **DeferredSpeedInsights** and **TestimonialsSection** remain lazy; prefetcher does not prefetch `/checkout`. (A deferred header was tried but reverted — it caused header flash on first load and scroll lag.)
 - **Reduce unused JavaScript (~339 KiB est. mobile, ~361 KiB desktop):** Largest chunk: **8886** (~316 KiB transfer, ~246–267 KiB est. savings). Others: 49821, 30156, 3a91511d. Run `bun run analyze` (see §1) to see which modules remain in the largest chunks and split further. Checkout/crypto loads only on intent.
-- **Forced reflow:** Chunks 93794 and 66609 contribute reflow time. **Mitigation:** Product image gallery zoom (`product-image-gallery.tsx`) now wraps `getBoundingClientRect` in `requestAnimationFrame` so the layout read is deferred; `data-table-filter.tsx` already uses rAF for scroll/layout reads. Remaining reflow is from framework/deps.
+- **Forced reflow:** Chunks 93794 and 66609 contribute reflow time. **Mitigation:** Product image gallery zoom (`product-image-gallery.tsx`) wraps `getBoundingClientRect` in `requestAnimationFrame`; `data-table-filter.tsx` uses rAF for scroll/layout reads; support-chat scroll-to-bottom is deferred in rAF. Remaining reflow is from framework/deps.
 - **Improve image delivery (mobile):** Same as desktop (responsive `sizes`, Next Image Optimization for https remotes, `imageSizes` 192/320).
 - **Legacy JavaScript / cache:** Same as desktop; ufs.sh cache is third-party.
 

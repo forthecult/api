@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 
 import { SEO_CONFIG } from "~/app";
 import { cn } from "~/lib/cn";
+import { whenIdle } from "~/lib/when-idle";
 
 const LazyConditionalHeader = dynamic(
   () =>
@@ -18,15 +19,6 @@ const LazyConditionalHeader = dynamic(
     ssr: false,
   },
 );
-
-function whenIdle(cb: () => void, timeout: number): () => void {
-  if (typeof requestIdleCallback !== "undefined") {
-    const id = requestIdleCallback(cb, { timeout });
-    return () => cancelIdleCallback(id);
-  }
-  const t = setTimeout(cb, 0);
-  return () => clearTimeout(t);
-}
 
 function isCryptoPayPage(pathname: null | string): boolean {
   if (pathname == null) return false;

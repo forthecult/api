@@ -3,6 +3,7 @@
 import React, { memo, useCallback, useContext, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 
+import { whenIdle } from "~/lib/when-idle";
 import { PRELOAD_SOLANA_WALLET } from "~/ui/components/auth/auth-wallet-modal-events";
 
 import { SolanaWalletStub } from "./solana-wallet-stub";
@@ -14,15 +15,6 @@ export const SolanaReadyContext = React.createContext(false);
 
 export function useSolanaReady() {
   return useContext(SolanaReadyContext);
-}
-
-function whenIdle(cb: () => void, timeout: number): () => void {
-  if (typeof requestIdleCallback !== "undefined") {
-    const id = requestIdleCallback(cb, { timeout });
-    return () => cancelIdleCallback(id);
-  }
-  const t = setTimeout(cb, 0);
-  return () => clearTimeout(t);
 }
 
 /**

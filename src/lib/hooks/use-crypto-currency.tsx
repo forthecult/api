@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { whenIdle } from "~/lib/when-idle";
 
 export type CryptoCode =
   | "BTC"
@@ -182,10 +183,9 @@ export function CryptoCurrencyProvider({ children }: React.PropsWithChildren) {
       });
   }, []);
 
-  // Defer fetch by 2s after mount so initial load isn't blocked; fallback rates show until then.
+  // defer fetch until main thread is idle (or 2s) so we don't add to TBT
   React.useEffect(() => {
-    const timeoutId = window.setTimeout(fetchRates, 2000);
-    return () => clearTimeout(timeoutId);
+    return whenIdle(fetchRates, 2000);
   }, [fetchRates]);
 
   const convertUsdToCrypto = React.useCallback(

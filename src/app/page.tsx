@@ -20,6 +20,7 @@ import { SHOW_IN_ALL_PRODUCTS_CATEGORY_SLUG } from "~/lib/storefront-categories"
 import {
   PageContainer,
 } from "~/ui/components/layout/page-container";
+import { ViewportAware } from "~/ui/components/viewport-aware";
 import { Button } from "~/ui/primitives/button";
 import {
   Card,
@@ -465,7 +466,20 @@ export default async function HomePage() {
               xl:grid-cols-4
             `}
             >
-              <FeaturedProductsSection products={featuredProducts} />
+              <ViewportAware
+                fallback={
+                  <>
+                    {Array.from({ length: 8 }, (_, i) => (
+                      <Skeleton
+                        className="h-80 w-full rounded-lg"
+                        key={`fp-skeleton-${i}`}
+                      />
+                    ))}
+                  </>
+                }
+              >
+                <FeaturedProductsSection products={featuredProducts} />
+              </ViewportAware>
             </div>
             <div className="mt-12 flex justify-center">
               <Link href="/products">
@@ -841,7 +855,7 @@ export default async function HomePage() {
         `}
         />
 
-        {/* Testimonials — streamed (needs reviews API); full-bleed dark bg, content stays in container */}
+        {/* Testimonials — load chunk only when section is near viewport (viewport-aware) */}
         <section
           className={`
           w-full bg-[#0D0D0D] py-20
@@ -855,12 +869,29 @@ export default async function HomePage() {
             lg:px-8
           `}
           >
-            <LazyTestimonialsSection
-              className="py-0"
-              description="Reviews from people who've ordered"
-              testimonials={testimonials}
-              title="From the community"
-            />
+            <ViewportAware
+              fallback={
+                <div className="flex flex-col items-center gap-4 py-12 sm:py-24">
+                  <Skeleton className="h-10 w-64" />
+                  <Skeleton className="h-6 w-96" />
+                  <div className="mt-8 flex gap-4 overflow-hidden">
+                    {Array.from({ length: 3 }, (_, i) => (
+                      <Skeleton
+                        className="h-48 w-[280px] shrink-0 rounded-lg"
+                        key={i}
+                      />
+                    ))}
+                  </div>
+                </div>
+              }
+            >
+              <LazyTestimonialsSection
+                className="py-0"
+                description="Reviews from people who've ordered"
+                testimonials={testimonials}
+                title="From the community"
+              />
+            </ViewportAware>
           </div>
         </section>
 
