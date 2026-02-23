@@ -152,7 +152,7 @@ const response = await fetch('https://forthecult.store/api/checkout', {
       address1: '123 Main St',
       city: 'San Francisco',
       stateCode: 'CA',
-      zip: '94102',
+      postalCode: '94102',
       countryCode: 'US'
     }
   })
@@ -216,7 +216,7 @@ const response = await fetch('https://forthecult.store/api/checkout', {
       address1: '456 Crypto St',
       city: 'Miami',
       stateCode: 'FL',
-      zip: '33101',
+      postalCode: '33101',
       countryCode: 'US'
     }
     // wallet, walletMessage, walletSignatureBase58 when using signed-message verification
@@ -482,7 +482,7 @@ curl -X POST https://forthecult.store/api/checkout \
       "address1": "123 Test St",
       "city": "Test City",
       "stateCode": "CA",
-      "zip": "12345",
+      "postalCode": "12345",
       "countryCode": "US"
     }
   }'

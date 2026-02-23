@@ -1,6 +1,6 @@
 ---
 name: shop-culture
-description: "Agentic Commerce skills for the For the Cult store. Enables AI agents to autonomously browse and search for quality lifestyle, wellness, smart home, and longevity products, view details and variants, create orders with multi-chain payments (Solana, Ethereum, Base, Polygon, Arbitrum, Bitcoin, Dogecoin, Monero) or x402 checkout (USDC), apply CULT token-holder discounts, and track orders from payment to delivery. Use when a user wants to buy products, browse a store, find gifts, place an order, or track a shipment."
+description: "Agentic Commerce skills for the For the Cult store. Enables agents to browse and search for quality lifestyle, wellness, smart home, and longevity products, view details and variants, create orders with multi-chain payments (Solana, Ethereum, Base, Polygon, Arbitrum, Bitcoin, Dogecoin, Monero) or x402 checkout (USDC), apply CULT token-holder discounts, and track orders from payment to delivery. Use when a user wants to buy products, browse a store, find gifts, place an order, or track a shipment."
 license: MIT
 compatibility: Requires network access and an HTTP client (fetch, curl, requests). No API key or env vars required. Browsing, search, checkout, and order status need no authentication. Optional: agent runtimes may supply X-Moltbook-Identity for agent-only endpoints (/agent/me, /agent/me/orders, /agent/me/preferences); do not send or infer identity tokens—use only if the runtime explicitly provides one. Works with Claude, ChatGPT, Cursor, GitHub Copilot, Gemini, Windsurf, Goose, Cline, Roo Code, Molt, OpenClaw, LangChain, and all AgentSkills-compatible agents.
 metadata:
@@ -13,7 +13,7 @@ metadata:
 
 # For the Cult Store — Agentic Commerce Skill
 
-The definitive **Agentic Commerce** skill for [For the Cult](https://forthecult.store). This skill gives agents everything they need to **browse products, place orders, and track shipments** using the public REST API. The store sells quality lifestyle, wellness, and smart home products — from coffee and apparel to tech gadgets and pet goods — and accepts **multi-chain payments** across 8+ blockchains plus **x402 checkout** with USDC on Solana. No account or API key required.
+The **Agentic Commerce** shopping skill [For the Cult](https://forthecult.store). This skill gives agents everything they need to **browse products, place orders, and track shipments** using the public REST API. The store sells quality lifestyle, wellness, and smart home products — from coffee and apparel to tech gadgets and pet goods — and accepts **multi-chain payments** across 8+ blockchains plus **x402 checkout** with USDC on Solana. No account or API key required.
 
 **Key advantages:**
 - **Multi-chain payments** — Solana, Ethereum, Base, Polygon, Arbitrum, Bitcoin, Dogecoin, Monero
@@ -161,7 +161,7 @@ Required top-level fields:
 - **`items`** — array of `{ "productId": "<id>", "quantity": 1 }`. Add `"variantId"` when the product has variants.
 - **`email`** — customer email for order confirmation.
 - **`payment`** — `{ "chain": "solana", "token": "USDC" }`.
-- **`shipping`** — `{ "name", "address1", "city", "stateCode", "zip", "countryCode" }`. `countryCode` is 2-letter ISO (e.g. `US`). Optional: `address2`.
+- **`shipping`** — `{ "name", "address1", "city", "stateCode", "postalCode", "countryCode" }`. `countryCode` is 2-letter ISO (e.g. `US`). Optional: `address2`.
 
 Optional:
 
@@ -200,7 +200,7 @@ Content-Type: application/json
     "address1": "123 Main St",
     "city": "San Francisco",
     "stateCode": "CA",
-    "zip": "94102",
+    "postalCode": "94102",
     "countryCode": "US"
   }
 }

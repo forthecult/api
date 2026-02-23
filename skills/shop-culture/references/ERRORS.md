@@ -178,9 +178,9 @@ Agents should implement this general pattern for all API calls. **Security overr
 | Mistake | Result | Fix |
 |---------|--------|-----|
 | Using example/placeholder product IDs | `PRODUCT_NOT_FOUND` | Always get IDs from search or product detail API |
-| Using `line1` instead of `address1` | `INVALID_REQUEST` | Use exact field names: `address1`, `stateCode`, `zip`, `countryCode` |
+| Using `line1` instead of `address1` | `INVALID_REQUEST` | Use exact field names: `address1`, `stateCode`, `postalCode`, `countryCode` |
 | Using `state` instead of `stateCode` | `INVALID_REQUEST` | Use `stateCode` |
-| Using `postalCode` instead of `zip` | `INVALID_REQUEST` | Use `zip` |
+| Using `zip` instead of `postalCode` | `INVALID_REQUEST` | Use `postalCode` |
 | Using `country` instead of `countryCode` | `INVALID_REQUEST` | Use `countryCode` (2-letter ISO) |
 | Using 3-letter country code | `INVALID_SHIPPING` | Use 2-letter ISO 3166-1 alpha-2 |
 | Putting `chain`/`token` at top level | `INVALID_REQUEST` | Nest inside `payment: { chain, token }` |

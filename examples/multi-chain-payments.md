@@ -108,7 +108,7 @@ curl https://forthecult.store/api/payment-methods
 
 ## Step 2: Create Order with Specific Chain/Token
 
-Use **productId** from GET /api/products/search or GET /api/products/{slug}. Request body uses **payment** and **shipping** (with address1, stateCode, zip, countryCode).
+Use **productId** from GET /api/products/search or GET /api/products/{slug}. Request body uses **payment** and **shipping** (with address1, stateCode, postalCode, countryCode).
 
 ### Solana USDC Payment
 
@@ -124,7 +124,7 @@ curl -X POST https://forthecult.store/api/checkout \
       "address1": "123 Main St",
       "city": "New York",
       "stateCode": "NY",
-      "zip": "10001",
+      "postalCode": "10001",
       "countryCode": "US"
     }
   }'
@@ -161,7 +161,7 @@ curl -X POST https://forthecult.store/api/checkout \
       "address1": "123 Main St",
       "city": "New York",
       "stateCode": "NY",
-      "zip": "10001",
+      "postalCode": "10001",
       "countryCode": "US"
     }
   }'
@@ -197,7 +197,7 @@ curl -X POST https://forthecult.store/api/checkout \
       "address1": "123 Main St",
       "city": "New York",
       "stateCode": "NY",
-      "zip": "10001",
+      "postalCode": "10001",
       "countryCode": "US"
     }
   }'
@@ -322,7 +322,7 @@ const order = await pm.createOrder(
       address1: '123 Main St',
       city: 'New York',
       stateCode: 'NY',
-      zip: '10001',
+      postalCode: '10001',
       countryCode: 'US'
     }
   }

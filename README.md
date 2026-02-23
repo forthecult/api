@@ -71,7 +71,7 @@ const order = await fetch('https://forthecult.store/api/checkout', {
       address1: '123 Main St',
       city: 'San Francisco',
       stateCode: 'CA',
-      zip: '94102',
+      postalCode: '94102',
       countryCode: 'US'
     }
   })
@@ -301,7 +301,7 @@ curl https://forthecult.store/api/products/top-blast-coffee
 
 ### Step 3: Create Order
 
-Use the product **`id`** from the product-detail response (Step 2) in `items[].productId`. Request body uses **`payment`** and **`shipping`** (with `address1`, `stateCode`, `zip`, `countryCode`).
+Use the product **`id`** from the product-detail response (Step 2) in `items[].productId`. Request body uses **`payment`** and **`shipping`** (with `address1`, `stateCode`, `postalCode`, `countryCode`).
 
 ```bash
 curl -X POST https://forthecult.store/api/checkout \
@@ -315,7 +315,7 @@ curl -X POST https://forthecult.store/api/checkout \
       "address1": "123 Main St",
       "city": "San Francisco",
       "stateCode": "CA",
-      "zip": "94102",
+      "postalCode": "94102",
       "countryCode": "US"
     }
   }'

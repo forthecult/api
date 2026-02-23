@@ -209,7 +209,7 @@ curl https://forthecult.store/api/payment-methods
 
 **Important:** Use the product **`id`** from the search or product-detail response (e.g. Step 3 or 4). Do not use placeholder IDs from examples—they may not exist in production. Each item needs `productId` (required) and `quantity`; `variantId` is optional.
 
-Request body must use **`payment`** (with `chain` and `token`) and **`shipping`** (with `address1`, `stateCode`, `zip`, `countryCode`), not top-level `chain`/`token` or `shippingAddress`/`line1`/`state`/`postalCode`/`country`.
+Request body must use **`payment`** (with `chain` and `token`) and **`shipping`** (with `address1`, `stateCode`, `postalCode`, `countryCode`), not top-level `chain`/`token` or `shippingAddress`/`line1`/`state`/`zip`/`country`.
 
 ```bash
 curl -X POST https://forthecult.store/api/checkout \
@@ -226,7 +226,7 @@ curl -X POST https://forthecult.store/api/checkout \
       "address2": "Apt 4B",
       "city": "New York",
       "stateCode": "NY",
-      "zip": "10001",
+      "postalCode": "10001",
       "countryCode": "US"
     }
   }'
@@ -383,7 +383,7 @@ async function completeShoppingFlow() {
           address1: '123 Main St',
           city: 'New York',
           stateCode: 'NY',
-          zip: '10001',
+          postalCode: '10001',
           countryCode: 'US'
         }
       })

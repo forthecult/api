@@ -443,7 +443,7 @@ Create an order and generate a payment request (standard flow — poll for payme
     "address1": "123 Main St",
     "city": "San Francisco",
     "stateCode": "CA",
-    "zip": "94102",
+    "postalCode": "94102",
     "countryCode": "US"
   }
 }
@@ -525,7 +525,7 @@ X-PAYMENT: base64({"transaction": "<signed-tx-base64>"})
     "address2": "Apt 4B",
     "city": "San Francisco",
     "stateCode": "CA",
-    "zip": "94102",
+    "postalCode": "94102",
     "countryCode": "US"
   },
   "walletAddress": "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU"
@@ -624,7 +624,7 @@ Full order details including items, payment (with `txHash`), shipping, totals, a
     "address1": "123 Main St",
     "city": "San Francisco",
     "stateCode": "CA",
-    "zip": "94102",
+    "postalCode": "94102",
     "countryCode": "US"
   },
   "tracking": {

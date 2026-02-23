@@ -40,7 +40,7 @@ Agent Actions:
 1. Get product id: use the "id" from search (GET /api/products/search?q=...) or product detail (GET /api/products/{slug}). Never use placeholder or example IDs.
 2. Confirm product and quantity
 3. Ask for: email, shipping address, preferred payment (e.g. Solana USDC)
-4. POST /api/checkout with: items: [{ productId: "<id from API>", quantity }], email, payment: { chain, token }, shipping: { name, address1, city, stateCode, zip, countryCode }
+4. POST /api/checkout with: items: [{ productId: "<id from API>", quantity }], email, payment: { chain, token }, shipping: { name, address1, city, stateCode, postalCode, countryCode }
 5. Present payment address and amount; poll GET /api/orders/{orderId}/status until paid
 6. Confirm order and provide tracking info
 ```
@@ -123,10 +123,10 @@ Claude can use the For the Cult API through its tool use feature.
             "address2": { "type": "string" },
             "city": { "type": "string" },
             "stateCode": { "type": "string" },
-            "zip": { "type": "string" },
+            "postalCode": { "type": "string" },
             "countryCode": { "type": "string" }
           },
-          "required": ["name", "address1", "city", "stateCode", "zip", "countryCode"]
+          "required": ["name", "address1", "city", "stateCode", "postalCode", "countryCode"]
         },
         "payment": {
           "type": "object",
@@ -179,7 +179,7 @@ def create_forthecult_order(product_id, quantity, chain, token, email, shipping,
         "items": [{"productId": product_id, "quantity": quantity}],
         "email": email,
         "payment": {"chain": chain, "token": token},
-        "shipping": shipping  # { name, address1, city, stateCode, zip, countryCode }
+        "shipping": shipping  # { name, address1, city, stateCode, postalCode, countryCode }
     }
     if variant_id:
         payload["items"][0]["variantId"] = variant_id

@@ -73,10 +73,10 @@ An array of one or more products to order.
 | `address2` | string | No | Apartment, suite, unit, etc. |
 | `city` | string | **Yes** | City |
 | `stateCode` | string | **Yes** | State or region code (e.g. `CA`, `NY`, `ON`) |
-| `zip` | string | **Yes** | Postal / ZIP code |
+| `postalCode` | string | **Yes** | Postal / ZIP code |
 | `countryCode` | string | **Yes** | 2-letter ISO 3166-1 alpha-2 code (e.g. `US`, `CA`, `GB`) |
 
-**Important field names:** Use `address1` (not `line1`), `stateCode` (not `state`), `zip` (not `postalCode`), `countryCode` (not `country`). Using incorrect field names will result in a validation error.
+**Important field names:** Use `address1` (not `line1`), `stateCode` (not `state`), `postalCode` (not `zip`), `countryCode` (not `country`). Using incorrect field names will result in a validation error.
 
 ---
 
@@ -105,7 +105,7 @@ If you send a wallet without verification, the API returns `400` with `code: "WA
     "address1": "123 Main St",
     "city": "San Francisco",
     "stateCode": "CA",
-    "zip": "94102",
+    "postalCode": "94102",
     "countryCode": "US"
   }
 }
@@ -129,7 +129,7 @@ CULT tier discounts use a **Solana** wallet (CULT is on Solana); the wallet must
     "address2": "Suite 200",
     "city": "Los Angeles",
     "stateCode": "CA",
-    "zip": "90001",
+    "postalCode": "90001",
     "countryCode": "US"
   },
   "wallet": "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU",

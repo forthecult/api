@@ -480,7 +480,7 @@ paths:
                       description: Token symbol (e.g. USDC, SOL)
                 shipping:
                   type: object
-                  required: [name, address1, city, stateCode, zip, countryCode]
+                  required: [name, address1, city, stateCode, postalCode, countryCode]
                   properties:
                     name:
                       type: string
@@ -492,7 +492,7 @@ paths:
                       type: string
                     stateCode:
                       type: string
-                    zip:
+                    postalCode:
                       type: string
                     countryCode:
                       type: string
@@ -513,7 +513,7 @@ paths:
                 address1: 123 Main St
                 city: San Francisco
                 stateCode: CA
-                zip: "94102"
+                postalCode: "94102"
                 countryCode: US
       responses:
         '200':
