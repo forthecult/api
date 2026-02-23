@@ -395,10 +395,67 @@ export const openApiSpec = {
         tags: ["Discovery"],
       },
     },
+    "/payment-methods": {
+      get: {
+        description:
+          "Get all supported payment methods: enabled settings (data) and chains/tokens. Expandable to non-blockchain methods.",
+        operationId: "getPaymentMethods",
+        responses: {
+          "200": {
+            content: {
+              "application/json": {
+                schema: {
+                  properties: {
+                    data: {
+                      description: "Enabled payment method settings (display order, label, methodKey)",
+                      items: { type: "object" },
+                      type: "array",
+                    },
+                    chains: {
+                      items: {
+                        properties: {
+                          id: { example: "solana", type: "string" },
+                          name: { example: "Solana", type: "string" },
+                          tokens: {
+                            items: {
+                              properties: {
+                                decimals: { type: "integer" },
+                                mint: { type: "string" },
+                                name: { type: "string" },
+                                symbol: { type: "string" },
+                                type: {
+                                  enum: ["native", "spl"],
+                                  type: "string",
+                                },
+                              },
+                              type: "object",
+                            },
+                            type: "array",
+                          },
+                        },
+                        type: "object",
+                      },
+                      type: "array",
+                    },
+                  },
+                  required: ["data", "chains"],
+                  type: "object",
+                },
+              },
+            },
+            description: "Payment method settings and supported chains/tokens",
+          },
+        },
+        summary: "Get all supported payment methods",
+        tags: ["Payment Methods"],
+      },
+    },
     "/chains": {
       get: {
-        description: "List payment chains and tokens (e.g. SOL, USDC).",
+        description:
+          "Deprecated. Prefer GET /payment-methods for the canonical list. Returns chains and tokens only.",
         operationId: "getChains",
+        deprecated: true,
         responses: {
           "200": {
             content: {
@@ -437,11 +494,11 @@ export const openApiSpec = {
                 },
               },
             },
-            description: "Chains and tokens",
+            description: "Chains and tokens (deprecated, use /payment-methods)",
           },
         },
-        summary: "Supported chains and tokens",
-        tags: ["Chains"],
+        summary: "Get chains (deprecated)",
+        tags: ["Payment Methods"],
       },
     },
     "/checkout": {
@@ -808,7 +865,7 @@ export const openApiSpec = {
     "/products/search": {
       post: {
         description:
-          "Search with category, subcategory, filters (brand, priceRange, inStock), and sort.",
+          "Search with category, subcategory, filters (brand, priceRange), and sort (newest = recently added, popular = best seller, rating = best rated). API returns only in-stock items.",
         operationId: "postProductsSearch",
         requestBody: {
           content: {
@@ -819,7 +876,6 @@ export const openApiSpec = {
                   filters: {
                     properties: {
                       brand: { items: { type: "string" }, type: "array" },
-                      inStock: { type: "boolean" },
                       priceRange: {
                         properties: {
                           max: { type: "number" },
@@ -1102,7 +1158,10 @@ export const openApiSpec = {
   servers: [{ description: "API base (relative)", url: "/api" }],
   tags: [
     { description: "API health", name: "Health" },
-    { description: "Payment chains and tokens", name: "Chains" },
+    {
+      description: "Get all supported payment methods (chains and tokens)",
+      name: "Payment Methods",
+    },
     {
       description:
         "Agent discovery (categories, brands, featured, suggestions)",

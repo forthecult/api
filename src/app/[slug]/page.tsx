@@ -431,6 +431,7 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
                 >
                   <ProductImageGallery
                     discountPercentage={discountPercentage}
+                    imageAlts={product.imageAlts}
                     images={product.images ?? [product.image]}
                     mainImageAlt={product.mainImageAlt}
                     productName={product.name}

@@ -7,12 +7,14 @@ import {
   PAYMENT_METHOD_DEFAULTS,
   type PaymentMethodSetting,
 } from "~/lib/payment-method-settings";
+import { getSupportedChains } from "~/lib/supported-payment-chains";
 
 const now = new Date();
 
 /**
  * GET /api/payment-methods
- * Public: returns which payment methods are enabled (for checkout and product pages).
+ * Public: returns enabled payment method settings (for checkout UI) and supported
+ * chains/tokens (for API/agents). Expandable to non-blockchain methods over time.
  * If no rows exist, seeds defaults (all enabled) and returns them.
  * On DB error, returns default list so the storefront still loads.
  */
@@ -82,12 +84,15 @@ export async function GET() {
       }
     }
 
-    return NextResponse.json({ data: list });
+    return NextResponse.json({
+      data: list,
+      chains: getSupportedChains(),
+    });
   } catch (err) {
     console.error("Payment methods GET error:", err);
-    // Return empty list on DB error so the frontend can distinguish "no data"
-    // from "all enabled". The checkout UI treats null visibility (empty data) as
-    // a loading/fallback state with sensible defaults.
-    return NextResponse.json({ data: [] });
+    return NextResponse.json({
+      data: [],
+      chains: getSupportedChains(),
+    });
   }
 }

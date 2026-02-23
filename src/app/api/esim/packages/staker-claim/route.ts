@@ -2,14 +2,15 @@
  * GET /api/esim/packages/staker-claim
  *
  * Returns 30-day eSIM packages under $25 (after markup) for staker claim.
- * Query: country (optional, id) = filter by country; package_type = DATA-ONLY | DATA-VOICE-SMS.
- * Response omits price (do not display to user).
+ * Query: country (optional, id) = filter by country; region (optional, id) = filter by continent/region; package_type = DATA-ONLY | DATA-VOICE-SMS.
+ * If both country and region are set, country takes precedence.
  */
 
 import type { NextRequest } from "next/server";
 
 import {
   checkPackageAvailability,
+  getEsimContinentPackages,
   getEsimCountryPackages,
   getEsimGlobalPackages,
 } from "~/lib/esim-api";
@@ -21,6 +22,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const countryIdParam = searchParams.get("country")?.trim();
+    const regionIdParam = searchParams.get("region")?.trim();
     const packageType = (searchParams.get("package_type") as
       | "DATA-ONLY"
       | "DATA-VOICE-SMS"
@@ -28,9 +30,12 @@ export async function GET(request: NextRequest) {
 
     const markup = Number(process.env.ESIM_MARKUP_PERCENT) || 30;
 
-    const result = countryIdParam
-      ? await getEsimCountryPackages(Number(countryIdParam), packageType, 1)
-      : await getEsimGlobalPackages(packageType);
+    const result =
+      countryIdParam
+        ? await getEsimCountryPackages(Number(countryIdParam), packageType, 1)
+        : regionIdParam
+          ? await getEsimContinentPackages(Number(regionIdParam), packageType, 1)
+          : await getEsimGlobalPackages(packageType);
 
     const enriched = await Promise.all(
       result.data.map(async (pkg) => {

@@ -183,7 +183,7 @@ export async function GET() {
           estimate: "POST /api/cart/estimate",
         },
         categories: "/api/categories",
-        chains: "/api/chains",
+        paymentMethods: "/api/payment-methods",
         checkout: "POST /api/checkout",
         checkoutX402: {
           endpoint: "POST /api/checkout/x402",

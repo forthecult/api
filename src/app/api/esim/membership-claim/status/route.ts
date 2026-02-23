@@ -10,10 +10,14 @@ import { and, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
 import { db } from "~/db";
-import { membershipEsimClaimsTable } from "~/db/schema";
+import { adminMembershipGrantTable, membershipEsimClaimsTable } from "~/db/schema";
 import { getAdminGrantedTier } from "~/lib/get-member-tier";
 import { getCurrentUser } from "~/lib/auth";
-import { fetchUserStake, getStakingProgramId } from "~/lib/cult-staking";
+import {
+  fetchUserStake,
+  getStakingProgramId,
+  LOCK_12_MONTHS,
+} from "~/lib/cult-staking";
 import { fetchTokenMarketData } from "~/lib/market-cap";
 import { computeTierPricing } from "~/lib/membership-pricing";
 import { getSolanaRpcUrlServer } from "~/lib/solana-pay";
@@ -33,23 +37,40 @@ export async function GET(request: Request) {
   const adminTier = await getAdminGrantedTier(user.id);
   if (adminTier === 1) {
     const stakePeriodKey = `${ADMIN_CLAIM_PERIOD_KEY_PREFIX}${user.id}`;
-    const claims = await db
-      .select({
-        id: membershipEsimClaimsTable.id,
-        status: membershipEsimClaimsTable.status,
-      })
-      .from(membershipEsimClaimsTable)
-      .where(
-        and(
-          eq(membershipEsimClaimsTable.userId, user.id),
-          eq(membershipEsimClaimsTable.stakePeriodKey, stakePeriodKey),
-        ),
-      )
-      .limit(1);
+    const [claims, grantRows] = await Promise.all([
+      db
+        .select({
+          id: membershipEsimClaimsTable.id,
+          status: membershipEsimClaimsTable.status,
+        })
+        .from(membershipEsimClaimsTable)
+        .where(
+          and(
+            eq(membershipEsimClaimsTable.userId, user.id),
+            eq(membershipEsimClaimsTable.stakePeriodKey, stakePeriodKey),
+          ),
+        )
+        .limit(1),
+      db
+        .select({
+          createdAt: adminMembershipGrantTable.createdAt,
+          expiresAt: adminMembershipGrantTable.expiresAt,
+        })
+        .from(adminMembershipGrantTable)
+        .where(eq(adminMembershipGrantTable.userId, user.id))
+        .limit(1),
+    ]);
     const claimed = claims.length > 0;
     const claimStatus = claims[0]?.status ?? null;
+    const gr = grantRows[0];
+    const is12Month =
+      gr?.expiresAt &&
+      gr?.createdAt &&
+      gr.expiresAt.getTime() - gr.createdAt.getTime() > 180 * 24 * 60 * 60 * 1000;
+    const claimPeriod = is12Month ? "monthly" : "staking_period";
     return NextResponse.json({
       claimed,
+      claimPeriod,
       claimStatus,
       eligible: !claimed,
       stakedAmount: 0,
@@ -109,9 +130,12 @@ export async function GET(request: Request) {
 
     const claimed = claims.length > 0;
     const claimStatus = claims[0]?.status ?? null;
+    const claimPeriod =
+      stakeData.lockDuration === LOCK_12_MONTHS ? "monthly" : "staking_period";
 
     return NextResponse.json({
       claimed,
+      claimPeriod,
       claimStatus,
       eligible,
       stakedAmount: stakedHuman,

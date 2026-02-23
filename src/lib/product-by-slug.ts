@@ -35,6 +35,8 @@ export interface ProductBySlugResult {
   description?: string;
   /** Bullet-point features for product page. */
   features?: string[];
+  /** Per-image alt text (same order as images). Used for gallery SEO when set. */
+  imageAlts?: (null | string)[];
   handlingDaysMax?: null | number;
   /** Fulfillment (handling) days min/max from Printify, Printful, or manual. Used for estimated delivery timeline. */
   handlingDaysMin?: null | number;
@@ -246,7 +248,10 @@ export async function getProductBySlugOrId(
         .from(productVariantsTable)
         .where(eq(productVariantsTable.productId, id)),
       db
-        .select({ url: productImagesTable.url })
+        .select({
+          alt: productImagesTable.alt,
+          url: productImagesTable.url,
+        })
         .from(productImagesTable)
         .where(eq(productImagesTable.productId, id))
         .orderBy(asc(productImagesTable.sortOrder), asc(productImagesTable.id)),
@@ -378,9 +383,14 @@ export async function getProductBySlugOrId(
       qty === 0 ? "out_of_stock" : qty < 5 ? "low_stock" : "in_stock";
   }
 
-  const imageUrls = imagesRows
-    .map((r) => r.url)
-    .filter((u): u is string => Boolean(u));
+  const imageUrls: string[] = [];
+  const imageAlts: (null | string)[] = [];
+  for (const r of imagesRows) {
+    if (r.url?.trim()) {
+      imageUrls.push(r.url.trim());
+      imageAlts.push(r.alt?.trim() || null);
+    }
+  }
 
   // Size chart for accordion when product has brand+model (printful, printify, or manual)
   let sizeChart: null | {
@@ -478,6 +488,7 @@ export async function getProductBySlugOrId(
     handlingDaysMin: product.handlingDaysMin ?? undefined,
     hasVariants: hasVariantRows || (product.hasVariants ?? false),
     id: product.id,
+    imageAlts: imageUrls.length > 0 ? imageAlts : undefined,
     images: imageUrls.length > 0 ? imageUrls : undefined,
     imageUrl: product.imageUrl ?? undefined,
     inStock,

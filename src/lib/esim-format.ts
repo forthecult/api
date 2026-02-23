@@ -42,8 +42,8 @@ export function getUnlimitedPlanGroupKey(name: string): null | string {
   return `${base || rawBase}|${suffix || rawSuffix}|${variant}`;
 }
 
-/** Extract first Throttled|Unthrottled|V2 from a string (case-preserved). */
-function getVariantFromName(name: string): null | string {
+/** Extract first Throttled|Unthrottled|V2 from a string (case-preserved). Exported for UI labels. */
+export function getVariantFromName(name: string): null | string {
   const m = name.match(VARIANT_REGEX);
   return m ? m[1]! : null;
 }

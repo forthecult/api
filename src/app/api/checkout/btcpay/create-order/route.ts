@@ -26,6 +26,7 @@ import {
   rateLimitResponse,
 } from "~/lib/rate-limit";
 import { createOrderSchema, validateBody } from "~/lib/validations/checkout";
+import { verifyWalletForTier } from "~/lib/wallet-tier-verify";
 
 /** Map frontend token to BTCPay/crypto currency (store in order). */
 const TOKEN_TO_CURRENCY: Record<string, string> = {
@@ -71,7 +72,29 @@ export async function POST(request: NextRequest) {
       telegramUsername,
       totalCents,
       wallet,
+      walletMessage,
+      walletSignature,
+      walletSignatureBase58,
     } = validation.data;
+
+    if (wallet) {
+      const verification = await verifyWalletForTier({
+        userId: session?.user?.id,
+        wallet,
+        walletMessage: walletMessage ?? undefined,
+        walletSignature: walletSignature ?? undefined,
+        walletSignatureBase58: walletSignatureBase58 ?? undefined,
+      });
+      if (!verification.ok) {
+        return NextResponse.json(
+          {
+            error: verification.error,
+            code: "WALLET_VERIFICATION_REQUIRED",
+          },
+          { status: 400 },
+        );
+      }
+    }
 
     const token =
       (rawBody as { token?: string }).token?.toLowerCase() ?? "bitcoin";

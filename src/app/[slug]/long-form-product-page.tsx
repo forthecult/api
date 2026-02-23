@@ -34,6 +34,7 @@ export interface LongFormProductProps {
     hasVariants?: boolean;
     id: string;
     image: string;
+    imageAlts?: (null | string)[];
     images?: string[];
     inStock: boolean;
     mainImageAlt?: null | string;
@@ -122,6 +123,7 @@ export function LongFormProductPage({
                 >
                   <ProductImageGallery
                     discountPercentage={discountPercentage}
+                    imageAlts={product.imageAlts}
                     images={images}
                     mainImageAlt={product.mainImageAlt}
                     productName={product.name}

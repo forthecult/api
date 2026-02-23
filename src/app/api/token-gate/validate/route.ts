@@ -1,13 +1,11 @@
-import { PublicKey } from "@solana/web3.js";
-import bs58 from "bs58";
 import { NextResponse } from "next/server";
-import nacl from "tweetnacl";
 
 import {
   getTokenGateConfig,
   type TokenGateResourceType,
   walletPassesTokenGates,
 } from "~/lib/token-gate";
+import { verifySolanaSignature } from "~/lib/verify-solana-signature";
 import {
   buildTokenGateSetCookie,
   COOKIE_NAME as TOKEN_GATE_COOKIE_NAME,
@@ -180,31 +178,6 @@ export async function POST(request: Request) {
   }
 }
 
-function getSignatureBytes(params: {
-  signature?: string;
-  signatureBase58?: string;
-}): null | Uint8Array {
-  if (params.signatureBase58) {
-    try {
-      const decoded = bs58.decode(params.signatureBase58);
-      if (decoded.length < 64) return null;
-      return decoded.length === 64 ? decoded : decoded.slice(0, 64);
-    } catch {
-      return null;
-    }
-  }
-  if (params.signature) {
-    try {
-      const buf = Buffer.from(params.signature, "base64");
-      if (buf.length < 64) return null;
-      return new Uint8Array(buf.length === 64 ? buf : buf.subarray(0, 64));
-    } catch {
-      return null;
-    }
-  }
-  return null;
-}
-
 /** Parse challenge message: timestamp always; resourceType/resourceId when present (bound signature). */
 function parseMessagePayload(message: string): {
   resourceId: null | string;
@@ -234,22 +207,4 @@ function parseMessagePayload(message: string): {
     timestamp = Number.isNaN(date.getTime()) ? null : date.getTime();
   }
   return { resourceId, resourceType, timestamp };
-}
-
-function verifySolanaSignature(params: {
-  address: string;
-  message: string;
-  signature?: string;
-  signatureBase58?: string;
-}): boolean {
-  const signature = getSignatureBytes(params);
-  if (!signature || signature.length !== 64) return false;
-  try {
-    const publicKey = new PublicKey(params.address);
-    const publicKeyBytes = publicKey.toBytes();
-    const messageBytes = new TextEncoder().encode(params.message);
-    return nacl.sign.detached.verify(messageBytes, signature, publicKeyBytes);
-  } catch {
-    return false;
-  }
 }

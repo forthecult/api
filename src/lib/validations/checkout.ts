@@ -68,7 +68,13 @@ export const createOrderSchema = z.object({
   totalCents: z.number().int().nonnegative("Total must be non-negative"),
   userId: z.string().nullable().optional(),
   // Staking wallet for CULT member tier discounts (stacked with coupon/affiliate).
-  wallet: z.string().trim().max(64).optional(),
+  // When provided, wallet must be linked to the account or verified with walletMessage + walletSignature(Base58).
+  wallet: z.string().trim().max(128).optional(),
+  // Message to sign for tier verification (from GET /api/checkout/wallet-verify-message). Required when wallet is sent and not linked.
+  walletMessage: z.string().trim().max(200).optional(),
+  // Signature of walletMessage (base64 or base58). Required when wallet is sent and not linked.
+  walletSignature: z.string().trim().max(500).optional(),
+  walletSignatureBase58: z.string().trim().max(500).optional(),
   // When wallet is not sent (e.g. user unlinked), tier 1–3 from tier history so tier discounts still apply.
   memberTier: z.number().int().min(1).max(3).optional(),
 });

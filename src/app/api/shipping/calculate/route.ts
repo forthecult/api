@@ -53,7 +53,12 @@ export async function POST(request: NextRequest) {
       stateCode:
         typeof rawBody.stateCode === "string" ? rawBody.stateCode : undefined,
       userId: session?.user?.id ?? undefined,
-      zip: typeof rawBody.zip === "string" ? rawBody.zip : undefined,
+      zip:
+        typeof rawBody.postalCode === "string"
+          ? rawBody.postalCode
+          : typeof rawBody.zip === "string"
+            ? rawBody.zip
+            : undefined,
     };
 
     const result = await runShippingCalculate(extendedInput);

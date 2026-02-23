@@ -13,6 +13,7 @@ import {
   formatValidityOption,
   getUnlimitedPlanBaseName,
   getUnlimitedPlanGroupKey,
+  getVariantFromName,
 } from "~/lib/esim-format";
 import { useCart } from "~/lib/hooks/use-cart";
 import { useCountryCurrency } from "~/lib/hooks/use-country-currency";
@@ -450,11 +451,19 @@ function UnlimitedPlanCard({
             onChange={(e) => setSelectedIndex(Number(e.target.value))}
             value={selectedIndex}
           >
-            {groupPackages.map((pkg, i) => (
-              <option key={pkg.id} value={i}>
-                {formatValidityOption(pkg.package_validity ?? 1)}
-              </option>
-            ))}
+            {groupPackages.map((pkg, i) => {
+              const days = formatValidityOption(pkg.package_validity ?? 1);
+              const variant = getVariantFromName(pkg.name);
+              const label =
+                variant && variant !== "default"
+                  ? `${days} (${variant})`
+                  : days;
+              return (
+                <option key={pkg.id} value={i}>
+                  {label}
+                </option>
+              );
+            })}
           </select>
         </div>
         <div
@@ -528,6 +537,34 @@ const DATA_OPTIONS: { label: string; value: DataFilter }[] = [
   { label: "Unlimited", value: "unlimited" },
 ];
 
+/** Ordered list of name aliases for "most popular" countries (US, UK, Germany, …). */
+const MOST_POPULAR_COUNTRY_ALIASES: string[][] = [
+  ["United States", "USA", "US"],
+  ["United Kingdom", "UK", "Great Britain"],
+  ["Germany"],
+  ["Japan"],
+  ["United Arab Emirates", "UAE"],
+  ["Philippines"],
+  ["Hong Kong"],
+  ["Canada"],
+  ["Brazil"],
+  ["Indonesia"],
+];
+
+function getPopularIndex(country: Country): number {
+  const name = country.name.toLowerCase();
+  for (let i = 0; i < MOST_POPULAR_COUNTRY_ALIASES.length; i++) {
+    const matched = MOST_POPULAR_COUNTRY_ALIASES[i]!.some(
+      (alias) =>
+        name === alias.toLowerCase() ||
+        name.startsWith(alias.toLowerCase() + " ") ||
+        name.startsWith(alias.toLowerCase() + ","),
+    );
+    if (matched) return i;
+  }
+  return -1;
+}
+
 export function EsimStorePage() {
   const searchParams = useSearchParams();
   const { addItem, openCart } = useCart();
@@ -545,6 +582,7 @@ export function EsimStorePage() {
   const [packages, setPackages] = useState<Package[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [showAllCountries, setShowAllCountries] = useState(false);
   const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
   const [selectedContinent, setSelectedContinent] = useState<Continent | null>(
     null,
@@ -792,6 +830,28 @@ export function EsimStorePage() {
     [countries, searchQuery],
   );
 
+  const popularCountries = useMemo(
+    () =>
+      filteredCountries
+        .filter((c) => getPopularIndex(c) >= 0)
+        .sort((a, b) => getPopularIndex(a) - getPopularIndex(b)),
+    [filteredCountries],
+  );
+
+  const otherCountries = useMemo(
+    () =>
+      filteredCountries
+        .filter((c) => getPopularIndex(c) < 0)
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    [filteredCountries],
+  );
+
+  const showLoadAll =
+    !searchQuery.trim() && otherCountries.length > 0 && !showAllCountries;
+  const countriesToShowInFullList = showAllCountries || searchQuery.trim()
+    ? otherCountries
+    : [];
+
   const clearSelection = () => {
     setSelectedCountry(null);
     setSelectedContinent(null);
@@ -919,22 +979,62 @@ export function EsimStorePage() {
                   </div>
                 ) : (
                   <>
-                    <div
-                      className={`
-                      grid grid-cols-2 gap-3
-                      sm:grid-cols-3
-                      md:grid-cols-4
-                      lg:grid-cols-5
-                    `}
-                    >
-                      {filteredCountries.map((country) => (
-                        <CountryCard
-                          country={country}
-                          key={country.id}
-                          onClick={() => handleCountrySelect(country)}
-                        />
-                      ))}
-                    </div>
+                    {popularCountries.length > 0 && (
+                      <section className="mb-8">
+                        <h2 className="mb-4 text-lg font-semibold">
+                          Most popular countries
+                        </h2>
+                        <div
+                          className={`
+                          grid grid-cols-2 gap-3
+                          sm:grid-cols-3
+                          md:grid-cols-4
+                          lg:grid-cols-5
+                        `}
+                        >
+                          {popularCountries.map((country) => (
+                            <CountryCard
+                              country={country}
+                              key={country.id}
+                              onClick={() => handleCountrySelect(country)}
+                            />
+                          ))}
+                        </div>
+                      </section>
+                    )}
+                    {showLoadAll && (
+                      <div className="mb-8 flex justify-center">
+                        <Button
+                          onClick={() => setShowAllCountries(true)}
+                          variant="outline"
+                        >
+                          Load all countries
+                        </Button>
+                      </div>
+                    )}
+                    {countriesToShowInFullList.length > 0 && (
+                      <section>
+                        <h2 className="mb-4 text-lg font-semibold">
+                          All countries
+                        </h2>
+                        <div
+                          className={`
+                          grid grid-cols-2 gap-3
+                          sm:grid-cols-3
+                          md:grid-cols-4
+                          lg:grid-cols-5
+                        `}
+                        >
+                          {countriesToShowInFullList.map((country) => (
+                            <CountryCard
+                              country={country}
+                              key={country.id}
+                              onClick={() => handleCountrySelect(country)}
+                            />
+                          ))}
+                        </div>
+                      </section>
+                    )}
                     {filteredCountries.length === 0 && (
                       <p className="py-16 text-center text-muted-foreground">
                         {searchQuery.trim()
@@ -1413,7 +1513,7 @@ export function EsimStorePage() {
               {
                 id: "returns",
                 q: "eSIM returns",
-                a: "eSIMs are digital products. Once activated, they cannot be refunded. If you have not yet activated your eSIM and need a refund, contact us within 14 days of purchase at support@forthecult.store or via our Contact page.",
+                a: "eSIMs are digital products. Once activated, they cannot be refunded. If you have not yet activated your eSIM and need a refund, contact us within 30 days of purchase at support@forthecult.store or via our Contact page.",
               },
             ].map((faq) => {
               const isOpen = faqOpenIds.has(faq.id);

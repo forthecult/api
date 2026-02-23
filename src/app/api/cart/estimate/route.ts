@@ -16,7 +16,7 @@ interface EstimateRequest {
   items: EstimateItem[];
   shipping?: {
     countryCode: string;
-    zip?: string;
+    postalCode?: string;
   };
 }
 

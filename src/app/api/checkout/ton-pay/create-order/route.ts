@@ -26,6 +26,7 @@ import {
   usdCentsToTonAmount,
 } from "~/lib/ton-pay";
 import { createOrderSchema, validateBody } from "~/lib/validations/checkout";
+import { verifyWalletForTier } from "~/lib/wallet-tier-verify";
 
 const TON_USD_FALLBACK = 7;
 const PAYMENT_WINDOW_MS = 60 * 60 * 1000;
@@ -73,7 +74,29 @@ export async function POST(request: NextRequest) {
       telegramUsername,
       totalCents,
       wallet,
+      walletMessage,
+      walletSignature,
+      walletSignatureBase58,
     } = validation.data;
+
+    if (wallet) {
+      const verification = await verifyWalletForTier({
+        userId: session?.user?.id,
+        wallet,
+        walletMessage: walletMessage ?? undefined,
+        walletSignature: walletSignature ?? undefined,
+        walletSignatureBase58: walletSignatureBase58 ?? undefined,
+      });
+      if (!verification.ok) {
+        return NextResponse.json(
+          {
+            error: verification.error,
+            code: "WALLET_VERIFICATION_REQUIRED",
+          },
+          { status: 400 },
+        );
+      }
+    }
 
     // ── Validate products & compute subtotal ───────────────────────────
     const productResult = await validateAndFetchProducts(rawItems);

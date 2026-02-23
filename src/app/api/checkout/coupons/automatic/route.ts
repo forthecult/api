@@ -8,6 +8,7 @@ import {
 } from "~/lib/coupon";
 import { getMemberTierForWallet } from "~/lib/get-member-tier";
 import { resolveTierDiscountsForCheckout } from "~/lib/tier-discount";
+import { verifyWalletForTier } from "~/lib/wallet-tier-verify";
 
 const validateSchema = {
   items: (v: unknown): CartLineItem[] => {
@@ -57,6 +58,12 @@ const validateSchema = {
     Math.round(v) === v
       ? Math.round(v)
       : undefined,
+  walletMessage: (v: unknown) =>
+    typeof v === "string" && v.trim().length > 0 ? v.trim() : undefined,
+  walletSignature: (v: unknown) =>
+    typeof v === "string" && v.trim().length > 0 ? v.trim() : undefined,
+  walletSignatureBase58: (v: unknown) =>
+    typeof v === "string" && v.trim().length > 0 ? v.trim() : undefined,
 };
 
 /**
@@ -83,8 +90,33 @@ export async function POST(request: NextRequest) {
         ? body.wallet.trim()
         : undefined;
     const memberTierParam = validateSchema.memberTier(body?.memberTier);
+    const walletMessage = validateSchema.walletMessage(body?.walletMessage);
+    const walletSignature = validateSchema.walletSignature(body?.walletSignature);
+    const walletSignatureBase58 = validateSchema.walletSignatureBase58(
+      body?.walletSignatureBase58,
+    );
 
     const items = validateSchema.items(body?.items);
+
+    if (wallet) {
+      const verification = await verifyWalletForTier({
+        userId: session?.user?.id,
+        wallet,
+        walletMessage: walletMessage ?? undefined,
+        walletSignature: walletSignature ?? undefined,
+        walletSignatureBase58: walletSignatureBase58 ?? undefined,
+      });
+      if (!verification.ok) {
+        return NextResponse.json(
+          {
+            applied: false,
+            error: verification.error,
+            code: "WALLET_VERIFICATION_REQUIRED",
+          },
+          { status: 400 },
+        );
+      }
+    }
 
     // Derive productIds from items when client sends items but productIds empty (e.g. ensures eSIM rule works)
     const resolvedProductIds =

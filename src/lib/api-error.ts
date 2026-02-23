@@ -219,7 +219,7 @@ const ERROR_DEFINITIONS: Record<ApiErrorCode, Omit<ApiErrorDetails, "code">> = {
     httpStatus: 400,
     message: "The requested payment method is not supported.",
     suggestions: [
-      "Check supported payment methods: GET /api/chains",
+      "Check supported payment methods: GET /api/payment-methods",
       "Supported: SOL, USDC, ETH, USDT on various chains",
     ],
   },

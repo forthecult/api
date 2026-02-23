@@ -12,6 +12,8 @@ const PLACEHOLDER_SRC = "/placeholder.svg";
 export interface ProductImageGalleryProps {
   className?: string;
   discountPercentage?: number;
+  /** Per-image alt text (same order as images). Used when viewing that image. */
+  imageAlts?: (null | string)[];
   images: string[];
   /** SEO: alt text for the main (first) product image. Falls back to productName when not set. */
   mainImageAlt?: null | string;
@@ -21,6 +23,7 @@ export interface ProductImageGalleryProps {
 export function ProductImageGallery({
   className,
   discountPercentage = 0,
+  imageAlts,
   images,
   mainImageAlt,
   productName,
@@ -76,9 +79,9 @@ export function ProductImageGallery({
       ? PLACEHOLDER_SRC
       : actualMainSrc;
   const mainAlt =
-    selectedIndex === 0 && mainImageAlt?.trim()
-      ? mainImageAlt.trim()
-      : productName;
+    (imageAlts?.[selectedIndex]?.trim() ||
+      (selectedIndex === 0 && mainImageAlt?.trim()) ||
+      productName) as string;
 
   const handleMainImageError = React.useCallback(() => {
     if (useUnoptimizedUrls.has(actualMainSrc)) {
@@ -177,7 +180,10 @@ export function ProductImageGallery({
                 type="button"
               >
                 <Image
-                  alt=""
+                  alt={
+                    imageAlts?.[i]?.trim() ||
+                    `View image ${i + 1} of ${list.length}`
+                  }
                   className="object-cover"
                   fill
                   key={`${src}-${thumbUnoptimized ? "direct" : "opt"}`}

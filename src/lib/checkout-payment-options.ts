@@ -221,6 +221,10 @@ export function getFooterPaymentItems(
       items.push({ name: "Monero", src: "/payments/monero.svg" });
     items.push({ name: "Ethereum", src: "/payments/ethereum.svg" });
     items.push({ name: "Solana", src: "/crypto/solana/solanaLogoMark.svg" });
+    items.push({
+      name: "Crustafarian",
+      src: "/crypto/crustafarianism/crust-logo.png",
+    });
     items.push({ name: "Pump", src: "/crypto/pump/pump-logomark.svg" });
     items.push({ name: "Troll", src: "/crypto/troll/troll-logomark.png" });
     items.push({
@@ -249,7 +253,7 @@ export function getFooterPaymentItems(
     if (visibility.cryptoCrust)
       items.push({
         name: "Crustafarian",
-        src: "/crypto/solana/solanaLogoMark.svg",
+        src: "/crypto/crustafarianism/crust-logo.png",
       });
     if (visibility.cryptoPump)
       items.push({ name: "Pump", src: "/crypto/pump/pump-logomark.svg" });

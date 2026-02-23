@@ -248,6 +248,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
               >
                 <ProductImageGallery
                   discountPercentage={discountPercentage}
+                  imageAlts={product.imageAlts}
                   images={product.images ?? [product.image]}
                   mainImageAlt={product.mainImageAlt}
                   productName={product.name}

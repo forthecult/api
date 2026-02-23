@@ -21,6 +21,7 @@ import {
 } from "~/lib/rate-limit";
 import { deriveDepositAddress } from "~/lib/solana-deposit";
 import { createOrderSchema, validateBody } from "~/lib/validations/checkout";
+import { verifyWalletForTier } from "~/lib/wallet-tier-verify";
 
 export async function POST(request: NextRequest) {
   // Rate limit checkout to prevent order spam
@@ -68,7 +69,29 @@ export async function POST(request: NextRequest) {
       token: tokenFromBody,
       totalCents,
       wallet,
+      walletMessage,
+      walletSignature,
+      walletSignatureBase58,
     } = validation.data;
+
+    if (wallet) {
+      const verification = await verifyWalletForTier({
+        userId: session?.user?.id,
+        wallet,
+        walletMessage: walletMessage ?? undefined,
+        walletSignature: walletSignature ?? undefined,
+        walletSignatureBase58: walletSignatureBase58 ?? undefined,
+      });
+      if (!verification.ok) {
+        return NextResponse.json(
+          {
+            error: verification.error,
+            code: "WALLET_VERIFICATION_REQUIRED",
+          },
+          { status: 400 },
+        );
+      }
+    }
 
     // Map frontend token to stored crypto currency (for balance check / UI on payment page)
     const SOLANA_TOKEN_TO_CURRENCY: Record<string, string> = {

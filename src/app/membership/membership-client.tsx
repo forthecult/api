@@ -116,6 +116,8 @@ export function MembershipClient() {
   const [claimEligible, setClaimEligible] = useState(false);
   const [claimAlreadyClaimed, setClaimAlreadyClaimed] = useState(false);
   const [claimTier, setClaimTier] = useState<null | number>(null);
+  /** "monthly" for 12-month membership (one per month), "staking_period" for 30-day (one per period). */
+  const [claimPeriod, setClaimPeriod] = useState<"monthly" | "staking_period">("staking_period");
   const [claimPending, setClaimPending] = useState(false);
   const [claimSuccess, setClaimSuccess] = useState(false);
   const [stakerClaimPackages, setStakerClaimPackages] = useState<
@@ -136,8 +138,11 @@ export function MembershipClient() {
     "DATA-ONLY" | "DATA-VOICE-SMS"
   >("DATA-ONLY");
   const [stakerClaimCountryId, setStakerClaimCountryId] = useState<string>("");
+  const [stakerClaimRegionId, setStakerClaimRegionId] = useState<string>("");
   const [esimCountries, setEsimCountries] = useState<{ id: number; name: string }[]>([]);
   const [esimCountriesLoading, setEsimCountriesLoading] = useState(false);
+  const [esimRegions, setEsimRegions] = useState<{ id: number; name: string }[]>([]);
+  const [esimRegionsLoading, setEsimRegionsLoading] = useState(false);
 
   // Current stake (for "Your stake" + unstake)
   const [stakedBalanceDisplay, setStakedBalanceDisplay] = useState<string>("0");
@@ -369,6 +374,7 @@ export function MembershipClient() {
       setClaimEligible(false);
       setClaimAlreadyClaimed(false);
       setClaimTier(null);
+      setClaimPeriod("staking_period");
       return;
     }
     fetch(
@@ -378,17 +384,22 @@ export function MembershipClient() {
       .then(
         (data: {
           claimed?: boolean;
+          claimPeriod?: "monthly" | "staking_period";
           eligible?: boolean;
           tier?: null | number;
         }) => {
           setClaimEligible(data.eligible ?? false);
           setClaimAlreadyClaimed(data.claimed ?? false);
           setClaimTier(data.tier ?? null);
+          setClaimPeriod(
+            data.claimPeriod === "monthly" ? "monthly" : "staking_period",
+          );
         },
       )
       .catch(() => {
         setClaimEligible(false);
         setClaimAlreadyClaimed(false);
+        setClaimPeriod("staking_period");
       });
   }, [wallet]);
 
@@ -472,21 +483,37 @@ export function MembershipClient() {
     [],
   );
 
-  // Fetch countries when eligible to claim (for country picker)
+  // Fetch countries and regions when eligible to claim (for dropdowns)
   useEffect(() => {
     if (!claimEligible && !claimAlreadyClaimed) return;
     setEsimCountriesLoading(true);
-    fetch("/api/esim/countries")
-      .then((r) => r.json())
-      .then((data: { data?: { id: number; name: string }[]; status: boolean }) => {
-        if (data.status && Array.isArray(data.data)) {
-          setEsimCountries(
-            data.data.slice().sort((a, b) => a.name.localeCompare(b.name)),
-          );
-        }
-      })
-      .catch(() => setEsimCountries([]))
-      .finally(() => setEsimCountriesLoading(false));
+    setEsimRegionsLoading(true);
+    Promise.all([
+      fetch("/api/esim/countries")
+        .then((r) => r.json())
+        .then((data: { data?: { id: number; name: string }[]; status: boolean }) => {
+          if (data.status && Array.isArray(data.data)) {
+            setEsimCountries(
+              data.data.slice().sort((a, b) => a.name.localeCompare(b.name)),
+            );
+          }
+        })
+        .catch(() => setEsimCountries([])),
+      fetch("/api/esim/continents")
+        .then((r) => r.json())
+        .then((data: { data?: { id: number; name: string }[]; status: boolean }) => {
+          if (data.status && Array.isArray(data.data)) {
+            setEsimRegions(
+              data.data.slice().sort((a, b) => a.name.localeCompare(b.name)),
+            );
+          }
+        })
+        .catch(() => setEsimRegions([])),
+    ])
+      .finally(() => {
+        setEsimCountriesLoading(false);
+        setEsimRegionsLoading(false);
+      });
   }, [claimEligible, claimAlreadyClaimed]);
 
   // Fetch 30-day eSIM packages (under $25) when eligible to claim
@@ -499,6 +526,7 @@ export function MembershipClient() {
     const params = new URLSearchParams();
     params.set("package_type", stakerClaimPackageType);
     if (stakerClaimCountryId) params.set("country", stakerClaimCountryId);
+    else if (stakerClaimRegionId) params.set("region", stakerClaimRegionId);
     fetch(`/api/esim/packages/staker-claim?${params.toString()}`)
       .then((r) => r.json())
       .then(
@@ -528,6 +556,7 @@ export function MembershipClient() {
     claimAlreadyClaimed,
     stakerClaimPackageType,
     stakerClaimCountryId,
+    stakerClaimRegionId,
   ]);
 
   // ------ eSIM Claim handler (one package per staking period) ------
@@ -728,7 +757,7 @@ export function MembershipClient() {
                               <p className="text-sm text-muted-foreground">
                                 {hasStake
                                   ? `${stakedLock?.durationLabel ?? "30 days"} · ${formatTokensPrecise(Number(stakedBalanceDisplay))} ${tokenSymbol} staked${stakedLock?.isLocked && stakedLock.secondsRemaining != null && stakedLock.secondsRemaining > 0 ? ` · ${formatTimeUntilUnlock(stakedLock.secondsRemaining)}` : stakedLock && !stakedLock.isLocked ? " · Unlocked" : ""}`
-                                  : "Membership from admin or tier history. Stake below to lock in your benefits."}
+                                  : "Membership from admin or tier history. Staking is optional—only if you want to lock your tier on-chain."}
                               </p>
                             </div>
                           </>
@@ -794,11 +823,13 @@ export function MembershipClient() {
                     ? "Loading membership…"
                     : wallet && Number(stakedBalanceRaw) > 0 && displayTier != null
                       ? "Stake more CULT to upgrade your tier."
-                      : displayTier != null
-                        ? "You're already a member. Stake below to lock in your tier or add more to upgrade."
-                        : wallet
-                          ? "Select your tier and duration, then stake."
-                          : "Select your tier and duration, then connect your wallet to stake."}
+                      : displayTier != null && Number(stakedBalanceRaw) === 0
+                        ? "You're already a member. Staking is optional—only if you want to lock your tier on-chain."
+                        : displayTier != null
+                          ? "You're already a member. Stake more to upgrade your tier."
+                          : wallet
+                            ? "Select your tier and duration, then stake."
+                            : "Select your tier and duration, then connect your wallet to stake."}
                 </p>
               </div>
 
@@ -816,12 +847,12 @@ export function MembershipClient() {
                 )}
                 {wallet && Number(stakedBalanceRaw) === 0 && displayTier != null && (
                   <p className="text-sm text-muted-foreground">
-                    You're a {MEMBERSHIP_TIERS.find((t) => t.id === displayTier)?.name ?? `Tier ${displayTier}`} member. Stake below to lock in your benefits or add more to upgrade.
+                    You're a {MEMBERSHIP_TIERS.find((t) => t.id === displayTier)?.name ?? `Tier ${displayTier}`} member. Staking is optional—only if you want to lock your tier on-chain.
                   </p>
                 )}
                 {!wallet && displayTier != null && (
                   <p className="text-sm text-muted-foreground">
-                    You're a {MEMBERSHIP_TIERS.find((t) => t.id === displayTier)?.name ?? `Tier ${displayTier}`} member. Connect your wallet and stake below to lock in your benefits.
+                    You're a {MEMBERSHIP_TIERS.find((t) => t.id === displayTier)?.name ?? `Tier ${displayTier}`} member. Connect your wallet only if you want to stake and lock your tier on-chain (optional).
                   </p>
                 )}
 
@@ -840,7 +871,7 @@ export function MembershipClient() {
                         {displayTier != null && Number(stakedBalanceRaw) > 0
                           ? "Upgrade to"
                           : displayTier != null
-                            ? "Stake to lock in"
+                            ? "Optional: stake to lock in on-chain"
                             : "Tier"}
                       </p>
                       <div className="flex flex-wrap gap-2">
@@ -2195,7 +2226,9 @@ export function MembershipClient() {
                       : claimAlreadyClaimed
                         ? claimSuccess
                           ? "Your free eSIM has been provisioned. Activate it in your dashboard or check your email for the link."
-                          : "You've already claimed your free eSIM for this staking period. Visit your eSIM dashboard to manage and activate it."
+                          : claimPeriod === "monthly"
+                            ? "You've already claimed your free eSIM this month. Visit your eSIM dashboard to manage and activate it."
+                            : "You've already claimed your free eSIM for this staking period. Visit your eSIM dashboard to manage and activate it."
                         : `As a Tier ${claimTier ?? 1} member, you can claim one 30-day eSIM at no cost. Pick data-only or data with minutes + SMS, then click Claim to activate.`}
                   </CardDescription>
                 </CardHeader>
@@ -2262,6 +2295,30 @@ export function MembershipClient() {
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="text-sm text-muted-foreground">
+                            Region:
+                          </span>
+                          <select
+                            aria-label="Choose region for eSIM"
+                            className={cn(
+                              "min-w-[180px] rounded-md border border-input bg-background px-3 py-2 text-sm",
+                            )}
+                            disabled={esimRegionsLoading}
+                            value={stakerClaimRegionId}
+                            onChange={(e) => {
+                              setStakerClaimRegionId(e.target.value);
+                              if (e.target.value) setStakerClaimCountryId("");
+                            }}
+                          >
+                            <option value="">All regions</option>
+                            {esimRegions.map((r) => (
+                              <option key={r.id} value={r.id}>
+                                {r.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground">
                             Country:
                           </span>
                           <select
@@ -2271,9 +2328,10 @@ export function MembershipClient() {
                             )}
                             disabled={esimCountriesLoading}
                             value={stakerClaimCountryId}
-                            onChange={(e) =>
-                              setStakerClaimCountryId(e.target.value)
-                            }
+                            onChange={(e) => {
+                              setStakerClaimCountryId(e.target.value);
+                              if (e.target.value) setStakerClaimRegionId("");
+                            }}
                           >
                             <option value="">Global</option>
                             {esimCountries.map((c) => (
@@ -2321,8 +2379,9 @@ export function MembershipClient() {
                             ))}
                           </div>
                           <p className="text-center text-sm text-muted-foreground">
-                            One claim per staking period. After claiming, you can
-                            activate your eSIM in your dashboard.
+                            {claimPeriod === "monthly"
+                              ? "One claim per month. After claiming, you can activate your eSIM in your dashboard."
+                              : "One claim per staking period. After claiming, you can activate your eSIM in your dashboard."}
                           </p>
                         </>
                       ) : null}

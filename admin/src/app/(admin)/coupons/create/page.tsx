@@ -976,11 +976,20 @@ export default function AdminDiscountCreatePage() {
           <CardHeader>
             <CardTitle>Categories</CardTitle>
             <p className="text-sm text-muted-foreground">
-              Categories this discount applies to. Leave all unchecked for all
-              categories.
+              Categories this discount applies to. Select &quot;All categories&quot;
+              or pick specific categories.
             </p>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-3">
+            <label className="flex items-center gap-2 text-sm font-medium">
+              <input
+                checked={categoryIds.length === 0}
+                className="size-4 rounded border-input"
+                onChange={() => setCategoryIds([])}
+                type="checkbox"
+              />
+              <span>All categories</span>
+            </label>
             {optionsLoading ? (
               <p className="text-sm text-muted-foreground">
                 Loading categories…
@@ -1009,11 +1018,20 @@ export default function AdminDiscountCreatePage() {
           <CardHeader>
             <CardTitle>Products</CardTitle>
             <p className="text-sm text-muted-foreground">
-              Products this discount applies to. Leave all unchecked for all
-              products.
+              Products this discount applies to. Select &quot;All products&quot;
+              or pick specific products.
             </p>
           </CardHeader>
           <CardContent className="space-y-4">
+            <label className="flex items-center gap-2 text-sm font-medium">
+              <input
+                checked={productIds.length === 0}
+                className="size-4 rounded border-input"
+                onChange={() => setProductIds([])}
+                type="checkbox"
+              />
+              <span>All products</span>
+            </label>
             <label className="flex items-center gap-2 text-sm">
               <input
                 checked={ruleAppliesToEsim}

@@ -23,7 +23,7 @@ import {
 
 /**
  * PaymentReceiverFactory contract addresses per chain.
- * These must be deployed using the contracts/scripts/deploy.ts script.
+ * These must be deployed using the repo contracts/evm/scripts/deploy.ts script.
  *
  * IMPORTANT: Update these addresses after deploying to each chain!
  */

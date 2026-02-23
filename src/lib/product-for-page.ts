@@ -18,6 +18,7 @@ export interface PageProduct {
   hasVariants?: boolean;
   id: string;
   image: string;
+  imageAlts?: (null | string)[];
   images?: string[];
   inStock: boolean;
   mainImageAlt?: null | string;
@@ -85,6 +86,7 @@ export function mapProductBySlugResultToPageProduct(
     hasVariants: data.hasVariants ?? false,
     id: data.id,
     image: data.imageUrl ?? PLACEHOLDER_IMAGE,
+    imageAlts: data.imageAlts,
     images,
     inStock: data.inStock ?? true,
     mainImageAlt: data.mainImageAlt ?? undefined,

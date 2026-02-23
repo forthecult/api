@@ -390,41 +390,34 @@ export async function getCategoryProductImage(
   }
 }
 
+/** Category names/slugs treated as generic "all products" — breadcrumb prefers a more specific category when present. */
+const GENERIC_CATEGORY_NAMES = new Set([
+  "all products",
+  "products",
+  "all",
+  "shop",
+]);
+const GENERIC_CATEGORY_SLUGS = new Set(["products", "all", "shop"]);
+
+function isGenericCategory(name: string, slug: string | null): boolean {
+  const n = name?.toLowerCase().trim() ?? "";
+  const s = (slug?.toLowerCase().trim() ?? "").replace(/^\/+|\/+$/g, "");
+  return GENERIC_CATEGORY_NAMES.has(n) || GENERIC_CATEGORY_SLUGS.has(s);
+}
+
 /**
- * Breadcrumb trail for a product page: Home > category > subcategory > product.
- * Uses the product's main category and its parent chain. If no category, returns Home > product.
+ * Build the category chain (leaf to root) for a given category id.
  */
-export async function getProductBreadcrumbTrail(
-  productId: string,
-  productName: string,
-  productHref: string,
-): Promise<BreadcrumbItem[]> {
-  const [mainPc] = await db
-    .select({ categoryId: productCategoriesTable.categoryId })
-    .from(productCategoriesTable)
-    .where(
-      and(
-        eq(productCategoriesTable.productId, productId),
-        eq(productCategoriesTable.isMain, true),
-      ),
-    )
-    .limit(1);
-
-  const home: BreadcrumbItem = { href: "/", name: "Home" };
-  const productItem: BreadcrumbItem = { href: productHref, name: productName };
-
-  if (!mainPc?.categoryId) {
-    return [home, productItem];
-  }
-
+async function getCategoryChain(
+  categoryId: string,
+): Promise<{ id: string; name: string; parentId: null | string; slug: null | string }[]> {
   const chain: {
     id: string;
     name: string;
     parentId: null | string;
     slug: null | string;
   }[] = [];
-  let currentId: null | string = mainPc.categoryId;
-
+  let currentId: null | string = categoryId;
   while (currentId) {
     const [row] = await db
       .select({
@@ -440,13 +433,82 @@ export async function getProductBreadcrumbTrail(
     chain.push(row);
     currentId = row.parentId;
   }
+  return chain.reverse();
+}
 
-  const ordered = chain.reverse();
+/**
+ * Breadcrumb trail for a product page: Home > category > subcategory > product.
+ * Uses the product's main category and its parent chain. If the main category is generic
+ * (e.g. "All Products"), prefers another assigned category that is more specific so the
+ * breadcrumb reflects where the product actually lives (e.g. Supplements).
+ */
+export async function getProductBreadcrumbTrail(
+  productId: string,
+  productName: string,
+  productHref: string,
+): Promise<BreadcrumbItem[]> {
+  const home: BreadcrumbItem = { href: "/", name: "Home" };
+  const productItem: BreadcrumbItem = { href: productHref, name: productName };
+
+  const allPcs = await db
+    .select({
+      categoryId: productCategoriesTable.categoryId,
+      isMain: productCategoriesTable.isMain,
+    })
+    .from(productCategoriesTable)
+    .where(eq(productCategoriesTable.productId, productId));
+
+  if (allPcs.length === 0) {
+    return [home, productItem];
+  }
+
+  const mainPc = allPcs.find((pc) => pc.isMain);
+  let chosenCategoryId: string | null =
+    (mainPc?.categoryId ?? allPcs[0]?.categoryId) ?? null;
+  if (!chosenCategoryId) return [home, productItem];
+
+  const mainChain = await getCategoryChain(chosenCategoryId);
+  const mainLeaf = mainChain[mainChain.length - 1];
+  const mainIsGeneric =
+    mainLeaf && isGenericCategory(mainLeaf.name, mainLeaf.slug ?? null);
+
+  if (mainIsGeneric && allPcs.length > 1) {
+    let bestChain: {
+      id: string;
+      name: string;
+      parentId: null | string;
+      slug: null | string;
+    }[] = mainChain;
+    for (const pc of allPcs) {
+      if (!pc.categoryId || pc.categoryId === chosenCategoryId) continue;
+      const chain = await getCategoryChain(pc.categoryId);
+      const leaf = chain[chain.length - 1];
+      if (!leaf || isGenericCategory(leaf.name, leaf.slug ?? null)) continue;
+      if (chain.length >= bestChain.length) bestChain = chain;
+    }
+    const ordered = bestChain;
+    const rootSlug =
+      ordered[0]?.slug ??
+      ordered[0]?.name?.toLowerCase().replace(/\s+/g, "-") ??
+      "shop";
+    const categoryItems: BreadcrumbItem[] = ordered.map((c, i) => {
+      const slug =
+        c.slug ??
+        c.name
+          .toLowerCase()
+          .replace(/\s+/g, "-")
+          .replace(/[^a-z0-9-]/g, "");
+      const href = i === 0 ? `/${slug}` : `/${rootSlug}?subcategory=${slug}`;
+      return { href, name: c.name };
+    });
+    return [home, ...categoryItems, productItem];
+  }
+
+  const ordered = mainChain;
   const rootSlug =
     ordered[0]?.slug ??
     ordered[0]?.name?.toLowerCase().replace(/\s+/g, "-") ??
     "shop";
-
   const categoryItems: BreadcrumbItem[] = ordered.map((c, i) => {
     const slug =
       c.slug ??
@@ -457,7 +519,6 @@ export async function getProductBreadcrumbTrail(
     const href = i === 0 ? `/${slug}` : `/${rootSlug}?subcategory=${slug}`;
     return { href, name: c.name };
   });
-
   return [home, ...categoryItems, productItem];
 }
 
