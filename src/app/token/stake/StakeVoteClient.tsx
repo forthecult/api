@@ -750,7 +750,6 @@ function StakeForm({
   }, [stake, stakeAmount, lockDuration, refreshBalances]);
 
   const handleUnstake = useCallback(async () => {
-    // native program uses tier (0=30day, 1=12month), not amount
     const tier = currentLockTier ?? 0;
     const ok = await unstake(tier);
     if (ok) refreshBalances();

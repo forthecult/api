@@ -93,9 +93,22 @@ const COUNTRY_CURRENCY_COOKIE = "country-currency";
 
 function proxyHandler(request: NextRequest) {
   const path = request.nextUrl.pathname;
+  const host = request.nextUrl.hostname?.toLowerCase();
+
+  // http → https redirect for production domains (single preferred version for SEO)
+  if (
+    request.nextUrl.protocol === "http:" &&
+    host &&
+    host !== "localhost" &&
+    host !== "127.0.0.1" &&
+    !host.endsWith(".localhost")
+  ) {
+    const httpsUrl = new URL(request.url);
+    httpsUrl.protocol = "https:";
+    return NextResponse.redirect(httpsUrl, 301);
+  }
 
   // AI subdomain redirect: ai.forthecult.store/ → /for-agents
-  const host = request.nextUrl.hostname?.toLowerCase();
   const agentHost = getAgentHostname();
   if (agentHost && host === agentHost && (path === "/" || path === "")) {
     return NextResponse.redirect(new URL("/for-agents", request.url));

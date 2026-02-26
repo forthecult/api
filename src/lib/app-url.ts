@@ -25,7 +25,18 @@ export function getAgentBaseUrl(): string {
   if (!/^https?:\/\//i.test(trimmed)) url = `https://${trimmed.replace(/^\/+/, "")}`;
   else url = trimmed.replace(/\/+$/, "");
   try {
-    return new URL(url).origin;
+    const parsed = new URL(url);
+    const host = parsed.hostname.toLowerCase();
+    const isLocal =
+      host === "localhost" ||
+      host === "127.0.0.1" ||
+      host.endsWith(".localhost");
+    if (!isLocal && parsed.protocol === "http:") {
+      const port =
+        parsed.port && parsed.port !== "80" ? `:${parsed.port}` : "";
+      return `https://${parsed.hostname}${port}`;
+    }
+    return parsed.origin;
   } catch {
     return url;
   }
@@ -53,7 +64,8 @@ export function getClientBaseUrl(): string {
 
 /**
  * Public site URL for canonical links, metadata, sitemaps, emails.
- * Must be https when used in production.
+ * Always returns https for production domains (non-localhost) so sitemap and
+ * canonicals use a single preferred version.
  * Strips query/fragment and returns origin only to avoid malformed sitemap URLs.
  */
 export function getPublicSiteUrl(): string {
@@ -62,7 +74,18 @@ export function getPublicSiteUrl(): string {
   const trimmed = withoutQuery.replace(/[&/]+$/, "");
   const url = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed.replace(/^\/+/, "")}`;
   try {
-    return new URL(url).origin;
+    const parsed = new URL(url);
+    const host = parsed.hostname.toLowerCase();
+    const isLocal =
+      host === "localhost" ||
+      host === "127.0.0.1" ||
+      host.endsWith(".localhost");
+    if (!isLocal && parsed.protocol === "http:") {
+      const port =
+        parsed.port && parsed.port !== "80" ? `:${parsed.port}` : "";
+      return `https://${parsed.hostname}${port}`;
+    }
+    return parsed.origin;
   } catch {
     return url.replace(/\/+$/, "");
   }
@@ -106,4 +129,20 @@ export function isAgentSubdomain(host: null | string | undefined): boolean {
   if (!agentHost) return false;
   const h = (host ?? "").trim().toLowerCase();
   return h === agentHost || h.endsWith(`.${agentHost}`);
+}
+
+/**
+ * True when we should noindex for agent (on agent subdomain) and agent host is distinct from main site.
+ * Prevents accidental mass noindex when agent URL is misconfigured to point at the main store.
+ */
+export function shouldNoindexForAgent(host: null | string | undefined): boolean {
+  const agentHost = getAgentHostname();
+  if (!agentHost) return false;
+  try {
+    const mainHost = new URL(getPublicSiteUrl()).hostname.toLowerCase();
+    if (agentHost.toLowerCase() === mainHost) return false;
+  } catch {
+    return false;
+  }
+  return isAgentSubdomain(host);
 }

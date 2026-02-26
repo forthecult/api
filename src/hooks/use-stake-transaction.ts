@@ -14,9 +14,9 @@ const SEND_OPTS = {
 };
 
 export interface UseStakeTransactionOptions {
+  onRestakeSuccess?: () => void;
   onStakeSuccess?: () => void;
   onUnstakeSuccess?: () => void;
-  onRestakeSuccess?: () => void;
 }
 
 /**
@@ -33,9 +33,9 @@ export function useStakeTransaction(options: UseStakeTransactionOptions = {}) {
   const { publicKey, sendTransaction } = useSolanaWallet();
   const wallet = publicKey?.toBase58() ?? null;
 
+  const [restakePending, setRestakePending] = useState(false);
   const [stakePending, setStakePending] = useState(false);
   const [unstakePending, setUnstakePending] = useState(false);
-  const [restakePending, setRestakePending] = useState(false);
 
   // track pending stake params so we can auto-stake after wallet connects
   const pendingStakeRef = useRef<{ amount: string; lockDuration: number } | null>(null);

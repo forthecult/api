@@ -122,6 +122,7 @@ export async function generateMetadata({
         : `${siteUrl}${defaultOgPath}`;
   return {
     description: metaDesc,
+    robots: { follow: true, index: true },
     openGraph: {
       description: metaDesc,
       title: `${product.name} | ${SEO_CONFIG.name}`,

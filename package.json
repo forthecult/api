@@ -31,6 +31,7 @@
     "db:migrate-user-role": "psql $DATABASE_URL -f scripts/migrate-add-user-role.sql",
     "db:migrate-esim-order-guest": "psql $DATABASE_URL -f scripts/migrate-esim-order-user-id-nullable.sql",
     "db:migrate-support-chat-source": "psql $DATABASE_URL -f scripts/migrate-support-chat-source.sql",
+    "db:migrate-rls": "psql $DATABASE_URL -f scripts/migrate-enable-rls-auth-tables.sql",
     "db:verify-role": "bun run scripts/verify-role-migration.ts",
     "db:seed-admin": "bun run scripts/seed-admin-user.ts",
     "db:seed:all": "bun run scripts/seed-categories.ts && bun run scripts/seed-products.ts",

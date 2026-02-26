@@ -173,8 +173,16 @@ export function MembershipClient() {
   >(null);
   const [pricingLoading, setPricingLoading] = useState(true);
 
-  const { openConnectModal, restake, restakePending, stake, stakePending, unstake, unstakePending, wallet: connectedWallet } =
-    useStakeTransaction();
+  const {
+    openConnectModal,
+    restake,
+    restakePending,
+    stake,
+    stakePending,
+    unstake,
+    unstakePending,
+    wallet: connectedWallet,
+  } = useStakeTransaction();
   const { user } = useCurrentUser();
   const { connection } = useSolanaConnection();
   const { publicKey, sendTransaction } = useSolanaWallet();
@@ -477,7 +485,6 @@ export function MembershipClient() {
   }, [stake, stakeAmount, lockDuration, refreshStakedBalance, currentTierFromStake, stakedBalanceRaw, stakedBalanceDisplay]);
 
   const handleUnstake = useCallback(async () => {
-    // native program requires lock tier (0=30day, 1=12month), not amount
     const lockTier = stakedLock?.lockTier ?? 0;
     const ok = await unstake(lockTier);
     if (ok) refreshStakedBalance();
@@ -804,7 +811,7 @@ export function MembershipClient() {
                         );
                       })()}
                     </div>
-                    {/* Restake / Unstake when lock has ended (only when they have an on-chain stake) */}
+                    {/* Restake / Unstake when lock has ended */}
                     {wallet && Number(stakedBalanceRaw) > 0 && stakedLock && !stakedLock.isLocked && (
                       <div className="flex flex-wrap items-center gap-2 border-t border-primary/20 pt-3">
                         <div className="flex gap-1">

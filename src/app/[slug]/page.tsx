@@ -25,7 +25,7 @@ import { ProductsClient } from "~/app/products/products-client";
 import {
   getPublicSiteUrl,
   getServerBaseUrl,
-  isAgentSubdomain,
+  shouldNoindexForAgent,
 } from "~/lib/app-url";
 import {
   getCategoryBySlug,
@@ -188,7 +188,7 @@ export async function generateMetadata({
   const { slug } = await params;
   const headersList = await headers();
   const host = headersList.get("host") ?? "";
-  const isAgent = isAgentSubdomain(host);
+  const noindexForAgent = shouldNoindexForAgent(host);
   const siteUrl = getPublicSiteUrl();
   const product = await getProductForPageBySlug(slug);
   if (product) {
@@ -214,9 +214,9 @@ export async function generateMetadata({
       alternates: {
         canonical: canonicalUrl,
       },
-      ...(isAgent && {
-        robots: { follow: true, index: false },
-      }),
+      robots: noindexForAgent
+        ? { follow: true, index: false }
+        : { follow: true, index: true },
       description: metaDesc,
       openGraph: {
         description: metaDesc,
@@ -265,9 +265,9 @@ export async function generateMetadata({
     alternates: {
       canonical: `${siteUrl}/${slug}`,
     },
-    ...(isAgent && {
-      robots: { follow: true, index: false },
-    }),
+    robots: noindexForAgent
+      ? { follow: true, index: false }
+      : { follow: true, index: true },
     description,
     openGraph: {
       description,

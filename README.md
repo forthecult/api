@@ -58,6 +58,8 @@ The app requires Postgres. If you see **ECONNREFUSED** or **GET / 500** when run
 - Set `DATABASE_URL` in `.env` (e.g. `postgresql://postgres:postgres@localhost:5432/ftc`).
 - From the repo root: `bun db:push` (creates tables), then `bun dev`.
 
+**Production:** If you see **Max client connections** or **Failed query** (e.g. on product pages), your DB connection limit is being exceeded. Set `DATABASE_POOL_SIZE` to a lower value (e.g. `3` or `5`) so that (number of server workers × pool size) stays under your database’s connection limit. Using a connection pooler (e.g. your host’s pooled connection string) is recommended.
+
 <!-- 
 2. run:
    ```bash

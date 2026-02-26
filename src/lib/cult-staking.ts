@@ -1,7 +1,8 @@
 /**
  * CULT on-chain staking program helpers.
  *
- * Program: Native Solana program (immutable) at 8QZ3EZYFXET2et4bTDoxfQMJTjhRqYTaJbSQf5eEX8Zk
+ * Program: Native immutable staking program.
+ * Set CULT_STAKING_PROGRAM_ID=8QZ3EZYFXET2et4bTDoxfQMJTjhRqYTaJbSQf5eEX8Zk
  *
  * This program uses per-tier stake entries — a user can have separate stakes
  * for 30-day (tier 0) and 12-month (tier 1) locks.

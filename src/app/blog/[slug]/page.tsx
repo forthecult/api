@@ -27,6 +27,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       canonical: `${siteUrl}/blog/${post.slug}`,
     },
     description: description ?? undefined,
+    robots: { follow: true, index: true },
     openGraph: {
       description: description ?? undefined,
       images: image ? [{ url: image, width: 1200, height: 630 }] : undefined,

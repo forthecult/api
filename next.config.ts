@@ -41,7 +41,7 @@ const config = {
   // Experimental performance features
   experimental: {
     // give upstream image fetches (e.g. ufs.sh) more time before "upstream image response timed out"
-    imgOptTimeoutInSeconds: 20,
+    imgOptTimeoutInSeconds: 30,
     // Optimized package imports: tree-shake and reduce bundle size
     optimizePackageImports: [
       "lucide-react",

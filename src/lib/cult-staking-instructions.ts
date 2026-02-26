@@ -1,9 +1,11 @@
 /**
- * Server-only: Native program instruction builders.
+ * Server-only: Native (immutable) staking program instruction builders.
  *
- * Instruction format for the native staking program:
- *   Stake:   [0, lock_tier, amount_le_bytes(8)] = 10 bytes
+ * Instruction format (1-byte tags):
+ *   Stake:   [0, lock_tier, amount(8 LE)] = 10 bytes
  *   Unstake: [1, lock_tier] = 2 bytes
+ *
+ * Program ID: 8QZ3EZYFXET2et4bTDoxfQMJTjhRqYTaJbSQf5eEX8Zk (immutable)
  */
 
 import {
@@ -51,13 +53,7 @@ import { CULT_MINT_MAINNET, TOKEN_2022_PROGRAM_ID_BASE58 } from "./token-config"
 const TOKEN_2022_PROGRAM_ID = new PublicKeyClass(TOKEN_2022_PROGRAM_ID_BASE58);
 const CULT_MINT = new PublicKeyClass(CULT_MINT_MAINNET);
 
-/**
- * Anchor-compatible instruction discriminators.
- * These are the first 8 bytes of sha256("global:<instruction_name>").
- * Using these allows Phantom/Blowfish to simulate our transactions using our IDL.
- */
-const STAKE_DISCRIMINATOR = Buffer.from([0xce, 0xb0, 0xca, 0x12, 0xc8, 0xd1, 0xb3, 0x6c]);
-const UNSTAKE_DISCRIMINATOR = Buffer.from([0x5a, 0x5f, 0x6b, 0x2a, 0xcd, 0x7c, 0x32, 0xe1]);
+// native format: 1-byte instruction tags (immutable program)
 
 // ---------------------------------------------------------------------------
 // Instruction builders
@@ -101,11 +97,11 @@ export function buildStakeInstruction(params: {
 
   if (amount <= 0n) throw new Error("Stake amount must be positive");
 
-  // anchor-compatible instruction data: [discriminator(8), amount(8 LE), lock_tier(1)] = 17 bytes
-  const data = Buffer.alloc(17);
-  STAKE_DISCRIMINATOR.copy(data, 0);
-  data.writeBigUInt64LE(amount, 8);
-  data.writeUInt8(lockTier, 16);
+  // native format: [tag(1), lock_tier(1), amount(8 LE)] = 10 bytes
+  const data = Buffer.alloc(10);
+  data.writeUInt8(0, 0);
+  data.writeUInt8(lockTier, 1);
+  data.writeBigUInt64LE(amount, 2);
 
   return new TransactionInstruction({
     data,
@@ -156,10 +152,10 @@ export function buildUnstakeInstruction(params: {
     vaultTokenAccount,
   } = params;
 
-  // anchor-compatible instruction data: [discriminator(8), lock_tier(1)] = 9 bytes
-  const data = Buffer.alloc(9);
-  UNSTAKE_DISCRIMINATOR.copy(data, 0);
-  data.writeUInt8(lockTier, 8);
+  // native format: [tag(1), lock_tier(1)] = 2 bytes
+  const data = Buffer.alloc(2);
+  data.writeUInt8(1, 0);
+  data.writeUInt8(lockTier, 1);
 
   return new TransactionInstruction({
     data,

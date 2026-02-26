@@ -23,14 +23,14 @@ const globalForDb = globalThis as unknown as {
   conn?: DbConnection;
 };
 
-// Production: pool 12 per process for good concurrency (parallel queries per request)
-// without exhausting DB when multiple Next.js workers run. Idle connections
-// released after 20s to free headroom for traffic bursts.
+// Production: small pool per process (5) so (workers × pool) stays under typical DB
+// connection limits (e.g. 20–100). Idle connections released after 20s. Increase
+// via DATABASE_POOL_SIZE if you have headroom and need more concurrency per process.
 const isProduction = process.env.NODE_ENV === "production";
 const poolSize = process.env.DATABASE_POOL_SIZE
-  ? Math.max(1, Math.min(50, parseInt(process.env.DATABASE_POOL_SIZE, 10) || 12))
+  ? Math.max(1, Math.min(50, parseInt(process.env.DATABASE_POOL_SIZE, 10) || 5))
   : isProduction
-    ? 12
+    ? 5
     : 20;
 const idleTimeout = isProduction ? 20 : 30;
 // allow env override so production can tolerate slow Supabase pooler (e.g. cold start, network latency)
