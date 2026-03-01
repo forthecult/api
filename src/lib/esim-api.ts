@@ -201,6 +201,9 @@ export async function getEsimBalance(): Promise<{
   return esimFetch("/balance");
 }
 
+/** group param required to fetch new packages (old plans deprecated after 7 days) */
+const ESIM_PACKAGES_GROUP = "feb-updates";
+
 /** Get packages for a specific continent */
 export async function getEsimContinentPackages(
   continentId: number,
@@ -211,7 +214,7 @@ export async function getEsimContinentPackages(
   meta: PaginationMeta;
   status: boolean;
 }> {
-  const params = new URLSearchParams({ page: String(page) });
+  const params = new URLSearchParams({ group: ESIM_PACKAGES_GROUP, page: String(page) });
   if (packageType) params.set("package_type", packageType);
   return esimFetch(`/packages/continent/${continentId}?${params}`);
 }
@@ -242,7 +245,7 @@ export async function getEsimCountryPackages(
   meta: PaginationMeta;
   status: boolean;
 }> {
-  const params = new URLSearchParams({ page: String(page) });
+  const params = new URLSearchParams({ group: ESIM_PACKAGES_GROUP, page: String(page) });
   if (packageType) params.set("package_type", packageType);
   return esimFetch(`/packages/country/${countryId}?${params}`);
 }
@@ -262,7 +265,7 @@ export async function getEsimGlobalPackages(
   meta: PaginationMeta;
   status: boolean;
 }> {
-  return esimFetch(`/packages/global/${packageType}`);
+  return esimFetch(`/packages/global/${packageType}?group=${ESIM_PACKAGES_GROUP}`);
 }
 
 /** Get order details */
@@ -310,7 +313,7 @@ export async function getEsimPackages(
   meta: PaginationMeta;
   status: boolean;
 }> {
-  return esimFetch(`/packages?package_type=${packageType}&page=${page}`);
+  return esimFetch(`/packages?group=${ESIM_PACKAGES_GROUP}&package_type=${packageType}&page=${page}`);
 }
 
 /** Get all packages & pricing grouped by country */
