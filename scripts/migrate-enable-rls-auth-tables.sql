@@ -49,18 +49,23 @@ ALTER TABLE public.esim_order ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.membership_esim_claim ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.membership_tier_history ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.member_tier_discount ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.admin_membership_grant ENABLE ROW LEVEL SECURITY;
 
 -- --- Governance (proposals may be public; votes & payouts sensitive) - SENSITIVE ---
 ALTER TABLE public.governance_proposal ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.governance_vote ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.creator_fee_distribution ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.creator_fee_payout ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.solana_wallet_stake_claimed ENABLE ROW LEVEL SECURITY;
 
 -- --- Coupons (redemptions sensitive; definitions often admin-only) - SENSITIVE ---
 ALTER TABLE public.coupon ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.coupon_category ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.coupon_product ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.coupon_redemption ENABLE ROW LEVEL SECURITY;
+
+-- --- Content (RLS on for consistency; add SELECT policy if exposing via PostgREST) ---
+ALTER TABLE public.blog_post ENABLE ROW LEVEL SECURITY;
 
 -- --- Catalog / config (RLS on for consistency; add SELECT policy if exposing via PostgREST) ---
 ALTER TABLE public.product ENABLE ROW LEVEL SECURITY;
