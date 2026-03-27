@@ -51,7 +51,7 @@ export function SupportTicketDetailClient() {
         if (!res.ok) throw new Error("Failed to load ticket");
         return res.json();
       })
-      .then((data: Ticket) => {
+      .then((raw: unknown) => { const data = raw as Ticket;
         setTicket(data);
       })
       .catch(() => setError("Ticket not found"))

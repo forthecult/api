@@ -103,13 +103,12 @@ export function TelegramStoreClient() {
       if (categorySlug !== "all") params.set("category", categorySlug);
       fetch(`${base}/api/products?${params}`)
         .then((res) => res.json())
-        .then(
-          (data: {
+        .then((raw: unknown) => { const data = raw as {
             categories?: CategoryOption[];
             items?: Product[];
             total?: number;
             totalPages?: number;
-          }) => {
+          };
             const items = (data.items ?? []).map((p) => ({
               ...p,
               inStock: p.inStock ?? true,

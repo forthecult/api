@@ -57,7 +57,8 @@ export function CultSwapBlock() {
     let cancelled = false;
     fetch("/api/governance/token-price")
       .then((r) => (r.ok ? r.json() : null))
-      .then((data: { data?: { token?: { symbol?: string } } } | null) => {
+      .then((raw: unknown) => {
+        const data = raw as { data?: { token?: { symbol?: string } } } | null;
         if (!cancelled && data?.data?.token?.symbol) setTokenSymbol(data.data.token.symbol);
       })
       .catch(() => {});
@@ -109,7 +110,7 @@ export function CultSwapBlock() {
         );
         conn
           .getTokenAccountBalance(ata)
-          .then((info: RpcResponseAndContext<TokenAmount>) => {
+          .then((raw: unknown) => { const info = raw as RpcResponseAndContext<TokenAmount>;
             if (cancelled) return;
             const v = info.value;
             const balance =
@@ -129,7 +130,8 @@ export function CultSwapBlock() {
     let cancelled = false;
     fetch(`/api/governance/wallet-balance?wallet=${encodeURIComponent(wallet)}`)
       .then((r) => r.json())
-      .then((data: { balance?: string }) => {
+      .then((raw: unknown) => {
+        const data = raw as { balance?: string };
         if (!cancelled) setCultBalance(data.balance ?? "0");
       })
       .catch(() => {
@@ -168,7 +170,10 @@ export function CultSwapBlock() {
       `/api/swap/sol-cult/estimate?solAmount=${encodeURIComponent(solAmountNum)}`,
     )
       .then((r) => (r.ok ? r.json() : null))
-      .then((data: { cultAmount?: string } | null) => data?.cultAmount ?? null)
+      .then((raw: unknown) => {
+        const data = raw as { cultAmount?: string } | null;
+        return data?.cultAmount ?? null;
+      })
       .catch(() => null);
     const clientPromise =
       conn != null
@@ -178,7 +183,8 @@ export function CultSwapBlock() {
         : Promise.resolve(null);
     const priceFallbackPromise = fetch("/api/crypto/prices")
       .then((r) => (r.ok ? r.json() : null))
-      .then((data: { CULT?: number; SOL?: number } | null) => {
+      .then((raw: unknown) => {
+        const data = raw as { CULT?: number; SOL?: number } | null;
         if (!data?.SOL || !data?.CULT || data.CULT <= 0) return null;
         const cultAmount = (solAmountNum * data.SOL) / data.CULT;
         return cultAmount.toFixed(6);
@@ -225,7 +231,10 @@ export function CultSwapBlock() {
       `/api/swap/cult-sol/estimate?cultAmount=${encodeURIComponent(n)}`,
     )
       .then((r) => (r.ok ? r.json() : null))
-      .then((data: { solAmount?: string } | null) => data?.solAmount ?? null)
+      .then((raw: unknown) => {
+        const data = raw as { solAmount?: string } | null;
+        return data?.solAmount ?? null;
+      })
       .catch(() => null);
     const clientPromise =
       conn != null
@@ -235,7 +244,8 @@ export function CultSwapBlock() {
         : Promise.resolve(null);
     const priceFallbackPromise = fetch("/api/crypto/prices")
       .then((r) => (r.ok ? r.json() : null))
-      .then((data: { CULT?: number; SOL?: number } | null) => {
+      .then((raw: unknown) => {
+        const data = raw as { CULT?: number; SOL?: number } | null;
         if (!data?.SOL || !data?.CULT || data.SOL <= 0) return null;
         const solAmount = (n * data.CULT) / data.SOL;
         return solAmount.toFixed(6);
@@ -276,7 +286,10 @@ export function CultSwapBlock() {
       setTimeout(() => {
         fetch(`/api/governance/wallet-balance?wallet=${encodeURIComponent(pk.toBase58())}`)
           .then((r) => r.json())
-          .then((d: { balance?: string }) => setCultBalance(d.balance ?? "0"))
+          .then((raw: unknown) => {
+        const d = raw as { balance?: string };
+            setCultBalance(d.balance ?? "0");
+          })
           .catch(() => {});
       }, 2000);
     } catch (e) {
@@ -306,7 +319,10 @@ export function CultSwapBlock() {
       setTimeout(() => {
         fetch(`/api/governance/wallet-balance?wallet=${encodeURIComponent(pk.toBase58())}`)
           .then((r) => r.json())
-          .then((d: { balance?: string }) => setCultBalance(d.balance ?? "0"))
+          .then((raw: unknown) => {
+        const d = raw as { balance?: string };
+            setCultBalance(d.balance ?? "0");
+          })
           .catch(() => {});
       }, 2000);
     } catch (e) {

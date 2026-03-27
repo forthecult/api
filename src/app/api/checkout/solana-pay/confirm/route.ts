@@ -1,4 +1,4 @@
-import { validateTransfer } from "@solana/pay";
+import { validateTransfer, type Amount } from "@solana/pay";
 import {
   Connection,
   PublicKey,
@@ -13,6 +13,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { db } from "~/db";
 import { ordersTable } from "~/db/schema";
 import { onOrderCreated } from "~/lib/create-user-notification";
+import { fulfillSubscriptionCryptoOrder } from "~/lib/subscription-crypto-fulfillment";
 import { fulfillEsimOrder, hasEsimItems } from "~/lib/esim-fulfillment";
 import {
   createAndConfirmPrintfulOrder,
@@ -234,7 +235,7 @@ export async function POST(request: NextRequest) {
         let transferVerified = false;
         try {
           await validateTransfer(connection, sigTrim, {
-            amount: amountBn,
+            amount: amountBn as unknown as Amount,
             recipient: depositPk,
             splToken: new PublicKey(splTokenMint),
           });
@@ -341,6 +342,7 @@ export async function POST(request: NextRequest) {
     }
 
     void onOrderCreated(order.id);
+    void fulfillSubscriptionCryptoOrder(order.id);
 
     // Send to Printful if order contains Printful items
     let printfulOrderId: number | undefined;

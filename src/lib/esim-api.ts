@@ -5,7 +5,9 @@
  * Handles authentication, token management, and all eSIM operations.
  */
 
-const ESIM_API_BASE = "https://portal.esimcard.com/api/developer/reseller";
+const ESIM_API_BASE =
+  process.env.ESIM_API_BASE_URL?.replace(/\/+$/, "") ||
+  "https://portal.esimcard.com/api/developer/reseller";
 
 /** Request timeout in ms to avoid hanging on slow provider responses. */
 const ESIM_REQUEST_TIMEOUT_MS =

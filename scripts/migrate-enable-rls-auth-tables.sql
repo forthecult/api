@@ -27,8 +27,6 @@ ALTER TABLE public."order" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.order_item ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.refund_request ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.payment_method_setting ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.polar_customer ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.polar_subscription ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.custom_print ENABLE ROW LEVEL SECURITY;
 
 -- --- Support - SENSITIVE ---

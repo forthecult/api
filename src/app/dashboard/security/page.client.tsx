@@ -597,8 +597,8 @@ export function SecurityPageClient() {
       email,
       redirectTo: getResetPasswordRedirectUrl(),
     })
-      .then((result: unknown) => {
-        const r = result as { error?: { message?: string } };
+      .then((raw: unknown) => {
+        const r = raw as { error?: { message?: string } };
         if (r?.error) {
           setResetError(r.error.message ?? "Failed to send email.");
           return;

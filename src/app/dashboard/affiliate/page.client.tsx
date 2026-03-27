@@ -72,7 +72,10 @@ export function AffiliatePageClient() {
     setLoadError(false);
     fetch("/api/affiliates/me", { credentials: "include", signal: ac.signal })
       .then((res) => (res.ok ? res.json() : null))
-      .then((d: null | { affiliate: AffiliateMe | null }) => d && setData(d))
+      .then((raw: unknown) => {
+        const d = raw as null | { affiliate: AffiliateMe | null };
+        if (d) setData(d);
+      })
       .catch((err: unknown) => {
         if (err instanceof DOMException && err.name === "AbortError") return;
         setLoadError(true);
@@ -113,21 +116,32 @@ export function AffiliatePageClient() {
         headers: { "Content-Type": "application/json" },
         method: "POST",
       });
-      const json = await res.json().catch(() => ({}));
+      const json = (await res.json().catch(() => ({}))) as Record<
+        string,
+        unknown
+      >;
       if (!res.ok) {
-        setApplyError(json.error ?? "Failed to submit application.");
+        setApplyError(
+          typeof json.error === "string"
+            ? json.error
+            : "Failed to submit application.",
+        );
         return;
       }
-      setApplySuccess(json.message ?? "Application submitted.");
+      setApplySuccess(
+        typeof json.message === "string"
+          ? json.message
+          : "Application submitted.",
+      );
       setData({
         affiliate: {
           applicationNote: applyNote.trim() || null,
-          code: json.code,
+          code: typeof json.code === "string" ? json.code : applyCode.trim(),
           commissionType: "percent",
           commissionValue: 10,
           conversionCount: 0,
           createdAt: new Date().toISOString(),
-          id: json.id,
+          id: typeof json.id === "string" ? json.id : "",
           payoutAddress: applyPayoutAddress.trim() || null,
           payoutMethod: applyPayoutMethod.trim() || null,
           referralUrl: null,
@@ -159,16 +173,23 @@ export function AffiliatePageClient() {
         headers: { "Content-Type": "application/json" },
         method: "PATCH",
       });
-      const json = await res.json().catch(() => ({}));
+      const json = (await res.json().catch(() => ({}))) as Record<
+        string,
+        unknown
+      >;
       if (!res.ok) {
         setCodeMessage({
-          text: json.error ?? "Failed to update code.",
+          text:
+            typeof json.error === "string"
+              ? json.error
+              : "Failed to update code.",
           type: "error",
         });
         return;
       }
       setCodeMessage({
-        text: json.message ?? "Code updated.",
+        text:
+          typeof json.message === "string" ? json.message : "Code updated.",
         type: "success",
       });
       const baseUrl =
@@ -210,10 +231,14 @@ export function AffiliatePageClient() {
         headers: { "Content-Type": "application/json" },
         method: "PATCH",
       });
-      const json = await res.json().catch(() => ({}));
+      const json = (await res.json().catch(() => ({}))) as Record<
+        string,
+        unknown
+      >;
       if (!res.ok) {
         setPayoutMessage({
-          text: json.error ?? "Failed to save.",
+          text:
+            typeof json.error === "string" ? json.error : "Failed to save.",
           type: "error",
         });
         return;

@@ -4,9 +4,12 @@ import { useSolanaConnection, useSolanaWallet } from "~/app/checkout/crypto/sola
 import {
   ArrowRight,
   ArrowUpDown,
+  CalendarDays,
   Check,
   ChevronDown,
+  CreditCard,
   Crown,
+  ExternalLink,
   Globe,
   Minus,
   Shield,
@@ -43,6 +46,8 @@ import {
   MEMBERSHIP_BENEFIT_ROWS,
   MEMBERSHIP_FAQ,
   MEMBERSHIP_TIERS,
+  SUBSCRIPTION_ANNUAL_DISCOUNT,
+  SUBSCRIPTION_PRICES,
 } from "~/lib/membership-tiers";
 import { CultSwapBlock } from "~/ui/components/cult-swap-block";
 import { Badge } from "~/ui/primitives/badge";
@@ -109,6 +114,23 @@ export function MembershipClient() {
     if (tierParam === "2" || tierParam === "3") return parseInt(tierParam, 10);
     return 1;
   })();
+
+  useEffect(() => {
+    const sub = searchParams.get("subscription");
+    if (sub === "success") {
+      toast.success("Subscription activated! Your membership is now active.");
+      // clean URL
+      const url = new URL(window.location.href);
+      url.searchParams.delete("subscription");
+      window.history.replaceState({}, "", url.toString());
+    } else if (sub === "cancelled") {
+      toast.info("Subscription checkout cancelled.");
+      const url = new URL(window.location.href);
+      url.searchParams.delete("subscription");
+      window.history.replaceState({}, "", url.toString());
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [selectedTier, setSelectedTier] = useState<number>(initialTier);
   const [stakeDuration, setStakeDuration] = useState<"12m" | "30d">("30d");
 
@@ -166,6 +188,22 @@ export function MembershipClient() {
   } | null>(null);
   const [stakedBalanceLoading, setStakedBalanceLoading] = useState(false);
   const [restakeDuration, setRestakeDuration] = useState<"30d" | "12m">("30d");
+
+  // subscription state
+  const [subInterval, setSubInterval] = useState<"annual" | "monthly">("monthly");
+  const [paymentProvider, setPaymentProvider] = useState<"paypal" | "stripe">(
+    "stripe",
+  );
+  const [subPending, setSubPending] = useState(false);
+  const [activeSubscription, setActiveSubscription] = useState<null | {
+    billingProvider?: "paypal" | "stripe";
+    cancelAtPeriodEnd: boolean;
+    currentPeriodEnd: string;
+    interval: string;
+    status: string;
+    tier: number;
+  }>(null);
+  const [subFetched, setSubFetched] = useState(false);
 
   // Live pricing state
   const [pricingData, setPricingData] = useState<
@@ -288,8 +326,8 @@ export function MembershipClient() {
     setStakedBalanceLoading(true);
     fetch(`/api/governance/staked-balance?wallet=${encodeURIComponent(wallet)}`)
       .then((r) => r.json())
-      .then(
-        (data: {
+      .then((raw: unknown) => {
+        const data = raw as {
           lock: null | {
             durationLabel: string;
             isLocked: boolean;
@@ -301,13 +339,12 @@ export function MembershipClient() {
           memberTier?: null | number;
           stakedBalance?: string;
           stakedBalanceRaw?: string;
-        }) => {
-          setStakedBalanceDisplay(data.stakedBalance ?? "0");
-          setStakedBalanceRaw(data.stakedBalanceRaw ?? "0");
-          setMemberTierFromApi(data.memberTier ?? null);
-          setStakedLock(data.lock ?? null);
-        },
-      )
+        };
+        setStakedBalanceDisplay(data.stakedBalance ?? "0");
+        setStakedBalanceRaw(data.stakedBalanceRaw ?? "0");
+        setMemberTierFromApi(data.memberTier ?? null);
+        setStakedLock(data.lock ?? null);
+      })
       .catch(() => {
         setStakedBalanceDisplay("0");
         setStakedBalanceRaw("0");
@@ -363,14 +400,14 @@ export function MembershipClient() {
     let cancelled = false;
     fetch("/api/user/membership", { credentials: "include" })
       .then((r) => r.json())
-      .then(
-        (data: {
+      .then((raw: unknown) => {
+        const data = raw as {
           memberTier?: number;
           membershipDuration?: "30d" | "1y";
           membershipExpiresAt?: string | null;
-        } | null) => {
-          if (cancelled) return;
-          const t = data?.memberTier;
+        } | null;
+        if (cancelled) return;
+        const t = data?.memberTier;
           setUserMembershipTier(
             typeof t === "number" && t >= 1 && t <= 3 ? t : null,
           );
@@ -385,8 +422,7 @@ export function MembershipClient() {
               : null,
           );
           setUserMembershipFetched(true);
-        },
-      )
+      })
       .catch(() => {
         if (!cancelled) {
           setUserMembershipTier(null);
@@ -411,21 +447,20 @@ export function MembershipClient() {
       `/api/esim/membership-claim/status?wallet=${encodeURIComponent(wallet)}`,
     )
       .then((r) => r.json())
-      .then(
-        (data: {
+      .then((raw: unknown) => {
+        const data = raw as {
           claimed?: boolean;
           claimPeriod?: "monthly" | "staking_period";
           eligible?: boolean;
           tier?: null | number;
-        }) => {
-          setClaimEligible(data.eligible ?? false);
-          setClaimAlreadyClaimed(data.claimed ?? false);
-          setClaimTier(data.tier ?? null);
-          setClaimPeriod(
-            data.claimPeriod === "monthly" ? "monthly" : "staking_period",
-          );
-        },
-      )
+        };
+        setClaimEligible(data.eligible ?? false);
+        setClaimAlreadyClaimed(data.claimed ?? false);
+        setClaimTier(data.tier ?? null);
+        setClaimPeriod(
+          data.claimPeriod === "monthly" ? "monthly" : "staking_period",
+        );
+      })
       .catch(() => {
         setClaimEligible(false);
         setClaimAlreadyClaimed(false);
@@ -512,6 +547,86 @@ export function MembershipClient() {
     [],
   );
 
+  // fetch current subscription status for logged-in users
+  useEffect(() => {
+    if (!user?.id) {
+      setActiveSubscription(null);
+      setSubFetched(true);
+      return;
+    }
+    fetch("/api/subscription/membership")
+      .then((r) => r.json())
+      .then((raw: unknown) => {
+        const data = raw as {
+          subscription?: {
+            billingProvider?: "paypal" | "stripe";
+            cancelAtPeriodEnd: boolean;
+            currentPeriodEnd: string;
+            interval: string;
+            status: string;
+            tier: number;
+          };
+        };
+        setActiveSubscription(data.subscription ?? null);
+      })
+      .catch(() => setActiveSubscription(null))
+      .finally(() => setSubFetched(true));
+  }, [user?.id]);
+
+  const handleSubscribe = useCallback(async (tierId: number) => {
+    if (!user) {
+      window.dispatchEvent(new Event(PRELOAD_AUTH_WALLET_MODAL));
+      toast.error("Sign in to subscribe");
+      return;
+    }
+    setSubPending(true);
+    try {
+      const res = await fetch("/api/subscribe/membership", {
+        body: JSON.stringify({
+          interval: subInterval,
+          provider: paymentProvider,
+          tierId,
+        }),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+      });
+      const data = (await res.json()) as { error?: string; url?: string };
+      if (!res.ok || !data.url) {
+        toast.error(data.error ?? "Failed to start checkout");
+        return;
+      }
+      window.location.href = data.url;
+    } catch {
+      toast.error("Network error — please try again");
+    } finally {
+      setSubPending(false);
+    }
+  }, [paymentProvider, subInterval, user]);
+
+  const handleManageSubscription = useCallback(async () => {
+    setSubPending(true);
+    try {
+      const res = await fetch("/api/subscription/membership/portal", { method: "POST" });
+      const data = (await res.json()) as {
+        error?: string;
+        provider?: string;
+        url?: string;
+      };
+      if (!res.ok || !data.url) {
+        toast.error(data.error ?? "Failed to open billing portal");
+        return;
+      }
+      if (data.provider === "paypal") {
+        toast.info("Opening your account to manage automatic payments…");
+      }
+      window.location.href = data.url;
+    } catch {
+      toast.error("Network error — please try again");
+    } finally {
+      setSubPending(false);
+    }
+  }, []);
+
   const formatMembershipTimeLeft = useCallback((expiresAtIso: string): string => {
     const end = new Date(expiresAtIso).getTime();
     const now = Date.now();
@@ -536,7 +651,11 @@ export function MembershipClient() {
     Promise.all([
       fetch("/api/esim/countries")
         .then((r) => r.json())
-        .then((data: { data?: { id: number; name: string }[]; status: boolean }) => {
+        .then((raw: unknown) => {
+        const data = raw as {
+            data?: { id: number; name: string }[];
+            status: boolean;
+          };
           if (data.status && Array.isArray(data.data)) {
             setEsimCountries(
               data.data.slice().sort((a, b) => a.name.localeCompare(b.name)),
@@ -546,7 +665,11 @@ export function MembershipClient() {
         .catch(() => setEsimCountries([])),
       fetch("/api/esim/continents")
         .then((r) => r.json())
-        .then((data: { data?: { id: number; name: string }[]; status: boolean }) => {
+        .then((raw: unknown) => {
+        const data = raw as {
+            data?: { id: number; name: string }[];
+            status: boolean;
+          };
           if (data.status && Array.isArray(data.data)) {
             setEsimRegions(
               data.data.slice().sort((a, b) => a.name.localeCompare(b.name)),
@@ -574,8 +697,8 @@ export function MembershipClient() {
     else if (stakerClaimRegionId) params.set("region", stakerClaimRegionId);
     fetch(`/api/esim/packages/staker-claim?${params.toString()}`)
       .then((r) => r.json())
-      .then(
-        (data: {
+      .then((raw: unknown) => {
+        const data = raw as {
           data?: {
             data_quantity: number;
             data_unit: string;
@@ -587,12 +710,11 @@ export function MembershipClient() {
             package_validity_unit: string;
           }[];
           status: boolean;
-        }) => {
-          if (data.status && Array.isArray(data.data)) {
-            setStakerClaimPackages(data.data);
-          }
-        },
-      )
+        };
+        if (data.status && Array.isArray(data.data)) {
+          setStakerClaimPackages(data.data);
+        }
+      })
       .catch(() => setStakerClaimPackages([]))
       .finally(() => setStakerClaimPackagesLoading(false));
   }, [
@@ -701,9 +823,9 @@ export function MembershipClient() {
             sm:text-xl
           `}
           >
-            Stake {tokenSymbol} to unlock exclusive membership benefits. Free
-            eSIM cards, free shipping, member-only discounts, and more. The
-            longer you stake, the more you save.
+            Stake {tokenSymbol} or subscribe with a credit card to unlock
+            exclusive membership benefits. Free eSIM cards, free shipping,
+            member-only discounts, and more.
           </p>
 
           {/* Live market data bar — hidden until token launch (price/MC unknown) */}
@@ -740,6 +862,15 @@ export function MembershipClient() {
             <Button className="gap-2" onClick={scrollToTiers} size="lg">
               View Tiers
               <ArrowRight className="h-4 w-4" />
+            </Button>
+            <Button
+              className="gap-2"
+              onClick={() => document.getElementById('subscribe')?.scrollIntoView({ behavior: 'smooth' })}
+              size="lg"
+              variant="outline"
+            >
+              <CreditCard className="h-4 w-4" />
+              Or Subscribe
             </Button>
           </div>
         </div>
@@ -1718,6 +1849,238 @@ export function MembershipClient() {
           </div>
         </section>
 
+
+        {/* --------------------------------------------------------------- */}
+        {/* Monthly Subscription — alternative to staking */}
+        {/* --------------------------------------------------------------- */}
+        <section
+          className={`
+          py-16
+          md:py-20
+        `}
+          id="subscribe"
+        >
+          <div className="mx-auto max-w-3xl text-center">
+            <Badge className="mb-4 gap-1.5" variant="secondary">
+              <CreditCard className="h-3.5 w-3.5" />
+              No crypto required
+            </Badge>
+            <h2
+              className={`
+              font-display text-2xl font-semibold text-foreground
+              md:text-3xl
+            `}
+            >
+              Subscribe with a credit card
+            </h2>
+            <p className="mt-3 text-muted-foreground">
+              Pay a flat monthly or annual fee—no wallet, no tokens needed.
+              Cancel anytime.
+            </p>
+
+            {/* Billing interval toggle */}
+            <div className="mt-8 inline-flex rounded-xl border border-border bg-muted/40 p-1">
+              <button
+                className={cn(
+                  "flex items-center gap-1.5 rounded-lg px-5 py-2 text-sm font-medium transition-all",
+                  subInterval === "monthly"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+                onClick={() => setSubInterval("monthly")}
+                type="button"
+              >
+                Monthly
+              </button>
+              <button
+                className={cn(
+                  "flex items-center gap-1.5 rounded-lg px-5 py-2 text-sm font-medium transition-all",
+                  subInterval === "annual"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+                onClick={() => setSubInterval("annual")}
+                type="button"
+              >
+                <CalendarDays className="h-3.5 w-3.5" />
+                Annual
+                <span className="rounded-full bg-green-500/15 px-1.5 py-0.5 text-xs font-semibold text-green-600 dark:text-green-400">
+                  Save {Math.round(SUBSCRIPTION_ANNUAL_DISCOUNT * 100)}%
+                </span>
+              </button>
+            </div>
+            <div className="mx-auto mt-6 max-w-md space-y-2 text-center">
+              <p className="text-sm text-muted-foreground">Payment method</p>
+              <div className="inline-flex rounded-xl border border-border bg-muted/40 p-1">
+                <button
+                  className={cn(
+                    "rounded-lg px-5 py-2 text-sm font-medium transition-all",
+                    paymentProvider === "stripe"
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                  onClick={() => setPaymentProvider("stripe")}
+                  type="button"
+                >
+                  Card
+                </button>
+                <button
+                  className={cn(
+                    "rounded-lg px-5 py-2 text-sm font-medium transition-all",
+                    paymentProvider === "paypal"
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                  onClick={() => setPaymentProvider("paypal")}
+                  type="button"
+                >
+                  PayPal
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Subscription cards */}
+          {activeSubscription && subFetched ? (
+            /* active subscription banner */
+            <div className="mx-auto mt-10 max-w-lg rounded-2xl border border-primary/30 bg-primary/5 p-6 text-center">
+              <Badge className="mb-3 gap-1.5" variant="default">
+                <Check className="h-3.5 w-3.5" />
+                Active Subscription
+              </Badge>
+              <p className="text-sm text-muted-foreground">
+                You have an active{" "}
+                <span className="font-semibold text-foreground">
+                  {MEMBERSHIP_TIERS.find((t) => t.id === activeSubscription.tier)?.name ?? `Tier ${activeSubscription.tier}`}
+                </span>{" "}
+                {activeSubscription.interval} membership.{" "}
+                {activeSubscription.cancelAtPeriodEnd
+                  ? `Cancels on ${new Date(activeSubscription.currentPeriodEnd).toLocaleDateString()}.`
+                  : `Renews ${new Date(activeSubscription.currentPeriodEnd).toLocaleDateString()}.`}
+              </p>
+              <Button
+                className="mt-4 gap-2"
+                disabled={subPending}
+                onClick={handleManageSubscription}
+                variant="outline"
+              >
+                <ExternalLink className="h-4 w-4" />
+                Manage subscription
+              </Button>
+            </div>
+          ) : (
+            <div
+              className={`
+              mx-auto mt-10 grid max-w-5xl gap-6
+              sm:grid-cols-2
+              lg:grid-cols-3
+            `}
+            >
+              {SUBSCRIPTION_PRICES.map((sp) => {
+                const tierData = MEMBERSHIP_TIERS.find((t) => t.id === sp.tierId)!;
+                const Icon = tierData.icon;
+                const displayPrice =
+                  subInterval === "annual" ? sp.annualUsd : sp.monthlyUsd;
+                const perMonthAnnual = parseFloat(
+                  (sp.annualUsd / 12).toFixed(2),
+                );
+                const isPopular = tierData.popular;
+
+                return (
+                  <Card
+                    className={cn(
+                      "relative flex flex-col overflow-hidden transition-all hover:shadow-md",
+                      isPopular
+                        ? `border-2 ${tierData.accentBorder} ${tierData.accentBg}`
+                        : "border-border",
+                    )}
+                    key={sp.tierId}
+                  >
+                    {isPopular && (
+                      <div className="absolute -top-2.5 right-4">
+                        <Badge className="gap-1" variant="default">
+                          <Star className="h-3 w-3" />
+                          Most popular
+                        </Badge>
+                      </div>
+                    )}
+                    <CardHeader className="pb-4">
+                      <div
+                        className={cn(
+                          "mb-3 flex h-10 w-10 items-center justify-center rounded-xl",
+                          tierData.accentBg,
+                        )}
+                      >
+                        <Icon className={cn("h-5 w-5", tierData.accent)} />
+                      </div>
+                      <CardTitle className="text-xl">{sp.tierName}</CardTitle>
+                      <CardDescription>{tierData.tagline}</CardDescription>
+                    </CardHeader>
+
+                    <CardContent className="flex flex-1 flex-col gap-5">
+                      {/* Price */}
+                      <div>
+                        <div className="flex items-end gap-1">
+                          <span className="text-3xl font-bold text-foreground">
+                            ${displayPrice}
+                          </span>
+                          <span className="mb-1 text-sm text-muted-foreground">
+                            /{subInterval === "annual" ? "yr" : "mo"}
+                          </span>
+                        </div>
+                        {subInterval === "annual" && (
+                          <p className="mt-0.5 text-xs text-muted-foreground">
+                            ${perMonthAnnual}/mo billed annually
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Benefits list */}
+                      <ul className="flex-1 space-y-2">
+                        {[
+                          tierData.benefits.shipping !== "Free"
+                            ? `${tierData.benefits.shipping} off shipping`
+                            : "Free worldwide shipping",
+                          `${tierData.benefits.esim} on eSIM plans`,
+                          ...tierData.benefits.extras.slice(0, 3),
+                        ].map((item) => (
+                          <li
+                            className="flex items-start gap-2 text-sm text-muted-foreground"
+                            key={item}
+                          >
+                            <Check
+                              className={cn(
+                                "mt-0.5 h-4 w-4 shrink-0",
+                                tierData.accent,
+                              )}
+                            />
+                            {item}
+                          </li>
+                        ))}
+                      </ul>
+
+                      {/* CTA */}
+                      <Button
+                        className="w-full gap-2"
+                        disabled={subPending}
+                        onClick={() => handleSubscribe(sp.tierId)}
+                        variant={isPopular ? "default" : "outline"}
+                      >
+                        <CreditCard className="h-4 w-4" />
+                        {subPending ? "Redirecting…" : `Subscribe — $${displayPrice}/${subInterval === "annual" ? "yr" : "mo"}`}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+
+          <p className="mt-8 text-center text-xs text-muted-foreground">
+            Pay with card (Stripe) or PayPal—same membership benefits. Cancel or change plan from your billing settings.
+          </p>
+        </section>
+
         {/* --------------------------------------------------------------- */}
         {/* Lifetime Membership NFT */}
         {/* --------------------------------------------------------------- */}
@@ -2506,13 +2869,22 @@ export function MembershipClient() {
             Ready to Join?
           </h2>
           <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
-            Stake {tokenSymbol} today and start enjoying exclusive membership
-            benefits. The earlier you join, the lower the staking threshold.
+            Stake {tokenSymbol} or subscribe with a credit card to start
+            enjoying exclusive membership benefits today.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
             <Button className="gap-2" onClick={scrollToCTA} size="lg">
               Stake Now
               <ArrowRight className="h-4 w-4" />
+            </Button>
+            <Button
+              className="gap-2"
+              onClick={() => document.getElementById('subscribe')?.scrollIntoView({ behavior: 'smooth' })}
+              size="lg"
+              variant="outline"
+            >
+              <CreditCard className="h-4 w-4" />
+              Subscribe with Card
             </Button>
             <Link href="/token">
               <Button className="gap-2" size="lg" variant="outline">

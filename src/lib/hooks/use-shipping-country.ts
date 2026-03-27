@@ -33,7 +33,7 @@ export function useShippingCountry(): ShippingCountryState {
     let cancelled = false;
     fetch("/api/geo", { credentials: "include" })
       .then((res) => (res.ok ? res.json() : { country: null }))
-      .then((data: { country?: null | string }) => {
+      .then((raw: unknown) => { const data = raw as { country?: null | string };
         const country =
           typeof data?.country === "string" && data.country.length === 2
             ? data.country.toUpperCase()

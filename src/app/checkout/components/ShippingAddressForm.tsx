@@ -498,7 +498,7 @@ export const ShippingAddressForm = function ShippingAddressForm({
     let cancelled = false;
     fetch("/api/user/addresses", { credentials: "include" })
       .then((res) => (res.ok ? res.json() : { addresses: [] }))
-      .then((data: { addresses?: SavedAddress[] }) => {
+      .then((raw: unknown) => { const data = raw as { addresses?: SavedAddress[] };
         if (!cancelled && Array.isArray(data.addresses)) {
           setSavedAddresses(data.addresses);
         }
@@ -565,8 +565,7 @@ export const ShippingAddressForm = function ShippingAddressForm({
       .then((res) =>
         res.ok ? res.json() : Promise.reject(new Error("Failed to calculate")),
       )
-      .then(
-        (data: {
+      .then((raw: unknown) => { const data = raw as {
           canShipToCountry?: boolean;
           customsDutiesNote?: null | string;
           freeShipping?: boolean;
@@ -575,7 +574,7 @@ export const ShippingAddressForm = function ShippingAddressForm({
           shippingSpeed?: "express" | "standard";
           taxCents?: number;
           taxNote?: null | string;
-        }) => {
+        };
           if (!cancelled) {
             updateShipping({
               canShipToCountry: data.canShipToCountry !== false,

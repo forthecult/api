@@ -103,7 +103,7 @@ export function EsimDetailClient({ esimOrderId }: { esimOrderId: string }) {
         }
         return res.json();
       })
-      .then((data: { data?: { order: OrderRow; liveDetail: LiveDetail | null }; status: boolean } | null) => {
+      .then((raw: unknown) => { const data = raw as { data?: { order: OrderRow; liveDetail: LiveDetail | null }; status: boolean } | null;
         if (data?.status && data.data) {
           setOrder(data.data.order);
           setLiveDetail(data.data.liveDetail ?? null);

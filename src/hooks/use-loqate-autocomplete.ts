@@ -2,7 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import type { LoqateFindItem, MappedShippingAddress } from "~/lib/loqate";
+import type {
+  LoqateFindItem,
+  LoqateRetrieveAddress,
+  MappedShippingAddress,
+} from "~/lib/loqate";
 
 import { mapRetrieveToShipping } from "~/lib/loqate";
 
@@ -77,7 +81,7 @@ export function useLoqateAutocomplete({
       const timeoutId = setTimeout(() => ac.abort(), LOQATE_FIND_TIMEOUT_MS);
       fetch(`/api/loqate/find?${params.toString()}`, { signal: ac.signal })
         .then((res) => (res.ok ? res.json() : { Items: [] }))
-        .then((data: { Items?: LoqateFindItem[] }) => {
+        .then((raw: unknown) => { const data = raw as { Items?: LoqateFindItem[] };
           setSuggestions(data.Items ?? []);
           // Only open dropdown if input is focused (prevents auto-open on page load with pre-filled data)
           if (inputFocusedRef.current && (data.Items?.length ?? 0) > 0) {
@@ -103,7 +107,8 @@ export function useLoqateAutocomplete({
           if (!res.ok) throw new Error("Retrieve failed");
           return res.json();
         })
-        .then((addr) => {
+        .then((rawAddr: unknown) => {
+          const addr = rawAddr as LoqateRetrieveAddress;
           const mapped = mapRetrieveToShipping(addr);
           onSelect?.(mapped);
           skipNextFindRef.current = true;

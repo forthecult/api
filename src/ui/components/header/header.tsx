@@ -273,21 +273,18 @@ export function Header({ isAdmin: isAdminProp, showAuth = true }: HeaderProps) {
       signal: controller.signal,
     })
       .then((res) => (res.ok ? res.json() : null))
-      .then(
-        (
-          data: null | {
-            marketing?: { website?: boolean };
-            transactional?: { website?: boolean };
-          },
-        ) => {
-          if (!data) return;
-          const transactional = data.transactional?.website ?? true;
-          const marketing = data.marketing?.website ?? false;
-          const enabled = Boolean(transactional || marketing);
-          setWebsiteNotificationsOn(enabled);
-          try { sessionStorage.setItem(NOTIF_CACHE_KEY, enabled ? "1" : "0"); } catch { /* ignore */ }
-        },
-      )
+      .then((raw: unknown) => {
+        const data = raw as null | {
+          marketing?: { website?: boolean };
+          transactional?: { website?: boolean };
+        };
+        if (!data) return;
+        const transactional = data.transactional?.website ?? true;
+        const marketing = data.marketing?.website ?? false;
+        const enabled = Boolean(transactional || marketing);
+        setWebsiteNotificationsOn(enabled);
+        try { sessionStorage.setItem(NOTIF_CACHE_KEY, enabled ? "1" : "0"); } catch { /* ignore */ }
+      })
       .catch(() => setWebsiteNotificationsOn(null))
       .finally(() => clearTimeout(timeoutId));
 
@@ -326,7 +323,8 @@ export function Header({ isAdmin: isAdminProp, showAuth = true }: HeaderProps) {
       signal: controller.signal,
     })
       .then((res) => (res.ok ? res.json() : null))
-      .then((data: null | { categories?: typeof shopCategories }) => {
+      .then((raw: unknown) => {
+        const data = raw as null | { categories?: typeof shopCategories };
         if (data?.categories) setShopCategories(data.categories);
       })
       .catch(() => {})

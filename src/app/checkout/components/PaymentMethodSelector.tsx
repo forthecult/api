@@ -297,8 +297,7 @@ export const PaymentMethodSelector = forwardRef<
     const ac = new AbortController();
     fetch("/api/crypto/prices", { signal: ac.signal })
       .then((res) => res.json())
-      .then(
-        (data: {
+      .then((raw: unknown) => { const data = raw as {
           CRUST?: number;
           CULT?: number;
           PUMP?: number;
@@ -306,7 +305,7 @@ export const PaymentMethodSelector = forwardRef<
           SOL?: number;
           SOLUNA?: number;
           TROLL?: number;
-        }) => {
+        };
           if (data && typeof data === "object") setCryptoPrices(data);
         },
       )

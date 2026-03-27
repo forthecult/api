@@ -5,13 +5,20 @@
  */
 
 import { Connection } from "@solana/web3.js";
-import { and, desc, eq, gt } from "drizzle-orm";
+import { and, desc, eq, gt, inArray } from "drizzle-orm";
 
 import { db } from "~/db";
 import {
   adminMembershipGrantTable,
   membershipTierHistoryTable,
+  subscriptionInstanceTable,
+  subscriptionOfferTable,
+  subscriptionPlanTable,
 } from "~/db/schema";
+import {
+  ensureMembershipCatalogSeeded,
+  MEMBERSHIP_OFFER_SLUG,
+} from "~/lib/membership-subscription-catalog";
 import { fetchUserStake, getStakingProgramId } from "~/lib/cult-staking";
 import { fetchTokenMarketData } from "~/lib/market-cap";
 import { computeTierPricing } from "~/lib/membership-pricing";
@@ -26,6 +33,47 @@ const FALLBACK_TOKEN_THRESHOLDS: Record<number, number> = {
   2: 2_000_000,  // tier 2: ~$100 at $0.00005
   3: 1_000_000,  // tier 3: ~$50 at $0.00005
 };
+
+/**
+ * Active subscription tier for a user. Returns the best (lowest number) active tier, or null if none.
+ * A subscription is considered active when status is "active" or "trialing" and
+ * currentPeriodEnd is in the future.
+ */
+export async function getSubscriptionTierForUser(
+  userId: string,
+): Promise<null | number> {
+  if (!userId?.trim()) return null;
+  await ensureMembershipCatalogSeeded();
+  const now = new Date();
+  const rows = await db
+    .select({ metadata: subscriptionPlanTable.metadata })
+    .from(subscriptionInstanceTable)
+    .innerJoin(
+      subscriptionOfferTable,
+      eq(subscriptionInstanceTable.offerId, subscriptionOfferTable.id),
+    )
+    .innerJoin(
+      subscriptionPlanTable,
+      eq(subscriptionInstanceTable.planId, subscriptionPlanTable.id),
+    )
+    .where(
+      and(
+        eq(subscriptionOfferTable.slug, MEMBERSHIP_OFFER_SLUG),
+        eq(subscriptionInstanceTable.userId, userId),
+        inArray(subscriptionInstanceTable.status, ["active", "trialing"]),
+        gt(subscriptionInstanceTable.currentPeriodEnd, now),
+      ),
+    );
+  if (rows.length === 0) return null;
+  const tiers: number[] = [];
+  for (const r of rows) {
+    const m = r.metadata as { membershipTier?: unknown } | null | undefined;
+    const t = m?.membershipTier;
+    if (typeof t === "number" && t >= 1 && t <= 3) tiers.push(t);
+  }
+  if (tiers.length === 0) return null;
+  return tiers.reduce<number>((best, t) => (t < best ? t : best), tiers[0]!);
+}
 
 export async function getMemberTierForWallet(
   wallet: string,
@@ -110,6 +158,10 @@ export async function getMemberTierForUser(
   if (!userId?.trim()) return null;
   const adminTier = await getAdminGrantedTier(userId);
   if (adminTier != null) return adminTier;
+
+  const subscriptionTier = await getSubscriptionTierForUser(userId);
+  if (subscriptionTier != null) return subscriptionTier;
+
   const rows = await db
     .select({
       snapshotDate: membershipTierHistoryTable.snapshotDate,

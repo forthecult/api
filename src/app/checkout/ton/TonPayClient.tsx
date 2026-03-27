@@ -75,7 +75,7 @@ export function TonPayClient({
         }
         return res.json();
       })
-      .then((data: OrderPaymentInfo) => {
+      .then((raw: unknown) => { const data = raw as OrderPaymentInfo;
         if (!cancelled) {
           setOrder(data);
           setTimeLeft(getInitialTimeLeft(data.expiresAt));

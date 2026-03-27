@@ -18,6 +18,10 @@ import {
   hasPrintifyItems,
 } from "~/lib/printify-orders";
 import { getStripe, getStripeWebhookSecret } from "~/lib/stripe";
+import {
+  syncCatalogStripeSubscription,
+  syncCatalogStripeSubscriptionFromMetadata,
+} from "~/lib/subscription-catalog-stripe";
 
 export async function POST(request: NextRequest) {
   try {
@@ -149,11 +153,31 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ orderId, received: true });
     }
 
+    // Subscription lifecycle: same DB as dedicated subscription webhook (`subscription_instance`).
+    if (
+      event.type === "customer.subscription.created" ||
+      event.type === "customer.subscription.updated" ||
+      event.type === "customer.subscription.deleted"
+    ) {
+      const sub = event.data.object as Stripe.Subscription;
+      const fromMeta = await syncCatalogStripeSubscriptionFromMetadata(sub);
+      if (!fromMeta) {
+        await syncCatalogStripeSubscription(sub);
+      }
+      return NextResponse.json({ received: true, subscriptionId: sub.id });
+    }
+
     if (event.type !== "checkout.session.completed") {
       return NextResponse.json({ received: true });
     }
 
     const session = event.data.object as Stripe.Checkout.Session;
+
+    // subscription checkout — subscription lifecycle is handled by customer.subscription.* events
+    if (session.mode === "subscription") {
+      return NextResponse.json({ received: true });
+    }
+
     const orderItemsJson = session.metadata?.orderItems;
     if (!orderItemsJson) {
       console.error(

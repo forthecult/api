@@ -1,4 +1,4 @@
-import { findReference, validateTransfer } from "@solana/pay";
+import { findReference, validateTransfer, type Amount } from "@solana/pay";
 import {
   Connection,
   PublicKey,
@@ -131,7 +131,7 @@ export async function GET(request: Request) {
     // Try standard validateTransfer first
     try {
       await validateTransfer(connection, signature, {
-        amount: amountBn,
+        amount: amountBn as unknown as Amount,
         recipient: recipientPk,
         splToken: new PublicKey(splTokenMint),
       });
@@ -232,7 +232,7 @@ async function findTransferToAddress(
   for (const { signature } of sigs) {
     try {
       await validateTransfer(connection, signature, {
-        amount: amountBn,
+        amount: amountBn as unknown as Amount,
         recipient: depositAddress,
         splToken: splTokenPk,
       });

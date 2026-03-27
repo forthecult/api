@@ -196,7 +196,7 @@ export function ProfileViewClient() {
         );
         connection
           .getTokenAccountBalance(ata)
-          .then((info: RpcResponseAndContext<TokenAmount>) => {
+          .then((raw: unknown) => { const info = raw as RpcResponseAndContext<TokenAmount>;
             if (cancelled) return;
             const v = info.value;
             const balance =
@@ -253,12 +253,11 @@ export function ProfileViewClient() {
       `/api/governance/staked-balance?wallet=${encodeURIComponent(wallet)}`,
     )
       .then((r) => r.json())
-      .then(
-        (stakingData: {
+      .then((raw: unknown) => { const stakingData = raw as {
           lock?: null | { isLocked?: boolean; unlocksAt?: string };
           memberTier?: null | number;
           stakedBalance?: string;
-        }) => {
+        };
           setStakedCultBalance(stakingData.stakedBalance ?? "0");
           const tierId = stakingData.memberTier;
           if (tierId != null) {

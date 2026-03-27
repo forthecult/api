@@ -85,9 +85,10 @@ export function SettingsPageClient() {
     setNotificationLoadError(false);
     fetch("/api/user/notifications", { signal: ac.signal })
       .then((res) => (res.ok ? res.json() : null))
-      .then(
-        (data: NotificationPrefs | null) => data && setNotificationPrefs(data),
-      )
+      .then((raw: unknown) => {
+        const data = raw as NotificationPrefs | null;
+        if (data) setNotificationPrefs(data);
+      })
       .catch((err: unknown) => {
         if (err instanceof DOMException && err.name === "AbortError") return;
         setNotificationLoadError(true);

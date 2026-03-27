@@ -166,7 +166,7 @@ export default function AdminMembershipPage() {
         <div>
           <h2 className="text-2xl font-semibold tracking-tight">Membership</h2>
           <p className="text-sm text-muted-foreground">
-            Members with active stakes on-chain
+            Members with active on-chain stakes (subscription billing is under Membership → Subscriptions)
           </p>
         </div>
         {data && (

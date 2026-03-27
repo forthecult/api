@@ -1,6 +1,6 @@
 /**
  * GET /api/user/membership
- * Returns the current user's CULT membership tier (from their linked Solana wallet).
+ * Returns the current user's CULT membership tier (from staking, admin grant, or paid subscription).
  * Used by the header dropdown to show "Tier X Member".
  */
 
@@ -15,9 +15,15 @@ import {
   getAdminGrantedTier,
   getMemberTierForUser,
   getMemberTierForWallet,
+  getSubscriptionTierForUser,
 } from "~/lib/get-member-tier";
 
 const TIER_NAMES: Record<number, string> = { 1: "APEX", 2: "PRIME", 3: "BASE" };
+
+function bestTier(...tiers: (null | number)[]): null | number {
+  const valid = tiers.filter((t): t is number => t != null);
+  return valid.length > 0 ? Math.min(...valid) : null;
+}
 
 export async function GET(request: NextRequest) {
   const session = await auth.api.getSession({ headers: request.headers });
@@ -57,16 +63,16 @@ export async function GET(request: NextRequest) {
     }
 
     const wallet = solanaAddresses[0] ?? null;
+
+    // resolve tier from all sources: staking, admin grant, and paid subscription
     let memberTier: number | null;
     if (wallet) {
-      const [walletTier, adminTier] = await Promise.all([
+      const [walletTier, adminTier, subTier] = await Promise.all([
         getMemberTierForWallet(wallet),
         getAdminGrantedTier(userId),
+        getSubscriptionTierForUser(userId),
       ]);
-      // best tier: lower number = better; admin grant can supplement or override
-      if (walletTier != null && adminTier != null)
-        memberTier = Math.min(walletTier, adminTier);
-      else memberTier = walletTier ?? adminTier ?? null;
+      memberTier = bestTier(walletTier, adminTier, subTier);
     } else {
       memberTier = await getMemberTierForUser(userId);
     }

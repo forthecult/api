@@ -1,10 +1,12 @@
 import BigNumber from "bignumber.js";
 import { createId } from "@paralleldrive/cuid2";
-import { inArray } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
 import { orderItemsTable, ordersTable, productsTable } from "~/db/schema";
+import { subscriptionPlanTable } from "~/db/schema/subscription-catalog/tables";
+import { auth } from "~/lib/auth";
 import { getAmazonProducts, isAmazonProductApiConfigured } from "~/lib/amazon-product-api";
 import {
   publicApiCorsPreflight,
@@ -43,6 +45,7 @@ type CheckoutItem =
 
 interface CheckoutBody {
   email: string;
+  subscriptionPlanId?: string;
   items: CheckoutItem[];
   payment: { chain: string; token: string; tokenMint?: null | string };
   shipping?: {
@@ -93,6 +96,10 @@ export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as CheckoutBody;
     const { email, items: rawItems, payment } = body;
+    const subscriptionPlanId =
+      typeof body.subscriptionPlanId === "string"
+        ? body.subscriptionPlanId.trim()
+        : undefined;
     const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!email || typeof email !== "string" || !EMAIL_RE.test(email.trim())) {
       return withPublicApiCors(
@@ -237,6 +244,64 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    if (subscriptionPlanId) {
+      const session = await auth.api.getSession({ headers: request.headers });
+      if (!session?.user?.id) {
+        return withPublicApiCors(
+          NextResponse.json(
+            {
+              error: {
+                code: "UNAUTHORIZED",
+                message: "Sign in required for subscription checkout",
+              },
+            },
+            { status: 401 },
+          ),
+        );
+      }
+      const [subPlan] = await db
+        .select()
+        .from(subscriptionPlanTable)
+        .where(eq(subscriptionPlanTable.id, subscriptionPlanId))
+        .limit(1);
+      if (
+        !subPlan ||
+        !subPlan.published ||
+        !subPlan.payCryptoManual ||
+        !subPlan.cryptoProductId
+      ) {
+        return withPublicApiCors(
+          NextResponse.json(
+            {
+              error: {
+                code: "INVALID_REQUEST",
+                message: "Invalid subscription plan for crypto checkout",
+              },
+            },
+            { status: 400 },
+          ),
+        );
+      }
+      if (
+        orderItems.length !== 1 ||
+        orderItems[0]?.productId !== subPlan.cryptoProductId ||
+        orderItems[0]?.quantity !== 1
+      ) {
+        return withPublicApiCors(
+          NextResponse.json(
+            {
+              error: {
+                code: "INVALID_REQUEST",
+                message:
+                  "Items must be a single line for the plan crypto product with quantity 1",
+              },
+            },
+            { status: 400 },
+          ),
+        );
+      }
+    }
+
     if (orderItems.length === 0) {
       return withPublicApiCors(
         NextResponse.json(
@@ -289,6 +354,10 @@ export async function POST(request: NextRequest) {
     }
     const hasAmazonItems = orderItems.some((i) => i.source === "amazon");
 
+    const subscriptionSession = subscriptionPlanId
+      ? await auth.api.getSession({ headers: request.headers })
+      : null;
+
     await db.insert(ordersTable).values({
       createdAt: now,
       email: email.trim(),
@@ -302,6 +371,8 @@ export async function POST(request: NextRequest) {
       status: "pending",
       totalCents,
       updatedAt: now,
+      ...(subscriptionPlanId && { subscriptionPlanId }),
+      ...(subscriptionSession?.user?.id && { userId: subscriptionSession.user.id }),
       ...(moltbookAgent?.id && { moltbookAgentId: moltbookAgent.id }),
       ...(shipping?.name && { shippingName: shipping.name }),
       ...(shipping?.address1 && { shippingAddress1: shipping.address1 }),

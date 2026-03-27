@@ -34,7 +34,8 @@ export function SupportChatWidgetWrapper() {
     let cancelled = false;
     fetch("/api/support-chat/widget-visible", { credentials: "include" })
       .then((res) => (res.ok ? res.json() : { visible: true }))
-      .then((data: { visible?: boolean }) => {
+      .then((raw: unknown) => {
+        const data = raw as { visible?: boolean };
         if (!cancelled) setVisible(data.visible !== false);
       })
       .catch(() => {

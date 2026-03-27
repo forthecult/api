@@ -55,7 +55,8 @@ export function HeaderUserDropdown({
     let cancelled = false;
     fetch("/api/user/membership", { credentials: "include" })
       .then((r) => (r.ok ? r.json() : null))
-      .then((data: { tierName?: null | string } | null) => {
+      .then((raw: unknown) => {
+        const data = raw as { tierName?: null | string } | null;
         if (!cancelled && data?.tierName) setTierName(data.tierName);
       })
       .catch(() => {});

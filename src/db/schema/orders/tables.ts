@@ -276,6 +276,9 @@ export const ordersTable = pgTable(
     // Payment — Stripe
     stripeCheckoutSessionId: text("stripe_checkout_session_id").unique(),
 
+    /** When set, this order pays for a period of `subscription_plan` (manual crypto or first payment). */
+    subscriptionPlanId: text("subscription_plan_id"),
+
     taxCents: integer("tax_cents").notNull().default(0),
     telegramFirstName: text("telegram_first_name"),
     // Telegram Mini App — for orders placed from Telegram

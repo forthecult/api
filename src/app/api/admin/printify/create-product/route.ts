@@ -82,7 +82,17 @@ export async function POST(request: NextRequest) {
 
   // Create a new product
   try {
-    const body = await request.json();
+    const body = (await request.json()) as {
+      blueprint_id?: number;
+      description?: string;
+      image_id?: string;
+      print_provider_id?: number;
+      publish?: boolean;
+      print_areas?: unknown;
+      tags?: string[];
+      title?: string;
+      variants?: Array<{ id: number; is_enabled?: boolean; price: number }>;
+    };
 
     const {
       blueprint_id,
@@ -119,7 +129,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Build print_areas: use provided or auto-generate from image_id
-    let print_areas = body.print_areas;
+    let print_areas: PrintifyCreateProductBody["print_areas"] | undefined =
+      Array.isArray(body.print_areas) && body.print_areas.length > 0
+        ? (body.print_areas as PrintifyCreateProductBody["print_areas"])
+        : undefined;
     if (!print_areas && image_id) {
       const allVariantIds = variants.map((v: { id: number }) => v.id);
       print_areas = [
@@ -146,7 +159,7 @@ export async function POST(request: NextRequest) {
     const createBody: PrintifyCreateProductBody = {
       blueprint_id,
       description: description || "",
-      print_areas: print_areas || [],
+      print_areas: print_areas ?? [],
       print_provider_id,
       tags: tags || [],
       title,

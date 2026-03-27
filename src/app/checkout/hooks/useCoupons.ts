@@ -182,7 +182,7 @@ export function useCoupons({
       method: "POST",
     })
       .then((res) => res.json())
-      .then((data: Record<string, unknown> & { applied: boolean }) => {
+      .then((raw: unknown) => { const data = raw as Record<string, unknown> & { applied: boolean };
         if (cancelled) return;
         const tierList = Array.isArray(data.tierDiscounts)
           ? (data.tierDiscounts as TierDiscountLine[])

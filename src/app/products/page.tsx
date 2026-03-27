@@ -182,7 +182,7 @@ async function fetchProducts(
         totalPages: 1,
       };
     }
-    return res.json();
+    return (await res.json()) as ProductsResponse;
   } catch (error) {
     console.error("Error fetching products:", error);
     return {

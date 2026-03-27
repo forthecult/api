@@ -192,7 +192,7 @@ export function CheckoutClient() {
     let cancelled = false;
     fetch("/api/user/membership", { credentials: "include" })
       .then((r) => r.json())
-      .then((data: { memberTier?: number } | null) => {
+      .then((raw: unknown) => { const data = raw as { memberTier?: number } | null;
         if (cancelled) return;
         const t = data?.memberTier;
         setMemberTierFromApi(

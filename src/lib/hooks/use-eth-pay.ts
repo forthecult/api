@@ -174,7 +174,11 @@ export function useEthPay({
           const res = await fetch(
             `/api/checkout/eth-pay/status?orderId=${order.orderId}`,
           );
-          const data = await res.json();
+          const data = (await res.json()) as {
+            message?: string;
+            paymentStatus?: string;
+            status?: string;
+          };
 
           if (data.status === "confirmed" || data.paymentStatus === "paid") {
             if (pollIntervalRef.current) {
@@ -224,7 +228,9 @@ export function useEthPay({
           method: "POST",
         });
 
-        const data = await res.json();
+        const data = (await res.json()) as {
+          status?: string;
+        };
 
         if (data.status === "confirmed" || res.ok) {
           setPaymentStatus({

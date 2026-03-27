@@ -136,7 +136,7 @@ async function fetchCategoryPage(
       ...(cookieHeader ? { headers: { Cookie: cookieHeader } } : {}),
     });
     if (!res.ok) return { categories: [], items: [], total: 0, totalPages: 1 };
-    return res.json();
+    return (await res.json()) as ProductListResponse;
   } catch {
     return { categories: [], items: [], total: 0, totalPages: 1 };
   }

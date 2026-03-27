@@ -79,11 +79,10 @@ export function MembershipAfterStakeTestClient() {
   useEffect(() => {
     fetch("/api/esim/countries")
       .then((r) => r.json())
-      .then(
-        (data: {
+      .then((raw: unknown) => { const data = raw as {
           data?: { id: number; name: string }[];
           status: boolean;
-        }) => {
+        };
           if (data.status && Array.isArray(data.data)) {
             setCountries(
               data.data.slice().sort((a, b) => a.name.localeCompare(b.name)),
@@ -103,7 +102,7 @@ export function MembershipAfterStakeTestClient() {
     if (countryId) params.set("country", countryId);
     fetch(`/api/esim/packages/staker-claim?${params.toString()}`)
       .then((r) => r.json())
-      .then((data: { data?: StakerPackage[]; status: boolean }) => {
+      .then((raw: unknown) => { const data = raw as { data?: StakerPackage[]; status: boolean };
         if (data.status && Array.isArray(data.data)) {
           setPackages(data.data);
         } else {

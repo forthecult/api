@@ -41,7 +41,8 @@ export const DASHBOARD_COUNTS_INVALIDATE = "dashboard:counts-invalidate";
 
 function fetchCounts(): Promise<Counts> {
   return fetch("/api/dashboard/counts", { credentials: "include" })
-    .then((res) => (res.ok ? res.json() : defaultCounts))
+    .then((res) => (res.ok ? res.json() : Promise.resolve(defaultCounts)))
+    .then((raw: unknown) => raw as Counts)
     .catch(() => defaultCounts);
 }
 

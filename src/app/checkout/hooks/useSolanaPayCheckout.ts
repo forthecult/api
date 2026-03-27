@@ -1,6 +1,6 @@
 "use client";
 
-import { encodeURL } from "@solana/pay";
+import { encodeURL, type Amount } from "@solana/pay";
 import { PublicKey } from "@solana/web3-compat";
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
@@ -127,7 +127,7 @@ export function useSolanaPayCheckout({
       }
       const amount = usdcAmountFromUsd(orderTotalCents / 100);
       const url = encodeURL({
-        amount,
+        amount: amount as unknown as Amount,
         label: getSolanaPayLabel(),
         message: `Order total: $${total.toFixed(2)}`,
         recipient: new PublicKey(depositAddress),

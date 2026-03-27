@@ -46,7 +46,9 @@ export function StatsPageClient() {
       try {
         const res = await fetch("/api/stats", { credentials: "include" });
         if (!res.ok) {
-          const data = await res.json().catch(() => ({}));
+          const data = (await res.json().catch(() => ({}))) as {
+            error?: string;
+          };
           setError(data.error ?? "Failed to load stats");
           return;
         }

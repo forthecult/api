@@ -61,7 +61,10 @@ export function useStakeTransaction(options: UseStakeTransactionOptions = {}) {
           headers: { "Content-Type": "application/json" },
           method: "POST",
         });
-        const data = await res.json().catch(() => ({}));
+        const data = (await res.json().catch(() => ({}))) as {
+          error?: string;
+          transaction?: string;
+        };
         if (!res.ok) {
           if (res.status === 503) {
             toast.error(
@@ -72,7 +75,7 @@ export function useStakeTransaction(options: UseStakeTransactionOptions = {}) {
           }
           return false;
         }
-        const txBuf = base64ToUint8Array(data.transaction);
+        const txBuf = base64ToUint8Array(data.transaction ?? "");
         const tx = Transaction.from(txBuf);
         const sig = await sendTransaction(tx, connection, SEND_OPTS);
         toast.success("Stake submitted: " + sig.slice(0, 8) + "…");
@@ -85,7 +88,7 @@ export function useStakeTransaction(options: UseStakeTransactionOptions = {}) {
           method: "POST",
         })
           .then((res) => res.json())
-          .then((data: { signedIn?: boolean }) => {
+          .then((raw: unknown) => { const data = raw as { signedIn?: boolean };
             if (data.signedIn) {
               // new account created or signed into existing - soft refresh to update auth
               window.dispatchEvent(new CustomEvent("auth-state-changed"));
@@ -146,7 +149,10 @@ export function useStakeTransaction(options: UseStakeTransactionOptions = {}) {
           headers: { "Content-Type": "application/json" },
           method: "POST",
         });
-        const data = await res.json().catch(() => ({}));
+        const data = (await res.json().catch(() => ({}))) as {
+          error?: string;
+          transaction?: string;
+        };
         if (!res.ok) {
           if (res.status === 503) {
             toast.error("Staking is not available yet.");
@@ -155,7 +161,7 @@ export function useStakeTransaction(options: UseStakeTransactionOptions = {}) {
           }
           return false;
         }
-        const txBuf = base64ToUint8Array(data.transaction);
+        const txBuf = base64ToUint8Array(data.transaction ?? "");
         const tx = Transaction.from(txBuf);
         const sig = await sendTransaction(tx, connection, SEND_OPTS);
         toast.success("Unstake submitted: " + sig.slice(0, 8) + "…");
@@ -200,7 +206,10 @@ export function useStakeTransaction(options: UseStakeTransactionOptions = {}) {
           headers: { "Content-Type": "application/json" },
           method: "POST",
         });
-        const data = await res.json().catch(() => ({}));
+        const data = (await res.json().catch(() => ({}))) as {
+          error?: string;
+          transaction?: string;
+        };
         if (!res.ok) {
           if (res.status === 503) {
             toast.error("Staking is not available yet.");
@@ -209,7 +218,7 @@ export function useStakeTransaction(options: UseStakeTransactionOptions = {}) {
           }
           return false;
         }
-        const txBuf = base64ToUint8Array(data.transaction);
+        const txBuf = base64ToUint8Array(data.transaction ?? "");
         const tx = Transaction.from(txBuf);
         const sig = await sendTransaction(tx, connection, SEND_OPTS);
         toast.success("Restake submitted: " + sig.slice(0, 8) + "…");

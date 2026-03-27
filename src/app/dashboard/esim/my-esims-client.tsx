@@ -99,7 +99,7 @@ export function MyEsimsClient() {
   const refetch = useCallback(() => {
     return fetch("/api/esim/my-esims", { credentials: "include" })
       .then((res) => res.json())
-      .then((data: { data?: EsimOrder[]; status: boolean }) => {
+      .then((raw: unknown) => { const data = raw as { data?: EsimOrder[]; status: boolean };
         if (data.status && data.data) {
           setOrders(data.data);
         }
@@ -110,7 +110,7 @@ export function MyEsimsClient() {
   useEffect(() => {
     fetch("/api/esim/my-esims", { credentials: "include" })
       .then((res) => res.json())
-      .then((data: { data?: EsimOrder[]; status: boolean }) => {
+      .then((raw: unknown) => { const data = raw as { data?: EsimOrder[]; status: boolean };
         if (data.status && data.data) {
           setOrders(data.data);
         }
@@ -325,7 +325,7 @@ function EsimOrderCard({
     setLoadingUsage(true);
     fetch(`/api/esim/my-esims/${order.id}/usage`)
       .then((res) => res.json())
-      .then((data: { data?: UsageData; status: boolean }) => {
+      .then((raw: unknown) => { const data = raw as { data?: UsageData; status: boolean };
         if (data.status && data.data) {
           setUsage(data.data);
         }

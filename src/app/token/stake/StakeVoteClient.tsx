@@ -126,17 +126,25 @@ export function StakeVoteClient() {
       fetch(`/api/governance/voting-power?wallet=${encodeURIComponent(wallet)}`).then((r) => r.json()),
       fetch(`/api/governance/staked-balance?wallet=${encodeURIComponent(wallet)}`).then((r) => r.json()),
     ])
-      .then(([powerData, stakedData]) => {
+      .then(([powerRaw, stakedRaw]) => {
+        const powerData = powerRaw as {
+          stakedBalanceRaw?: string;
+          votingPowerRaw?: string;
+          walletBalanceRaw?: string;
+        };
+        const stakedData = stakedRaw as {
+          lock?: { lockTier?: null | number };
+        };
         const total = powerData.votingPowerRaw ? BigInt(powerData.votingPowerRaw) : 0n;
         const walletRaw = powerData.walletBalanceRaw
           ? BigInt(powerData.walletBalanceRaw)
           : 0n;
-        const stakedRaw = powerData.stakedBalanceRaw
+        const stakedFromPower = powerData.stakedBalanceRaw
           ? BigInt(powerData.stakedBalanceRaw)
           : 0n;
         setVotingPower(Number(total));
         setWalletBalanceRaw(Number(walletRaw));
-        setStakedBalanceRaw(Number(stakedRaw));
+        setStakedBalanceRaw(Number(stakedFromPower));
         setCurrentLockTier(stakedData.lock?.lockTier ?? null);
       })
       .catch(() => {
@@ -210,7 +218,8 @@ export function StakeVoteClient() {
     setProposalsLoading(true);
     fetch("/api/governance/proposals")
       .then((r) => r.json())
-      .then((data) => {
+      .then((raw: unknown) => {
+        const data = raw as { proposals?: Proposal[] };
         if (!cancelled && data.proposals) setProposals(data.proposals ?? []);
       })
       .catch(() => {
@@ -272,7 +281,9 @@ export function StakeVoteClient() {
             method: "POST",
           },
         );
-        const data = await res.json().catch(() => ({}));
+        const data = (await res.json().catch(() => ({}))) as {
+          error?: string;
+        };
         if (!res.ok) {
           toast.error(data.error ?? "Failed to vote");
           return;

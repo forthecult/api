@@ -621,7 +621,7 @@ export function EsimStorePage() {
     setCountriesLoading(true);
     fetch("/api/esim/countries")
       .then((res) => res.json())
-      .then((data: { data?: Country[]; status: boolean }) => {
+      .then((raw: unknown) => { const data = raw as { data?: Country[]; status: boolean };
         if (data.status && data.data) {
           setCountries(data.data);
         }
@@ -635,7 +635,7 @@ export function EsimStorePage() {
     setContinentsLoading(true);
     fetch("/api/esim/continents")
       .then((res) => res.json())
-      .then((data: { data?: Continent[]; status: boolean }) => {
+      .then((raw: unknown) => { const data = raw as { data?: Continent[]; status: boolean };
         if (data.status && data.data) {
           setContinents(data.data);
         }
@@ -650,7 +650,7 @@ export function EsimStorePage() {
     setLoading(true);
     fetch(`/api/esim/packages/global?package_type=${packageType}`)
       .then((res) => res.json())
-      .then((data: { data?: Package[]; status: boolean }) => {
+      .then((raw: unknown) => { const data = raw as { data?: Package[]; status: boolean };
         if (data.status && data.data) {
           setPackages(data.data);
         }
@@ -669,7 +669,7 @@ export function EsimStorePage() {
         `/api/esim/packages/country/${country.id}?package_type=${packageType}`,
       )
         .then((res) => res.json())
-        .then((data: { data?: Package[]; status: boolean }) => {
+        .then((raw: unknown) => { const data = raw as { data?: Package[]; status: boolean };
           if (data.status && data.data) {
             setPackages(data.data);
           }
@@ -690,7 +690,7 @@ export function EsimStorePage() {
         `/api/esim/packages/continent/${continent.id}?package_type=${packageType}`,
       )
         .then((res) => res.json())
-        .then((data: { data?: Package[]; status: boolean }) => {
+        .then((raw: unknown) => { const data = raw as { data?: Package[]; status: boolean };
           if (data.status && data.data) {
             setPackages(data.data);
           }
@@ -726,7 +726,7 @@ export function EsimStorePage() {
             `/api/esim/packages/country/${c.id}?package_type=${packageType}`,
           )
             .then((res) => res.json())
-            .then((data: { data?: Package[]; status: boolean }) => {
+            .then((raw: unknown) => { const data = raw as { data?: Package[]; status: boolean };
               if (data.status && data.data) setPackages(data.data);
             })
             .catch(console.error)
@@ -746,7 +746,7 @@ export function EsimStorePage() {
             `/api/esim/packages/continent/${c.id}?package_type=${packageType}`,
           )
             .then((res) => res.json())
-            .then((data: { data?: Package[]; status: boolean }) => {
+            .then((raw: unknown) => { const data = raw as { data?: Package[]; status: boolean };
               if (data.status && data.data) setPackages(data.data);
             })
             .catch(console.error)

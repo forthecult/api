@@ -2,6 +2,10 @@
  * POST /api/admin/customers/[id]/membership/grant
  * Grant admin membership to a customer for 30 days or 1 year. Upserts one grant per user.
  * DELETE: remove admin-granted membership.
+ *
+ * This is admin-comped access (`admin_membership_grant`), not a Stripe/PayPal subscription row.
+ * For paid recurring membership, see `subscription_instance` and
+ * `POST /api/admin/membership/subscriptions/[subscriptionId]/cancel`.
  */
 
 import { eq } from "drizzle-orm";
@@ -26,7 +30,7 @@ export async function POST(
   const { id: userId } = await params;
   let body: { duration?: string; tier?: number };
   try {
-    body = await request.json();
+    body = (await request.json()) as typeof body;
   } catch {
     return NextResponse.json(
       { error: "Invalid JSON body" },

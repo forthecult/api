@@ -73,11 +73,21 @@ export function TelegramLoginWidget({
           method: "POST",
         });
 
-        const data = await res.json().catch(() => ({}));
+        const data = (await res.json().catch(() => ({}))) as {
+          error?: { message?: string } | string;
+          message?: string;
+        };
 
         if (!res.ok) {
+          const err = data.error;
+          const fromErr =
+            typeof err === "object" && err && "message" in err
+              ? (err as { message?: string }).message
+              : typeof err === "string"
+                ? err
+                : undefined;
           const message =
-            data?.error?.message ?? data?.message ?? "Telegram sign-in failed";
+            fromErr ?? data.message ?? "Telegram sign-in failed";
           onError?.(message);
           setLoading(false);
           return;

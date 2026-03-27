@@ -21,25 +21,16 @@ export const paymentMethodSettingTable = pgTable("payment_method_setting", {
   updatedAt: timestamp("updated_at").notNull(),
 });
 
-export const polarCustomerTable = pgTable("polar_customer", {
-  createdAt: timestamp("created_at").notNull(),
-  customerId: text("customer_id").notNull().unique(),
-  id: text("id").primaryKey(),
-  updatedAt: timestamp("updated_at").notNull(),
+/** Maps app users to Stripe Customer IDs for subscription billing. */
+export const stripeCustomerTable = pgTable("stripe_customer", {
   userId: text("user_id")
     .notNull()
+    .primaryKey()
     .references(() => userTable.id, { onDelete: "cascade" }),
-});
-
-export const polarSubscriptionTable = pgTable("polar_subscription", {
-  createdAt: timestamp("created_at").notNull(),
-  customerId: text("customer_id").notNull(),
-  id: text("id").primaryKey(),
-  productId: text("product_id").notNull(),
-  status: text("status").notNull(),
-  subscriptionId: text("subscription_id").notNull().unique(),
-  updatedAt: timestamp("updated_at").notNull(),
-  userId: text("user_id")
-    .notNull()
-    .references(() => userTable.id, { onDelete: "cascade" }),
+  stripeCustomerId: text("stripe_customer_id").notNull().unique(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
 });

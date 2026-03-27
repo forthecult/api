@@ -1,6 +1,6 @@
 "use client";
 
-import { encodeURL } from "@solana/pay";
+import { encodeURL, type Amount } from "@solana/pay";
 import {
   createAssociatedTokenAccountInstruction,
   createTransferCheckedInstruction,
@@ -442,7 +442,7 @@ export function CryptoPayClient({
       );
       const keypair = Keypair.generate();
       const url = encodeURL({
-        amount,
+        amount: amount as unknown as Amount,
         label: getSolanaPayLabel(),
         message: `Order total: $${amountUsd.toFixed(2)}`,
         recipient: new PublicKey(recipient),
@@ -463,7 +463,7 @@ export function CryptoPayClient({
       );
       const keypair = Keypair.generate();
       const url = encodeURL({
-        amount,
+        amount: amount as unknown as Amount,
         label: getSolanaPayLabel(),
         message: `Order total: $${amountUsd.toFixed(2)}`,
         recipient: new PublicKey(recipient),
@@ -483,7 +483,7 @@ export function CryptoPayClient({
       );
       const keypair = Keypair.generate();
       const url = encodeURL({
-        amount,
+        amount: amount as unknown as Amount,
         label: getSolanaPayLabel(),
         message: `Order total: $${amountUsd.toFixed(2)}`,
         recipient: new PublicKey(recipient),
@@ -503,7 +503,7 @@ export function CryptoPayClient({
       );
       const keypair = Keypair.generate();
       const url = encodeURL({
-        amount,
+        amount: amount as unknown as Amount,
         label: getSolanaPayLabel(),
         message: `Order total: $${amountUsd.toFixed(2)}`,
         recipient: new PublicKey(recipient),
@@ -523,7 +523,7 @@ export function CryptoPayClient({
       );
       const keypair = Keypair.generate();
       const url = encodeURL({
-        amount,
+        amount: amount as unknown as Amount,
         label: getSolanaPayLabel(),
         message: `Order total: $${amountUsd.toFixed(2)}`,
         recipient: new PublicKey(recipient),
@@ -541,7 +541,7 @@ export function CryptoPayClient({
       const amountSol = new BigNumber(amountUsd).dividedBy(r);
       const keypair = Keypair.generate();
       const url = encodeURL({
-        amount: amountSol,
+        amount: amountSol as unknown as Amount,
         label: getSolanaPayLabel(),
         message: `Order total: $${amountUsd.toFixed(2)}`,
         recipient: new PublicKey(recipient),
@@ -564,7 +564,7 @@ export function CryptoPayClient({
     // encodeURL expects amount in token units (human-readable), not base units
     const amount = new BigNumber(amountUsd);
     const url = encodeURL({
-      amount,
+      amount: amount as unknown as Amount,
       label: getSolanaPayLabel(),
       message: `Order total: $${amountUsd.toFixed(2)}`,
       recipient: new PublicKey(recipient),

@@ -380,8 +380,7 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
     let cancelled = false;
     fetch("/api/user/membership", { credentials: "include" })
       .then((r) => r.json())
-      .then(
-        (data: { memberTier?: number; wallet?: string } | null) => {
+      .then((raw: unknown) => { const data = raw as { memberTier?: number; wallet?: string } | null;
           if (cancelled) return;
           setMemberWallet(data?.wallet ?? null);
           setMemberTier(
@@ -426,12 +425,11 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
       signal: ac.signal,
     })
       .then((res) => res.json())
-      .then(
-        (data: {
+      .then((raw: unknown) => { const data = raw as {
           applied?: boolean;
           discountCents?: number;
           totalAfterDiscountCents?: number;
-        }) => {
+        };
           if (
             data.applied &&
             typeof data.discountCents === "number" &&
@@ -500,13 +498,17 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
         headers: { "Content-Type": "application/json" },
         method: "POST",
       });
-      const orderData = await orderRes.json();
+      const orderData = (await orderRes.json()) as {
+          data?: { orderId?: string };
+          message?: string;
+          status?: boolean;
+        };
       if (!orderData.status) {
         toast.error(orderData.message ?? "Failed to create order.");
         return;
       }
 
-      const orderId = orderData.data.orderId as string;
+      const orderId = orderData.data?.orderId as string;
       const baseUrl =
         typeof window !== "undefined" ? window.location.origin : "";
 
@@ -520,7 +522,11 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
           headers: { "Content-Type": "application/json" },
           method: "POST",
         });
-        const checkoutData = await checkoutRes.json();
+        const checkoutData = (await checkoutRes.json()) as {
+          data?: { checkoutUrl?: string };
+          message?: string;
+          status?: boolean;
+        };
         if (!checkoutData.status || !checkoutData.data?.checkoutUrl) {
           toast.error(
             checkoutData.message ?? "Failed to create checkout session.",
@@ -556,7 +562,10 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
         headers: { "Content-Type": "application/json" },
         method: "POST",
       });
-      const cryptoData = await cryptoRes.json();
+      const cryptoData = (await cryptoRes.json()) as {
+          message?: string;
+          status?: boolean;
+        };
       if (!cryptoData.status) {
         toast.error(cryptoData.message ?? "Failed to set up crypto payment.");
         return;

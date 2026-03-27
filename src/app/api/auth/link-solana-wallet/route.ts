@@ -37,7 +37,7 @@ export async function POST(request: Request) {
 
   let body: { wallet?: string };
   try {
-    body = await request.json();
+    body = (await request.json()) as typeof body;
   } catch {
     return NextResponse.json(
       { error: "Invalid JSON body", linked: false },

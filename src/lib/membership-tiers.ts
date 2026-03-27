@@ -184,4 +184,79 @@ export const MEMBERSHIP_FAQ = [
     a: "Staking for 12 months gives you eSIM benefits for 14 months—that's 2 extra months free. It also demonstrates long-term commitment to the community, which strengthens the ecosystem for everyone.",
     q: "Why stake for 12 months?",
   },
+  {
+    a: "Yes! If you prefer not to use crypto, you can subscribe with a credit card for $5/$10/$20 per month (BASE/PRIME/APEX). Annual subscriptions save 10%. You get the same tier benefits as staking.",
+    q: "Can I pay with a credit card instead of staking?",
+  },
+  {
+    a: "Absolutely. You can cancel your subscription anytime from the billing portal. Your membership stays active until the end of your current billing period.",
+    q: "Can I cancel my subscription?",
+  },
+  {
+    a: "Both give you the same membership benefits. Staking locks your CULT tokens (you keep ownership) and can be more cost-effective long-term. Subscribing with a card is simpler—no wallet needed—but is a recurring monthly or annual charge.",
+    q: "What's the difference between staking and subscribing?",
+  },
+];
+
+// ---------------------------------------------------------------------------
+// Subscription pricing (monthly fee alternative to staking)
+// ---------------------------------------------------------------------------
+
+/** Annual discount rate applied on top of the monthly price × 12. */
+export const SUBSCRIPTION_ANNUAL_DISCOUNT = 0.1;
+
+export interface SubscriptionPrice {
+  /** Stripe Price ID for annual billing. Falls back to dynamic creation if env var absent. */
+  annualPriceId: string | undefined;
+  /** Annual cost in USD (monthly * 12 * (1 - discount)). */
+  annualUsd: number;
+  /** Monthly cost in USD. */
+  monthlyUsd: number;
+  /** Stripe Price ID for monthly billing. Falls back to dynamic creation if env var absent. */
+  monthlyPriceId: string | undefined;
+  /** PayPal billing plan id (`P-...`) for annual billing. */
+  paypalAnnualPlanId: string | undefined;
+  /** PayPal billing plan id for monthly billing. */
+  paypalMonthlyPlanId: string | undefined;
+  tierId: number;
+  tierName: string;
+}
+
+export const SUBSCRIPTION_PRICES: SubscriptionPrice[] = [
+  {
+    annualPriceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_BASE_ANNUAL,
+    annualUsd: parseFloat(
+      (5 * 12 * (1 - SUBSCRIPTION_ANNUAL_DISCOUNT)).toFixed(2),
+    ),
+    monthlyPriceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_BASE_MONTHLY,
+    monthlyUsd: 5,
+    paypalAnnualPlanId: process.env.PAYPAL_PLAN_BASE_ANNUAL,
+    paypalMonthlyPlanId: process.env.PAYPAL_PLAN_BASE_MONTHLY,
+    tierId: 3,
+    tierName: "BASE",
+  },
+  {
+    annualPriceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_PRIME_ANNUAL,
+    annualUsd: parseFloat(
+      (10 * 12 * (1 - SUBSCRIPTION_ANNUAL_DISCOUNT)).toFixed(2),
+    ),
+    monthlyPriceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_PRIME_MONTHLY,
+    monthlyUsd: 10,
+    paypalAnnualPlanId: process.env.PAYPAL_PLAN_PRIME_ANNUAL,
+    paypalMonthlyPlanId: process.env.PAYPAL_PLAN_PRIME_MONTHLY,
+    tierId: 2,
+    tierName: "PRIME",
+  },
+  {
+    annualPriceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_APEX_ANNUAL,
+    annualUsd: parseFloat(
+      (20 * 12 * (1 - SUBSCRIPTION_ANNUAL_DISCOUNT)).toFixed(2),
+    ),
+    monthlyPriceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_APEX_MONTHLY,
+    monthlyUsd: 20,
+    paypalAnnualPlanId: process.env.PAYPAL_PLAN_APEX_ANNUAL,
+    paypalMonthlyPlanId: process.env.PAYPAL_PLAN_APEX_MONTHLY,
+    tierId: 1,
+    tierName: "APEX",
+  },
 ];

@@ -34,15 +34,14 @@ export function useCryptoPrices({
     const ac = new AbortController();
     fetch("/api/crypto/prices", { signal: ac.signal })
       .then((res) => res.json())
-      .then(
-        (data: {
+      .then((raw: unknown) => { const data = raw as {
           CRUST?: number;
           CULT?: number;
           PUMP?: number;
           SKR?: number;
           SOL?: number;
           SOLUNA?: number;
-        }) => {
+        };
           if (typeof data?.SOL === "number" && data.SOL > 0)
             setSolUsdRate(data.SOL);
           if (typeof data?.CRUST === "number" && data.CRUST > 0)

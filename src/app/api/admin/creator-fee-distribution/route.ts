@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
 
   let body: { force?: boolean } = {};
   try {
-    body = await request.json().catch(() => ({}));
+    body = (await request.json().catch(() => ({}))) as { force?: boolean };
   } catch {
     // empty body is ok
   }

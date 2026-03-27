@@ -75,7 +75,7 @@ async function fetchFeaturedProducts(
       next: { revalidate: 60 },
     });
     if (!res.ok) return { categories: [], items: [], total: 0, totalPages: 1 };
-    return res.json();
+    return (await res.json()) as ProductsResponse;
   } catch {
     return { categories: [], items: [], total: 0, totalPages: 1 };
   }

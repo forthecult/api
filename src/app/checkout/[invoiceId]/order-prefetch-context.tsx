@@ -66,7 +66,7 @@ export function OrderPrefetchProvider({
         }
         return res.json();
       })
-      .then((data: PrefetchedOrder) => {
+      .then((raw: unknown) => { const data = raw as PrefetchedOrder;
         setState({ order: data, orderError: null, orderLoading: false });
       })
       .catch((err: unknown) => {

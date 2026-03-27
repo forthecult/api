@@ -205,9 +205,13 @@ export function EthPayClient({
         }
         return res.json();
       })
-      .then((data) => {
+      .then((raw: unknown) => {
         if (cancelled) return;
-        setOrder(normalizeEthOrder(data));
+        setOrder(
+          normalizeEthOrder(
+            raw as Record<string, unknown> & Partial<OrderData>,
+          ),
+        );
         setOrderLoading(false);
       })
       .catch((err) => {
@@ -322,7 +326,7 @@ export function EthPayClient({
   useEffect(() => {
     fetch("/api/crypto/prices")
       .then((res) => res.json())
-      .then((data: { ETH?: number }) => {
+      .then((raw: unknown) => { const data = raw as { ETH?: number };
         if (typeof data?.ETH === "number" && data.ETH > 0)
           setEthUsdRate(data.ETH);
       })

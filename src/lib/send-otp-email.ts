@@ -6,7 +6,7 @@
 export async function sendVerificationOTPEmail(params: {
   otp: string;
   to: string;
-  type: "email-verification" | "forget-password" | "sign-in";
+  type: "change-email" | "email-verification" | "forget-password" | "sign-in";
 }): Promise<void> {
   const { otp, to, type } = params;
   const appName = "For the Culture";
@@ -16,14 +16,18 @@ export async function sendVerificationOTPEmail(params: {
       ? `Your sign-in code for ${appName}`
       : type === "email-verification"
         ? `Verify your email for ${appName}`
-        : `Reset your password – ${appName}`;
+        : type === "change-email"
+          ? `Confirm your new email – ${appName}`
+          : `Reset your password – ${appName}`;
 
   const purpose =
     type === "sign-in"
       ? "sign in to your account"
       : type === "email-verification"
         ? "verify your email address"
-        : "reset your password";
+        : type === "change-email"
+          ? "confirm your new email address"
+          : "reset your password";
 
   if (process.env.RESEND_API_KEY) {
     try {
