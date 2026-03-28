@@ -7,11 +7,16 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
+import { useAiLocalStorageSync } from "~/app/chat/use-ai-local-storage-sync";
 import { useSession } from "~/lib/auth-client";
 import { cn } from "~/lib/cn";
 import { Button } from "~/ui/primitives/button";
 
 const GUEST_KEY = "ftc-ai-guest-id";
+const TEMP_KEY = "ftc-ai-temperature";
+const TOP_P_KEY = "ftc-ai-top-p";
+const WEB_KEY = "ftc-ai-web-enabled";
+const URL_SCRAPE_KEY = "ftc-ai-url-scraping";
 
 /** Inline Personal AI chat for the floating widget (same API as /chat). */
 export function PersonalAiWidgetPanel() {
@@ -24,6 +29,17 @@ export function PersonalAiWidgetPanel() {
   const [characterSlug, setCharacterSlug] = useState("default");
   const [sessionId] = useState(() => crypto.randomUUID());
   const [input, setInput] = useState("");
+  const [temperature, setTemperature] = useState(0.7);
+  const [topP, setTopP] = useState(0.95);
+  const [webEnabled, setWebEnabled] = useState(false);
+  const [urlScrapingEnabled, setUrlScrapingEnabled] = useState(false);
+
+  useAiLocalStorageSync({
+    setTemperature,
+    setTopP,
+    setUrlScrapingEnabled,
+    setWebEnabled,
+  });
 
   useEffect(() => {
     if (!userId) return;
@@ -44,15 +60,41 @@ export function PersonalAiWidgetPanel() {
     };
   }, [userId]);
 
+  useEffect(() => {
+    try {
+      const tv = localStorage.getItem(TEMP_KEY);
+      if (tv) {
+        const n = Number.parseFloat(tv);
+        if (Number.isFinite(n) && n >= 0 && n <= 2) setTemperature(n);
+      }
+      const pv = localStorage.getItem(TOP_P_KEY);
+      if (pv) {
+        const n = Number.parseFloat(pv);
+        if (Number.isFinite(n) && n > 0 && n <= 1) setTopP(n);
+      }
+      if (localStorage.getItem(WEB_KEY) === "1") setWebEnabled(true);
+      if (localStorage.getItem(URL_SCRAPE_KEY) === "1")
+        setUrlScrapingEnabled(true);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
   const transport = useMemo(
     () =>
       new DefaultChatTransport({
         api: "/api/ai/chat",
-        body: { characterSlug, temperature: 0.7 },
+        body: {
+          characterSlug,
+          temperature,
+          topP,
+          webSearchEnabled: webEnabled,
+          urlScrapingEnabled,
+        },
         credentials: "include",
         headers: { "x-ai-guest-id": guestId },
       }),
-    [characterSlug, guestId],
+    [characterSlug, guestId, temperature, topP, webEnabled, urlScrapingEnabled],
   );
 
   const chatId = useMemo(

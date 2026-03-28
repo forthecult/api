@@ -40,6 +40,70 @@ interface ChangelogEntry {
 
 const changelog: ChangelogEntry[] = [
   {
+    date: "March 28, 2026",
+    items: [
+      {
+        text: "Always-visible product search in the site header — type and go, no modal to open first",
+        type: "added",
+      },
+      {
+        text: "Dashboard sidebar reorganized: shopping links (orders through eSIMs) first, AI settings last in the main group",
+        type: "improved",
+      },
+    ],
+    title: "Header search & dashboard navigation",
+    version: "1.0",
+  },
+  {
+    date: "March 14, 2026",
+    items: [
+      {
+        text: "Agent skills for contributors: documented store API, checkout fields, and culture conventions for AI-assisted work in the repo",
+        type: "added",
+      },
+      {
+        text: "Cursor rules expanded for Drizzle, Uploadthing, performance, naming, and safe public API copy",
+        type: "improved",
+      },
+    ],
+    title: "Agent skills & editor guidance",
+    version: "0.99",
+  },
+  {
+    date: "February 28, 2026",
+    items: [
+      {
+        text: "Membership tiers with Culture AI access, shipping perks, and eSIM benefits",
+        type: "added",
+      },
+      {
+        text: "Native Android app (Expo / React Native) with Solana Mobile Wallet Adapter for wallet-native browsing and orders",
+        type: "added",
+      },
+    ],
+    title: "Membership & mobile app",
+    version: "0.98",
+  },
+  {
+    date: "February 14, 2026",
+    items: [
+      {
+        text: "Alice (OpenClaw) as the unified AI guide across website chat, Telegram, and Discord with shared memory",
+        type: "added",
+      },
+      {
+        text: "Dashboard AI hub: personal storage, prompts, and memory under Account → AI",
+        type: "added",
+      },
+      {
+        text: "OpenClaw gateway integration so storefront chat can route through the same agent stack as other channels",
+        type: "improved",
+      },
+    ],
+    title: "Alice & personal AI",
+    version: "0.97",
+  },
+  {
     date: "February 10, 2026",
     items: [
       {
@@ -47,7 +111,7 @@ const changelog: ChangelogEntry[] = [
         type: "added",
       },
       {
-        text: "Staking and voting interface for CULT token holders to participate in governance",
+        text: "Staking overview and metrics for CULT token holders",
         type: "added",
       },
       {

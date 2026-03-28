@@ -251,17 +251,6 @@ export function Footer({ className }: { className?: string }) {
                     text-muted-foreground transition-colors
                     hover:text-foreground
                   `}
-                  href="/services"
-                >
-                  Recommended services
-                </Link>
-              </li>
-              <li>
-                <Link
-                  className={`
-                    text-muted-foreground transition-colors
-                    hover:text-foreground
-                  `}
                   href="/changelog"
                 >
                   Changelog
@@ -275,7 +264,7 @@ export function Footer({ className }: { className?: string }) {
                   `}
                   href="/ai"
                 >
-                  Culture AI
+                  Chat
                 </Link>
               </li>
               <li>

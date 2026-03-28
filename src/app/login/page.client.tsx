@@ -128,7 +128,7 @@ function LoginPageClientInner() {
         title="Welcome back!"
       />
 
-      <Card className="border-none shadow-sm">
+ <Card className="border-none ">
         <CardContent className="pt-2">
           <SocialLoginButtons
             disabled={loading}

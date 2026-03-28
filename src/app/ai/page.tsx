@@ -177,10 +177,10 @@ export default function AiLandingPage() {
         `}>
           <li
             className={cn(
-              "rounded-xl border border-border bg-card/70 p-6 shadow-sm",
+ "rounded-xl border border-border bg-card/70 p-6 ",
               `
                 transition-shadow
-                hover:shadow-md
+ 
               `,
             )}
           >
@@ -194,10 +194,10 @@ export default function AiLandingPage() {
           </li>
           <li
             className={cn(
-              "rounded-xl border border-border bg-card/70 p-6 shadow-sm",
+ "rounded-xl border border-border bg-card/70 p-6 ",
               `
                 transition-shadow
-                hover:shadow-md
+ 
               `,
             )}
           >
@@ -211,10 +211,10 @@ export default function AiLandingPage() {
           </li>
           <li
             className={cn(
-              "rounded-xl border border-border bg-card/70 p-6 shadow-sm",
+ "rounded-xl border border-border bg-card/70 p-6 ",
               `
                 transition-shadow
-                hover:shadow-md
+ 
               `,
             )}
           >
@@ -425,7 +425,7 @@ export default function AiLandingPage() {
           <div
             className={cn(
               "flex flex-col rounded-xl border border-border bg-card/80 p-6",
-              "shadow-sm",
+ "",
             )}
           >
             <h3 className="font-heading text-lg font-semibold text-foreground">
@@ -455,7 +455,7 @@ export default function AiLandingPage() {
                 relative flex flex-col rounded-xl border-2 border-primary
                 bg-card
               `,
-              "p-6 shadow-md",
+ "p-6 ",
             )}
           >
             <span
@@ -535,7 +535,7 @@ export default function AiLandingPage() {
             {faqItems.map((item) => (
               <details
                 className={cn(
-                  "group rounded-lg border border-border bg-card/80 shadow-sm",
+ "group rounded-lg border border-border bg-card/80 ",
                   "open:bg-card",
                 )}
                 key={item.q}

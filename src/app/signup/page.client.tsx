@@ -114,7 +114,7 @@ export function SignupPageClient() {
     <AuthFormLayout>
       <AuthFormHeader title="Create Account" />
 
-      <Card className="border-none shadow-sm">
+ <Card className="border-none ">
         <CardContent
           className={`
           px-4 py-3

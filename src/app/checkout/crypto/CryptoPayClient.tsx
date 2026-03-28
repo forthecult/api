@@ -1594,7 +1594,7 @@ export function CryptoPayClient({
                           absolute inset-0 flex items-center justify-center
                         `}
                         >
-                          <div className="rounded-full bg-white p-1.5 shadow-sm">
+ <div className="rounded-full bg-white p-1.5 ">
                             <img
                               alt=""
                               className="size-9 object-contain"
@@ -1662,7 +1662,7 @@ export function CryptoPayClient({
                           >
                             <div
                               className={`
-                              rounded-full bg-white p-1.5 shadow-sm
+ rounded-full bg-white p-1.5 
                             `}
                             >
                               <img

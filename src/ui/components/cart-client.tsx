@@ -169,7 +169,7 @@ export function CartClient({ className }: CartClientProps) {
               {cartItems.map((item) => (
                 <div
                   className={`
-                    group relative flex rounded-lg border bg-card p-2 shadow-sm
+ group relative flex rounded-lg border bg-card p-2 
                     transition-colors duration-200 animate-in fade-in
                     slide-in-from-bottom-2
                     hover:bg-accent/50

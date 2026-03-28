@@ -244,7 +244,7 @@ export const BillingAddressForm = function BillingAddressForm({
                     className={`
                       absolute top-full right-0 left-0 z-50 mt-1 max-h-60
                       overflow-auto rounded-md border border-border
-                      bg-background shadow-lg
+ bg-background 
                     `}
                     role="listbox"
                   >

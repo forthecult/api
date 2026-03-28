@@ -526,11 +526,10 @@ export function ProductsClient({
           <div
             className={`
             sticky top-0 z-20 -mx-4 mb-4 border-b border-transparent
-            bg-background/95 px-4 py-2 backdrop-blur-md transition-shadow
+            bg-background/95 px-4 py-2 backdrop-blur-md
             sm:-mx-6 sm:px-6
             lg:-mx-8 lg:px-8
             [&:not(:first-child)]:border-border/50
-            [&:not(:first-child)]:shadow-sm
           `}
           >
             <div

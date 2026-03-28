@@ -8,6 +8,7 @@ import {
   resolveGuestIdentifier,
 } from "~/lib/ai/access-control";
 import { extractLastUserText } from "~/lib/ai/extract-user-text";
+import { normalizeVeniceSampling } from "~/lib/ai/venice-sampling";
 import { messagesHaveUserImage } from "~/lib/ai/messages-utils";
 import { buildAgentSystemPrompt } from "~/lib/ai/prompt-assembler";
 import { getOrCreateAiAgent } from "~/lib/ai/user-agent";
@@ -22,15 +23,22 @@ import { auth } from "~/lib/auth";
 
 export const maxDuration = 120;
 
+/** Images in `messages` use the vision-capable model; text-only uses the default chat model. */
+
 interface ChatBody {
   characterSlug?: string;
   guestId?: string;
   messages: UIMessage[];
   /** Optional project-scoped instructions (from client projects UI). */
   projectInstructions?: null | string;
+  /** Optional project knowledge (serialized text + links from client). */
+  projectKnowledgeContext?: null | string;
   /** Optional sampling; forwarded to the model when set. */
   temperature?: number;
   topP?: number;
+  /** UI toggles: append capability hints to system (actual tools depend on provider). */
+  urlScrapingEnabled?: boolean;
+  webSearchEnabled?: boolean;
 }
 
 export async function POST(request: Request) {
@@ -107,6 +115,18 @@ export async function POST(request: Request) {
     system += `\n\n[Project instructions]\n${pi}`;
   }
 
+  const pk = body.projectKnowledgeContext?.trim();
+  if (pk) {
+    system += `\n\n[Project knowledge]\n${pk}`;
+  }
+
+  if (body.webSearchEnabled) {
+    system += `\n\n[Session capabilities]\nThe user enabled web search in the UI. If the model or tools support live web lookup, use it when helpful; otherwise answer from training knowledge and say so.`;
+  }
+  if (body.urlScrapingEnabled) {
+    system += `\n\n[Session capabilities]\nThe user enabled URL scraping in the UI. If the user shares a URL and the stack supports fetching, summarize or extract from it; otherwise give guidance without inventing page content.`;
+  }
+
   const useVision = messagesHaveUserImage(messages);
   const baseModel = useVision ? defaultVisionChatModelId() : defaultChatModelId();
   const slugForModel = characterSlug === "default" ? null : characterSlug;
@@ -127,6 +147,8 @@ export async function POST(request: Request) {
       ? pRaw
       : undefined;
 
+  const sampling = normalizeVeniceSampling(temperature, topP);
+
   const result = streamText({
     messages: await convertToModelMessages(messages),
     model,
@@ -136,8 +158,10 @@ export async function POST(request: Request) {
       }
     },
     system,
-    ...(temperature !== undefined ? { temperature } : {}),
-    ...(topP !== undefined ? { topP } : {}),
+    ...(sampling.temperature !== undefined
+      ? { temperature: sampling.temperature }
+      : {}),
+    ...(sampling.topP !== undefined ? { topP: sampling.topP } : {}),
   });
 
   return result.toUIMessageStreamResponse();

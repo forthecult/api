@@ -244,7 +244,7 @@ export function SignInPageClient() {
             </p>
           </div>
 
-          <Card className="border-none shadow-sm">
+ <Card className="border-none ">
             <CardContent className="pt-2">
               <div className="mb-4 flex gap-2 rounded-lg bg-muted/50 p-1">
                 <button

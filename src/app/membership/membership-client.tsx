@@ -909,7 +909,7 @@ export function MembershipClient() {
             <div
               className={`
               overflow-hidden rounded-2xl border border-border bg-card
-              shadow-xl
+ 
             `}
             >
               <div className="border-b bg-muted/30 px-6 py-5">
@@ -1537,7 +1537,7 @@ export function MembershipClient() {
           <div
             className={`
             mx-auto max-w-3xl overflow-hidden rounded-2xl border
-            border-border bg-card p-8 shadow-sm
+ border-border bg-card p-8 
             md:p-10
           `}
           >
@@ -1702,11 +1702,11 @@ export function MembershipClient() {
                   className={cn(
                     `
                       relative cursor-pointer transition-all duration-200
-                      hover:shadow-lg
+ 
                     `,
                     isSelected
                       ? `
-                        shadow-lg ring-2 ring-primary
+ ring-2 ring-primary
                         ${tier.accentBorder}
                       `
                       : `
@@ -1884,7 +1884,7 @@ export function MembershipClient() {
                 className={cn(
                   "flex items-center gap-1.5 rounded-lg px-5 py-2 text-sm font-medium transition-all",
                   subInterval === "monthly"
-                    ? "bg-background text-foreground shadow-sm"
+ ? "bg-background text-foreground "
                     : "text-muted-foreground hover:text-foreground",
                 )}
                 onClick={() => setSubInterval("monthly")}
@@ -1896,7 +1896,7 @@ export function MembershipClient() {
                 className={cn(
                   "flex items-center gap-1.5 rounded-lg px-5 py-2 text-sm font-medium transition-all",
                   subInterval === "annual"
-                    ? "bg-background text-foreground shadow-sm"
+ ? "bg-background text-foreground "
                     : "text-muted-foreground hover:text-foreground",
                 )}
                 onClick={() => setSubInterval("annual")}
@@ -1916,7 +1916,7 @@ export function MembershipClient() {
                   className={cn(
                     "rounded-lg px-5 py-2 text-sm font-medium transition-all",
                     paymentProvider === "stripe"
-                      ? "bg-background text-foreground shadow-sm"
+ ? "bg-background text-foreground "
                       : "text-muted-foreground hover:text-foreground",
                   )}
                   onClick={() => setPaymentProvider("stripe")}
@@ -1928,7 +1928,7 @@ export function MembershipClient() {
                   className={cn(
                     "rounded-lg px-5 py-2 text-sm font-medium transition-all",
                     paymentProvider === "paypal"
-                      ? "bg-background text-foreground shadow-sm"
+ ? "bg-background text-foreground "
                       : "text-muted-foreground hover:text-foreground",
                   )}
                   onClick={() => setPaymentProvider("paypal")}
@@ -1989,7 +1989,7 @@ export function MembershipClient() {
                 return (
                   <Card
                     className={cn(
-                      "relative flex flex-col overflow-hidden transition-all hover:shadow-md",
+ "relative flex flex-col overflow-hidden transition-all ",
                       isPopular
                         ? `border-2 ${tierData.accentBorder} ${tierData.accentBg}`
                         : "border-border",
@@ -2453,7 +2453,7 @@ export function MembershipClient() {
                   className={cn(
                     "cursor-pointer rounded-xl border-2 p-6 transition-all",
                     stakeDuration === "30d"
-                      ? "border-primary bg-card shadow-md"
+ ? "border-primary bg-card "
                       : `
                         border-border bg-card/50
                         hover:border-border/80
@@ -2485,7 +2485,7 @@ export function MembershipClient() {
                       transition-all
                     `,
                     stakeDuration === "12m"
-                      ? "border-primary bg-card shadow-md"
+ ? "border-primary bg-card "
                       : `
                         border-border bg-card/50
                         hover:border-border/80

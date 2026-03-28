@@ -717,7 +717,7 @@ export default async function HomePage() {
                 className={`
                   group relative block overflow-hidden rounded-lg border
                   border-border transition-all duration-300
-                  hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5
+ hover:border-primary/20
                 `}
                 href="/lookbook"
               >

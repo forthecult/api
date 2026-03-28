@@ -17,6 +17,7 @@ const PATH_TITLES: Record<string, string> = {
   "/dashboard/support-tickets": "Support Tickets",
   "/dashboard/affiliate": "Affiliate",
   "/dashboard/esim": "My eSIMs",
+  "/dashboard/ai": "AI",
   "/dashboard/profile": "Profile Info",
   "/dashboard/settings": "Notifications",
   "/dashboard/security": "Security",
@@ -30,6 +31,7 @@ function getDashboardTitle(pathname: string | null): string {
   if (!pathname) return "Dashboard";
   // Exact match first
   if (PATH_TITLES[pathname]) return PATH_TITLES[pathname];
+  if (pathname.startsWith("/dashboard/ai")) return "AI";
   // Support ticket detail
   if (pathname.startsWith("/dashboard/support-tickets/")) return "Support Ticket";
   // Order detail

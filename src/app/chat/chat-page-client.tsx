@@ -7,6 +7,7 @@ import {
   type UIMessage,
 } from "ai";
 import {
+  ChevronLeft,
   Copy,
   ImageIcon,
   Loader2,
@@ -36,6 +37,14 @@ import {
   type ChatSessionMeta,
   ChatSidebar,
 } from "~/app/chat/chat-sidebar";
+import {
+  loadProjectKnowledge,
+  type ProjectKnowledgeItem,
+  saveProjectKnowledge,
+  serializeKnowledgeForPrompt,
+} from "~/app/chat/project-knowledge";
+import { ProjectSettingsPanel } from "~/app/chat/project-settings-panel";
+import { useAiLocalStorageSync } from "~/app/chat/use-ai-local-storage-sync";
 import { useSession } from "~/lib/auth-client";
 import { cn } from "~/lib/cn";
 import { Button } from "~/ui/primitives/button";
@@ -55,11 +64,13 @@ import {
   PopoverTrigger,
 } from "~/ui/primitives/popover";
 import { Slider } from "~/ui/primitives/slider";
+import { Switch } from "~/ui/primitives/switch";
 
 const GUEST_KEY = "ftc-ai-guest-id";
 const TEMP_KEY = "ftc-ai-temperature";
 const TOP_P_KEY = "ftc-ai-top-p";
-const USE_TOP_P_KEY = "ftc-ai-use-top-p";
+const WEB_KEY = "ftc-ai-web-enabled";
+const URL_SCRAPE_KEY = "ftc-ai-url-scraping";
 
 interface AiCharacter {
   description?: null | string;
@@ -83,7 +94,8 @@ export function ChatPageClient() {
   const [sessionId, setSessionId] = useState(() => crypto.randomUUID());
   const [temperature, setTemperature] = useState(0.7);
   const [topP, setTopP] = useState(0.95);
-  const [useTopP, setUseTopP] = useState(false);
+  const [webEnabled, setWebEnabled] = useState(false);
+  const [urlScrapingEnabled, setUrlScrapingEnabled] = useState(false);
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -96,9 +108,22 @@ export function ChatPageClient() {
   const [newProjectName, setNewProjectName] = useState("");
   const [newProjectInstructions, setNewProjectInstructions] = useState("");
 
+  const [knowledgeItems, setKnowledgeItems] = useState<
+    ProjectKnowledgeItem[]
+  >([]);
+  const [projectSettingsDialogOpen, setProjectSettingsDialogOpen] =
+    useState(false);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const skipNextPersistRef = useRef(false);
+
+  useAiLocalStorageSync({
+    setTemperature,
+    setTopP,
+    setUrlScrapingEnabled,
+    setWebEnabled,
+  });
 
   useEffect(() => {
     try {
@@ -120,7 +145,9 @@ export function ChatPageClient() {
         const n = Number.parseFloat(pv);
         if (Number.isFinite(n) && n > 0 && n <= 1) setTopP(n);
       }
-      if (localStorage.getItem(USE_TOP_P_KEY) === "1") setUseTopP(true);
+      if (localStorage.getItem(WEB_KEY) === "1") setWebEnabled(true);
+      if (localStorage.getItem(URL_SCRAPE_KEY) === "1")
+        setUrlScrapingEnabled(true);
     } catch {
       /* ignore */
     }
@@ -137,16 +164,68 @@ export function ChatPageClient() {
   useEffect(() => {
     try {
       localStorage.setItem(TOP_P_KEY, String(topP));
-      localStorage.setItem(USE_TOP_P_KEY, useTopP ? "1" : "0");
     } catch {
       /* ignore */
     }
-  }, [topP, useTopP]);
+  }, [topP]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(WEB_KEY, webEnabled ? "1" : "0");
+      localStorage.setItem(URL_SCRAPE_KEY, urlScrapingEnabled ? "1" : "0");
+    } catch {
+      /* ignore */
+    }
+  }, [webEnabled, urlScrapingEnabled]);
 
   useEffect(() => {
     // eslint-disable-next-line @eslint-react/set-state-in-effect -- localStorage-backed guest id
     setGuestId(getOrCreateGuestId());
   }, []);
+
+
+  useEffect(() => {
+    if (!userId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/ai/conversations", {
+          credentials: "include",
+        });
+        if (!res.ok) return;
+        const data = (await res.json()) as {
+          conversations?: {
+            id: string;
+            title: null | string;
+            updatedAt: string;
+          }[];
+        };
+        const list = data.conversations ?? [];
+        if (cancelled || !list.length) return;
+        const next: ChatSessionMeta[] = list.map((c) => ({
+          id: c.id,
+          title: (c.title?.trim() || "Chat").slice(0, 120),
+          updatedAt: new Date(c.updatedAt).getTime(),
+        }));
+        next.sort((a, b) => b.updatedAt - a.updatedAt);
+        setSessions((prev) => {
+          const seen = new Set(next.map((s) => s.id));
+          const merged = [...next];
+          for (const p of prev) {
+            if (!seen.has(p.id)) merged.push(p);
+          }
+          merged.sort((a, b) => b.updatedAt - a.updatedAt);
+          saveSessionList(merged);
+          return merged;
+        });
+      } catch {
+        /* ignore */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
 
   useEffect(() => {
     try {
@@ -156,6 +235,19 @@ export function ChatPageClient() {
       /* ignore */
     }
   }, []);
+
+  useEffect(() => {
+    if (!selectedProjectId) {
+      setKnowledgeItems([]);
+      return;
+    }
+    setKnowledgeItems(loadProjectKnowledge(selectedProjectId));
+  }, [selectedProjectId]);
+
+  useEffect(() => {
+    if (!selectedProjectId) return;
+    saveProjectKnowledge(selectedProjectId, knowledgeItems);
+  }, [knowledgeItems, selectedProjectId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -225,6 +317,17 @@ export function ChatPageClient() {
     [projects, selectedProjectId],
   );
 
+  const updateProjectInstructions = useCallback((next: string) => {
+    if (!selectedProjectId) return;
+    setProjects((prev) => {
+      const mapped = prev.map((p) =>
+        p.id === selectedProjectId ? { ...p, instructions: next } : p,
+      );
+      saveProjects(mapped);
+      return mapped;
+    });
+  }, [selectedProjectId]);
+
   const persistAgentCharacter = useCallback(
     async (next: AiCharacter | null) => {
       if (!userId) return;
@@ -263,7 +366,14 @@ export function ChatPageClient() {
         body: {
           characterSlug,
           projectInstructions: selectedProject?.instructions ?? undefined,
-          ...(useTopP ? { topP } : { temperature }),
+          projectKnowledgeContext:
+            selectedProjectId && knowledgeItems.length
+              ? serializeKnowledgeForPrompt(knowledgeItems)
+              : undefined,
+          temperature,
+          topP,
+          urlScrapingEnabled,
+          webSearchEnabled: webEnabled,
         },
         credentials: "include",
         headers: {
@@ -274,9 +384,12 @@ export function ChatPageClient() {
       characterSlug,
       guestId,
       selectedProject?.instructions,
+      selectedProjectId,
+      knowledgeItems,
       temperature,
       topP,
-      useTopP,
+      webEnabled,
+      urlScrapingEnabled,
     ],
   );
 
@@ -310,14 +423,40 @@ export function ChatPageClient() {
   }, [messages]);
 
   useEffect(() => {
+    let cancelled = false;
     skipNextPersistRef.current = true;
-    try {
-      const loaded = loadSessionMessages(sessionId);
-      setMessages(loaded ?? []);
-    } catch {
-      setMessages([]);
-    }
-  }, [sessionId, setMessages]);
+    (async () => {
+      if (userId) {
+        try {
+          const res = await fetch(
+            `/api/ai/conversations/${encodeURIComponent(sessionId)}`,
+            { credentials: "include" },
+          );
+          if (res.ok) {
+            const data = (await res.json()) as {
+              conversation?: { messages?: unknown };
+            };
+            const raw = data.conversation?.messages;
+            if (Array.isArray(raw) && raw.length) {
+              if (!cancelled) setMessages(raw as UIMessage[]);
+              return;
+            }
+          }
+        } catch {
+          /* fall back to local */
+        }
+      }
+      try {
+        const loaded = loadSessionMessages(sessionId);
+        if (!cancelled) setMessages(loaded ?? []);
+      } catch {
+        if (!cancelled) setMessages([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionId, setMessages, userId]);
 
   useEffect(() => {
     if (skipNextPersistRef.current) {
@@ -326,6 +465,45 @@ export function ChatPageClient() {
     }
     saveSessionMessages(sessionId, messages);
   }, [messages, sessionId]);
+
+  useEffect(() => {
+    if (!userId) return;
+    if (skipNextPersistRef.current) return;
+    const id = window.setTimeout(() => {
+      void (async () => {
+        const firstUser = messages.find((m) => m.role === "user");
+        const title =
+          (firstUser ? messageText(firstUser).trim() : "") || "Chat";
+        const body = {
+          characterSlug,
+          messages,
+          title: title.slice(0, 200),
+        };
+        try {
+          const put = await fetch(
+            `/api/ai/conversations/${encodeURIComponent(sessionId)}`,
+            {
+              body: JSON.stringify(body),
+              credentials: "include",
+              headers: { "Content-Type": "application/json" },
+              method: "PUT",
+            },
+          );
+          if (put.status === 404) {
+            await fetch("/api/ai/conversations", {
+              body: JSON.stringify({ id: sessionId, ...body }),
+              credentials: "include",
+              headers: { "Content-Type": "application/json" },
+              method: "POST",
+            });
+          }
+        } catch {
+          /* ignore */
+        }
+      })();
+    }, 1400);
+    return () => window.clearTimeout(id);
+  }, [characterSlug, messages, sessionId, userId]);
 
   const upsertSessionTitle = useCallback(
     (id: string, title: string) => {
@@ -377,10 +555,30 @@ export function ChatPageClient() {
   };
 
   const newChat = () => {
-    setSessionId(crypto.randomUUID());
+    const id = crypto.randomUUID();
+    setSessionId(id);
     setMessages([]);
     clearError();
     toast.message("New chat");
+    if (userId) {
+      void (async () => {
+        try {
+          await fetch("/api/ai/conversations", {
+            body: JSON.stringify({
+              characterSlug,
+              id,
+              messages: [],
+              title: null,
+            }),
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            method: "POST",
+          });
+        } catch {
+          /* ignore */
+        }
+      })();
+    }
   };
 
   const handleSelectSession = (id: string) => {
@@ -395,7 +593,7 @@ export function ChatPageClient() {
     setMessages((prev) => prev.filter((m) => m.id !== id));
   };
 
-  const startSpeech = () => {
+  const startSpeech = async () => {
     type RecognitionCtor = new () => {
       continuous: boolean;
       interimResults: boolean;
@@ -414,6 +612,44 @@ export function ChatPageClient() {
       toast.error("Speech recognition is not supported in this browser.");
       return;
     }
+
+    if (!window.isSecureContext) {
+      toast.error(
+        "Microphone access requires HTTPS (or localhost). Open this page over a secure connection.",
+      );
+      return;
+    }
+
+    if (navigator.mediaDevices?.getUserMedia) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: true,
+        });
+        stream.getTracks().forEach((t) => t.stop());
+      } catch (e) {
+        const err = e as DOMException;
+        const name = err?.name ?? "";
+        if (name === "NotAllowedError" || name === "PermissionDeniedError") {
+          toast.error(
+            "Microphone access was denied. Allow the microphone in your browser address bar or site settings, then try again.",
+          );
+          return;
+        }
+        if (name === "NotFoundError" || name === "DevicesNotFoundError") {
+          toast.error("No microphone was found.");
+          return;
+        }
+        if (name === "NotReadableError" || name === "TrackStartError") {
+          toast.error(
+            "The microphone is in use or could not be opened. Try another app or device.",
+          );
+          return;
+        }
+        toast.error("Could not access the microphone.");
+        return;
+      }
+    }
+
     const recognition = new SR();
     recognition.lang = "en-US";
     recognition.interimResults = false;
@@ -433,7 +669,7 @@ export function ChatPageClient() {
       if (code === "aborted") return;
       if (code === "not-allowed")
         toast.error(
-          "Microphone or speech recognition was blocked. Check browser permissions.",
+          "Speech recognition was blocked. Check browser permissions for the microphone and speech recognition.",
         );
       else if (code === "no-speech")
         toast.message("No speech detected—try again.");
@@ -519,22 +755,57 @@ export function ChatPageClient() {
         setSearchQuery={setSearchQuery}
       />
 
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+      <div className={`
+        flex min-h-0 min-w-0 flex-1 flex-col
+        lg:flex-row
+      `}>
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <header className={`
           flex shrink-0 items-center justify-between gap-2 border-b
           border-border px-4 py-3
         `}>
-          <div className="min-w-0">
-            <h1 className="truncate text-lg font-semibold tracking-tight">
-              Chat
-            </h1>
+          <div className="min-w-0 flex-1">
             {selectedProject ? (
-              <p className="truncate text-xs text-muted-foreground">
-                Project: {selectedProject.name}
-              </p>
-            ) : null}
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  className="shrink-0 gap-1 px-2"
+                  onClick={() => setSelectedProjectId(null)}
+                  size="sm"
+                  type="button"
+                  variant="ghost"
+                >
+                  <ChevronLeft aria-hidden className="h-4 w-4" />
+                  All projects
+                </Button>
+                <div className="min-w-0">
+                  <h1 className="truncate text-lg font-semibold tracking-tight">
+                    {selectedProject.name}
+                  </h1>
+                  <p className="truncate text-xs text-muted-foreground">
+                    Project chat
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <h1 className="truncate text-lg font-semibold tracking-tight">
+                  Chat
+                </h1>
+              </div>
+            )}
           </div>
           <div className="flex shrink-0 items-center gap-1">
+            {selectedProject ? (
+              <Button
+                className="lg:hidden"
+                onClick={() => setProjectSettingsDialogOpen(true)}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                Project settings
+              </Button>
+            ) : null}
             <Popover>
               <PopoverTrigger asChild>
                 <Button size="icon" type="button" variant="ghost">
@@ -543,43 +814,59 @@ export function ChatPageClient() {
                 </Button>
               </PopoverTrigger>
               <PopoverContent align="end" className="w-80">
-                <div className="space-y-3">
-                  <p className="text-sm font-medium">Sampling</p>
-                  <label className={`
-                    flex cursor-pointer items-center gap-2 text-sm
-                  `}>
-                    <input
-                      checked={useTopP}
-                      onChange={(e) => setUseTopP(e.target.checked)}
-                      type="checkbox"
+                <div className="space-y-4">
+                  <p className="text-sm font-medium">Advanced</p>
+                  <div className="space-y-2">
+                    <Label className="text-xs">
+                      Temperature: {temperature.toFixed(2)}
+                    </Label>
+                    <Slider
+                      max={2}
+                      min={0}
+                      onValueChange={(v) => setTemperature(v[0] ?? 0.7)}
+                      step={0.05}
+                      value={[temperature]}
                     />
-                    Use Top P instead of temperature
-                  </label>
-                  {!useTopP ? (
-                    <div className="space-y-2">
-                      <Label className="text-xs">
-                        Temperature: {temperature.toFixed(2)}
-                      </Label>
-                      <Slider
-                        max={2}
-                        min={0}
-                        onValueChange={(v) => setTemperature(v[0] ?? 0.7)}
-                        step={0.05}
-                        value={[temperature]}
-                      />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs">Top P: {topP.toFixed(2)}</Label>
+                    <Slider
+                      max={1}
+                      min={0.05}
+                      onValueChange={(v) => setTopP(v[0] ?? 0.95)}
+                      step={0.05}
+                      value={[topP]}
+                    />
+                  </div>
+                  <div
+                    className={`
+                      flex items-center justify-between gap-3 border-t
+                      border-border/60 pt-3
+                    `}
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium">Web enabled</p>
+                      <p className="text-xs text-muted-foreground">
+                        Hint the model to use web search when supported.
+                      </p>
                     </div>
-                  ) : (
-                    <div className="space-y-2">
-                      <Label className="text-xs">Top P: {topP.toFixed(2)}</Label>
-                      <Slider
-                        max={1}
-                        min={0.05}
-                        onValueChange={(v) => setTopP(v[0] ?? 0.95)}
-                        step={0.05}
-                        value={[topP]}
-                      />
+                    <Switch
+                      checked={webEnabled}
+                      onCheckedChange={setWebEnabled}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium">URL scraping</p>
+                      <p className="text-xs text-muted-foreground">
+                        Hint the model to fetch or quote page content.
+                      </p>
                     </div>
-                  )}
+                    <Switch
+                      checked={urlScrapingEnabled}
+                      onCheckedChange={setUrlScrapingEnabled}
+                    />
+                  </div>
                 </div>
               </PopoverContent>
             </Popover>
@@ -635,8 +922,9 @@ export function ChatPageClient() {
                 text-center
               `}>
                 <p className="max-w-sm text-sm text-muted-foreground">
-                  Start a conversation. Your messages stay private to this
-                  browser unless you use account backups.
+                  {selectedProject
+                    ? "Start a new conversation. Project instructions and knowledge apply to this chat."
+                    : "Start a conversation. Your messages stay private to this browser unless you use account backups."}
                 </p>
               </div>
             ) : null}
@@ -654,10 +942,7 @@ export function ChatPageClient() {
                 >
                   <div
                     className={cn(
-                      `
-                        max-w-[min(100%,85%)] rounded-2xl px-4 py-3 text-sm
-                        shadow-sm
-                      `,
+                      `max-w-[min(100%,85%)] rounded-2xl px-4 py-3 text-sm`,
                       isUser
                         ? "bg-primary text-primary-foreground"
                         : "bg-muted text-foreground",
@@ -727,8 +1012,9 @@ export function ChatPageClient() {
           </div>
         </div>
 
+
         <div className={`
-          shrink-0 border-t border-border/80 bg-background/95 p-4 backdrop-blur
+          shrink-0 border-b border-border/80 bg-background/95 p-4 backdrop-blur
           supports-[backdrop-filter]:bg-background/80
         `}>
           <div className="mx-auto w-full max-w-3xl">
@@ -740,9 +1026,7 @@ export function ChatPageClient() {
               type="file"
             />
             <form
-              className={`
-                rounded-2xl border border-border/80 bg-muted/30 p-2 shadow-sm
-              `}
+              className={`rounded-2xl border border-border/80 bg-muted/30 p-2`}
               onSubmit={onSubmit}
             >
               <textarea
@@ -768,7 +1052,7 @@ export function ChatPageClient() {
                 <div className="flex items-center gap-1">
                   <Button
                     disabled={busy}
-                    onClick={startSpeech}
+                    onClick={() => void startSpeech()}
                     size="icon"
                     title="Dictate"
                     type="button"
@@ -810,6 +1094,54 @@ export function ChatPageClient() {
           </div>
         </div>
       </div>
+            {selectedProject ? (
+              <div
+                className={`
+                  hidden h-full min-h-0 w-full max-w-[420px] shrink-0
+                  lg:flex
+                `}
+              >
+                <ProjectSettingsPanel
+                  knowledgeItems={knowledgeItems}
+                  onInstructionsChange={updateProjectInstructions}
+                  onKnowledgeChange={setKnowledgeItems}
+                  project={selectedProject}
+                />
+              </div>
+            ) : null}
+          </div>
+
+      <Dialog
+        onOpenChange={setProjectSettingsDialogOpen}
+        open={projectSettingsDialogOpen}
+      >
+        <DialogContent
+          className={`
+            flex max-h-[90vh] max-w-lg flex-col gap-0 overflow-hidden p-0
+            lg:hidden
+          `}
+        >
+          <div className="border-b border-border px-4 py-3">
+            <DialogHeader className="gap-0 text-left">
+              <DialogTitle className="text-base">Project settings</DialogTitle>
+              <DialogDescription className="text-xs">
+                Instructions and knowledge for this project.
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          <div className="max-h-[min(70vh,560px)] overflow-y-auto">
+            {selectedProject ? (
+              <ProjectSettingsPanel
+                className={`border-0 bg-transparent`}
+                knowledgeItems={knowledgeItems}
+                onInstructionsChange={updateProjectInstructions}
+                onKnowledgeChange={setKnowledgeItems}
+                project={selectedProject}
+              />
+            ) : null}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog onOpenChange={setProjectDialogOpen} open={projectDialogOpen}>
         <DialogContent className="sm:max-w-md">

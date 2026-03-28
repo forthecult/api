@@ -1,23 +1,16 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import Image from "next/image";
-import {
-  ArrowLeftRight,
-  ArrowUpRight,
-  BarChart3,
-  Bot,
-  Cpu,
-  Droplets,
-  Shield,
-  Sparkles,
-  TrendingUp,
-} from "lucide-react";
+import { ArrowUpRight, Shield } from "lucide-react";
 import Link from "next/link";
 
 import { SEO_CONFIG } from "~/app";
 import { getPublicSiteUrl } from "~/lib/app-url";
 import { cn } from "~/lib/cn";
-import { getPartnerUrl } from "~/lib/recommended-services";
+import {
+  getPartnerUrl,
+  SERVICE_BRAND_LOGOS,
+} from "~/lib/recommended-services";
 import { Button } from "~/ui/primitives/button";
 
 const siteUrl = getPublicSiteUrl();
@@ -25,10 +18,10 @@ const siteUrl = getPublicSiteUrl();
 export const metadata: Metadata = {
   alternates: { canonical: `${siteUrl}/services` },
   description:
-    "Tools and platforms we use and recommend—DEXs, hardware wallets, private AI, and non-custodial swaps. Some links support the project when you sign up.",
+    "Tools and platforms we use and recommend—DEXs, hardware wallets, private AI, swaps, and privacy. Some links support the project when you sign up.",
   openGraph: {
     description:
-      "Curated partners for trading, custody, AI, and swaps. Clear disclosure; referral links where applicable.",
+      "Curated partners for trading, custody, AI, swaps, and privacy. Clear disclosure; referral links where applicable.",
     title: `Recommended services | ${SEO_CONFIG.name}`,
     type: "website",
     url: `${siteUrl}/services`,
@@ -61,7 +54,7 @@ function IconPanel({
   children,
   className,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
   className: string;
 }) {
   return (
@@ -71,7 +64,6 @@ function IconPanel({
         `
           relative flex aspect-square w-full max-w-[min(100%,320px)] items-center
           justify-center overflow-hidden rounded-2xl border border-border
-          shadow-lg
         `,
         className,
       )}
@@ -81,13 +73,31 @@ function IconPanel({
   );
 }
 
+function BrandLogo({ label, src }: { label: string; src: string }) {
+  return (
+    <Image
+      alt=""
+      aria-hidden
+      className="object-contain p-10"
+      height={200}
+      sizes="(max-width: 768px) 80vw, 200px"
+      src={src}
+      title={label}
+      width={200}
+    />
+  );
+}
+
 export default function ServicesPage() {
   const hyperliquid = getPartnerUrl("hyperliquid");
   const uniswap = getPartnerUrl("uniswap");
   const trezor = getPartnerUrl("trezor");
   const venice = getPartnerUrl("venice");
   const sideshift = getPartnerUrl("sideshift");
-  const fixedfloat = getPartnerUrl("fixedfloat");
+  const justdeleteme = getPartnerUrl("justdeleteme");
+  const cloaked = getPartnerUrl("cloaked");
+
+  const logos = SERVICE_BRAND_LOGOS;
 
   return (
     <div className="bg-background">
@@ -114,9 +124,7 @@ export default function ServicesPage() {
             Recommended services
           </h1>
           <p className="mt-4 text-lg text-muted-foreground">
-            We only list tools we actually respect. When you use our links, we
-            may earn a referral fee or affiliate commission—at no extra cost to
-            you. That helps fund the store, Culture AI, and open work we publish.
+            We only list tools we respect and use ourselves.
           </p>
         </div>
       </section>
@@ -134,7 +142,6 @@ export default function ServicesPage() {
         </span>
       </div>
 
-      {/* decentralized exchanges */}
       <section
         aria-labelledby="dex-heading"
         className="border-b border-border px-4 py-14 sm:py-20"
@@ -168,14 +175,7 @@ export default function ServicesPage() {
                 to-slate-900 md:mx-0
               `}
             >
-              <Image
-                alt=""
-                className="object-contain p-10 brightness-0 invert"
-                height={200}
-                src="https://cdn.simpleicons.org/hyperliquid/ffffff"
-                unoptimized
-                width={200}
-              />
+              <BrandLogo label="Hyperliquid" src={logos.hyperliquid} />
             </IconPanel>
             <div>
               <h3 className="font-heading text-2xl font-semibold text-foreground">
@@ -185,8 +185,6 @@ export default function ServicesPage() {
                 High-performance on-chain perpetuals and spot
               </p>
               <p className="mt-4 leading-relaxed text-muted-foreground">
-                If you typed “Hyperledger” expecting enterprise blockchain docs—wrong
-                neighborhood.{" "}
                 <span className="text-foreground">Hyperliquid</span> is a
                 decentralized exchange stack built for traders who want deep
                 liquidity and fast execution without handing custody to a
@@ -243,19 +241,12 @@ export default function ServicesPage() {
                 md:order-2 md:mx-0
               `}
             >
-              <div className="flex items-center justify-center gap-4 p-10 text-white">
-                <Droplets className="h-20 w-20 shrink-0" strokeWidth={1.1} />
-                <Droplets
-                  className="h-14 w-14 shrink-0 opacity-80"
-                  strokeWidth={1.1}
-                />
-              </div>
+              <BrandLogo label="Uniswap" src={logos.uniswap} />
             </IconPanel>
           </article>
         </div>
       </section>
 
-      {/* hardware wallets */}
       <section
         aria-labelledby="wallets-heading"
         className="border-b border-border bg-muted/15 px-4 py-14 sm:py-20"
@@ -289,13 +280,7 @@ export default function ServicesPage() {
                 to-zinc-950 md:mx-0
               `}
             >
-              <Image
-                alt=""
-                className="object-contain p-12 brightness-0 invert"
-                height={200}
-                src="https://cdn.simpleicons.org/trezor/ffffff"
-                width={200}
-              />
+              <BrandLogo label="Trezor" src={logos.trezor} />
             </IconPanel>
             <div>
               <h3 className="font-heading text-2xl font-semibold text-foreground">
@@ -343,7 +328,6 @@ export default function ServicesPage() {
         </div>
       </section>
 
-      {/* AI */}
       <section
         aria-labelledby="ai-heading"
         className="border-b border-border px-4 py-14 sm:py-20"
@@ -376,10 +360,7 @@ export default function ServicesPage() {
                 to-slate-950 md:mx-0
               `}
             >
-              <div className="flex flex-col items-center gap-4 p-10 text-white">
-                <Sparkles className="h-16 w-16 opacity-95" strokeWidth={1.25} />
-                <Bot className="h-12 w-12 opacity-90" strokeWidth={1.25} />
-              </div>
+              <BrandLogo label="Venice" src={logos.venice} />
             </IconPanel>
             <div>
               <h3 className="font-heading text-2xl font-semibold text-foreground">
@@ -404,6 +385,10 @@ export default function ServicesPage() {
                 of intelligence. It pairs naturally with how we run Culture AI:
                 powerful, but not creepy-by-default.
               </p>
+              <p className="mt-4 leading-relaxed text-foreground">
+                New users get $10 in credit when they sign up through our Venice
+                link (subject to Venice’s current offer terms).
+              </p>
               <div className="mt-8">
                 <PartnerCta href={venice}>Try Venice</PartnerCta>
               </div>
@@ -412,10 +397,9 @@ export default function ServicesPage() {
         </div>
       </section>
 
-      {/* swap */}
       <section
         aria-labelledby="swap-heading"
-        className="bg-muted/15 px-4 py-14 sm:py-20"
+        className="border-b border-border bg-muted/15 px-4 py-14 sm:py-20"
       >
         <div className="container mx-auto max-w-5xl">
           <h2
@@ -429,7 +413,7 @@ export default function ServicesPage() {
           </h2>
           <p className="mt-2 max-w-2xl text-muted-foreground">
             Move between assets without depositing to a custodial exchange—mind
-            spreads, mind confirmations, mind opsec.
+            spreads, confirmations, and opsec.
           </p>
 
           <article
@@ -446,7 +430,7 @@ export default function ServicesPage() {
                 to-slate-950 md:mx-0
               `}
             >
-              <ArrowLeftRight className="h-24 w-24 text-white" strokeWidth={1.15} />
+              <BrandLogo label="SideShift" src={logos.sideshift} />
             </IconPanel>
             <div>
               <h3 className="font-heading text-2xl font-semibold text-foreground">
@@ -464,10 +448,70 @@ export default function ServicesPage() {
               <p className="mt-4 leading-relaxed text-muted-foreground">
                 We like it next to native DEX trading when you want a simple
                 swap-shaped UX instead of managing pool routes yourself. Compare
-                rates with our other pick below before you send size.
+                the quoted rate to what you would get on-chain before you move
+                size.
               </p>
               <div className="mt-8">
                 <PartnerCta href={sideshift}>Swap with SideShift</PartnerCta>
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section
+        aria-labelledby="privacy-heading"
+        className="border-b border-border px-4 py-14 sm:py-20"
+      >
+        <div className="container mx-auto max-w-5xl">
+          <h2
+            className={`
+              font-heading text-2xl font-bold tracking-tight text-foreground
+              sm:text-3xl
+            `}
+            id="privacy-heading"
+          >
+            Privacy &amp; accounts
+          </h2>
+          <p className="mt-2 max-w-2xl text-muted-foreground">
+            Fewer accounts hanging open, fewer inboxes tied to your real identity.
+          </p>
+
+          <article
+            className={cn(
+              `
+                mt-14 grid min-h-[70vh] items-center gap-10
+                md:grid-cols-2 md:gap-14
+              `,
+            )}
+          >
+            <IconPanel
+              className={`
+                mx-auto bg-gradient-to-br from-rose-700/90 via-red-900/90
+                to-zinc-950 md:mx-0
+              `}
+            >
+              <BrandLogo label="JustDeleteMe" src={logos.justdeleteme} />
+            </IconPanel>
+            <div>
+              <h3 className="font-heading text-2xl font-semibold text-foreground">
+                JustDeleteMe
+              </h3>
+              <p className="mt-3 text-sm font-medium text-primary">
+                Direct links to close accounts—before they close you
+              </p>
+              <p className="mt-4 leading-relaxed text-muted-foreground">
+                JustDeleteMe catalogs how hard it is to delete your account across
+                popular sites and points you to the real deletion flows—not the
+                “deactivate” theater some services prefer. Use it when you are
+                pruning old sign-ups or doing a periodic privacy audit.
+              </p>
+              <p className="mt-4 leading-relaxed text-muted-foreground">
+                It is an open project maintained for the public good; we keep it in
+                our bookmarks alongside password managers and hardware wallets.
+              </p>
+              <div className="mt-8">
+                <PartnerCta href={justdeleteme}>Open JustDeleteMe</PartnerCta>
               </div>
             </div>
           </article>
@@ -483,34 +527,33 @@ export default function ServicesPage() {
           >
             <div className="order-2 md:order-1">
               <h3 className="font-heading text-2xl font-semibold text-foreground">
-                FixedFloat
+                Cloaked
               </h3>
               <p className="mt-3 text-sm font-medium text-primary">
-                Lightning and mainchain-friendly exchange desk
+                Email aliases that do not leak your real address
               </p>
               <p className="mt-4 leading-relaxed text-muted-foreground">
-                FixedFloat is another non-custodial-flavored swap desk we keep in
-                rotation when SideShift does not win on rate or pair coverage. The
-                UI is spartan on purpose: less hand-holding, more “here is the
-                quote, here is the address—go.”
+                Cloaked generates unique email addresses you can hand to retailers,
+                newsletters, and random forms. Replies route where you want; your
+                primary inbox stays out of resale databases and breach dumps.
               </p>
               <p className="mt-4 leading-relaxed text-muted-foreground">
-                Rotate between SideShift and FixedFloat for anything non-trivial;
-                splitting flow reduces single-counterparty habits and reminds you to
-                read the implied spread every time.
+                We recommend it when you want account hygiene without juggling
+                throwaway inboxes manually—especially for crypto exchanges,
+                travel, and anything that might spam you for years.
               </p>
               <div className="mt-8">
-                <PartnerCta href={fixedfloat}>Swap with FixedFloat</PartnerCta>
+                <PartnerCta href={cloaked}>Get Cloaked</PartnerCta>
               </div>
             </div>
             <IconPanel
               className={`
-                order-1 mx-auto bg-gradient-to-br from-orange-600/90
-                via-amber-800/90 to-zinc-950
+                order-1 mx-auto bg-gradient-to-br from-slate-600/90 via-slate-800/90
+                to-zinc-950
                 md:order-2 md:mx-0
               `}
             >
-              <Cpu className="h-24 w-24 text-white" strokeWidth={1.15} />
+              <BrandLogo label="Cloaked" src={logos.cloaked} />
             </IconPanel>
           </article>
         </div>

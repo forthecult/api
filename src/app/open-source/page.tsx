@@ -32,22 +32,22 @@ const ICONS: Record<
 > = {
   ai: {
     className:
-      "bg-gradient-to-br from-fuchsia-500 via-violet-600 to-indigo-600 shadow-lg shadow-violet-500/25",
+ "bg-gradient-to-br from-fuchsia-500 via-violet-600 to-indigo-600",
     Icon: Sparkles,
   },
   mobile: {
     className:
-      "bg-gradient-to-br from-sky-500 via-blue-600 to-indigo-700 shadow-lg shadow-blue-500/20",
+ "bg-gradient-to-br from-sky-500 via-blue-600 to-indigo-700",
     Icon: Smartphone,
   },
   smartContracts: {
     className:
-      "bg-gradient-to-br from-amber-500 via-orange-500 to-rose-600 shadow-lg shadow-orange-500/20",
+ "bg-gradient-to-br from-amber-500 via-orange-500 to-rose-600",
     Icon: Link2,
   },
   website: {
     className:
-      "bg-gradient-to-br from-violet-500 via-purple-600 to-blue-700 shadow-lg shadow-purple-500/25",
+ "bg-gradient-to-br from-violet-500 via-purple-600 to-blue-700",
     Icon: Globe2,
   },
 };
@@ -139,8 +139,8 @@ export default function OpenSourcePage() {
                       bg-card/80
                     `,
                     `
-                      p-6 shadow-sm transition-shadow
-                      hover:shadow-md
+ p-6 
+ 
                     `,
                   )}
                 >

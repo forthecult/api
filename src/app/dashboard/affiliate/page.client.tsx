@@ -396,7 +396,7 @@ export function AffiliatePageClient() {
                   className={cn(
                     `
                       flex min-h-[80px] w-full rounded-md border border-input
-                      bg-transparent px-3 py-2 text-sm shadow-xs
+ bg-transparent px-3 py-2 text-sm 
                     `,
                     `
                       placeholder:text-muted-foreground

@@ -395,7 +395,7 @@ export function SupportChatWidget({
           className={cn(
             `
               relative z-10 flex w-[min(100vw-2rem,400px)] flex-col rounded-xl
-              border bg-background shadow-xl
+ border bg-background 
             `,
             "max-h-[min(90vh,640px)] overflow-hidden",
           )}
@@ -410,7 +410,7 @@ export function SupportChatWidget({
                     sm:text-sm
                   `,
                   widgetMode === "support"
-                    ? "bg-background text-foreground shadow-sm"
+ ? "bg-background text-foreground "
                     : `
                       text-muted-foreground
                       hover:text-foreground
@@ -429,7 +429,7 @@ export function SupportChatWidget({
                     sm:text-sm
                   `,
                   widgetMode === "personal"
-                    ? "bg-background text-foreground shadow-sm"
+ ? "bg-background text-foreground "
                     : `
                       text-muted-foreground
                       hover:text-foreground
@@ -498,7 +498,7 @@ export function SupportChatWidget({
                 <div
                   className={`
                     relative flex h-10 w-10 shrink-0 items-center justify-center
-                    rounded-full bg-primary text-white shadow-sm
+ rounded-full bg-primary text-white 
                   `}
                 >
                   {/* Avatar */}
@@ -554,7 +554,7 @@ export function SupportChatWidget({
                     <div
                       className={`
                         flex h-14 w-14 items-center justify-center rounded-full
-                        bg-primary text-primary-foreground shadow-md
+ bg-primary text-primary-foreground 
                       `}
                     >
                       <svg
@@ -742,7 +742,7 @@ export function SupportChatWidget({
         aria-label={open ? "Close chat" : "Open support chat"}
         className={cn(
           `
-            h-12 w-12 cursor-grab rounded-full shadow-md
+ h-12 w-12 cursor-grab rounded-full 
             active:cursor-grabbing
           `,
           open && "relative z-0",

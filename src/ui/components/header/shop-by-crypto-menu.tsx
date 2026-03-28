@@ -128,7 +128,7 @@ export function ShopByCryptoMenu({
         align="start"
         className={`
           max-h-[min(80vh,520px)] w-[min(95vw,960px)] overflow-auto rounded-xl
-          border bg-popover p-0 shadow-lg
+ border bg-popover p-0 
         `}
         onMouseEnter={handleContentEnter}
         onMouseLeave={handleContentLeave}

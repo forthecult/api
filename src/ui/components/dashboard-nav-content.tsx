@@ -146,14 +146,6 @@ export function DashboardNavContent({
               </Link>
             </li>
             <li>
-              <Link {...linkProps("/dashboard/ai")}>
-                <span className="flex items-center gap-2">
-                  <Sparkles aria-hidden className="h-4 w-4 shrink-0" />
-                  AI
-                </span>
-              </Link>
-            </li>
-            <li>
               <Link {...linkProps("/dashboard/wishlist")}>
                 <span className="flex items-center gap-2">
                   <Heart aria-hidden className="h-4 w-4 shrink-0" />
@@ -188,6 +180,14 @@ export function DashboardNavContent({
                 <span className="flex items-center gap-2">
                   <Smartphone aria-hidden className="h-4 w-4 shrink-0" />
                   My eSIMs
+                </span>
+              </Link>
+            </li>
+            <li>
+              <Link {...linkProps("/dashboard/ai")}>
+                <span className="flex items-center gap-2">
+                  <Sparkles aria-hidden className="h-4 w-4 shrink-0" />
+                  AI
                 </span>
               </Link>
             </li>

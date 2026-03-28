@@ -229,7 +229,7 @@ function ProductCardInner({
               relative flex h-full flex-col overflow-hidden rounded-lg
               border-[#2A2A2A] bg-[#1A1A1A] py-0 transition-all duration-300
               ease-in-out will-change-transform
-              hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[#C4873A]/5
+ hover:-translate-y-0.5
             `,
             isHovered && "border-[#C4873A]/20 ring-1 ring-[#C4873A]/20",
           )}
@@ -341,7 +341,7 @@ function ProductCardInner({
                 <div
                   className={`
                   flex size-14 items-center justify-center rounded-full
-                  bg-background shadow-lg
+ bg-background 
                 `}
                 >
                   <Lock aria-hidden className="h-7 w-7 text-primary" />

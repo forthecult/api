@@ -981,7 +981,7 @@ export const ShippingAddressForm = function ShippingAddressForm({
                       className={`
                         absolute top-full right-0 left-0 z-50 mt-1 max-h-60
                         overflow-auto rounded-md border border-border
-                        bg-background shadow-lg
+ bg-background 
                       `}
                       role="listbox"
                     >
@@ -1169,7 +1169,7 @@ export const ShippingAddressForm = function ShippingAddressForm({
                     align="end"
                     className={`
                       max-w-56 border-0 bg-neutral-900 px-3 py-2 text-sm
-                      text-white shadow-lg
+ text-white 
                       dark:bg-neutral-100 dark:text-neutral-900
                     `}
                     side="top"

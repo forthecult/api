@@ -5,6 +5,7 @@ import {
   aiAgentTable,
   aiEncryptedBackupTable,
   aiMemoryTable,
+  aiChatConversationTable,
   aiRagChunkTable,
 } from "./tables";
 
@@ -27,6 +28,16 @@ export const aiEncryptedBackupRelations = relations(
   ({ one }) => ({
     user: one(userTable, {
       fields: [aiEncryptedBackupTable.userId],
+      references: [userTable.id],
+    }),
+  }),
+);
+
+export const aiChatConversationRelations = relations(
+  aiChatConversationTable,
+  ({ one }) => ({
+    user: one(userTable, {
+      fields: [aiChatConversationTable.userId],
       references: [userTable.id],
     }),
   }),

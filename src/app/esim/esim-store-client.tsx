@@ -83,7 +83,7 @@ function ContinentCard({
         `,
         `
           cursor-pointer
-          hover:border-primary/30 hover:shadow-md
+ hover:border-primary/30 
         `,
       )}
       onClick={onClick}
@@ -111,7 +111,7 @@ function CountryCard({
         `,
         `
           w-full cursor-pointer
-          hover:border-primary/30 hover:shadow-md
+ hover:border-primary/30 
         `,
       )}
       onClick={onClick}
@@ -230,7 +230,7 @@ function PackageCard({
     <Card
       className={`
       group relative flex h-full flex-col transition-all
-      hover:border-primary/30 hover:shadow-md
+ hover:border-primary/30 
     `}
     >
       {pkg.has5g && (
@@ -238,7 +238,7 @@ function PackageCard({
           className={`
             absolute top-3 right-3 z-10 inline-flex items-center gap-0.5 rounded
             bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary
-            shadow-sm
+ 
           `}
           title="5G available"
         >
@@ -370,7 +370,7 @@ function UnlimitedPlanCard({
     <Card
       className={`
       group relative flex h-full flex-col transition-all
-      hover:border-primary/30 hover:shadow-md
+ hover:border-primary/30 
     `}
     >
       {has5g && (
@@ -378,7 +378,7 @@ function UnlimitedPlanCard({
           className={`
             absolute top-3 right-3 z-10 inline-flex items-center gap-0.5 rounded
             bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary
-            shadow-sm
+ 
           `}
           title="5G available"
         >

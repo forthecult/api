@@ -348,7 +348,7 @@ export function CultSwapBlock() {
         <h2 className="font-display text-2xl font-semibold text-foreground md:text-3xl">
           CULT Swap
         </h2>
-        <div className="mt-6 overflow-hidden rounded-2xl border border-border bg-card shadow-xl">
+ <div className="mt-6 overflow-hidden rounded-2xl border border-border bg-card ">
           <div className="space-y-3 p-6">
             <div className="rounded-xl border border-border bg-muted/20 p-4">
               <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">

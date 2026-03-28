@@ -34,7 +34,7 @@ function SheetContent({
         aria-describedby={undefined}
         className={cn(
           `
-            fixed z-50 flex flex-col gap-4 bg-background shadow-lg transition
+            fixed z-50 flex flex-col gap-4 border border-border bg-background transition
             ease-in-out
             data-[state=closed]:duration-300 data-[state=closed]:animate-out
             data-[state=open]:duration-500 data-[state=open]:animate-in

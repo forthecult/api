@@ -1812,7 +1812,7 @@ function renderActiveFilter<TData, T extends ColumnDataType>(
     <div
       className={`
         flex h-7 items-center rounded-2xl border border-border bg-background
-        text-xs shadow-xs
+ text-xs 
       `}
       key={`filter-${filter.id}`}
     >

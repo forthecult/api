@@ -167,7 +167,7 @@ export function ShopMegaMenu({
         align="start"
         className={`
           w-[min(95vw,1060px)] rounded-lg border border-[#2A2A2A] bg-[#1A1A1A]
-          p-0 shadow-xl
+ p-0 
         `}
         sideOffset={4}
       >

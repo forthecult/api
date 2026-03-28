@@ -248,7 +248,7 @@ export function ProductQuickView({
         className={cn(
           `
             max-w-[calc(100vw-2rem)] gap-0 overflow-hidden rounded-xl border p-0
-            shadow-2xl
+ 
           `,
           "sm:max-w-4xl",
           `
@@ -264,7 +264,7 @@ export function ProductQuickView({
           "[&_[data-slot=dialog-close]]:size-9 [&_[data-slot=dialog-close]]:rounded-full",
           "[&_[data-slot=dialog-close]]:border [&_[data-slot=dialog-close]]:border-border",
           "[&_[data-slot=dialog-close]]:bg-background [&_[data-slot=dialog-close]]:opacity-100",
-          "[&_[data-slot=dialog-close]]:shadow-md",
+ "[&_[data-slot=dialog-close]]:shadow-none",
           "sm:[&_[data-slot=dialog-close]]:size-8",
           "sm:[&_[data-slot=dialog-close]]:border-0 sm:[&_[data-slot=dialog-close]]:bg-transparent sm:[&_[data-slot=dialog-close]]:shadow-none",
           "[&_[data-slot=dialog-close]]:hover:bg-muted",

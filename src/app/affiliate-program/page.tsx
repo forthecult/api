@@ -121,8 +121,8 @@ export default function AffiliateProgramPage() {
             <div
               className={`
               group rounded-2xl border border-border bg-card/50 p-6 text-center
-              shadow-sm transition-shadow
-              hover:shadow-md
+ 
+ 
             `}
             >
               <span
@@ -143,8 +143,8 @@ export default function AffiliateProgramPage() {
             <div
               className={`
               group rounded-2xl border border-border bg-card/50 p-6 text-center
-              shadow-sm transition-shadow
-              hover:shadow-md
+ 
+ 
             `}
             >
               <span
@@ -165,8 +165,8 @@ export default function AffiliateProgramPage() {
             <div
               className={`
               group rounded-2xl border border-border bg-card/50 p-6 text-center
-              shadow-sm transition-shadow
-              hover:shadow-md
+ 
+ 
             `}
             >
               <span
@@ -284,7 +284,7 @@ export default function AffiliateProgramPage() {
             </div>
             <div
               className={`
-              rounded-2xl border border-border bg-card/50 px-5 py-5 shadow-sm
+ rounded-2xl border border-border bg-card/50 px-5 py-5 
             `}
             >
               <h3 className="font-semibold text-foreground">Payouts</h3>
@@ -296,7 +296,7 @@ export default function AffiliateProgramPage() {
             </div>
             <div
               className={`
-              rounded-2xl border border-border bg-card/50 px-5 py-5 shadow-sm
+ rounded-2xl border border-border bg-card/50 px-5 py-5 
             `}
             >
               <h3 className="font-semibold text-foreground">Commission</h3>
@@ -308,7 +308,7 @@ export default function AffiliateProgramPage() {
             </div>
             <div
               className={`
-              rounded-2xl border border-border bg-card/50 px-5 py-5 shadow-sm
+ rounded-2xl border border-border bg-card/50 px-5 py-5 
             `}
             >
               <h3 className="font-semibold text-foreground">Who can join</h3>
@@ -339,7 +339,7 @@ export default function AffiliateProgramPage() {
             <div
               className={`
               rounded-xl border border-border bg-background px-4 py-3
-              text-center shadow-sm
+ text-center 
             `}
             >
               <dt
@@ -355,7 +355,7 @@ export default function AffiliateProgramPage() {
             <div
               className={`
               rounded-xl border border-border bg-background px-4 py-3
-              text-center shadow-sm
+ text-center 
             `}
             >
               <dt
@@ -373,7 +373,7 @@ export default function AffiliateProgramPage() {
             <div
               className={`
               rounded-xl border border-border bg-background px-4 py-3
-              text-center shadow-sm
+ text-center 
             `}
             >
               <dt
@@ -389,7 +389,7 @@ export default function AffiliateProgramPage() {
             <div
               className={`
               rounded-xl border border-border bg-background px-4 py-3
-              text-center shadow-sm
+ text-center 
             `}
             >
               <dt

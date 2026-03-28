@@ -67,7 +67,7 @@ function TabsTrigger({
           focus-visible:ring-ring/50 focus-visible:outline-1
           focus-visible:outline-ring
           disabled:pointer-events-none disabled:opacity-50
-          data-[state=active]:bg-background data-[state=active]:shadow-sm
+          data-[state=active]:bg-background
           dark:text-muted-foreground dark:data-[state=active]:border-input
           dark:data-[state=active]:bg-input/30
           dark:data-[state=active]:text-foreground

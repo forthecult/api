@@ -249,7 +249,7 @@ export function LongFormProductPage({
                   <li
                     className={`
                       flex items-start gap-3 rounded-lg border bg-card p-4
-                      text-card-foreground shadow-sm
+ text-card-foreground 
                     `}
                     key={`feature-${product.id}-${slugify(feature)}`}
                   >
@@ -321,7 +321,7 @@ export function LongFormProductPage({
           >
             <div
               className={`
-              mx-auto max-w-xl rounded-xl border bg-card p-8 shadow-sm
+ mx-auto max-w-xl rounded-xl border bg-card p-8 
             `}
             >
               <h2 className="mb-4 text-xl font-bold">Ready to order?</h2>

@@ -554,7 +554,7 @@ export default function TokenPage() {
                   className={`
                     absolute top-1/2 left-1/2 h-[65%] w-[65%] -translate-x-1/2
                     -translate-y-1/2 rounded-full border-4 border-background
-                    shadow-lg
+ 
                   `}
                   style={{ background: creatorFeePieGradient() }}
                 />

@@ -185,7 +185,7 @@ export function TelegramLoginWidget({
             ? "flex h-9 min-w-0 items-center justify-center"
             : `
               relative flex h-9 min-w-0 items-center justify-center rounded-md
-              border border-input bg-background px-4 py-2 shadow-sm
+ border border-input bg-background px-4 py-2 
             `
         }
       >

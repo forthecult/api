@@ -69,7 +69,7 @@ function Slider({
         <SliderPrimitive.Thumb
           className={`
             block size-4 shrink-0 rounded-full border border-primary
-            bg-background shadow-sm ring-ring/50 transition-[color,box-shadow]
+            bg-background ring-1 ring-ring/30 transition-[color,box-shadow]
             hover:ring-4
             focus-visible:ring-4 focus-visible:outline-hidden
             disabled:pointer-events-none disabled:opacity-50

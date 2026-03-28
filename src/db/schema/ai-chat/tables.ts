@@ -136,3 +136,25 @@ export const aiRagChunkTable = pgTable(
   },
   (t) => [index("ai_rag_chunk_scope_user_idx").on(t.scope, t.userId)],
 );
+
+export const aiChatConversationTable = pgTable(
+  "ai_chat_conversation",
+  {
+    characterSlug: text("character_slug"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    id: text("id").primaryKey(),
+    messages: jsonb("messages").notNull().$type<unknown[]>(),
+    title: text("title"),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => userTable.id, { onDelete: "cascade" }),
+  },
+  (tb) => [
+    index("ai_chat_conversation_user_updated_idx").on(tb.userId, tb.updatedAt),
+  ],
+);
+

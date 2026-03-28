@@ -8,12 +8,9 @@ import { cn } from "~/lib/cn";
 const buttonVariants = cva(
   `
     inline-flex shrink-0 items-center justify-center gap-2 rounded-md text-sm
-    font-medium whitespace-nowrap shadow-sm transition-all duration-200
+    font-medium whitespace-nowrap transition-colors duration-200
     ease-in-out outline-none
-    hover:shadow-md
-    focus:shadow-lg
     focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/60
-    active:shadow
     disabled:pointer-events-none disabled:opacity-50
     aria-invalid:border-destructive aria-invalid:ring-destructive/20
     dark:aria-invalid:ring-destructive/40
@@ -43,14 +40,14 @@ const buttonVariants = cva(
       },
       variant: {
         default: `
-          bg-[#C4873A] font-semibold text-[#111111] shadow-xs
-          hover:bg-[#D4A05A] hover:shadow-md hover:shadow-[#C4873A]/20
+          bg-[#C4873A] font-semibold text-[#111111]
+          hover:bg-[#D4A05A]
           focus-visible:ring-2 focus-visible:ring-[#C4873A]/60
           active:bg-[#A8702F]
         `,
         destructive: `
-          bg-destructive text-white shadow-xs
-          hover:bg-destructive/90 hover:shadow-md
+          bg-destructive text-white
+          hover:bg-destructive/90
           focus-visible:ring-2 focus-visible:ring-destructive/40
           dark:bg-destructive/60 dark:focus-visible:ring-destructive/40
         `,
@@ -64,15 +61,14 @@ const buttonVariants = cva(
           focus-visible:ring-2 focus-visible:ring-primary/40
         `,
         outline: `
-          border border-border bg-transparent text-[#1A1611] shadow-xs
+          border border-border bg-transparent text-[#1A1611]
           hover:border-primary/50 hover:bg-muted hover:text-primary
-          hover:shadow-md
           focus-visible:ring-2 focus-visible:ring-primary/40
           dark:text-[#F5F1EB]
         `,
         secondary: `
-          bg-secondary text-secondary-foreground shadow-xs
-          hover:bg-secondary/80 hover:shadow-md
+          bg-secondary text-secondary-foreground
+          hover:bg-secondary/80
           focus-visible:ring-2 focus-visible:ring-secondary/40
         `,
       },

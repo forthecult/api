@@ -222,7 +222,7 @@ export function MembershipAfterStakeTestClient() {
       {/* Stake card with "Your stake" — same layout as real membership */}
       <section className="container mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-2xl">
-          <Card className="overflow-hidden rounded-2xl border border-border bg-card shadow-xl">
+ <Card className="overflow-hidden rounded-2xl border border-border bg-card ">
             <div className="border-b bg-muted/30 px-6 py-5">
               <h2 className="font-display text-xl font-semibold text-foreground md:text-2xl">
                 Upgrade Membership

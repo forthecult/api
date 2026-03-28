@@ -327,7 +327,7 @@ export function TokenGateGuard({
     >
       <div
         className={`
-        w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-sm
+ w-full max-w-md rounded-xl border border-border bg-card p-6 
       `}
       >
         <div className="mb-6 flex flex-col items-center gap-3 text-center">

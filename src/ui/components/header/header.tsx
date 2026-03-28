@@ -619,7 +619,7 @@ export function Header({ isAdmin: isAdminProp, showAuth = true }: HeaderProps) {
               </>
             ) : (
               <>
-                {/* Desktop: search icon; mobile: search bar below; hidden on checkout */}
+                {/* Desktop: inline search; mobile: search bar below; hidden on checkout */}
                 {!isCheckout && (
                   <div
                     className={`

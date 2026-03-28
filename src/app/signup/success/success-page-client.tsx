@@ -18,7 +18,7 @@ export function SignupSuccessClient() {
         title="You're all set!"
       />
 
-      <Card className="border-none shadow-sm">
+ <Card className="border-none ">
         <CardContent
           className={`
           flex flex-col items-center gap-6 px-4 py-6

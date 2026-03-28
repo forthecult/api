@@ -245,7 +245,7 @@ export function ProductVariantSection({
                             isSelected
                               ? `
                                 border-[#C4873A] bg-[#C4873A] text-[#111111]
-                                shadow-sm shadow-[#C4873A]/20
+ 
                               `
                               : outOfStock
                                 ? `
