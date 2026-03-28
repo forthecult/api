@@ -64,6 +64,8 @@
     "analyze": "ANALYZE=true bun run build"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^3.0.48",
+    "@ai-sdk/react": "^3.0.143",
     "@better-auth/passkey": "^1.5.6",
     "@metamask/sdk": "^0.34.0",
     "@metamask/sdk-react": "^0.33.1",
@@ -103,6 +105,7 @@
     "@upstash/redis": "^1.37.0",
     "@vercel/speed-insights": "^2.0.0",
     "@walletconnect/ethereum-provider": "^2.23.9",
+    "ai": "^6.0.141",
     "better-auth": "1.5.6",
     "bignumber.js": "^10.0.2",
     "bs58": "^6.0.0",

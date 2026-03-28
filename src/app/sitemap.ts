@@ -120,13 +120,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           fetchEsimPackageIds(),
           fetchBlogSlugs(),
         ]);
-      return { products, categories, esimPackageIds, blogSlugs };
+      return { blogSlugs, categories, esimPackageIds, products };
     },
     ["sitemap-data"],
     { revalidate: 3600 },
   );
 
-  const { products, categories, esimPackageIds, blogSlugs } =
+  const { blogSlugs, categories, esimPackageIds, products } =
     await getCachedSitemapData();
 
   const staticPages: MetadataRoute.Sitemap = [
@@ -166,6 +166,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: now,
       priority: 0.6,
       url: `${siteUrl}/membership`,
+    },
+    {
+      changeFrequency: "weekly",
+      lastModified: now,
+      priority: 0.75,
+      url: `${siteUrl}/ai`,
+    },
+    {
+      changeFrequency: "monthly",
+      lastModified: now,
+      priority: 0.55,
+      url: `${siteUrl}/open-source`,
     },
     {
       changeFrequency: "weekly",

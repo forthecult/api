@@ -262,6 +262,28 @@ export function Footer({ className }: { className?: string }) {
                     text-muted-foreground transition-colors
                     hover:text-foreground
                   `}
+                  href="/ai"
+                >
+                  Culture AI
+                </Link>
+              </li>
+              <li>
+                <Link
+                  className={`
+                    text-muted-foreground transition-colors
+                    hover:text-foreground
+                  `}
+                  href="/open-source"
+                >
+                  Open source
+                </Link>
+              </li>
+              <li>
+                <Link
+                  className={`
+                    text-muted-foreground transition-colors
+                    hover:text-foreground
+                  `}
                   href="/api/docs"
                 >
                   API

@@ -4,6 +4,9 @@ export * from "./addresses/types";
 
 export * from "./admin-membership-grant/tables";
 
+export * from "./ai-chat/relations";
+export * from "./ai-chat/tables";
+
 export * from "./affiliates/relations";
 export * from "./affiliates/tables";
 
