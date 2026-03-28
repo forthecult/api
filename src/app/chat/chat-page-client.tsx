@@ -2,6 +2,17 @@
 
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
+import {
+  Copy,
+  ImageIcon,
+  Loader2,
+  Mic,
+  Plus,
+  RotateCcw,
+  Settings2,
+  Square,
+  Trash2,
+} from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -9,9 +20,13 @@ import { toast } from "sonner";
 import { useSession } from "~/lib/auth-client";
 import { cn } from "~/lib/cn";
 import { Button } from "~/ui/primitives/button";
-import { Input } from "~/ui/primitives/input";
+import { Label } from "~/ui/primitives/label";
+import { Slider } from "~/ui/primitives/slider";
 
 const GUEST_KEY = "ftc-ai-guest-id";
+const TEMP_KEY = "ftc-ai-temperature";
+const TOP_P_KEY = "ftc-ai-top-p";
+const USE_TOP_P_KEY = "ftc-ai-use-top-p";
 
 interface VeniceCharacter {
   description: null | string;
@@ -35,6 +50,45 @@ export function ChatPageClient() {
   const [selectedMeta, setSelectedMeta] = useState<null | VeniceCharacter>(
     null,
   );
+  const [sessionId, setSessionId] = useState(() => crypto.randomUUID());
+  const [temperature, setTemperature] = useState(0.7);
+  const [topP, setTopP] = useState(0.95);
+  const [useTopP, setUseTopP] = useState(false);
+
+  useEffect(() => {
+    try {
+      const tv = localStorage.getItem(TEMP_KEY);
+      if (tv) {
+        const n = Number.parseFloat(tv);
+        if (Number.isFinite(n) && n >= 0 && n <= 2) setTemperature(n);
+      }
+      const pv = localStorage.getItem(TOP_P_KEY);
+      if (pv) {
+        const n = Number.parseFloat(pv);
+        if (Number.isFinite(n) && n > 0 && n <= 1) setTopP(n);
+      }
+      if (localStorage.getItem(USE_TOP_P_KEY) === "1") setUseTopP(true);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(TEMP_KEY, String(temperature));
+    } catch {
+      /* ignore */
+    }
+  }, [temperature]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(TOP_P_KEY, String(topP));
+      localStorage.setItem(USE_TOP_P_KEY, useTopP ? "1" : "0");
+    } catch {
+      /* ignore */
+    }
+  }, [topP, useTopP]);
 
   useEffect(() => {
     // Guest id only exists in the browser; initialize after mount.
@@ -140,24 +194,46 @@ export function ChatPageClient() {
     () =>
       new DefaultChatTransport({
         api: "/api/ai/chat",
-        body: { characterSlug },
+        body: {
+          characterSlug,
+          ...(useTopP ? { topP } : { temperature }),
+        },
         credentials: "include",
         headers: {
           "x-ai-guest-id": guestId,
         },
       }),
-    [characterSlug, guestId],
+    [characterSlug, guestId, temperature, topP, useTopP],
   );
 
-  const chatId = `ftc-chat-${characterSlug}`;
+  const chatId = `ftc-chat-${characterSlug}-${sessionId}`;
 
-  const { clearError, error, messages, sendMessage, status } = useChat({
+  const {
+    clearError,
+    error,
+    messages,
+    regenerate,
+    sendMessage,
+    setMessages,
+    status,
+    stop,
+  } = useChat({
     id: chatId,
     onError: (err) => {
       toast.error(err.message || "Something went wrong");
     },
     transport,
   });
+
+  const busy = status === "streaming" || status === "submitted";
+
+  const lastAssistantId = useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const m = messages[i];
+      if (m?.role === "assistant") return m.id;
+    }
+    return null;
+  }, [messages]);
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -170,24 +246,121 @@ export function ChatPageClient() {
     setInput("");
   };
 
+  const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      onSubmit(e as unknown as React.FormEvent);
+    }
+  };
+
+  const copyText = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success("Copied");
+    } catch {
+      toast.error("Could not copy");
+    }
+  };
+
+  const newChat = () => {
+    setSessionId(crypto.randomUUID());
+    setMessages([]);
+    clearError();
+    toast.message("Started a new chat in this tab.");
+  };
+
+  const deleteAssistantMessage = (id: string) => {
+    setMessages((prev) => prev.filter((m) => m.id !== id));
+  };
+
+  const startSpeech = () => {
+    const w = window as unknown as {
+      SpeechRecognition?: new () => {
+        interimResults: boolean;
+        lang: string;
+        maxAlternatives: number;
+        onerror: (() => void) | null;
+        onresult: ((ev: Event) => void) | null;
+        start: () => void;
+      };
+      webkitSpeechRecognition?: new () => {
+        interimResults: boolean;
+        lang: string;
+        maxAlternatives: number;
+        onerror: (() => void) | null;
+        onresult: ((ev: Event) => void) | null;
+        start: () => void;
+      };
+    };
+    const SR = w.SpeechRecognition || w.webkitSpeechRecognition;
+    if (!SR) {
+      toast.error("Speech recognition is not supported in this browser.");
+      return;
+    }
+    const recognition = new SR();
+    recognition.lang = "en-US";
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    recognition.onresult = (ev: Event) => {
+      const anyEv = ev as unknown as {
+        results?: { item: (i: number) => { transcript: string } };
+      };
+      const transcript = anyEv.results?.item(0)?.transcript;
+      if (transcript)
+        setInput((prev) => (prev ? `${prev} ${transcript}` : transcript));
+    };
+    recognition.onerror = () => {
+      toast.error("Speech recognition failed");
+    };
+    recognition.start();
+    toast.message("Listening… speak now.");
+  };
+
   return (
     <div className="mx-auto flex min-h-[70vh] max-w-5xl flex-col gap-6 p-4">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">AI chat</h1>
-        <p className="text-sm text-muted-foreground">
-          Personal, private agent. Messages stay in this browser.
-        </p>
-        <p className="text-xs text-muted-foreground">
-          Uses{" "}
-          <span className="font-medium text-foreground">AI SDK UI</span> (
-          <code className="text-xs">@ai-sdk/react</code>{" "}
-          <code className="text-xs">useChat</code>
-          ) with streaming from{" "}
-          <span className="font-medium text-foreground">AI SDK Core</span> on the
-          server route.
-        </p>
-        {userId ? (
-          <p className="text-xs">
+      <div className="space-y-2">
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">AI chat</h1>
+            <p className="text-sm text-muted-foreground">
+              Personal, private agent. Messages stay in this browser unless you add
+              server-side backups later.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              onClick={newChat}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              <Plus aria-hidden className="mr-1 h-4 w-4" />
+              New chat
+            </Button>
+            {userId ? (
+              <Button asChild size="sm" variant="outline">
+                <Link href="/dashboard/ai">Account & memory</Link>
+              </Button>
+            ) : (
+              <Button asChild size="sm" variant="outline">
+                <Link href="/login">Sign in</Link>
+              </Button>
+            )}
+          </div>
+        </div>
+
+        <details className="rounded-lg border border-border bg-card p-3 text-sm">
+          <summary className="cursor-pointer font-medium">
+            Capabilities vs Venice web app
+          </summary>
+          <p className="mt-2 leading-relaxed text-muted-foreground">
+            Full character editing (intro, instructions, custom system prompt,
+            context, temperature per character) is available in the Venice app
+            when you manage characters there. This chat uses the character slug
+            you pick and applies session sampling below. Memory import/export UI
+            is evolving—use account links when available.
+          </p>
+          <p className="mt-2 text-muted-foreground">
             <Link
               className={`
                 text-primary underline underline-offset-4
@@ -195,23 +368,22 @@ export function ChatPageClient() {
               `}
               href="/dashboard/ai"
             >
-              Account AI settings
-            </Link>
-          </p>
-        ) : (
-          <p className="text-xs text-muted-foreground">
-            <Link
+              Dashboard AI
+            </Link>{" "}
+            ·{" "}
+            <a
               className={`
                 text-primary underline underline-offset-4
                 hover:text-primary/90
               `}
-              href="/login"
+              href="https://venice.ai"
+              rel="noopener noreferrer"
+              target="_blank"
             >
-              Sign in
-            </Link>{" "}
-            to sync your agent preferences across devices.
+              Venice
+            </a>
           </p>
-        )}
+        </details>
       </div>
 
       {error ? (
@@ -236,6 +408,54 @@ export function ChatPageClient() {
           </div>
         </div>
       ) : null}
+
+      <details className="rounded-lg border border-border bg-muted/30 p-3">
+        <summary className={`
+          flex cursor-pointer items-center gap-2 text-sm font-medium
+        `}>
+          <Settings2 aria-hidden className="h-4 w-4" />
+          Model sampling (session)
+        </summary>
+        <div className="mt-3 space-y-4">
+          <label className="flex cursor-pointer items-center gap-2 text-sm">
+            <input
+              checked={useTopP}
+              onChange={(e) => setUseTopP(e.target.checked)}
+              type="checkbox"
+            />
+            Use Top P instead of temperature
+          </label>
+          {!useTopP ? (
+            <div className="space-y-2">
+              <Label className="text-xs">
+                Temperature: {temperature.toFixed(2)}
+              </Label>
+              <Slider
+                max={2}
+                min={0}
+                onValueChange={(v) => setTemperature(v[0] ?? 0.7)}
+                step={0.05}
+                value={[temperature]}
+              />
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <Label className="text-xs">Top P: {topP.toFixed(2)}</Label>
+              <Slider
+                max={1}
+                min={0.05}
+                onValueChange={(v) => setTopP(v[0] ?? 0.95)}
+                step={0.05}
+                value={[topP]}
+              />
+            </div>
+          )}
+          <p className="text-xs text-muted-foreground">
+            Web search, URL scraping, and vision uploads require API support in
+            the route—they are not toggled here yet.
+          </p>
+        </div>
+      </details>
 
       <div className={`
         flex flex-col gap-6
@@ -371,39 +591,141 @@ export function ChatPageClient() {
       `}>
         {messages.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            Say something to start. Guests get limited free messages.
+            Say something to start. Guests get limited free messages. Press{" "}
+            <kbd className="rounded border bg-muted px-1">Enter</kbd> to send,{" "}
+            <kbd className="rounded border bg-muted px-1">Shift+Enter</kbd> for a
+            new line.
           </p>
         ) : null}
-        {messages.map((m) => (
-          <div className="space-y-1" key={m.id}>
-            <div className="text-xs text-muted-foreground uppercase">
-              {m.role}
+        {messages.map((m) => {
+          const text = messageText(m);
+          const isAssistant = m.role === "assistant";
+          return (
+            <div className="space-y-1" key={m.id}>
+              <div className="text-xs text-muted-foreground uppercase">
+                {m.role}
+              </div>
+              <div className="text-sm whitespace-pre-wrap">{text}</div>
+              {isAssistant && text ? (
+                <div className="flex flex-wrap gap-1 pt-1 text-muted-foreground">
+                  <Button
+                    className="h-8 px-2"
+                    onClick={() => void copyText(text)}
+                    size="sm"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <Copy aria-hidden className="mr-1 h-3.5 w-3.5" />
+                    Copy
+                  </Button>
+                  {m.id === lastAssistantId ? (
+                    <Button
+                      className="h-8 px-2"
+                      disabled={busy}
+                      onClick={() => void regenerate()}
+                      size="sm"
+                      type="button"
+                      variant="ghost"
+                    >
+                      <RotateCcw aria-hidden className="mr-1 h-3.5 w-3.5" />
+                      Regenerate
+                    </Button>
+                  ) : null}
+                  <Button
+                    className={`
+                      h-8 px-2 text-destructive
+                      hover:text-destructive
+                    `}
+                    onClick={() => deleteAssistantMessage(m.id)}
+                    size="sm"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <Trash2 aria-hidden className="mr-1 h-3.5 w-3.5" />
+                    Remove
+                  </Button>
+                </div>
+              ) : null}
             </div>
-            <div className="text-sm whitespace-pre-wrap">
-              {m.parts?.map((p, i) =>
-                p.type === "text" ? <span key={i}>{p.text}</span> : null,
-              )}
-            </div>
-          </div>
-        ))}
-        {status === "streaming" ? (
-          <p className="text-xs text-muted-foreground">Thinking…</p>
+          );
+        })}
+        {busy ? (
+          <p className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Loader2 aria-hidden className="h-3.5 w-3.5 animate-spin" />
+            Thinking…
+          </p>
         ) : null}
       </div>
 
-      <form className="flex gap-2" onSubmit={onSubmit}>
-        <Input
-          className="flex-1"
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Message…"
-          value={input}
-        />
-        <Button
-          disabled={status === "streaming" || !input.trim()}
-          type="submit"
-        >
-          Send
-        </Button>
+      <form className="flex flex-col gap-2" onSubmit={onSubmit}>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            disabled={busy}
+            onClick={startSpeech}
+            size="sm"
+            title="Speak to type (browser speech recognition)"
+            type="button"
+            variant="outline"
+          >
+            <Mic aria-hidden className="mr-1 h-4 w-4" />
+            Dictate
+          </Button>
+          <Button
+            onClick={() =>
+              toast.message(
+                "Image + vision is not enabled for this route yet. Wire multipart input and a vision model on the server to enable.",
+              )
+            }
+            size="sm"
+            type="button"
+            variant="outline"
+          >
+            <ImageIcon aria-hidden className="mr-1 h-4 w-4" />
+            Image
+          </Button>
+          {busy ? (
+            <Button
+              onClick={() => stop()}
+              size="sm"
+              type="button"
+              variant="destructive"
+            >
+              <Square aria-hidden className="mr-1 h-4 w-4" />
+              Stop
+            </Button>
+          ) : null}
+        </div>
+        <div className="flex gap-2">
+          <textarea
+            className={cn(
+              "border-input bg-background ring-offset-background",
+              "placeholder:text-muted-foreground",
+              `
+                flex min-h-[44px] w-full min-w-0 flex-1
+                focus-visible:ring-ring
+              `,
+              "rounded-md border px-3 py-2 text-sm",
+              `
+                focus-visible:ring-2 focus-visible:ring-offset-2
+                focus-visible:outline-none
+              `,
+              "disabled:cursor-not-allowed disabled:opacity-50",
+            )}
+            disabled={busy}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={onKeyDown}
+            placeholder="Send a private message…"
+            rows={3}
+            value={input}
+          />
+          <Button
+            className="self-end"
+            disabled={busy || !input.trim()}
+            type="submit"
+          >
+            Send
+          </Button>
+        </div>
       </form>
     </div>
   );
@@ -423,6 +745,16 @@ function getOrCreateGuestId(): string {
     localStorage.setItem(GUEST_KEY, id);
   }
   return id;
+}
+
+function messageText(m: {
+  parts?: { text?: string; type: string }[];
+}): string {
+  if (!m.parts?.length) return "";
+  return m.parts
+    .filter((p) => p.type === "text")
+    .map((p) => p.text ?? "")
+    .join("");
 }
 
 function parseVeniceCharacterDetail(json: unknown): null | VeniceCharacter {

@@ -1,8 +1,14 @@
 import Link from "next/link";
 
 import { SEO_CONFIG } from "~/app";
+import { getPublicSiteUrl } from "~/lib/app-url";
+
+const siteUrl = getPublicSiteUrl();
 
 export const metadata = {
+  alternates: {
+    canonical: `${siteUrl}/policies/terms`,
+  },
   description:
     "Terms of service for Culture. The rules that apply when you use our store and services.",
   title: `Terms of service | ${SEO_CONFIG.name}`,

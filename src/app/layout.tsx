@@ -66,9 +66,7 @@ const DEFAULT_OG_IMAGE =
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    alternates: {
-      canonical: "/",
-    },
+    // no default canonical: would inherit onto routes that omit alternates and collapse everything to /
     description: SEO_CONFIG.metaDescription ?? SEO_CONFIG.description,
     icons: {
       icon: [

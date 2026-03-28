@@ -1,8 +1,14 @@
 import Link from "next/link";
 
 import { SEO_CONFIG } from "~/app";
+import { getPublicSiteUrl } from "~/lib/app-url";
+
+const siteUrl = getPublicSiteUrl();
 
 export const metadata = {
+  alternates: {
+    canonical: `${siteUrl}/policies/shipping`,
+  },
   description:
     "Culture's shipping policy. How we ship, when to expect your order, and where we deliver.",
   title: `Shipping | ${SEO_CONFIG.name}`,

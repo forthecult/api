@@ -22,7 +22,11 @@ const SUPPORT_CHAT_DEFER_MS = 10_000;
 export function SupportChatWidgetWrapper() {
   const pathname = usePathname();
   const [canLoad, setCanLoad] = React.useState(false);
-  const [visible, setVisible] = React.useState<boolean | null>(null);
+  const [config, setConfig] = React.useState<null | {
+    personalAi: boolean;
+    supportAgent: boolean;
+    visible: boolean;
+  }>(null);
 
   React.useEffect(() => {
     const t = setTimeout(() => setCanLoad(true), SUPPORT_CHAT_DEFER_MS);
@@ -33,13 +37,28 @@ export function SupportChatWidgetWrapper() {
     if (!canLoad) return;
     let cancelled = false;
     fetch("/api/support-chat/widget-visible", { credentials: "include" })
-      .then((res) => (res.ok ? res.json() : { visible: true }))
+      .then((res) => (res.ok ? res.json() : { personalAi: true, supportAgent: true, visible: true }))
       .then((raw: unknown) => {
-        const data = raw as { visible?: boolean };
-        if (!cancelled) setVisible(data.visible !== false);
+        const data = raw as {
+          personalAi?: boolean;
+          supportAgent?: boolean;
+          visible?: boolean;
+        };
+        if (cancelled) return;
+        setConfig({
+          personalAi: data.personalAi !== false,
+          supportAgent: data.supportAgent !== false,
+          visible: data.visible !== false,
+        });
       })
       .catch(() => {
-        if (!cancelled) setVisible(true);
+        if (!cancelled) {
+          setConfig({
+            personalAi: true,
+            supportAgent: true,
+            visible: true,
+          });
+        }
       });
     return () => {
       cancelled = true;
@@ -47,7 +66,13 @@ export function SupportChatWidgetWrapper() {
   }, [canLoad]);
 
   if (pathname?.startsWith("/telegram")) return null;
-  if (!canLoad || visible === false) return null;
-  if (visible === null) return null;
-  return <SupportChatWidget />;
+  if (!canLoad || config === null) return null;
+  if (!config.visible) return null;
+  return (
+    <SupportChatWidget
+      key={`${config.supportAgent}-${config.personalAi}`}
+      personalAi={config.personalAi}
+      supportAgent={config.supportAgent}
+    />
+  );
 }

@@ -1,8 +1,14 @@
 import Link from "next/link";
 
 import { SEO_CONFIG } from "~/app";
+import { getPublicSiteUrl } from "~/lib/app-url";
+
+const siteUrl = getPublicSiteUrl();
 
 export const metadata = {
+  alternates: {
+    canonical: `${siteUrl}/policies/refund`,
+  },
   description:
     "Culture's refund policy. How to request a return or refund, eligibility, timing, and crypto refunds (issued in stablecoin).",
   title: `Refund policy | ${SEO_CONFIG.name}`,

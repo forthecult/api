@@ -1,8 +1,14 @@
 import { SEO_CONFIG } from "~/app";
+import { getPublicSiteUrl } from "~/lib/app-url";
 
 import { ContactPageClient } from "./ContactPageClient";
 
+const siteUrl = getPublicSiteUrl();
+
 export const metadata = {
+  alternates: {
+    canonical: `${siteUrl}/contact`,
+  },
   description: `Contact ${SEO_CONFIG.name}. Send a message or use our PGP key for private communication.`,
   title: `Contact Us | ${SEO_CONFIG.name}`,
 };

@@ -3,7 +3,12 @@ import Link from "next/link";
 import { SEO_CONFIG } from "~/app";
 import { getPublicSiteUrl } from "~/lib/app-url";
 
+const siteUrl = getPublicSiteUrl();
+
 export const metadata = {
+  alternates: {
+    canonical: `${siteUrl}/site-map`,
+  },
   description: `Sitemap of ${SEO_CONFIG.name} — main pages, shop categories, and policies.`,
   title: `Sitemap | ${SEO_CONFIG.name}`,
 };

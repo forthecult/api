@@ -1,8 +1,14 @@
 import Link from "next/link";
 
 import { SEO_CONFIG } from "~/app";
+import { getPublicSiteUrl } from "~/lib/app-url";
+
+const siteUrl = getPublicSiteUrl();
 
 export const metadata = {
+  alternates: {
+    canonical: `${siteUrl}/cookies`,
+  },
   description: `Our cookies policy: we only use essential cookies. No trackers, no popups.`,
   title: `Cookies | ${SEO_CONFIG.name}`,
 };

@@ -108,6 +108,16 @@ function proxyHandler(request: NextRequest) {
     return NextResponse.redirect(httpsUrl, 301);
   }
 
+  // malformed path from bad links (e.g. .../&) — 301 so crawlers don't keep 404ing on junk
+  if (path === "/&" || path === "/%26") {
+    const agentHost = getAgentHostname();
+    const dest =
+      agentHost && host === agentHost
+        ? new URL("/for-agents", request.url)
+        : new URL("/", request.url);
+    return NextResponse.redirect(dest, 301);
+  }
+
   // AI subdomain redirect: ai.forthecult.store/ → /for-agents
   const agentHost = getAgentHostname();
   if (agentHost && host === agentHost && (path === "/" || path === "")) {

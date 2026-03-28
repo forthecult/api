@@ -1,10 +1,16 @@
 import Link from "next/link";
 
 import { SEO_CONFIG } from "~/app";
+import { getPublicSiteUrl } from "~/lib/app-url";
 
 import { RefundRequestForm } from "./RefundRequestForm";
 
+const siteUrl = getPublicSiteUrl();
+
 export const metadata = {
+  alternates: {
+    canonical: `${siteUrl}/refund`,
+  },
   description: `Request a refund. Enter your Order ID and email, payment address, or postal code to look up your order. Card and PayPal refunds are automated; crypto refunds are issued in stablecoin.`,
   title: `Request a refund | ${SEO_CONFIG.name}`,
 };

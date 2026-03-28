@@ -3,9 +3,15 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { SEO_CONFIG } from "~/app";
+import { getPublicSiteUrl } from "~/lib/app-url";
 import { Button } from "~/ui/primitives/button";
 
+const siteUrl = getPublicSiteUrl();
+
 export const metadata: Metadata = {
+  alternates: {
+    canonical: `${siteUrl}/affiliate-program`,
+  },
   description:
     "Partner with Culture. Earn by sharing products that protect health, privacy, and autonomy. Premium lifestyle brand since 2015. Apply to join our affiliate program.",
   openGraph: {

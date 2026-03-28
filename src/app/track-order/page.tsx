@@ -1,8 +1,14 @@
 import { SEO_CONFIG } from "~/app";
+import { getPublicSiteUrl } from "~/lib/app-url";
 
 import { TrackOrderForm } from "./TrackOrderForm";
 
+const siteUrl = getPublicSiteUrl();
+
 export const metadata = {
+  alternates: {
+    canonical: `${siteUrl}/track-order`,
+  },
   description: `Track your order. Enter your Order ID and billing email or payment address to view order status and details.`,
   title: `Order Tracking | ${SEO_CONFIG.name}`,
 };

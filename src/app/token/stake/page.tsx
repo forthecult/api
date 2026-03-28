@@ -1,10 +1,17 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import { SEO_CONFIG } from "~/app";
+import { getPublicSiteUrl } from "~/lib/app-url";
 
 import { StakeVoteClient } from "./StakeVoteClient";
 
-export const metadata = {
+const siteUrl = getPublicSiteUrl();
+
+export const metadata: Metadata = {
+  alternates: {
+    canonical: `${siteUrl}/token/stake`,
+  },
   description:
     "Stake your CULT token and participate in community governance. Vote on proposals for charity, products, and the future of the ecosystem.",
   title: `Stake & Vote | CULT Token | ${SEO_CONFIG.name}`,

@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 
 import { SEO_CONFIG } from "~/app";
+import { getPublicSiteUrl } from "~/lib/app-url";
 import { getLookbookImages } from "~/lib/get-lookbook-images";
 import { PageTokenGate } from "~/ui/components/token-gate/PageTokenGate";
 
@@ -115,7 +116,12 @@ const LOOKBOOK_IMAGES: {
 /** Avoid prerender at build to prevent DB connection pool exhaustion (e.g. Neon Session mode). */
 export const dynamic = "force-dynamic";
 
+const siteUrl = getPublicSiteUrl();
+
 export const metadata: Metadata = {
+  alternates: {
+    canonical: `${siteUrl}/lookbook`,
+  },
   description:
     "Culture lookbook: premium apparel, toxin-free clothing, and lifestyle photography. Photos by George J. Patterson, Syracuse NY.",
   openGraph: {

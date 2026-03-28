@@ -82,7 +82,7 @@ const faqItems: { a: string; q: string }[] = [
     q: "What are chat, project, and companion modes?",
   },
   {
-    a: "Pay monthly at $12.99/mo for membership, or choose annual billing at $9.99/mo equivalent (billed yearly). The standalone Culture AI subscription uses its own product checkout when you buy AI only.",
+    a: "$12.99/mo and $9.99/mo (annual effective rate) refer to the Culture AI subscription product—add it to your cart from the product page and check out. Membership has its own tier pricing on the membership page and is not the same as those AI subscription prices.",
     q: "How does pricing work?",
   },
 ];
@@ -402,17 +402,25 @@ export default function AiLandingPage() {
               "font-heading text-3xl font-bold tracking-tight text-foreground",
             )}
           >
-            Simple pricing
+            Culture AI subscription
           </h2>
           <p className="mt-3 text-muted-foreground">
-            Buy Culture AI as its own subscription (checkout opens for that
-            product), or bundle it with membership perks. Cancel monthly anytime;
-            save with annual membership billing.
+            The prices below are for the{" "}
+            <span className="text-foreground font-medium">
+              standalone Culture AI subscription
+            </span>{" "}
+            product. You open the product page, choose monthly or annual billing
+            there, add to cart, and check out—same as any other subscription
+            item.{" "}
+            <span className="text-foreground font-medium">
+              Membership pricing is separate
+            </span>{" "}
+            (shipping, eSIM, staking perks) and is shown on the membership page.
           </p>
         </div>
         <div className={`
           mx-auto mt-10 grid max-w-5xl gap-6
-          lg:grid-cols-3
+          lg:grid-cols-2
         `}>
           <div
             className={cn(
@@ -421,24 +429,7 @@ export default function AiLandingPage() {
             )}
           >
             <h3 className="font-heading text-lg font-semibold text-foreground">
-              Culture AI only
-            </h3>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Subscribe to the standalone AI product—checkout is for the AI
-              subscription, not the membership program.
-            </p>
-            <Button asChild className="mt-6 w-full">
-              <Link href={cultureAiProductHref}>Go to AI product</Link>
-            </Button>
-          </div>
-          <div
-            className={cn(
-              "flex flex-col rounded-xl border border-border bg-card/80 p-6",
-              "shadow-sm",
-            )}
-          >
-            <h3 className="font-heading text-lg font-semibold text-foreground">
-              Membership · monthly
+              Culture AI · billed monthly
             </h3>
             <p className="mt-4">
               <span
@@ -451,10 +442,11 @@ export default function AiLandingPage() {
               <span className="text-muted-foreground">/month</span>
             </p>
             <p className="mt-2 text-sm text-muted-foreground">
-              Culture AI plus member perks (shipping, eSIM discounts, and more).
+              Subscribe to Culture AI on its own. Use the product page to add the
+              monthly plan to your cart and complete checkout.
             </p>
-            <Button asChild className="mt-6 w-full" variant="outline">
-              <Link href="/membership">Choose monthly membership</Link>
+            <Button asChild className="mt-6 w-full">
+              <Link href={cultureAiProductHref}>Open AI subscription product</Link>
             </Button>
           </div>
           <div
@@ -478,7 +470,7 @@ export default function AiLandingPage() {
               Best value
             </span>
             <h3 className="font-heading text-lg font-semibold text-foreground">
-              Membership · annual
+              Culture AI · billed annually
             </h3>
             <p className="mt-4">
               <span
@@ -491,12 +483,34 @@ export default function AiLandingPage() {
               <span className="text-muted-foreground">/month</span>
             </p>
             <p className="mt-2 text-sm text-muted-foreground">
-              Billed yearly—lowest effective rate for committed members.
+              Effective rate when you pay annually (billed once per year on the
+              product). Select the annual option on the product page, then add to
+              cart.
             </p>
             <Button asChild className="mt-6 w-full">
-              <Link href="/membership">Save with annual membership</Link>
+              <Link href={cultureAiProductHref}>Open AI subscription product</Link>
             </Button>
           </div>
+        </div>
+        <div
+          className={cn(
+            "mx-auto mt-8 max-w-3xl rounded-xl border border-border bg-muted/20",
+            "p-6 text-center",
+          )}
+        >
+          <h3 className="font-heading text-lg font-semibold text-foreground">
+            Membership (store perks)
+          </h3>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Membership tiers cover shipping discounts, eSIM benefits, staking
+            perks, and more. Those prices are{" "}
+            <span className="text-foreground font-medium">not</span> the $12.99 /
+            $9.99 Culture AI subscription rates above. If Culture AI is bundled
+            with your tier, you will see that on the membership page.
+          </p>
+          <Button asChild className="mt-4" variant="outline">
+            <Link href="/membership">View membership pricing</Link>
+          </Button>
         </div>
       </section>
 

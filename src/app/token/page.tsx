@@ -10,7 +10,10 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
+import type { Metadata } from "next";
+
 import { SEO_CONFIG } from "~/app";
+import { getPublicSiteUrl } from "~/lib/app-url";
 import { MEMBERSHIP_HOW_IT_WORKS } from "~/lib/membership-copy";
 import { CULT_MINT_MAINNET } from "~/lib/token-config";
 import { CultSwapBlock } from "~/ui/components/cult-swap-block";
@@ -31,7 +34,12 @@ import {
   TableRow,
 } from "~/ui/primitives/table";
 
-export const metadata = {
+const siteUrl = getPublicSiteUrl();
+
+export const metadata: Metadata = {
+  alternates: {
+    canonical: `${siteUrl}/token`,
+  },
   description:
     "Fair launch utility token for the CULT community. Governance rights and up to 20% discount on eligible purchases.",
   title: `CULT Token | ${SEO_CONFIG.name}`,

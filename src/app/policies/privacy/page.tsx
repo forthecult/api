@@ -1,8 +1,14 @@
 import Link from "next/link";
 
 import { SEO_CONFIG } from "~/app";
+import { getPublicSiteUrl } from "~/lib/app-url";
+
+const siteUrl = getPublicSiteUrl();
 
 export const metadata = {
+  alternates: {
+    canonical: `${siteUrl}/policies/privacy`,
+  },
   description:
     "Culture's privacy policy. We collect only what we need, use it responsibly, and never sell your data. Your privacy matters to us.",
   title: `Privacy policy | ${SEO_CONFIG.name}`,

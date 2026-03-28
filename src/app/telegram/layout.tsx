@@ -1,6 +1,20 @@
+import type { Metadata } from "next";
 import Script from "next/script";
 
+import { SEO_CONFIG } from "~/app";
+import { getPublicSiteUrl } from "~/lib/app-url";
+
 import { TelegramChrome } from "./telegram-chrome";
+
+const siteUrl = getPublicSiteUrl();
+
+export const metadata: Metadata = {
+  alternates: {
+    canonical: `${siteUrl}/telegram`,
+  },
+  description: `Shop from ${SEO_CONFIG.name} inside Telegram.`,
+  title: `Telegram shop | ${SEO_CONFIG.name}`,
+};
 
 /**
  * Layout for the Telegram Mini App.

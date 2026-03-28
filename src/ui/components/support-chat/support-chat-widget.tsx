@@ -1,11 +1,11 @@
 "use client";
 
 import { Sparkles } from "lucide-react";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import React from "react";
 
 import { cn } from "~/lib/cn";
+import { PersonalAiWidgetPanel } from "~/ui/components/support-chat/personal-ai-widget-panel";
 import { Button } from "~/ui/primitives/button";
 import {
   Dialog,
@@ -36,7 +36,13 @@ interface Message {
   role: string;
 }
 
-export function SupportChatWidget() {
+export function SupportChatWidget({
+  personalAi = true,
+  supportAgent = true,
+}: {
+  personalAi?: boolean;
+  supportAgent?: boolean;
+} = {}) {
   const pathname = usePathname();
   const isCheckout = pathname?.startsWith("/checkout") ?? false;
   const [open, setOpen] = React.useState(false);
@@ -49,7 +55,10 @@ export function SupportChatWidget() {
   const [error, setError] = React.useState<null | string>(null);
   const [takenOverBy, setTakenOverBy] = React.useState<null | string>(null);
   const [widgetMode, setWidgetMode] = React.useState<"personal" | "support">(
-    "support",
+    () => {
+      if (!supportAgent && personalAi) return "personal";
+      return "support";
+    },
   );
   const [endChatDialogOpen, setEndChatDialogOpen] = React.useState(false);
   const [endingChat, setEndingChat] = React.useState(false);
@@ -391,47 +400,51 @@ export function SupportChatWidget() {
             "max-h-[min(90vh,640px)] overflow-hidden",
           )}
         >
-          <div className="flex gap-1 border-b bg-muted/30 p-1.5">
-            <button
-              className={cn(
-                `
-                  flex-1 rounded-md py-2 text-xs font-semibold transition-colors
-                  sm:text-sm
-                `,
-                widgetMode === "support"
-                  ? "bg-background text-foreground shadow-sm"
-                  : `
-                    text-muted-foreground
-                    hover:text-foreground
+          {supportAgent && personalAi ? (
+            <div className="flex gap-1 border-b bg-muted/30 p-1.5">
+              <button
+                className={cn(
+                  `
+                    flex-1 rounded-md py-2 text-xs font-semibold
+                    transition-colors
+                    sm:text-sm
                   `,
-              )}
-              onClick={() => setWidgetMode("support")}
-              type="button"
-            >
-              Store support
-            </button>
-            <button
-              className={cn(
-                `
-                  flex-1 rounded-md py-2 text-xs font-semibold transition-colors
-                  sm:text-sm
-                `,
-                widgetMode === "personal"
-                  ? "bg-background text-foreground shadow-sm"
-                  : `
-                    text-muted-foreground
-                    hover:text-foreground
+                  widgetMode === "support"
+                    ? "bg-background text-foreground shadow-sm"
+                    : `
+                      text-muted-foreground
+                      hover:text-foreground
+                    `,
+                )}
+                onClick={() => setWidgetMode("support")}
+                type="button"
+              >
+                Store support
+              </button>
+              <button
+                className={cn(
+                  `
+                    flex-1 rounded-md py-2 text-xs font-semibold
+                    transition-colors
+                    sm:text-sm
                   `,
-              )}
-              onClick={() => setWidgetMode("personal")}
-              type="button"
-            >
-              Personal AI
-            </button>
-          </div>
+                  widgetMode === "personal"
+                    ? "bg-background text-foreground shadow-sm"
+                    : `
+                      text-muted-foreground
+                      hover:text-foreground
+                    `,
+                )}
+                onClick={() => setWidgetMode("personal")}
+                type="button"
+              >
+                Personal AI
+              </button>
+            </div>
+          ) : null}
 
           {widgetMode === "personal" ? (
-            <div className="flex min-h-[280px] flex-col">
+            <div className="flex min-h-0 max-h-[min(60vh,520px)] min-h-[280px] flex-col">
               <div
                 className={`
                   flex cursor-grab items-center gap-3 border-b px-4 py-3
@@ -460,7 +473,7 @@ export function SupportChatWidget() {
                 <Button
                   aria-label="Close"
                   className="h-8 w-8 shrink-0 p-0"
-                  onClick={handleCloseClick}
+                  onClick={() => setOpen(false)}
                   size="sm"
                   type="button"
                   variant="ghost"
@@ -468,18 +481,7 @@ export function SupportChatWidget() {
                   ×
                 </Button>
               </div>
-              <div className={`
-                flex flex-1 flex-col items-center justify-center gap-3 px-5 py-8
-                text-center
-              `}>
-                <p className="text-sm text-muted-foreground">
-                  Your private assistant lives on the full chat page—separate from
-                  Alice, who handles store orders and support.
-                </p>
-                <Button asChild className="w-full max-w-[260px]">
-                  <Link href="/chat">Open personal chat</Link>
-                </Button>
-              </div>
+              <PersonalAiWidgetPanel />
             </div>
           ) : (
             <>

@@ -24,6 +24,9 @@ type ChatBody = {
   characterSlug?: string;
   guestId?: string;
   messages: UIMessage[];
+  /** Optional sampling; forwarded to the model when set. */
+  temperature?: number;
+  topP?: number;
 };
 
 export async function POST(request: Request) {
@@ -103,6 +106,17 @@ export async function POST(request: Request) {
   const venice = createVeniceProvider(veniceApiKey);
   const model = venice(modelId);
 
+  const tRaw = body.temperature;
+  const pRaw = body.topP;
+  const temperature =
+    typeof tRaw === "number" && Number.isFinite(tRaw) && tRaw >= 0 && tRaw <= 2
+      ? tRaw
+      : undefined;
+  const topP =
+    typeof pRaw === "number" && Number.isFinite(pRaw) && pRaw > 0 && pRaw <= 1
+      ? pRaw
+      : undefined;
+
   const result = streamText({
     messages: await convertToModelMessages(messages),
     model,
@@ -112,6 +126,8 @@ export async function POST(request: Request) {
       }
     },
     system,
+    ...(temperature !== undefined ? { temperature } : {}),
+    ...(topP !== undefined ? { topP } : {}),
   });
 
   return result.toUIMessageStreamResponse();
