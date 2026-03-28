@@ -50,10 +50,10 @@ export function Footer({ className }: { className?: string }) {
             <Link className="flex items-center gap-2" href="/">
               <span
                 className={`
-                font-heading text-lg font-bold tracking-[0.2em] text-foreground
-                uppercase transition-colors duration-300
-                hover:text-primary
-              `}
+                  font-heading text-lg font-bold tracking-[0.2em]
+                  text-foreground uppercase transition-colors duration-300
+                  hover:text-primary
+                `}
               >
                 {SEO_CONFIG.name}
               </span>
@@ -127,9 +127,9 @@ export function Footer({ className }: { className?: string }) {
           <div>
             <h3
               className={`
-              mb-4 text-sm font-semibold tracking-[0.15em] text-primary
-              uppercase
-            `}
+                mb-4 text-sm font-semibold tracking-[0.15em] text-primary
+                uppercase
+              `}
             >
               Shop
             </h3>
@@ -183,9 +183,9 @@ export function Footer({ className }: { className?: string }) {
           <div>
             <h3
               className={`
-              mb-4 text-sm font-semibold tracking-[0.15em] text-primary
-              uppercase
-            `}
+                mb-4 text-sm font-semibold tracking-[0.15em] text-primary
+                uppercase
+              `}
             >
               Store Links
             </h3>
@@ -251,6 +251,17 @@ export function Footer({ className }: { className?: string }) {
                     text-muted-foreground transition-colors
                     hover:text-foreground
                   `}
+                  href="/services"
+                >
+                  Recommended services
+                </Link>
+              </li>
+              <li>
+                <Link
+                  className={`
+                    text-muted-foreground transition-colors
+                    hover:text-foreground
+                  `}
                   href="/changelog"
                 >
                   Changelog
@@ -273,17 +284,6 @@ export function Footer({ className }: { className?: string }) {
                     text-muted-foreground transition-colors
                     hover:text-foreground
                   `}
-                  href="/open-source"
-                >
-                  Open source
-                </Link>
-              </li>
-              <li>
-                <Link
-                  className={`
-                    text-muted-foreground transition-colors
-                    hover:text-foreground
-                  `}
                   href="/api/docs"
                 >
                   API
@@ -294,9 +294,9 @@ export function Footer({ className }: { className?: string }) {
           <div>
             <h3
               className={`
-              mb-4 text-sm font-semibold tracking-[0.15em] text-primary
-              uppercase
-            `}
+                mb-4 text-sm font-semibold tracking-[0.15em] text-primary
+                uppercase
+              `}
             >
               Support
             </h3>
@@ -350,9 +350,9 @@ export function Footer({ className }: { className?: string }) {
         </div>
         <div
           className={`
-          relative mt-12 border-t border-border pt-8
-          dark:border-[#2A2A2A]
-        `}
+            relative mt-12 border-t border-border pt-8
+            dark:border-[#2A2A2A]
+          `}
         >
           <div className="mb-6">
             <FooterPaymentsBar />

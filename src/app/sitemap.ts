@@ -180,6 +180,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       url: `${siteUrl}/open-source`,
     },
     {
+      changeFrequency: "monthly",
+      lastModified: now,
+      priority: 0.55,
+      url: `${siteUrl}/services`,
+    },
+    {
       changeFrequency: "weekly",
       lastModified: now,
       priority: 0.6,

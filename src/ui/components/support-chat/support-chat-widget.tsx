@@ -1,5 +1,7 @@
 "use client";
 
+import { Sparkles } from "lucide-react";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import React from "react";
 
@@ -46,6 +48,9 @@ export function SupportChatWidget() {
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<null | string>(null);
   const [takenOverBy, setTakenOverBy] = React.useState<null | string>(null);
+  const [widgetMode, setWidgetMode] = React.useState<"personal" | "support">(
+    "support",
+  );
   const [endChatDialogOpen, setEndChatDialogOpen] = React.useState(false);
   const [endingChat, setEndingChat] = React.useState(false);
   const guestIdRef = React.useRef<null | string>(null);
@@ -231,7 +236,7 @@ export function SupportChatWidget() {
   // When chat opens: only load an existing open conversation; do NOT create one.
   // A conversation is created only when the customer sends their first message.
   React.useEffect(() => {
-    if (!open) return;
+    if (!open || widgetMode !== "support") return;
     let cancelled = false;
     (async () => {
       if (conversationId) {
@@ -251,10 +256,10 @@ export function SupportChatWidget() {
     return () => {
       cancelled = true;
     };
-  }, [open, conversationId, fetchConversations, fetchMessages]);
+  }, [open, conversationId, fetchConversations, fetchMessages, widgetMode]);
 
   React.useEffect(() => {
-    if (!open || !conversationId) return;
+    if (!open || !conversationId || widgetMode !== "support") return;
     const id = setInterval(() => {
       fetchMessages(conversationId);
     }, POLL_INTERVAL_MS);
@@ -263,7 +268,7 @@ export function SupportChatWidget() {
       if (pollRef.current) clearInterval(pollRef.current);
       pollRef.current = null;
     };
-  }, [open, conversationId, fetchMessages]);
+  }, [open, conversationId, fetchMessages, widgetMode]);
 
   const sendMessage = React.useCallback(async () => {
     const text = input.trim();
@@ -347,7 +352,14 @@ export function SupportChatWidget() {
     }
   }, [conversationId]);
 
-  if (isCheckout) return null;
+  // scroll to bottom when typing indicator or new message; defer in rAF to avoid forced reflow (PageSpeed)
+  React.useEffect(() => {
+    const rafId = requestAnimationFrame(() => {
+      const el = messagesScrollRef.current;
+      if (el) el.scrollTop = el.scrollHeight;
+    });
+    return () => cancelAnimationFrame(rafId);
+  }, [loading, messages.length]);
 
   const quickPrompts = [
     { icon: "🛒", label: "Place an Order" },
@@ -361,14 +373,8 @@ export function SupportChatWidget() {
     setInput(prompt);
   };
 
-  // scroll to bottom when typing indicator or new message; defer in rAF to avoid forced reflow (PageSpeed)
-  React.useEffect(() => {
-    const rafId = requestAnimationFrame(() => {
-      const el = messagesScrollRef.current;
-      if (el) el.scrollTop = el.scrollHeight;
-    });
-    return () => cancelAnimationFrame(rafId);
-  }, [loading, messages.length]);
+  if (isCheckout) return null;
+  if (pathname === "/chat") return null;
 
   return (
     <div
@@ -385,222 +391,317 @@ export function SupportChatWidget() {
             "max-h-[min(90vh,640px)] overflow-hidden",
           )}
         >
-          {/* Header with avatar – draggable */}
-          <div
-            className={`
-              flex cursor-grab items-center gap-3 border-b px-4 py-3 select-none
-              active:cursor-grabbing
-            `}
-            onMouseDown={onPointerDownDrag}
-            onTouchStart={onPointerDownDrag}
-          >
-            <div
-              className={`
-              relative flex h-10 w-10 shrink-0 items-center justify-center
-              rounded-full bg-primary
-              text-white shadow-sm
-            `}
-            >
-              {/* Avatar */}
-              <svg
-                fill="none"
-                height="20"
-                stroke="currentColor"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                viewBox="0 0 24 24"
-                width="20"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                <circle cx="12" cy="7" r="4" />
-              </svg>
-              <span
-                className={`
-                absolute -right-0.5 -bottom-0.5 block h-3 w-3 rounded-full
-                border-2 border-background bg-green-500
-              `}
-              />
-            </div>
-            <div className="flex flex-col">
-              <span className="text-base leading-tight font-semibold">
-                {takenOverBy ? "Live Support" : "Support"}
-              </span>
-              <span className="text-sm text-muted-foreground">
-                {takenOverBy
-                  ? "A team member is helping you"
-                  : "Online"}
-              </span>
-            </div>
-            <Button
-              aria-label="Close chat"
-              className="ml-auto h-8 w-8 shrink-0 p-0"
-              onClick={handleCloseClick}
-              size="sm"
+          <div className="flex gap-1 border-b bg-muted/30 p-1.5">
+            <button
+              className={cn(
+                `
+                  flex-1 rounded-md py-2 text-xs font-semibold transition-colors
+                  sm:text-sm
+                `,
+                widgetMode === "support"
+                  ? "bg-background text-foreground shadow-sm"
+                  : `
+                    text-muted-foreground
+                    hover:text-foreground
+                  `,
+              )}
+              onClick={() => setWidgetMode("support")}
               type="button"
-              variant="ghost"
             >
-              ×
-            </Button>
+              Store support
+            </button>
+            <button
+              className={cn(
+                `
+                  flex-1 rounded-md py-2 text-xs font-semibold transition-colors
+                  sm:text-sm
+                `,
+                widgetMode === "personal"
+                  ? "bg-background text-foreground shadow-sm"
+                  : `
+                    text-muted-foreground
+                    hover:text-foreground
+                  `,
+              )}
+              onClick={() => setWidgetMode("personal")}
+              type="button"
+            >
+              Personal AI
+            </button>
           </div>
 
-          {/* Messages area */}
-          <div className="flex-1 overflow-y-auto p-3" ref={messagesScrollRef}>
-            {messages.length === 0 && !loading && !error && (
-              <div className="flex flex-col items-center gap-2 py-6 text-center">
+          {widgetMode === "personal" ? (
+            <div className="flex min-h-[280px] flex-col">
+              <div
+                className={`
+                  flex cursor-grab items-center gap-3 border-b px-4 py-3
+                  select-none
+                  active:cursor-grabbing
+                `}
+                onMouseDown={onPointerDownDrag}
+                onTouchStart={onPointerDownDrag}
+              >
                 <div
                   className={`
-                  flex h-14 w-14 items-center justify-center rounded-full
-                  bg-primary text-primary-foreground
-                  shadow-md
-                `}
+                    flex h-10 w-10 shrink-0 items-center justify-center
+                    rounded-full bg-primary/15 text-primary
+                  `}
                 >
+                  <Sparkles aria-hidden className="h-5 w-5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <span className="text-base leading-tight font-semibold">
+                    Personal AI
+                  </span>
+                  <span className="block text-sm text-muted-foreground">
+                    Venice chat & characters
+                  </span>
+                </div>
+                <Button
+                  aria-label="Close"
+                  className="h-8 w-8 shrink-0 p-0"
+                  onClick={handleCloseClick}
+                  size="sm"
+                  type="button"
+                  variant="ghost"
+                >
+                  ×
+                </Button>
+              </div>
+              <div className={`
+                flex flex-1 flex-col items-center justify-center gap-3 px-5 py-8
+                text-center
+              `}>
+                <p className="text-sm text-muted-foreground">
+                  Your private assistant lives on the full chat page—separate from
+                  Alice, who handles store orders and support.
+                </p>
+                <Button asChild className="w-full max-w-[260px]">
+                  <Link href="/chat">Open personal chat</Link>
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Header with avatar – draggable */}
+              <div
+                className={`
+                  flex cursor-grab items-center gap-3 border-b px-4 py-3
+                  select-none
+                  active:cursor-grabbing
+                `}
+                onMouseDown={onPointerDownDrag}
+                onTouchStart={onPointerDownDrag}
+              >
+                <div
+                  className={`
+                    relative flex h-10 w-10 shrink-0 items-center justify-center
+                    rounded-full bg-primary text-white shadow-sm
+                  `}
+                >
+                  {/* Avatar */}
                   <svg
                     fill="none"
-                    height="28"
+                    height="20"
                     stroke="currentColor"
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth="2"
                     viewBox="0 0 24 24"
-                    width="28"
+                    width="20"
                     xmlns="http://www.w3.org/2000/svg"
                   >
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                     <circle cx="12" cy="7" r="4" />
                   </svg>
-                </div>
-                <p className="text-base font-medium">
-                  Hi there! I&apos;m Alice
-                </p>
-                <p className="max-w-[240px] text-sm text-muted-foreground">
-                  Your AI support assistant. How can I help you today?
-                </p>
-              </div>
-            )}
-            {error && <p className="text-sm text-destructive">{error}</p>}
-            <ul className="space-y-2">
-              {messages.map((m) => {
-                const date = m.createdAt ? new Date(m.createdAt) : null;
-                const timeStr = date
-                  ? date.toLocaleTimeString(undefined, {
-                      hour: "numeric",
-                      hour12: true,
-                      minute: "2-digit",
-                    })
-                  : "";
-                return (
-                  <li
-                    className={cn(
-                      "rounded-lg px-3 py-2 text-base",
-                      m.role === "customer"
-                        ? "ml-8 bg-primary text-primary-foreground"
-                        : "mr-8 bg-muted",
-                    )}
-                    key={m.id}
-                  >
-                    <span className="font-medium capitalize">
-                      {m.role === "customer" ? "You" : "Alice"}:{" "}
-                    </span>
-                    {m.content}
-                    {timeStr && (
-                      <div
-                        className={cn(
-                          "mt-1 text-xs opacity-80",
-                          m.role === "customer"
-                            ? "text-primary-foreground/80"
-                            : "text-muted-foreground",
-                        )}
-                      >
-                        {timeStr}
-                      </div>
-                    )}
-                  </li>
-                );
-              })}
-              {loading && (
-                <li
-                  aria-busy="true"
-                  aria-live="polite"
-                  className={`
-                    mr-8 flex items-center gap-2 rounded-lg bg-muted px-3 py-2
-                    text-base
-                  `}
-                >
-                  <span className="font-medium text-muted-foreground">
-                    {takenOverBy ? "Live Support Agent" : "Alice"}:
-                  </span>
-                  <span aria-hidden className="flex gap-1">
-                    <span
-                      className={`
-                        h-1.5 w-1.5 animate-bounce rounded-full
-                        bg-muted-foreground/80
-                      `}
-                      style={{ animationDelay: "0ms" }}
-                    />
-                    <span
-                      className={`
-                        h-1.5 w-1.5 animate-bounce rounded-full
-                        bg-muted-foreground/80
-                      `}
-                      style={{ animationDelay: "160ms" }}
-                    />
-                    <span
-                      className={`
-                        h-1.5 w-1.5 animate-bounce rounded-full
-                        bg-muted-foreground/80
-                      `}
-                      style={{ animationDelay: "320ms" }}
-                    />
-                  </span>
-                </li>
-              )}
-            </ul>
-          </div>
-
-          {/* Quick prompts + input area */}
-          <div className="border-t px-3 pt-2 pb-2">
-            {messages.length === 0 && !loading && (
-              <div className="mb-2 flex flex-wrap gap-1.5">
-                {quickPrompts.map((p) => (
-                  <button
+                  <span
                     className={`
-                      inline-flex items-center gap-1.5 rounded-full border
-                      bg-muted/50 px-3.5 py-2 text-sm font-medium
-                      transition-colors
-                      hover:border-primary/30 hover:bg-muted
-                      active:scale-95
+                      absolute -right-0.5 -bottom-0.5 block h-3 w-3 rounded-full
+                      border-2 border-background bg-green-500
                     `}
-                    key={p.label}
-                    onClick={() => handleQuickPrompt(p.label)}
+                  />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-base leading-tight font-semibold">
+                    {takenOverBy ? "Live Support" : "Support"}
+                  </span>
+                  <span className="text-sm text-muted-foreground">
+                    {takenOverBy
+                      ? "A team member is helping you"
+                      : "Online"}
+                  </span>
+                </div>
+                <Button
+                  aria-label="Close chat"
+                  className="ml-auto h-8 w-8 shrink-0 p-0"
+                  onClick={handleCloseClick}
+                  size="sm"
+                  type="button"
+                  variant="ghost"
+                >
+                  ×
+                </Button>
+              </div>
+
+              {/* Messages area */}
+              <div className="flex-1 overflow-y-auto p-3" ref={messagesScrollRef}>
+                {messages.length === 0 && !loading && !error && (
+                  <div className={`
+                    flex flex-col items-center gap-2 py-6 text-center
+                  `}>
+                    <div
+                      className={`
+                        flex h-14 w-14 items-center justify-center rounded-full
+                        bg-primary text-primary-foreground shadow-md
+                      `}
+                    >
+                      <svg
+                        fill="none"
+                        height="28"
+                        stroke="currentColor"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        viewBox="0 0 24 24"
+                        width="28"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                        <circle cx="12" cy="7" r="4" />
+                      </svg>
+                    </div>
+                    <p className="text-base font-medium">
+                      Hi there! I&apos;m Alice
+                    </p>
+                    <p className="max-w-[240px] text-sm text-muted-foreground">
+                      Your AI support assistant. How can I help you today?
+                    </p>
+                  </div>
+                )}
+                {error && <p className="text-sm text-destructive">{error}</p>}
+                <ul className="space-y-2">
+                  {messages.map((m) => {
+                    const date = m.createdAt ? new Date(m.createdAt) : null;
+                    const timeStr = date
+                      ? date.toLocaleTimeString(undefined, {
+                          hour: "numeric",
+                          hour12: true,
+                          minute: "2-digit",
+                        })
+                      : "";
+                    return (
+                      <li
+                        className={cn(
+                          "rounded-lg px-3 py-2 text-base",
+                          m.role === "customer"
+                            ? "ml-8 bg-primary text-primary-foreground"
+                            : "mr-8 bg-muted",
+                        )}
+                        key={m.id}
+                      >
+                        <span className="font-medium capitalize">
+                          {m.role === "customer" ? "You" : "Alice"}:{" "}
+                        </span>
+                        {m.content}
+                        {timeStr && (
+                          <div
+                            className={cn(
+                              "mt-1 text-xs opacity-80",
+                              m.role === "customer"
+                                ? "text-primary-foreground/80"
+                                : "text-muted-foreground",
+                            )}
+                          >
+                            {timeStr}
+                          </div>
+                        )}
+                      </li>
+                    );
+                  })}
+                  {loading && (
+                    <li
+                      aria-busy="true"
+                      aria-live="polite"
+                      className={`
+                        mr-8 flex items-center gap-2 rounded-lg bg-muted px-3
+                        py-2 text-base
+                      `}
+                    >
+                      <span className="font-medium text-muted-foreground">
+                        {takenOverBy ? "Live Support Agent" : "Alice"}:
+                      </span>
+                      <span aria-hidden className="flex gap-1">
+                        <span
+                          className={`
+                            h-1.5 w-1.5 animate-bounce rounded-full
+                            bg-muted-foreground/80
+                          `}
+                          style={{ animationDelay: "0ms" }}
+                        />
+                        <span
+                          className={`
+                            h-1.5 w-1.5 animate-bounce rounded-full
+                            bg-muted-foreground/80
+                          `}
+                          style={{ animationDelay: "160ms" }}
+                        />
+                        <span
+                          className={`
+                            h-1.5 w-1.5 animate-bounce rounded-full
+                            bg-muted-foreground/80
+                          `}
+                          style={{ animationDelay: "320ms" }}
+                        />
+                      </span>
+                    </li>
+                  )}
+                </ul>
+              </div>
+
+              {/* Quick prompts + input area */}
+              <div className="border-t px-3 pt-2 pb-2">
+                {messages.length === 0 && !loading && (
+                  <div className="mb-2 flex flex-wrap gap-1.5">
+                    {quickPrompts.map((p) => (
+                      <button
+                        className={`
+                          inline-flex items-center gap-1.5 rounded-full border
+                          bg-muted/50 px-3.5 py-2 text-sm font-medium
+                          transition-colors
+                          hover:border-primary/30 hover:bg-muted
+                          active:scale-95
+                        `}
+                        key={p.label}
+                        onClick={() => handleQuickPrompt(p.label)}
+                        type="button"
+                      >
+                        <span>{p.icon}</span>
+                        <span>{p.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <Input
+                    className="min-w-0 flex-1"
+                    disabled={loading}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Type a message..."
+                    value={input}
+                  />
+                  <Button
+                    disabled={loading || !input.trim()}
+                    onClick={() => void sendMessage()}
+                    size="sm"
                     type="button"
                   >
-                    <span>{p.icon}</span>
-                    <span>{p.label}</span>
-                  </button>
-                ))}
+                    Send
+                  </Button>
+                </div>
               </div>
-            )}
-            <div className="flex gap-2">
-              <Input
-                className="min-w-0 flex-1"
-                disabled={loading}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Type a message..."
-                value={input}
-              />
-              <Button
-                disabled={loading || !input.trim()}
-                onClick={() => void sendMessage()}
-                size="sm"
-                type="button"
-              >
-                Send
-              </Button>
-            </div>
-          </div>
+            </>
+          )}
         </div>
       )}
       <Dialog onOpenChange={setEndChatDialogOpen} open={endChatDialogOpen}>

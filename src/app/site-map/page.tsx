@@ -21,6 +21,7 @@ const STATIC_LINKS: { href: string; label: string }[] = [
   { href: "/track-order", label: "Track order" },
   { href: "/refund", label: "Refund requests" },
   { href: "/affiliate-program", label: "Affiliate program" },
+  { href: "/services", label: "Recommended services" },
   { href: "/for-agents", label: "For AI agents" },
   { href: "/token", label: "CULT" },
   { href: "/token/stake", label: "Stake & Vote" },
