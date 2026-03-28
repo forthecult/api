@@ -1,7 +1,6 @@
 import { convertToModelMessages, streamText, type UIMessage } from "ai";
 import { NextResponse } from "next/server";
 
-import { auth } from "~/lib/auth";
 import {
   checkGuestQuota,
   incrementGuestUsage,
@@ -9,25 +8,30 @@ import {
   resolveGuestIdentifier,
 } from "~/lib/ai/access-control";
 import { extractLastUserText } from "~/lib/ai/extract-user-text";
+import { messagesHaveUserImage } from "~/lib/ai/messages-utils";
 import { buildAgentSystemPrompt } from "~/lib/ai/prompt-assembler";
 import { getOrCreateAiAgent } from "~/lib/ai/user-agent";
 import {
   buildVeniceModelId,
   createVeniceProvider,
   defaultChatModelId,
+  defaultVisionChatModelId,
   getServerVeniceApiKey,
 } from "~/lib/ai/venice";
+import { auth } from "~/lib/auth";
 
 export const maxDuration = 120;
 
-type ChatBody = {
+interface ChatBody {
   characterSlug?: string;
   guestId?: string;
   messages: UIMessage[];
+  /** Optional project-scoped instructions (from client projects UI). */
+  projectInstructions?: null | string;
   /** Optional sampling; forwarded to the model when set. */
   temperature?: number;
   topP?: number;
-};
+}
 
 export async function POST(request: Request) {
   const session = await auth.api.getSession({ headers: request.headers });
@@ -85,12 +89,12 @@ export async function POST(request: Request) {
 
   if (!veniceApiKey) {
     return NextResponse.json(
-      { error: "Venice API is not configured" },
+      { error: "AI service is not configured" },
       { status: 503 },
     );
   }
 
-  const system = await buildAgentSystemPrompt({
+  let system = await buildAgentSystemPrompt({
     lastUserText: lastUser,
     userId,
     userPrompt,
@@ -98,7 +102,13 @@ export async function POST(request: Request) {
     veniceApiKey,
   });
 
-  const baseModel = defaultChatModelId();
+  const pi = body.projectInstructions?.trim();
+  if (pi) {
+    system += `\n\n[Project instructions]\n${pi}`;
+  }
+
+  const useVision = messagesHaveUserImage(messages);
+  const baseModel = useVision ? defaultVisionChatModelId() : defaultChatModelId();
   const slugForModel = characterSlug === "default" ? null : characterSlug;
   const modelId = buildVeniceModelId(baseModel, {
     characterSlug: slugForModel,

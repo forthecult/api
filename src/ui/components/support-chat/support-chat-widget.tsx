@@ -467,7 +467,7 @@ export function SupportChatWidget({
                     Personal AI
                   </span>
                   <span className="block text-sm text-muted-foreground">
-                    Venice chat & characters
+                    Assistant & characters
                   </span>
                 </div>
                 <Button

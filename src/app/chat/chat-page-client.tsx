@@ -1,7 +1,11 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport } from "ai";
+import {
+  convertFileListToFileUIParts,
+  DefaultChatTransport,
+  type UIMessage,
+} from "ai";
 import {
   Copy,
   ImageIcon,
@@ -14,13 +18,42 @@ import {
   Trash2,
 } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
+import {
+  loadProjects,
+  loadSessionList,
+  loadSessionMessages,
+  loadSidebarCollapsed,
+  saveProjects,
+  saveSessionList,
+  saveSessionMessages,
+  saveSidebarCollapsed,
+} from "~/app/chat/chat-local";
+import {
+  type ChatProject,
+  type ChatSessionMeta,
+  ChatSidebar,
+} from "~/app/chat/chat-sidebar";
 import { useSession } from "~/lib/auth-client";
 import { cn } from "~/lib/cn";
 import { Button } from "~/ui/primitives/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "~/ui/primitives/dialog";
+import { Input } from "~/ui/primitives/input";
 import { Label } from "~/ui/primitives/label";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "~/ui/primitives/popover";
 import { Slider } from "~/ui/primitives/slider";
 
 const GUEST_KEY = "ftc-ai-guest-id";
@@ -28,8 +61,8 @@ const TEMP_KEY = "ftc-ai-temperature";
 const TOP_P_KEY = "ftc-ai-top-p";
 const USE_TOP_P_KEY = "ftc-ai-use-top-p";
 
-interface VeniceCharacter {
-  description: null | string;
+interface AiCharacter {
+  description?: null | string;
   image_url: null | string;
   name: string;
   slug: string;
@@ -41,19 +74,39 @@ export function ChatPageClient() {
 
   const [guestId, setGuestId] = useState("");
   const [input, setInput] = useState("");
-  const [characters, setCharacters] = useState<VeniceCharacter[]>([]);
+  const [characters, setCharacters] = useState<AiCharacter[]>([]);
   const [charactersError, setCharactersError] = useState<null | string>(null);
   const [loadingCharacters, setLoadingCharacters] = useState(true);
 
-  /** "default" = no Venice character slug on the model */
   const [characterSlug, setCharacterSlug] = useState("default");
-  const [selectedMeta, setSelectedMeta] = useState<null | VeniceCharacter>(
-    null,
-  );
+  const [selectedMeta, setSelectedMeta] = useState<AiCharacter | null>(null);
   const [sessionId, setSessionId] = useState(() => crypto.randomUUID());
   const [temperature, setTemperature] = useState(0.7);
   const [topP, setTopP] = useState(0.95);
   const [useTopP, setUseTopP] = useState(false);
+
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [projects, setProjects] = useState<ChatProject[]>([]);
+  const [sessions, setSessions] = useState<ChatSessionMeta[]>([]);
+  const [selectedProjectId, setSelectedProjectId] = useState<null | string>(
+    null,
+  );
+  const [projectDialogOpen, setProjectDialogOpen] = useState(false);
+  const [newProjectName, setNewProjectName] = useState("");
+  const [newProjectInstructions, setNewProjectInstructions] = useState("");
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const skipNextPersistRef = useRef(false);
+
+  useEffect(() => {
+    try {
+      setSidebarCollapsed(loadSidebarCollapsed());
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   useEffect(() => {
     try {
@@ -91,16 +144,24 @@ export function ChatPageClient() {
   }, [topP, useTopP]);
 
   useEffect(() => {
-    // Guest id only exists in the browser; initialize after mount.
     // eslint-disable-next-line @eslint-react/set-state-in-effect -- localStorage-backed guest id
     setGuestId(getOrCreateGuestId());
+  }, []);
+
+  useEffect(() => {
+    try {
+      setProjects(loadProjects());
+      setSessions(loadSessionList());
+    } catch {
+      /* ignore */
+    }
   }, []);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const json = await fetchJson<{ data?: VeniceCharacter[] }>(
+        const json = await fetchJson<{ data?: AiCharacter[] }>(
           "/api/ai/characters?limit=48",
         );
         const list = Array.isArray(json.data) ? json.data : [];
@@ -125,7 +186,7 @@ export function ChatPageClient() {
     (async () => {
       try {
         const json = await fetchJson<{
-          agent?: { characterName: null | string; characterSlug: null | string; };
+          agent?: { characterName: null | string; characterSlug: null | string };
         }>("/api/ai/agent");
         const slug = json.agent?.characterSlug?.trim();
         if (cancelled || !slug) return;
@@ -142,7 +203,7 @@ export function ChatPageClient() {
         )
           .then((r) => r.json())
           .catch(() => null);
-        const detail = parseVeniceCharacterDetail(rawDetail);
+        const detail = parseCharacterDetail(rawDetail);
         if (!cancelled && detail)
           setSelectedMeta({
             description: detail.description ?? null,
@@ -159,8 +220,13 @@ export function ChatPageClient() {
     };
   }, [userId]);
 
+  const selectedProject = useMemo(
+    () => projects.find((p) => p.id === selectedProjectId) ?? null,
+    [projects, selectedProjectId],
+  );
+
   const persistAgentCharacter = useCallback(
-    async (next: null | VeniceCharacter) => {
+    async (next: AiCharacter | null) => {
       if (!userId) return;
       await fetch("/api/ai/agent", {
         body: JSON.stringify({
@@ -176,7 +242,7 @@ export function ChatPageClient() {
   );
 
   const selectCharacter = useCallback(
-    async (c: null | VeniceCharacter) => {
+    async (c: AiCharacter | null) => {
       if (c === null) {
         setCharacterSlug("default");
         setSelectedMeta(null);
@@ -196,6 +262,7 @@ export function ChatPageClient() {
         api: "/api/ai/chat",
         body: {
           characterSlug,
+          projectInstructions: selectedProject?.instructions ?? undefined,
           ...(useTopP ? { topP } : { temperature }),
         },
         credentials: "include",
@@ -203,7 +270,14 @@ export function ChatPageClient() {
           "x-ai-guest-id": guestId,
         },
       }),
-    [characterSlug, guestId, temperature, topP, useTopP],
+    [
+      characterSlug,
+      guestId,
+      selectedProject?.instructions,
+      temperature,
+      topP,
+      useTopP,
+    ],
   );
 
   const chatId = `ftc-chat-${characterSlug}-${sessionId}`;
@@ -234,6 +308,46 @@ export function ChatPageClient() {
     }
     return null;
   }, [messages]);
+
+  useEffect(() => {
+    skipNextPersistRef.current = true;
+    try {
+      const loaded = loadSessionMessages(sessionId);
+      setMessages(loaded ?? []);
+    } catch {
+      setMessages([]);
+    }
+  }, [sessionId, setMessages]);
+
+  useEffect(() => {
+    if (skipNextPersistRef.current) {
+      skipNextPersistRef.current = false;
+      return;
+    }
+    saveSessionMessages(sessionId, messages);
+  }, [messages, sessionId]);
+
+  const upsertSessionTitle = useCallback(
+    (id: string, title: string) => {
+      const now = Date.now();
+      setSessions((prev) => {
+        const next = prev.filter((s) => s.id !== id);
+        next.unshift({ id, title: title.slice(0, 120), updatedAt: now });
+        next.sort((a, b) => b.updatedAt - a.updatedAt);
+        saveSessionList(next);
+        return next;
+      });
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (messages.length === 0) return;
+    const firstUser = messages.find((m) => m.role === "user");
+    if (!firstUser) return;
+    const t = messageText(firstUser).trim() || "Chat";
+    upsertSessionTitle(sessionId, t);
+  }, [messages, sessionId, upsertSessionTitle]);
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -266,7 +380,15 @@ export function ChatPageClient() {
     setSessionId(crypto.randomUUID());
     setMessages([]);
     clearError();
-    toast.message("Started a new chat in this tab.");
+    toast.message("New chat");
+  };
+
+  const handleSelectSession = (id: string) => {
+    if (id === sessionId) return;
+    setSessionId(id);
+    const loaded = loadSessionMessages(id);
+    setMessages(loaded ?? []);
+    clearError();
   };
 
   const deleteAssistantMessage = (id: string) => {
@@ -274,23 +396,18 @@ export function ChatPageClient() {
   };
 
   const startSpeech = () => {
+    type RecognitionCtor = new () => {
+      continuous: boolean;
+      interimResults: boolean;
+      lang: string;
+      maxAlternatives: number;
+      onerror: ((ev: Event) => void) | null;
+      onresult: ((ev: Event) => void) | null;
+      start: () => void;
+    };
     const w = window as unknown as {
-      SpeechRecognition?: new () => {
-        interimResults: boolean;
-        lang: string;
-        maxAlternatives: number;
-        onerror: (() => void) | null;
-        onresult: ((ev: Event) => void) | null;
-        start: () => void;
-      };
-      webkitSpeechRecognition?: new () => {
-        interimResults: boolean;
-        lang: string;
-        maxAlternatives: number;
-        onerror: (() => void) | null;
-        onresult: ((ev: Event) => void) | null;
-        start: () => void;
-      };
+      SpeechRecognition?: RecognitionCtor;
+      webkitSpeechRecognition?: RecognitionCtor;
     };
     const SR = w.SpeechRecognition || w.webkitSpeechRecognition;
     if (!SR) {
@@ -301,33 +418,171 @@ export function ChatPageClient() {
     recognition.lang = "en-US";
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
+    recognition.continuous = false;
     recognition.onresult = (ev: Event) => {
-      const anyEv = ev as unknown as {
-        results?: { item: (i: number) => { transcript: string } };
+      const res = ev as unknown as {
+        results?: { transcript?: string }[][];
       };
-      const transcript = anyEv.results?.item(0)?.transcript;
+      const r = res.results?.[0]?.[0];
+      const transcript = r?.transcript?.trim();
       if (transcript)
         setInput((prev) => (prev ? `${prev} ${transcript}` : transcript));
     };
-    recognition.onerror = () => {
-      toast.error("Speech recognition failed");
+    recognition.onerror = (ev: Event) => {
+      const code = (ev as unknown as { error?: string }).error ?? "unknown";
+      if (code === "aborted") return;
+      if (code === "not-allowed")
+        toast.error(
+          "Microphone or speech recognition was blocked. Check browser permissions.",
+        );
+      else if (code === "no-speech")
+        toast.message("No speech detected—try again.");
+      else toast.error(`Speech recognition: ${code}`);
     };
-    recognition.start();
-    toast.message("Listening… speak now.");
+    try {
+      recognition.start();
+      toast.message("Listening… speak now.");
+    } catch {
+      toast.error("Could not start speech recognition.");
+    }
   };
 
+  const onPickImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    e.target.value = "";
+    if (!files?.length) return;
+    let fileParts: Awaited<ReturnType<typeof convertFileListToFileUIParts>>;
+    try {
+      fileParts = await convertFileListToFileUIParts(files);
+    } catch {
+      toast.error("Could not read images.");
+      return;
+    }
+    const text = input.trim();
+    const parts: (| (typeof fileParts)[number]
+      | { text: string; type: "text" })[] = [...fileParts];
+    if (text) parts.push({ text, type: "text" });
+    void sendMessage({ parts, role: "user" });
+    setInput("");
+  };
+
+  const createProject = () => {
+    const name = newProjectName.trim();
+    if (!name) return;
+    const id = crypto.randomUUID();
+    const p: ChatProject = {
+      createdAt: Date.now(),
+      id,
+      instructions: newProjectInstructions.trim(),
+      name,
+    };
+    const next = [...projects, p];
+    setProjects(next);
+    saveProjects(next);
+    setSelectedProjectId(id);
+    setProjectDialogOpen(false);
+    setNewProjectName("");
+    setNewProjectInstructions("");
+    toast.success("Project created");
+  };
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages.length, busy]);
+
   return (
-    <div className="mx-auto flex min-h-[70vh] max-w-5xl flex-col gap-6 p-4">
-      <div className="space-y-2">
-        <div className="flex flex-wrap items-start justify-between gap-2">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">AI chat</h1>
-            <p className="text-sm text-muted-foreground">
-              Personal, private agent. Messages stay in this browser unless you add
-              server-side backups later.
-            </p>
+    <div className={`
+      flex h-[min(100dvh,100vh)] max-h-[100dvh] w-full overflow-hidden
+      bg-background
+    `}>
+      <ChatSidebar
+        characters={characters}
+        charactersError={charactersError}
+        collapsed={sidebarCollapsed}
+        loadingCharacters={loadingCharacters}
+        onCollapseToggle={() => {
+          const next = !sidebarCollapsed;
+          setSidebarCollapsed(next);
+          saveSidebarCollapsed(next);
+        }}
+        onNewChat={newChat}
+        onOpenCreateProject={() => setProjectDialogOpen(true)}
+        onSelectCharacter={(c) => void selectCharacter(c)}
+        onSelectProject={setSelectedProjectId}
+        onSelectSession={handleSelectSession}
+        projects={projects}
+        searchQuery={searchQuery}
+        selectedCharacterSlug={selectedMeta?.slug ?? null}
+        selectedProjectId={selectedProjectId}
+        sessionId={sessionId}
+        sessions={sessions}
+        setSearchQuery={setSearchQuery}
+      />
+
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <header className={`
+          flex shrink-0 items-center justify-between gap-2 border-b
+          border-border px-4 py-3
+        `}>
+          <div className="min-w-0">
+            <h1 className="truncate text-lg font-semibold tracking-tight">
+              Chat
+            </h1>
+            {selectedProject ? (
+              <p className="truncate text-xs text-muted-foreground">
+                Project: {selectedProject.name}
+              </p>
+            ) : null}
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex shrink-0 items-center gap-1">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button size="icon" type="button" variant="ghost">
+                  <Settings2 aria-hidden className="h-4 w-4" />
+                  <span className="sr-only">Model settings</span>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-80">
+                <div className="space-y-3">
+                  <p className="text-sm font-medium">Sampling</p>
+                  <label className={`
+                    flex cursor-pointer items-center gap-2 text-sm
+                  `}>
+                    <input
+                      checked={useTopP}
+                      onChange={(e) => setUseTopP(e.target.checked)}
+                      type="checkbox"
+                    />
+                    Use Top P instead of temperature
+                  </label>
+                  {!useTopP ? (
+                    <div className="space-y-2">
+                      <Label className="text-xs">
+                        Temperature: {temperature.toFixed(2)}
+                      </Label>
+                      <Slider
+                        max={2}
+                        min={0}
+                        onValueChange={(v) => setTemperature(v[0] ?? 0.7)}
+                        step={0.05}
+                        value={[temperature]}
+                      />
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <Label className="text-xs">Top P: {topP.toFixed(2)}</Label>
+                      <Slider
+                        max={1}
+                        min={0.05}
+                        onValueChange={(v) => setTopP(v[0] ?? 0.95)}
+                        step={0.05}
+                        value={[topP]}
+                      />
+                    </div>
+                  )}
+                </div>
+              </PopoverContent>
+            </Popover>
             <Button
               onClick={newChat}
               size="sm"
@@ -335,11 +590,11 @@ export function ChatPageClient() {
               variant="outline"
             >
               <Plus aria-hidden className="mr-1 h-4 w-4" />
-              New chat
+              New
             </Button>
             {userId ? (
               <Button asChild size="sm" variant="outline">
-                <Link href="/dashboard/ai">Account & memory</Link>
+                <Link href="/dashboard/ai">Account</Link>
               </Button>
             ) : (
               <Button asChild size="sm" variant="outline">
@@ -347,389 +602,277 @@ export function ChatPageClient() {
               </Button>
             )}
           </div>
+        </header>
+
+        {error ? (
+          <div
+            className={`
+              mx-4 mt-2 rounded-lg border border-destructive/40
+              bg-destructive/10 px-4 py-3 text-sm text-destructive
+            `}
+            role="alert"
+          >
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <p className="min-w-0 flex-1 font-medium">{error.message}</p>
+              <Button
+                className="shrink-0"
+                onClick={() => clearError()}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                Dismiss
+              </Button>
+            </div>
+          </div>
+        ) : null}
+
+        <div className="relative min-h-0 flex-1 overflow-y-auto px-4 py-6">
+          <div className="mx-auto flex max-w-3xl flex-col gap-4">
+            {messages.length === 0 ? (
+              <div className={`
+                flex flex-col items-center justify-center gap-2 py-16
+                text-center
+              `}>
+                <p className="max-w-sm text-sm text-muted-foreground">
+                  Start a conversation. Your messages stay private to this
+                  browser unless you use account backups.
+                </p>
+              </div>
+            ) : null}
+            {messages.map((m) => {
+              const isUser = m.role === "user";
+              const isAssistant = m.role === "assistant";
+              const text = isAssistant ? messageText(m) : "";
+              return (
+                <div
+                  className={cn(
+                    "flex w-full",
+                    isUser ? "justify-end" : "justify-start",
+                  )}
+                  key={m.id}
+                >
+                  <div
+                    className={cn(
+                      `
+                        max-w-[min(100%,85%)] rounded-2xl px-4 py-3 text-sm
+                        shadow-sm
+                      `,
+                      isUser
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-foreground",
+                    )}
+                  >
+                    {isUser ? (
+                      <MessageParts message={m} />
+                    ) : (
+                      <div className="space-y-2 whitespace-pre-wrap">{text}</div>
+                    )}
+                    {isAssistant && text ? (
+                      <div className={`
+                        mt-2 flex flex-wrap gap-1 border-t border-border/50 pt-2
+                        opacity-90
+                      `}>
+                        <Button
+                          className="h-7 px-2 text-xs"
+                          onClick={() => void copyText(text)}
+                          size="sm"
+                          type="button"
+                          variant="ghost"
+                        >
+                          <Copy aria-hidden className="mr-1 h-3 w-3" />
+                          Copy
+                        </Button>
+                        {m.id === lastAssistantId ? (
+                          <Button
+                            className="h-7 px-2 text-xs"
+                            disabled={busy}
+                            onClick={() => void regenerate()}
+                            size="sm"
+                            type="button"
+                            variant="ghost"
+                          >
+                            <RotateCcw aria-hidden className="mr-1 h-3 w-3" />
+                            Regenerate
+                          </Button>
+                        ) : null}
+                        <Button
+                          className={`
+                            h-7 px-2 text-xs text-destructive
+                            hover:text-destructive
+                          `}
+                          onClick={() => deleteAssistantMessage(m.id)}
+                          size="sm"
+                          type="button"
+                          variant="ghost"
+                        >
+                          <Trash2 aria-hidden className="mr-1 h-3 w-3" />
+                          Remove
+                        </Button>
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              );
+            })}
+            {busy ? (
+              <div className={`
+                flex items-center gap-2 text-sm text-muted-foreground
+              `}>
+                <Loader2 aria-hidden className="h-4 w-4 animate-spin" />
+                Thinking…
+              </div>
+            ) : null}
+            <div ref={messagesEndRef} />
+          </div>
         </div>
 
-        <details className="rounded-lg border border-border bg-card p-3 text-sm">
-          <summary className="cursor-pointer font-medium">
-            Capabilities vs Venice web app
-          </summary>
-          <p className="mt-2 leading-relaxed text-muted-foreground">
-            Full character editing (intro, instructions, custom system prompt,
-            context, temperature per character) is available in the Venice app
-            when you manage characters there. This chat uses the character slug
-            you pick and applies session sampling below. Memory import/export UI
-            is evolving—use account links when available.
-          </p>
-          <p className="mt-2 text-muted-foreground">
-            <Link
+        <div className={`
+          shrink-0 border-t border-border/80 bg-background/95 p-4 backdrop-blur
+          supports-[backdrop-filter]:bg-background/80
+        `}>
+          <div className="mx-auto w-full max-w-3xl">
+            <input
+              accept="image/*"
+              className="hidden"
+              onChange={onPickImage}
+              ref={fileInputRef}
+              type="file"
+            />
+            <form
               className={`
-                text-primary underline underline-offset-4
-                hover:text-primary/90
+                rounded-2xl border border-border/80 bg-muted/30 p-2 shadow-sm
               `}
-              href="/dashboard/ai"
+              onSubmit={onSubmit}
             >
-              Dashboard AI
-            </Link>{" "}
-            ·{" "}
-            <a
-              className={`
-                text-primary underline underline-offset-4
-                hover:text-primary/90
-              `}
-              href="https://venice.ai"
-              rel="noopener noreferrer"
-              target="_blank"
-            >
-              Venice
-            </a>
-          </p>
-        </details>
+              <textarea
+                className={cn(
+                  "border-input bg-transparent",
+                  "placeholder:text-muted-foreground",
+                  "min-h-[48px] w-full resize-none px-3 py-2 text-sm",
+                  "rounded-xl border-0 border-transparent",
+                  `
+                    ring-0 outline-none
+                    focus:ring-0
+                    focus-visible:ring-0 focus-visible:outline-none
+                  `,
+                )}
+                disabled={busy}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={onKeyDown}
+                placeholder="Send a private message…"
+                rows={2}
+                value={input}
+              />
+              <div className="flex items-center justify-between gap-2 px-1 pb-1">
+                <div className="flex items-center gap-1">
+                  <Button
+                    disabled={busy}
+                    onClick={startSpeech}
+                    size="icon"
+                    title="Dictate"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <Mic aria-hidden className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    disabled={busy}
+                    onClick={() => fileInputRef.current?.click()}
+                    size="icon"
+                    title="Attach image"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <ImageIcon aria-hidden className="h-4 w-4" />
+                  </Button>
+                  {busy ? (
+                    <Button
+                      onClick={() => stop()}
+                      size="sm"
+                      type="button"
+                      variant="destructive"
+                    >
+                      <Square aria-hidden className="mr-1 h-3.5 w-3.5" />
+                      Stop
+                    </Button>
+                  ) : null}
+                </div>
+                <Button
+                  disabled={busy || !input.trim()}
+                  size="sm"
+                  type="submit"
+                >
+                  Send
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
       </div>
 
-      {error ? (
-        <div
-          className={`
-            rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3
-            text-sm text-destructive
-          `}
-          role="alert"
-        >
-          <div className="flex flex-wrap items-start justify-between gap-2">
-            <p className="min-w-0 flex-1 font-medium">{error.message}</p>
+      <Dialog onOpenChange={setProjectDialogOpen} open={projectDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create new project</DialogTitle>
+            <DialogDescription>
+              Projects keep related chats and instructions in one place. The
+              assistant will follow your project instructions when this project
+              is selected.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-2">
+              <Label htmlFor="proj-name">Name</Label>
+              <Input
+                id="proj-name"
+                onChange={(e) => setNewProjectName(e.target.value)}
+                placeholder="e.g. Holiday planner"
+                value={newProjectName}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="proj-inst">Project instructions (optional)</Label>
+              <textarea
+                className={cn(
+                  "border-input bg-background ring-offset-background",
+                  "placeholder:text-muted-foreground",
+                  "min-h-[88px] w-full rounded-md border px-3 py-2 text-sm",
+                  `
+                    focus-visible:ring-2 focus-visible:ring-ring
+                    focus-visible:ring-offset-2
+                  `,
+                  "focus-visible:outline-none",
+                )}
+                id="proj-inst"
+                onChange={(e) => setNewProjectInstructions(e.target.value)}
+                placeholder="Tone, style, and goals for this project."
+                value={newProjectInstructions}
+              />
+            </div>
+          </div>
+          <DialogFooter>
             <Button
-              className="shrink-0"
-              onClick={() => clearError()}
-              size="sm"
+              onClick={() => setProjectDialogOpen(false)}
               type="button"
               variant="outline"
             >
-              Dismiss
+              Cancel
             </Button>
-          </div>
-        </div>
-      ) : null}
-
-      <details className="rounded-lg border border-border bg-muted/30 p-3">
-        <summary className={`
-          flex cursor-pointer items-center gap-2 text-sm font-medium
-        `}>
-          <Settings2 aria-hidden className="h-4 w-4" />
-          Model sampling (session)
-        </summary>
-        <div className="mt-3 space-y-4">
-          <label className="flex cursor-pointer items-center gap-2 text-sm">
-            <input
-              checked={useTopP}
-              onChange={(e) => setUseTopP(e.target.checked)}
-              type="checkbox"
-            />
-            Use Top P instead of temperature
-          </label>
-          {!useTopP ? (
-            <div className="space-y-2">
-              <Label className="text-xs">
-                Temperature: {temperature.toFixed(2)}
-              </Label>
-              <Slider
-                max={2}
-                min={0}
-                onValueChange={(v) => setTemperature(v[0] ?? 0.7)}
-                step={0.05}
-                value={[temperature]}
-              />
-            </div>
-          ) : (
-            <div className="space-y-2">
-              <Label className="text-xs">Top P: {topP.toFixed(2)}</Label>
-              <Slider
-                max={1}
-                min={0.05}
-                onValueChange={(v) => setTopP(v[0] ?? 0.95)}
-                step={0.05}
-                value={[topP]}
-              />
-            </div>
-          )}
-          <p className="text-xs text-muted-foreground">
-            Web search, URL scraping, and vision uploads require API support in
-            the route—they are not toggled here yet.
-          </p>
-        </div>
-      </details>
-
-      <div className={`
-        flex flex-col gap-6
-        lg:flex-row
-      `}>
-        <div className="lg:w-[min(100%,380px)] lg:shrink-0">
-          {selectedMeta && selectedMeta.slug !== "default" ? (
-            <div className={`
-              overflow-hidden rounded-2xl border border-border bg-card shadow-sm
-            `}>
-              <div className="relative aspect-[4/5] w-full bg-muted">
-                {selectedMeta.image_url ? (
-                  <img
-                    alt=""
-                    className="h-full w-full object-cover"
-                    height={480}
-                    src={selectedMeta.image_url}
-                    width={400}
-                  />
-                ) : (
-                  <div className={`
-                    flex h-full items-center justify-center text-4xl
-                    font-semibold text-muted-foreground
-                  `}>
-                    {selectedMeta.name.slice(0, 1).toUpperCase()}
-                  </div>
-                )}
-              </div>
-              <div className="space-y-1 p-4">
-                <p className="text-lg leading-tight font-semibold">
-                  {selectedMeta.name}
-                </p>
-                {selectedMeta.description ? (
-                  <p className="text-sm leading-relaxed text-muted-foreground">
-                    {selectedMeta.description}
-                  </p>
-                ) : null}
-                <Button
-                  className="mt-2 w-full"
-                  onClick={() => void selectCharacter(null)}
-                  type="button"
-                  variant="outline"
-                >
-                  Chat without a character
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <div className={`
-              rounded-2xl border border-dashed border-border bg-muted/40 p-6
-              text-center
-            `}>
-              <p className="text-sm text-muted-foreground">
-                Optional: pick a character below for a styled persona—or start
-                typing for a default assistant.
-              </p>
-            </div>
-          )}
-        </div>
-
-        <div className="min-w-0 flex-1 space-y-3">
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <h2 className="text-sm font-semibold tracking-tight">Characters</h2>
-            {loadingCharacters ? (
-              <span className="text-xs text-muted-foreground">Loading…</span>
-            ) : (
-              <span className="text-xs text-muted-foreground">
-                {characters.length} shown
-              </span>
-            )}
-          </div>
-          {charactersError ? (
-            <p className="text-sm text-destructive">{charactersError}</p>
-          ) : null}
-          <div
-            className={cn(
-              "grid max-h-[min(360px,50vh)] grid-cols-4 gap-2 overflow-y-auto",
-              `
-                sm:grid-cols-6
-                md:grid-cols-8
-              `,
-            )}
-          >
-            {characters.map((c) => {
-              const active = selectedMeta?.slug === c.slug;
-              return (
-                <button
-                  className={cn(
-                    `
-                      aspect-square overflow-hidden rounded-2xl border
-                      focus-visible:ring-ring
-                    `,
-                    `
-                      transition
-                      hover:opacity-95
-                      focus-visible:ring-2 focus-visible:outline-none
-                    `,
-                    active
-                      ? "border-primary ring-2 ring-primary"
-                      : "border-border",
-                  )}
-                  key={c.slug}
-                  onClick={() => void selectCharacter(c)}
-                  title={c.name}
-                  type="button"
-                >
-                  {c.image_url ? (
-                    <img
-                      alt=""
-                      className="h-full w-full object-cover"
-                      height={96}
-                      src={c.image_url}
-                      width={96}
-                    />
-                  ) : (
-                    <div className={`
-                      flex h-full w-full items-center justify-center bg-muted
-                      text-xs font-medium text-muted-foreground
-                    `}>
-                      {c.name.slice(0, 2).toUpperCase()}
-                    </div>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      <div className={`
-        min-h-[280px] flex-1 space-y-3 rounded-lg border border-border bg-card
-        p-3
-      `}>
-        {messages.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            Say something to start. Guests get limited free messages. Press{" "}
-            <kbd className="rounded border bg-muted px-1">Enter</kbd> to send,{" "}
-            <kbd className="rounded border bg-muted px-1">Shift+Enter</kbd> for a
-            new line.
-          </p>
-        ) : null}
-        {messages.map((m) => {
-          const text = messageText(m);
-          const isAssistant = m.role === "assistant";
-          return (
-            <div className="space-y-1" key={m.id}>
-              <div className="text-xs text-muted-foreground uppercase">
-                {m.role}
-              </div>
-              <div className="text-sm whitespace-pre-wrap">{text}</div>
-              {isAssistant && text ? (
-                <div className="flex flex-wrap gap-1 pt-1 text-muted-foreground">
-                  <Button
-                    className="h-8 px-2"
-                    onClick={() => void copyText(text)}
-                    size="sm"
-                    type="button"
-                    variant="ghost"
-                  >
-                    <Copy aria-hidden className="mr-1 h-3.5 w-3.5" />
-                    Copy
-                  </Button>
-                  {m.id === lastAssistantId ? (
-                    <Button
-                      className="h-8 px-2"
-                      disabled={busy}
-                      onClick={() => void regenerate()}
-                      size="sm"
-                      type="button"
-                      variant="ghost"
-                    >
-                      <RotateCcw aria-hidden className="mr-1 h-3.5 w-3.5" />
-                      Regenerate
-                    </Button>
-                  ) : null}
-                  <Button
-                    className={`
-                      h-8 px-2 text-destructive
-                      hover:text-destructive
-                    `}
-                    onClick={() => deleteAssistantMessage(m.id)}
-                    size="sm"
-                    type="button"
-                    variant="ghost"
-                  >
-                    <Trash2 aria-hidden className="mr-1 h-3.5 w-3.5" />
-                    Remove
-                  </Button>
-                </div>
-              ) : null}
-            </div>
-          );
-        })}
-        {busy ? (
-          <p className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Loader2 aria-hidden className="h-3.5 w-3.5 animate-spin" />
-            Thinking…
-          </p>
-        ) : null}
-      </div>
-
-      <form className="flex flex-col gap-2" onSubmit={onSubmit}>
-        <div className="flex flex-wrap gap-2">
-          <Button
-            disabled={busy}
-            onClick={startSpeech}
-            size="sm"
-            title="Speak to type (browser speech recognition)"
-            type="button"
-            variant="outline"
-          >
-            <Mic aria-hidden className="mr-1 h-4 w-4" />
-            Dictate
-          </Button>
-          <Button
-            onClick={() =>
-              toast.message(
-                "Image + vision is not enabled for this route yet. Wire multipart input and a vision model on the server to enable.",
-              )
-            }
-            size="sm"
-            type="button"
-            variant="outline"
-          >
-            <ImageIcon aria-hidden className="mr-1 h-4 w-4" />
-            Image
-          </Button>
-          {busy ? (
             <Button
-              onClick={() => stop()}
-              size="sm"
+              disabled={!newProjectName.trim()}
+              onClick={createProject}
               type="button"
-              variant="destructive"
             >
-              <Square aria-hidden className="mr-1 h-4 w-4" />
-              Stop
+              Create project
             </Button>
-          ) : null}
-        </div>
-        <div className="flex gap-2">
-          <textarea
-            className={cn(
-              "border-input bg-background ring-offset-background",
-              "placeholder:text-muted-foreground",
-              `
-                flex min-h-[44px] w-full min-w-0 flex-1
-                focus-visible:ring-ring
-              `,
-              "rounded-md border px-3 py-2 text-sm",
-              `
-                focus-visible:ring-2 focus-visible:ring-offset-2
-                focus-visible:outline-none
-              `,
-              "disabled:cursor-not-allowed disabled:opacity-50",
-            )}
-            disabled={busy}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={onKeyDown}
-            placeholder="Send a private message…"
-            rows={3}
-            value={input}
-          />
-          <Button
-            className="self-end"
-            disabled={busy || !input.trim()}
-            type="submit"
-          >
-            Send
-          </Button>
-        </div>
-      </form>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+
 
 async function fetchJson<T>(url: string): Promise<T> {
   const res = await fetch(url, { credentials: "include" });
@@ -747,6 +890,44 @@ function getOrCreateGuestId(): string {
   return id;
 }
 
+function MessageParts({ message }: { message: UIMessage }) {
+  const parts = message.parts ?? [];
+  if (parts.length === 0) return null;
+  return (
+    <div className="space-y-2">
+      {parts.map((part, i) => {
+        if (part.type === "text" && "text" in part) {
+          const tx = typeof part.text === "string" ? part.text : "";
+          return (
+            <div className="whitespace-pre-wrap" key={i}>
+              {tx}
+            </div>
+          );
+        }
+        if (part.type === "file") {
+          const url =
+            "url" in part && typeof part.url === "string" ? part.url : null;
+          const mt =
+            "mediaType" in part && typeof part.mediaType === "string"
+              ? part.mediaType
+              : "";
+          if (url && mt.startsWith("image/")) {
+            return (
+              <img
+                alt=""
+                className="max-h-52 max-w-full rounded-lg object-contain"
+                key={i}
+                src={url}
+              />
+            );
+          }
+        }
+        return null;
+      })}
+    </div>
+  );
+}
+
 function messageText(m: {
   parts?: { text?: string; type: string }[];
 }): string {
@@ -757,7 +938,7 @@ function messageText(m: {
     .join("");
 }
 
-function parseVeniceCharacterDetail(json: unknown): null | VeniceCharacter {
+function parseCharacterDetail(json: unknown): AiCharacter | null {
   if (!json || typeof json !== "object") return null;
   const o = json as Record<string, unknown>;
   const inner =
