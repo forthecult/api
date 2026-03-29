@@ -52,7 +52,7 @@ export default async function BlogPostPage({ params }: Props) {
   if (!post) notFound();
 
   return (
-    <article className="container mx-auto max-w-3xl px-4 py-12 sm:py-16">
+    <article className="container mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
       <Link
         className="mb-8 inline-block text-sm font-medium text-muted-foreground hover:text-foreground"
         href="/blog"
@@ -105,7 +105,7 @@ export default async function BlogPostPage({ params }: Props) {
         </div>
       </header>
 
-      <div className="max-w-none whitespace-pre-wrap text-foreground">
+      <div className="mx-auto max-w-prose whitespace-pre-wrap text-foreground">
         {post.body}
       </div>
     </article>

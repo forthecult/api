@@ -41,8 +41,9 @@ export default function AffiliateProgramPage() {
         />
         <div
           className={`
-          relative container mx-auto max-w-4xl px-4 py-20
-          sm:py-28
+          relative container mx-auto max-w-7xl px-4 py-20
+          sm:px-6 sm:py-28
+          lg:px-8
         `}
         >
           <p
@@ -99,7 +100,7 @@ export default function AffiliateProgramPage() {
         sm:py-20
       `}
       >
-        <div className="container mx-auto max-w-5xl px-4">
+        <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <h2
             className={`
             text-center text-2xl font-semibold tracking-tight text-foreground
@@ -196,7 +197,7 @@ export default function AffiliateProgramPage() {
         sm:py-20
       `}
       >
-        <div className="container mx-auto max-w-4xl px-4">
+        <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <p
             className={`
             text-xs font-semibold tracking-[0.2em] text-primary uppercase
@@ -253,7 +254,7 @@ export default function AffiliateProgramPage() {
         sm:py-20
       `}
       >
-        <div className="container mx-auto max-w-4xl px-4">
+        <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <h2
             className={`
             text-2xl font-semibold tracking-tight text-foreground
@@ -325,7 +326,7 @@ export default function AffiliateProgramPage() {
 
       {/* Quick facts */}
       <section className="border-b border-border bg-muted/20 py-12">
-        <div className="container mx-auto max-w-4xl px-4">
+        <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <h2 className="text-center text-lg font-semibold text-foreground">
             Quick facts
           </h2>
@@ -415,7 +416,7 @@ export default function AffiliateProgramPage() {
         sm:py-20
       `}
       >
-        <div className="container mx-auto max-w-2xl px-4">
+        <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <h2 className="text-2xl font-semibold tracking-tight text-foreground">
             Frequently asked questions
           </h2>
@@ -474,7 +475,7 @@ export default function AffiliateProgramPage() {
         sm:py-20
       `}
       >
-        <div className="container mx-auto max-w-2xl px-4 text-center">
+        <div className="container mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
           <h2
             className={`
             text-2xl font-semibold tracking-tight text-foreground

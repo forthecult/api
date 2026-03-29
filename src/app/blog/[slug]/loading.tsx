@@ -2,7 +2,7 @@ import { Skeleton } from "~/ui/primitives/skeleton";
 
 export default function BlogPostLoading() {
   return (
-    <div className="container mx-auto max-w-3xl px-4 py-12 sm:py-16">
+    <div className="container mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
       <Skeleton className="mb-6 aspect-video w-full rounded-lg" />
       <Skeleton className="mb-4 h-10 w-3/4" />
       <Skeleton className="mb-6 h-4 w-1/3" />

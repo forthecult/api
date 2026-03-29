@@ -66,7 +66,13 @@ function ForAgentsPageAgentView({ apiBaseUrl }: { apiBaseUrl: string }) {
   const apiLinks = getAgentApiLinks(apiBaseUrl);
   const summary = getAgentApiSummary(apiBaseUrl);
   return (
-    <article className="mx-auto max-w-3xl px-4 py-8 font-mono text-sm">
+    <article
+      className={`
+      container mx-auto max-w-7xl px-4 py-8 font-mono text-sm
+      sm:px-6
+      lg:px-8
+    `}
+    >
       <AgentApiSummaryScript apiBaseUrl={apiBaseUrl} />
       <h1
         className={`
@@ -319,8 +325,9 @@ function ForAgentsPageHumanView({ apiBaseUrl }: { apiBaseUrl: string }) {
     <div className="min-h-screen">
       <div
         className={`
-        container mx-auto max-w-3xl px-4 py-12
-        sm:py-16
+        container mx-auto max-w-7xl px-4 py-12
+        sm:px-6 sm:py-16
+        lg:px-8
       `}
       >
         <header className="mb-10 border-b border-border pb-8">
@@ -435,7 +442,7 @@ function ForAgentsPageHumanView({ apiBaseUrl }: { apiBaseUrl: string }) {
 
       <UseCaseGallery />
 
-      <div className="container mx-auto max-w-3xl px-4 pb-16">
+      <div className="container mx-auto max-w-7xl px-4 pb-16 sm:px-6 lg:px-8">
         <footer className="flex flex-wrap gap-4 border-t border-border pt-8">
           <Button asChild variant="outline">
             <Link href="/api/docs">API Docs (Swagger)</Link>

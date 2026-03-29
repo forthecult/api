@@ -62,12 +62,18 @@ export default function OpenSourcePage() {
         className={cn(
           "border-b border-border bg-gradient-to-b from-muted/40 to-background",
           `
-            px-4 py-16
+            py-16
             sm:py-20
           `,
         )}
       >
-        <div className="container mx-auto max-w-3xl text-center">
+        <div
+          className={`
+          container mx-auto max-w-7xl px-4 text-center
+          sm:px-6
+          lg:px-8
+        `}
+        >
           <p className={`
             mb-3 text-xs font-semibold tracking-[0.2em] text-primary uppercase
           `}>
@@ -94,10 +100,13 @@ export default function OpenSourcePage() {
         </div>
       </section>
 
-      <section className={`
-        container mx-auto max-w-4xl px-4 py-14
-        sm:py-16
-      `}>
+      <section
+        className={`
+        container mx-auto max-w-7xl px-4 py-14
+        sm:px-6 sm:py-16
+        lg:px-8
+      `}
+      >
         <div className={`
           mb-12 rounded-lg border border-border bg-card/50 p-6
           sm:p-8

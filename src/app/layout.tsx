@@ -13,6 +13,7 @@ import "~/css/globals.css";
 import { AgentSubdomainLayout } from "~/ui/components/agent-subdomain-layout";
 import { DeferredSpeedInsights } from "~/ui/components/deferred-speed-insights";
 import { AuthWalletModalProvider } from "~/ui/components/auth/auth-wallet-modal-provider";
+import { BackToTopButton } from "~/ui/components/back-to-top-button";
 import { ConditionalFooter } from "~/ui/components/conditional-footer";
 import { DeferredCriticalRoutePrefetcher } from "~/ui/components/deferred-critical-route-prefetcher";
 import { MainWithDogePadding } from "~/ui/components/main-with-doge-padding";
@@ -235,6 +236,7 @@ function LayoutShell({ children }: Readonly<{ children: React.ReactNode }>) {
         </MainWithDogePadding>
       </main>
       <ConditionalFooter />
+      <BackToTopButton />
       <SupportChatWidgetWrapper />
       <Toaster />
     </>

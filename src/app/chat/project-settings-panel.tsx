@@ -22,6 +22,7 @@ import {
   type ProjectKnowledgeItem,
 } from "~/app/chat/project-knowledge";
 import { cn } from "~/lib/cn";
+import { isUrlAllowedForProjectKnowledge } from "~/lib/project-knowledge-url-policy";
 import { Button } from "~/ui/primitives/button";
 import {
   Dialog,
@@ -129,6 +130,12 @@ export function ProjectSettingsPanel({
       toast.error("Enter a valid http(s) URL to a document or folder.");
       return;
     }
+    if (!isUrlAllowedForProjectKnowledge(url)) {
+      toast.error(
+        "That URL is blocked (localhost, private IPs, or internal hosts).",
+      );
+      return;
+    }
     const name =
       linkName.trim() ||
       (() => {
@@ -205,7 +212,13 @@ export function ProjectSettingsPanel({
           <p className="text-xs leading-relaxed text-muted-foreground">
             Upload spreadsheets, docs, PDFs, or add a share link from Google
             Drive, Dropbox, OneDrive, Proton Drive, or similar. Executable and
-            unsafe file types are not accepted.
+            unsafe file types are not accepted. Links to localhost, private
+            networks, and common internal/metadata hosts are blocked; the
+            blocklist is maintained in code and can be extended via{" "}
+            <code className="rounded bg-muted px-1 py-0.5 text-[10px]">
+              NEXT_PUBLIC_KNOWLEDGE_URL_BLOCKLIST
+            </code>{" "}
+            / allowlist env vars—review periodically as threats evolve.
           </p>
 
           <div className="flex flex-wrap gap-2">

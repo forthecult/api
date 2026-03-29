@@ -605,7 +605,7 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
     return (
       <div
         className={`
-        container mx-auto max-w-5xl px-4 py-16
+        container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16
         sm:px-6
         lg:px-8
       `}
@@ -624,7 +624,7 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
     return (
       <div
         className={`
-        container mx-auto max-w-5xl px-4 py-16
+        container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16
         sm:px-6
         lg:px-8
       `}
@@ -662,7 +662,7 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
   return (
     <div
       className={`
-      container mx-auto max-w-5xl px-4 py-8
+      container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8
       sm:px-6
       lg:px-8
     `}

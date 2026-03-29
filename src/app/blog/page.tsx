@@ -30,7 +30,7 @@ export default async function BlogPage() {
   const posts = await getPublishedBlogPosts(30);
 
   return (
-    <div className="container mx-auto max-w-4xl px-4 py-12 sm:py-16">
+    <div className="container mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
       <header className="mb-12 border-b border-border pb-10">
         <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
           Blog

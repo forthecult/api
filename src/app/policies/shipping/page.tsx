@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { SEO_CONFIG } from "~/app";
 import { getPublicSiteUrl } from "~/lib/app-url";
+import { POLICY_PAGE_CONTAINER_CLASS } from "~/lib/policy-page-layout";
 
 const siteUrl = getPublicSiteUrl();
 
@@ -16,12 +17,7 @@ export const metadata = {
 
 export default function ShippingPolicyPage() {
   return (
-    <div
-      className={`
-      container mx-auto max-w-2xl px-4 py-12
-      sm:py-16
-    `}
-    >
+    <div className={POLICY_PAGE_CONTAINER_CLASS}>
       <header className="mb-12 border-b border-border pb-10">
         <h1
           className={`

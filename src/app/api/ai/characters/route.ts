@@ -16,9 +16,13 @@ export async function GET(request: Request) {
   const url = new URL("https://api.venice.ai/api/v1/characters");
   const { searchParams } = new URL(request.url);
   const q = searchParams.get("q");
-  if (q) url.searchParams.set("q", q);
+  if (q) url.searchParams.set("search", q);
   const limit = searchParams.get("limit");
   if (limit) url.searchParams.set("limit", limit);
+  const sortBy = searchParams.get("sortBy");
+  if (sortBy) url.searchParams.set("sortBy", sortBy);
+  const sortOrder = searchParams.get("sortOrder");
+  if (sortOrder) url.searchParams.set("sortOrder", sortOrder);
 
   const res = await fetch(url.toString(), {
     headers: { Authorization: `Bearer ${key}` },

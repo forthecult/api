@@ -7,6 +7,7 @@ import {
   primaryKey,
   text,
   timestamp,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 
 import { userTable } from "../users/tables";
@@ -157,4 +158,84 @@ export const aiChatConversationTable = pgTable(
     index("ai_chat_conversation_user_updated_idx").on(tb.userId, tb.updatedAt),
   ],
 );
+
+
+export const AI_MESSAGING_PROVIDER_VALUES = [
+  "telegram",
+  "discord",
+  "slack",
+] as const;
+export type AiMessagingProvider =
+  (typeof AI_MESSAGING_PROVIDER_VALUES)[number];
+
+/** Per-user connection to external chat surfaces (Telegram bot, Discord app, Slack app). */
+export const aiMessagingChannelTable = pgTable(
+  "ai_messaging_channel",
+  {
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    discordApplicationId: text("discord_application_id"),
+    discordBotToken: text("discord_bot_token"),
+    discordLinkCode: text("discord_link_code"),
+    discordPublicKey: text("discord_public_key"),
+    id: text("id").primaryKey(),
+    linkedAt: timestamp("linked_at"),
+    provider: text("provider").notNull(),
+    slackAppId: text("slack_app_id"),
+    slackBotToken: text("slack_bot_token"),
+    slackLinkCode: text("slack_link_code"),
+    slackSigningSecret: text("slack_signing_secret"),
+    slackTeamId: text("slack_team_id"),
+    telegramBotToken: text("telegram_bot_token"),
+    telegramChatId: text("telegram_chat_id"),
+    telegramLinkCode: text("telegram_link_code"),
+    telegramWebhookSecret: text("telegram_webhook_secret"),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => userTable.id, { onDelete: "cascade" }),
+  },
+  (t) => [
+    uniqueIndex("ai_messaging_channel_user_provider_uidx").on(
+      t.userId,
+      t.provider,
+    ),
+    index("ai_messaging_channel_user_idx").on(t.userId),
+  ],
+);
+
+
+/** Maps Slack/Discord user ids to FTC accounts for a given bot connection row. */
+export const aiMessagingUserLinkTable = pgTable(
+  "ai_messaging_user_link",
+  {
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    externalTeamId: text("external_team_id"),
+    externalUserId: text("external_user_id").notNull(),
+    id: text("id").primaryKey(),
+    messagingChannelId: text("messaging_channel_id")
+      .notNull()
+      .references(() => aiMessagingChannelTable.id, { onDelete: "cascade" }),
+    provider: text("provider").notNull(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => userTable.id, { onDelete: "cascade" }),
+  },
+  (t) => [
+    uniqueIndex("ai_messaging_user_link_channel_provider_ext_uidx").on(
+      t.messagingChannelId,
+      t.provider,
+      t.externalUserId,
+    ),
+    index("ai_messaging_user_link_user_idx").on(t.userId),
+  ],
+);
+
+/** Slack event_id deduplication (retries). */
+export const slackEventProcessedTable = pgTable("slack_event_processed", {
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  eventId: text("event_id").primaryKey(),
+});
 

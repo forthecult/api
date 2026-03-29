@@ -321,7 +321,7 @@ export default async function HomePage() {
           `}
           />
           <PageContainer className="relative z-10">
-            <div className="mx-auto max-w-4xl text-center">
+            <div className="mx-auto w-full max-w-7xl text-center">
               <div
                 className={`
                 mb-6 inline-flex items-center gap-2 rounded-full border
@@ -495,7 +495,7 @@ export default async function HomePage() {
         `}
         >
           <PageContainer>
-            <div className="mx-auto max-w-3xl space-y-8 text-center">
+            <div className="mx-auto w-full max-w-7xl space-y-8 text-center">
               <p
                 className={`
                 text-xs font-medium tracking-[0.2em] text-primary uppercase
@@ -677,7 +677,7 @@ export default async function HomePage() {
         `}
         >
           <PageContainer>
-            <div className="mx-auto max-w-3xl space-y-4 text-center">
+            <div className="mx-auto w-full max-w-7xl space-y-4 text-center">
               <p
                 className={`
                 text-xs font-medium tracking-[0.2em] text-primary uppercase
@@ -712,7 +712,7 @@ export default async function HomePage() {
                 </Button>
               </Link>
             </div>
-            <div className="mx-auto mt-12 max-w-4xl">
+            <div className="mx-auto mt-12 w-full max-w-7xl">
               <Link
                 className={`
                   group relative block overflow-hidden rounded-lg border
@@ -899,7 +899,7 @@ export default async function HomePage() {
               `}
               />
               <div className="bg-dot-grid absolute inset-0 opacity-50" />
-              <div className="relative z-10 mx-auto max-w-2xl text-center">
+              <div className="relative z-10 mx-auto w-full max-w-7xl text-center">
                 <p
                   className={`
                   text-xs font-medium tracking-[0.2em] text-primary uppercase

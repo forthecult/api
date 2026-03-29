@@ -39,15 +39,6 @@ export default function DashboardAiPage() {
       </div>
 
       <DashboardAiWidgetToggle />
-
-      <p className="max-w-xl text-sm text-muted-foreground">
-        See{" "}
-        <Link className="text-primary underline" href="/dashboard/ai/channels">
-          Channels
-        </Link>{" "}
-        for how Telegram, WhatsApp, Slack, and similar integrations are scoped.
-        SMS/voice is a separate layer (typically Twilio-class providers).
-      </p>
     </div>
   );
 }

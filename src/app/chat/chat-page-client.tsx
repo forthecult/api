@@ -9,9 +9,12 @@ import {
 import {
   ChevronLeft,
   Copy,
+  Folder,
   ImageIcon,
   Loader2,
+  MessageSquare,
   Mic,
+  PanelRightClose,
   Plus,
   RotateCcw,
   Settings2,
@@ -24,10 +27,12 @@ import { toast } from "sonner";
 
 import {
   loadProjects,
+  loadProjectSettingsPanelCollapsed,
   loadSessionList,
   loadSessionMessages,
   loadSidebarCollapsed,
   saveProjects,
+  saveProjectSettingsPanelCollapsed,
   saveSessionList,
   saveSessionMessages,
   saveSidebarCollapsed,
@@ -104,6 +109,7 @@ export function ChatPageClient() {
   const [selectedProjectId, setSelectedProjectId] = useState<null | string>(
     null,
   );
+  const [mainView, setMainView] = useState<"chat" | "projects">("chat");
   const [projectDialogOpen, setProjectDialogOpen] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
   const [newProjectInstructions, setNewProjectInstructions] = useState("");
@@ -113,9 +119,11 @@ export function ChatPageClient() {
   >([]);
   const [projectSettingsDialogOpen, setProjectSettingsDialogOpen] =
     useState(false);
+  const [projectSettingsPanelCollapsed, setProjectSettingsPanelCollapsed] =
+    useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const skipNextPersistRef = useRef(false);
 
   useAiLocalStorageSync({
@@ -128,6 +136,14 @@ export function ChatPageClient() {
   useEffect(() => {
     try {
       setSidebarCollapsed(loadSidebarCollapsed());
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      setProjectSettingsPanelCollapsed(loadProjectSettingsPanelCollapsed());
     } catch {
       /* ignore */
     }
@@ -179,6 +195,14 @@ export function ChatPageClient() {
   }, [webEnabled, urlScrapingEnabled]);
 
   useEffect(() => {
+    try {
+      saveProjectSettingsPanelCollapsed(projectSettingsPanelCollapsed);
+    } catch {
+      /* ignore */
+    }
+  }, [projectSettingsPanelCollapsed]);
+
+  useEffect(() => {
     // eslint-disable-next-line @eslint-react/set-state-in-effect -- localStorage-backed guest id
     setGuestId(getOrCreateGuestId());
   }, []);
@@ -202,19 +226,30 @@ export function ChatPageClient() {
         };
         const list = data.conversations ?? [];
         if (cancelled || !list.length) return;
-        const next: ChatSessionMeta[] = list.map((c) => ({
-          id: c.id,
-          title: (c.title?.trim() || "Chat").slice(0, 120),
-          updatedAt: new Date(c.updatedAt).getTime(),
-        }));
-        next.sort((a, b) => b.updatedAt - a.updatedAt);
         setSessions((prev) => {
+          const prevById = new Map(prev.map((s) => [s.id, s]));
+          const next: ChatSessionMeta[] = list.map((c) => {
+            const local = prevById.get(c.id);
+            return {
+              favorite: local?.favorite ?? false,
+              id: c.id,
+              projectId: local?.projectId ?? null,
+              title: (c.title?.trim() || "Chat").slice(0, 120),
+              updatedAt: new Date(c.updatedAt).getTime(),
+            };
+          });
+          next.sort((a, b) => b.updatedAt - a.updatedAt);
           const seen = new Set(next.map((s) => s.id));
           const merged = [...next];
           for (const p of prev) {
             if (!seen.has(p.id)) merged.push(p);
           }
-          merged.sort((a, b) => b.updatedAt - a.updatedAt);
+          merged.sort((a, b) => {
+            if (Boolean(a.favorite) !== Boolean(b.favorite)) {
+              return a.favorite ? -1 : 1;
+            }
+            return b.updatedAt - a.updatedAt;
+          });
           saveSessionList(merged);
           return merged;
         });
@@ -254,7 +289,7 @@ export function ChatPageClient() {
     (async () => {
       try {
         const json = await fetchJson<{ data?: AiCharacter[] }>(
-          "/api/ai/characters?limit=48",
+          "/api/ai/characters?limit=48&sortBy=imports&sortOrder=desc",
         );
         const list = Array.isArray(json.data) ? json.data : [];
         if (!cancelled) setCharacters(list);
@@ -506,12 +541,29 @@ export function ChatPageClient() {
   }, [characterSlug, messages, sessionId, userId]);
 
   const upsertSessionTitle = useCallback(
-    (id: string, title: string) => {
+    (id: string, title: string, opts?: { projectId?: null | string }) => {
       const now = Date.now();
       setSessions((prev) => {
+        const existing = prev.find((s) => s.id === id);
+        const projectId =
+          opts?.projectId !== undefined
+            ? opts.projectId
+            : (existing?.projectId ?? null);
+        const favorite = existing?.favorite ?? false;
         const next = prev.filter((s) => s.id !== id);
-        next.unshift({ id, title: title.slice(0, 120), updatedAt: now });
-        next.sort((a, b) => b.updatedAt - a.updatedAt);
+        next.unshift({
+          favorite,
+          id,
+          projectId,
+          title: title.slice(0, 120),
+          updatedAt: now,
+        });
+        next.sort((a, b) => {
+          if (Boolean(a.favorite) !== Boolean(b.favorite)) {
+            return a.favorite ? -1 : 1;
+          }
+          return b.updatedAt - a.updatedAt;
+        });
         saveSessionList(next);
         return next;
       });
@@ -524,8 +576,10 @@ export function ChatPageClient() {
     const firstUser = messages.find((m) => m.role === "user");
     if (!firstUser) return;
     const t = messageText(firstUser).trim() || "Chat";
-    upsertSessionTitle(sessionId, t);
-  }, [messages, sessionId, upsertSessionTitle]);
+    upsertSessionTitle(sessionId, t, {
+      projectId: selectedProjectId ?? null,
+    });
+  }, [messages, selectedProjectId, sessionId, upsertSessionTitle]);
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -559,6 +613,25 @@ export function ChatPageClient() {
     setSessionId(id);
     setMessages([]);
     clearError();
+    setMainView("chat");
+    setSessions((prev) => {
+      const next = prev.filter((s) => s.id !== id);
+      next.unshift({
+        favorite: false,
+        id,
+        projectId: selectedProjectId ?? null,
+        title: "New chat",
+        updatedAt: Date.now(),
+      });
+      next.sort((a, b) => {
+        if (Boolean(a.favorite) !== Boolean(b.favorite)) {
+          return a.favorite ? -1 : 1;
+        }
+        return b.updatedAt - a.updatedAt;
+      });
+      saveSessionList(next);
+      return next;
+    });
     toast.message("New chat");
     if (userId) {
       void (async () => {
@@ -584,10 +657,77 @@ export function ChatPageClient() {
   const handleSelectSession = (id: string) => {
     if (id === sessionId) return;
     setSessionId(id);
+    setMainView("chat");
     const loaded = loadSessionMessages(id);
     setMessages(loaded ?? []);
     clearError();
+    const meta = sessions.find((s) => s.id === id);
+    if (meta?.projectId) setSelectedProjectId(meta.projectId);
+    else setSelectedProjectId(null);
   };
+
+  const toggleFavorite = useCallback((id: string) => {
+    setSessions((prev) => {
+      const next = prev.map((s) =>
+        s.id === id ? { ...s, favorite: !s.favorite } : s,
+      );
+      saveSessionList(next);
+      return next;
+    });
+  }, []);
+
+  const removeFromProject = useCallback((id: string) => {
+    setSessions((prev) => {
+      const next = prev.map((s) =>
+        s.id === id ? { ...s, projectId: null } : s,
+      );
+      saveSessionList(next);
+      return next;
+    });
+  }, []);
+
+  const deleteSession = useCallback(
+    (id: string) => {
+      try {
+        localStorage.removeItem(`ftc-ai-messages-${id}`);
+      } catch {
+        /* ignore */
+      }
+      if (userId) {
+        void fetch(
+          `/api/ai/conversations/${encodeURIComponent(id)}`,
+          { credentials: "include", method: "DELETE" },
+        );
+      }
+      const next = sessions.filter((s) => s.id !== id);
+      saveSessionList(next);
+      setSessions(next);
+      if (id !== sessionId) return;
+      const pick = next[0];
+      if (pick) {
+        setSessionId(pick.id);
+        setMessages(loadSessionMessages(pick.id) ?? []);
+        clearError();
+        setSelectedProjectId(pick.projectId ?? null);
+        return;
+      }
+      const nid = crypto.randomUUID();
+      setSessionId(nid);
+      setMessages([]);
+      clearError();
+      const row: ChatSessionMeta = {
+        favorite: false,
+        id: nid,
+        projectId: selectedProjectId ?? null,
+        title: "New chat",
+        updatedAt: Date.now(),
+      };
+      const n2 = [row, ...next];
+      saveSessionList(n2);
+      setSessions(n2);
+    },
+    [clearError, selectedProjectId, sessionId, sessions, setMessages, userId],
+  );
 
   const deleteAssistantMessage = (id: string) => {
     setMessages((prev) => prev.filter((m) => m.id !== id));
@@ -716,6 +856,7 @@ export function ChatPageClient() {
     setProjects(next);
     saveProjects(next);
     setSelectedProjectId(id);
+    setMainView("chat");
     setProjectDialogOpen(false);
     setNewProjectName("");
     setNewProjectInstructions("");
@@ -723,7 +864,14 @@ export function ChatPageClient() {
   };
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    window.scrollTo(0, 0);
+  }, []);
+
+  useEffect(() => {
+    if (messages.length === 0) return;
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
   }, [messages.length, busy]);
 
   return (
@@ -736,16 +884,27 @@ export function ChatPageClient() {
         charactersError={charactersError}
         collapsed={sidebarCollapsed}
         loadingCharacters={loadingCharacters}
+        mainView={mainView}
         onCollapseToggle={() => {
           const next = !sidebarCollapsed;
           setSidebarCollapsed(next);
           saveSidebarCollapsed(next);
         }}
+        onDeleteSession={deleteSession}
         onNewChat={newChat}
         onOpenCreateProject={() => setProjectDialogOpen(true)}
+        onOpenProjectsView={() => {
+          setSelectedProjectId(null);
+          setMainView("projects");
+        }}
+        onRemoveFromProject={removeFromProject}
         onSelectCharacter={(c) => void selectCharacter(c)}
-        onSelectProject={setSelectedProjectId}
+        onSelectProject={(pid) => {
+          setSelectedProjectId(pid);
+          setMainView("chat");
+        }}
         onSelectSession={handleSelectSession}
+        onToggleFavorite={toggleFavorite}
         projects={projects}
         searchQuery={searchQuery}
         selectedCharacterSlug={selectedMeta?.slug ?? null}
@@ -755,6 +914,18 @@ export function ChatPageClient() {
         setSearchQuery={setSearchQuery}
       />
 
+      {mainView === "projects" ? (
+        <ProjectsBrowseView
+          onNewProject={() => setProjectDialogOpen(true)}
+          onOpenChat={() => setMainView("chat")}
+          onOpenProject={(pid) => {
+            setSelectedProjectId(pid);
+            setMainView("chat");
+          }}
+          projects={projects}
+          sessions={sessions}
+        />
+      ) : (
       <div className={`
         flex min-h-0 min-w-0 flex-1 flex-col
         lg:flex-row
@@ -769,7 +940,10 @@ export function ChatPageClient() {
               <div className="flex flex-wrap items-center gap-2">
                 <Button
                   className="shrink-0 gap-1 px-2"
-                  onClick={() => setSelectedProjectId(null)}
+                  onClick={() => {
+                    setSelectedProjectId(null);
+                    setMainView("projects");
+                  }}
                   size="sm"
                   type="button"
                   variant="ghost"
@@ -797,8 +971,19 @@ export function ChatPageClient() {
           <div className="flex shrink-0 items-center gap-1">
             {selectedProject ? (
               <Button
-                className="lg:hidden"
-                onClick={() => setProjectSettingsDialogOpen(true)}
+                className={cn(
+                  !projectSettingsPanelCollapsed && "lg:hidden",
+                )}
+                onClick={() => {
+                  if (
+                    typeof window !== "undefined" &&
+                    window.matchMedia("(min-width: 1024px)").matches
+                  ) {
+                    setProjectSettingsPanelCollapsed(false);
+                  } else {
+                    setProjectSettingsDialogOpen(true);
+                  }
+                }}
                 size="sm"
                 type="button"
                 variant="outline"
@@ -815,37 +1000,11 @@ export function ChatPageClient() {
               </PopoverTrigger>
               <PopoverContent align="end" className="w-80">
                 <div className="space-y-4">
-                  <p className="text-sm font-medium">Advanced</p>
-                  <div className="space-y-2">
-                    <Label className="text-xs">
-                      Temperature: {temperature.toFixed(2)}
-                    </Label>
-                    <Slider
-                      max={2}
-                      min={0}
-                      onValueChange={(v) => setTemperature(v[0] ?? 0.7)}
-                      step={0.05}
-                      value={[temperature]}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs">Top P: {topP.toFixed(2)}</Label>
-                    <Slider
-                      max={1}
-                      min={0.05}
-                      onValueChange={(v) => setTopP(v[0] ?? 0.95)}
-                      step={0.05}
-                      value={[topP]}
-                    />
-                  </div>
-                  <div
-                    className={`
-                      flex items-center justify-between gap-3 border-t
-                      border-border/60 pt-3
-                    `}
-                  >
+                  <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="text-sm font-medium">Web enabled</p>
+                      <p className="text-sm font-medium">
+                        Search the entire internet
+                      </p>
                       <p className="text-xs text-muted-foreground">
                         Hint the model to use web search when supported.
                       </p>
@@ -857,7 +1016,9 @@ export function ChatPageClient() {
                   </div>
                   <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="text-sm font-medium">URL scraping</p>
+                      <p className="text-sm font-medium">
+                        Extract content from URLs in your messages
+                      </p>
                       <p className="text-xs text-muted-foreground">
                         Hint the model to fetch or quote page content.
                       </p>
@@ -866,6 +1027,31 @@ export function ChatPageClient() {
                       checked={urlScrapingEnabled}
                       onCheckedChange={setUrlScrapingEnabled}
                     />
+                  </div>
+                  <div className="space-y-4 border-t border-border/60 pt-3">
+                    <p className="text-sm font-medium">Advanced</p>
+                    <div className="space-y-2">
+                      <Label className="text-xs">
+                        Temperature: {temperature.toFixed(2)}
+                      </Label>
+                      <Slider
+                        max={2}
+                        min={0}
+                        onValueChange={(v) => setTemperature(v[0] ?? 0.7)}
+                        step={0.05}
+                        value={[temperature]}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Top P: {topP.toFixed(2)}</Label>
+                      <Slider
+                        max={1}
+                        min={0.05}
+                        onValueChange={(v) => setTopP(v[0] ?? 0.95)}
+                        step={0.05}
+                        value={[topP]}
+                      />
+                    </div>
                   </div>
                 </div>
               </PopoverContent>
@@ -914,7 +1100,10 @@ export function ChatPageClient() {
           </div>
         ) : null}
 
-        <div className="relative min-h-0 flex-1 overflow-y-auto px-4 py-6">
+        <div
+          className="relative min-h-0 flex-1 overflow-y-auto px-4 py-6"
+          ref={scrollRef}
+        >
           <div className="mx-auto flex max-w-3xl flex-col gap-4">
             {messages.length === 0 ? (
               <div className={`
@@ -1008,7 +1197,7 @@ export function ChatPageClient() {
                 Thinking…
               </div>
             ) : null}
-            <div ref={messagesEndRef} />
+
           </div>
         </div>
 
@@ -1094,14 +1283,36 @@ export function ChatPageClient() {
           </div>
         </div>
       </div>
-            {selectedProject ? (
+            {selectedProject && !projectSettingsPanelCollapsed ? (
               <div
                 className={`
-                  hidden h-full min-h-0 w-full max-w-[420px] shrink-0
+                  hidden h-full min-h-0 w-full max-w-[420px] shrink-0 flex-col
+                  border-l border-border bg-muted/10
                   lg:flex
                 `}
               >
+                <div
+                  className={`
+                    flex shrink-0 items-center justify-between gap-2 border-b
+                    border-border px-3 py-2
+                  `}
+                >
+                  <span className="text-xs font-medium text-muted-foreground">
+                    Project settings
+                  </span>
+                  <Button
+                    aria-label="Hide project settings"
+                    className="h-8 w-8 shrink-0"
+                    onClick={() => setProjectSettingsPanelCollapsed(true)}
+                    size="icon"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <PanelRightClose aria-hidden className="h-4 w-4" />
+                  </Button>
+                </div>
                 <ProjectSettingsPanel
+                  className={`min-h-0 flex-1 border-l-0 bg-transparent`}
                   knowledgeItems={knowledgeItems}
                   onInstructionsChange={updateProjectInstructions}
                   onKnowledgeChange={setKnowledgeItems}
@@ -1110,6 +1321,7 @@ export function ChatPageClient() {
               </div>
             ) : null}
           </div>
+      )}
 
       <Dialog
         onOpenChange={setProjectSettingsDialogOpen}
@@ -1286,4 +1498,105 @@ function parseCharacterDetail(json: unknown): AiCharacter | null {
     name: typeof inner.name === "string" ? inner.name : slug,
     slug,
   };
+}
+
+function ProjectsBrowseView({
+  onNewProject,
+  onOpenChat,
+  onOpenProject,
+  projects,
+  sessions,
+}: {
+  onNewProject: () => void;
+  onOpenChat: () => void;
+  onOpenProject: (id: string) => void;
+  projects: ChatProject[];
+  sessions: ChatSessionMeta[];
+}) {
+  const counts = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const s of sessions) {
+      if (!s.projectId) continue;
+      m.set(s.projectId, (m.get(s.projectId) ?? 0) + 1);
+    }
+    return m;
+  }, [sessions]);
+
+  return (
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+      <header
+        className={`
+          flex shrink-0 flex-wrap items-center justify-between gap-2 border-b
+          border-border px-4 py-3
+        `}
+      >
+        <h1 className="text-lg font-semibold tracking-tight">Projects</h1>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            onClick={onOpenChat}
+            size="sm"
+            type="button"
+            variant="outline"
+          >
+            Open chat
+          </Button>
+          <Button onClick={onNewProject} size="sm" type="button">
+            <Plus className="mr-1 h-4 w-4" />
+            New project
+          </Button>
+        </div>
+      </header>
+      <div className="min-h-0 flex-1 overflow-y-auto p-4">
+        {projects.length === 0 ? (
+          <p className="text-center text-sm text-muted-foreground">
+            No projects yet. Create one to get started.
+          </p>
+        ) : (
+          <div className={`
+            mx-auto grid max-w-4xl gap-4
+            sm:grid-cols-2
+          `}>
+            {projects.map((p) => {
+              const n = counts.get(p.id) ?? 0;
+              return (
+                <button
+                  className={`
+                    rounded-xl border border-border bg-card p-4 text-left
+                    transition-colors
+                    hover:bg-muted/40
+                  `}
+                  key={p.id}
+                  onClick={() => onOpenProject(p.id)}
+                  type="button"
+                >
+                  <div className="flex items-center gap-2 font-medium">
+                    <Folder className="h-4 w-4 shrink-0 opacity-80" />
+                    <span className="truncate">{p.name}</span>
+                  </div>
+                  {p.instructions ? (
+                    <p
+                      className={`
+                        mt-2 line-clamp-2 text-sm text-muted-foreground
+                      `}
+                    >
+                      {p.instructions}
+                    </p>
+                  ) : null}
+                  <p
+                    className={`
+                      mt-3 flex items-center gap-1.5 text-xs
+                      text-muted-foreground
+                    `}
+                  >
+                    <MessageSquare className="h-3.5 w-3.5" />
+                    {n} chat{n === 1 ? "" : "s"}
+                  </p>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }

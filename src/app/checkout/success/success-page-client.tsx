@@ -240,7 +240,7 @@ export function SuccessPageClient() {
   return (
     <div
       className={`
-      container mx-auto max-w-3xl px-4 py-12
+      container mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8
       sm:py-16
     `}
     >

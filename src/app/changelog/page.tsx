@@ -47,11 +47,19 @@ const changelog: ChangelogEntry[] = [
         type: "added",
       },
       {
-        text: "Dashboard sidebar reorganized: shopping links (orders through eSIMs) first, AI settings last in the main group",
+        text: "Blog for news, guides, and long-form stories from the team",
+        type: "added",
+      },
+      {
+        text: "New AI chat with characters, companions, and projects",
+        type: "added",
+      },
+      {
+        text: "Web page optimizations — faster loads, leaner bundles, and smoother experience across the storefront",
         type: "improved",
       },
     ],
-    title: "Header search & dashboard navigation",
+    title: "Blog, search, AI chat & performance",
     version: "1.0",
   },
   {
@@ -60,10 +68,6 @@ const changelog: ChangelogEntry[] = [
       {
         text: "Agent skills for contributors: documented store API, checkout fields, and culture conventions for AI-assisted work in the repo",
         type: "added",
-      },
-      {
-        text: "Cursor rules expanded for Drizzle, Uploadthing, performance, naming, and safe public API copy",
-        type: "improved",
       },
     ],
     title: "Agent skills & editor guidance",
@@ -88,16 +92,12 @@ const changelog: ChangelogEntry[] = [
     date: "February 14, 2026",
     items: [
       {
-        text: "Alice (OpenClaw) as the unified AI guide across website chat, Telegram, and Discord with shared memory",
+        text: "Alice as the unified AI guide across website chat, Telegram, and Discord with shared memory",
         type: "added",
       },
       {
         text: "Dashboard AI hub: personal storage, prompts, and memory under Account → AI",
         type: "added",
-      },
-      {
-        text: "OpenClaw gateway integration so storefront chat can route through the same agent stack as other channels",
-        type: "improved",
       },
     ],
     title: "Alice & personal AI",
@@ -346,8 +346,9 @@ export default function ChangelogPage() {
   return (
     <div
       className={`
-      container mx-auto max-w-3xl px-4 py-12
-      sm:py-16
+      container mx-auto max-w-7xl px-4 py-12
+      sm:px-6 sm:py-16
+      lg:px-8
     `}
     >
       {/* Header */}

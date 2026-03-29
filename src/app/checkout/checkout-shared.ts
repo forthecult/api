@@ -216,7 +216,7 @@ export const ESIM_REFUND_POPUP_ITEMS = [
 ] as const;
 
 export const PRIVACY_POLICY_SUMMARY =
-  "Your privacy matters to us. We collect only what we need—contact and account details, order and shipping info, and basic usage data for security. We do not sell your data or use it for targeted advertising. We use only essential cookies (sign-in, cart, security). You have rights to access, correct, delete, or port your data.";
+  "Your privacy matters to us. We collect only what we need—contact and account details, order and shipping info, and basic usage data for security. We do not sell your data or use it for targeted advertising. We only use essential cookies (sign-in, cart, security). You have rights to access, correct, delete, or port your data.";
 
 export const TERMS_POLICY_SUMMARY =
   'By using Culture you agree to these terms and our Privacy, Refund, and Shipping policies. You must be the age of majority to use the service. We may refuse or cancel orders, limit quantities, and correct pricing errors. Products are provided "as is." We are not liable for indirect or consequential damages. We encourage contacting us first for disputes; governing law is the United States.';

@@ -394,7 +394,7 @@ export function CheckoutClient() {
 
   return (
     <div className="flex w-full justify-center px-4">
-      <div className="w-full max-w-5xl">
+      <div className="w-full max-w-7xl">
         {/* Secure checkout header + back link */}
         <div className="flex items-center justify-between pt-1 pb-2">
           <Link

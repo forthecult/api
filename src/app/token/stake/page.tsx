@@ -27,7 +27,7 @@ export default function TokenStakePage() {
       <div className="border-b border-border bg-card/50">
         <div
           className={`
-          container mx-auto max-w-4xl px-4 py-6
+          container mx-auto max-w-7xl px-4 py-6
           sm:px-6
           lg:px-8
         `}

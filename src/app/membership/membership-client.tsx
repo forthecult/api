@@ -787,7 +787,7 @@ export function MembershipClient() {
 
         <div
           className={`
-          relative z-10 container mx-auto max-w-5xl px-4 py-20 text-center
+          relative z-10 container mx-auto max-w-7xl px-4 py-20 text-center sm:px-6 lg:px-8
           sm:px-6 sm:py-28
           lg:px-8 lg:py-36
         `}
@@ -1461,7 +1461,7 @@ export function MembershipClient() {
           md:py-20
         `}
         >
-          <div className="mx-auto max-w-3xl text-center">
+          <div className="mx-auto w-full max-w-7xl text-center">
             <h2
               className={`
               font-display text-2xl font-semibold text-foreground
@@ -1477,7 +1477,7 @@ export function MembershipClient() {
 
           <div
             className={`
-            mx-auto mt-12 grid max-w-4xl gap-8
+            mx-auto mt-12 grid w-full max-w-7xl gap-8
             md:grid-cols-3
           `}
           >
@@ -1536,7 +1536,7 @@ export function MembershipClient() {
         >
           <div
             className={`
-            mx-auto max-w-3xl overflow-hidden rounded-2xl border
+            mx-auto w-full max-w-7xl overflow-hidden rounded-2xl border
  border-border bg-card p-8 
             md:p-10
           `}
@@ -1570,7 +1570,7 @@ export function MembershipClient() {
           md:py-20
         `}
         >
-          <div className="mx-auto max-w-4xl">
+          <div className="mx-auto w-full max-w-7xl">
             <h2
               className={`
               font-display text-center text-2xl font-semibold text-foreground
@@ -1671,7 +1671,7 @@ export function MembershipClient() {
         `}
           id="tiers"
         >
-          <div className="mx-auto max-w-5xl">
+          <div className="mx-auto w-full max-w-7xl">
             <div className="text-center">
               <h2
                 className={`
@@ -1860,7 +1860,7 @@ export function MembershipClient() {
         `}
           id="subscribe"
         >
-          <div className="mx-auto max-w-3xl text-center">
+          <div className="mx-auto w-full max-w-7xl text-center">
             <Badge className="mb-4 gap-1.5" variant="secondary">
               <CreditCard className="h-3.5 w-3.5" />
               No crypto required
@@ -1971,7 +1971,7 @@ export function MembershipClient() {
           ) : (
             <div
               className={`
-              mx-auto mt-10 grid max-w-5xl gap-6
+              mx-auto mt-10 grid w-full max-w-7xl gap-6
               sm:grid-cols-2
               lg:grid-cols-3
             `}
@@ -2092,7 +2092,7 @@ export function MembershipClient() {
         >
           <div
             className={`
-            mx-auto max-w-3xl overflow-hidden rounded-2xl border-2
+            mx-auto w-full max-w-7xl overflow-hidden rounded-2xl border-2
             border-primary/20 bg-gradient-to-br from-primary/5 via-card
             to-primary/5 p-8
             md:p-10
@@ -2165,7 +2165,7 @@ export function MembershipClient() {
           md:py-20
         `}
         >
-          <div className="mx-auto max-w-3xl text-center">
+          <div className="mx-auto w-full max-w-7xl text-center">
             <h2
               className={`
               font-display text-2xl font-semibold text-foreground
@@ -2408,7 +2408,7 @@ export function MembershipClient() {
         >
           <div
             className={`
-            mx-auto max-w-4xl overflow-hidden rounded-2xl border-2
+            mx-auto w-full max-w-7xl overflow-hidden rounded-2xl border-2
             border-primary/20 bg-gradient-to-r from-primary/5 via-primary/10
             to-primary/5
           `}
@@ -2529,7 +2529,7 @@ export function MembershipClient() {
           md:py-20
         `}
         >
-          <div className="mx-auto max-w-3xl text-center">
+          <div className="mx-auto w-full max-w-7xl text-center">
             <h2
               className={`
               font-display text-2xl font-semibold text-foreground
@@ -2546,7 +2546,7 @@ export function MembershipClient() {
 
           <div
             className={`
-            mx-auto mt-12 grid max-w-3xl gap-8
+            mx-auto mt-12 grid w-full max-w-7xl gap-8
             md:grid-cols-2
           `}
           >
@@ -2604,7 +2604,7 @@ export function MembershipClient() {
           `}
             id="claim-free-esim"
           >
-            <div className="mx-auto max-w-4xl">
+            <div className="mx-auto w-full max-w-7xl">
               <Card
                 className={`
                 overflow-hidden border-2 border-primary/30 bg-gradient-to-br
@@ -2807,7 +2807,7 @@ export function MembershipClient() {
           md:py-20
         `}
         >
-          <div className="mx-auto max-w-3xl">
+          <div className="mx-auto w-full max-w-7xl">
             <h2
               className={`
               font-display text-center text-2xl font-semibold text-foreground

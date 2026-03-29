@@ -1379,7 +1379,7 @@ export function EsimStorePage() {
           </h2>
           <div
             className={`
-            mx-auto grid max-w-3xl grid-cols-1 gap-8
+            mx-auto grid w-full max-w-7xl grid-cols-1 gap-8
             sm:grid-cols-3
           `}
           >
@@ -1462,7 +1462,7 @@ export function EsimStorePage() {
           >
             Frequently asked questions
           </h2>
-          <div className="mx-auto max-w-3xl space-y-3">
+          <div className="mx-auto w-full max-w-7xl space-y-3">
             {[
               {
                 id: "devices",

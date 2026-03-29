@@ -44,7 +44,6 @@ export function DashboardAiStorageClient() {
 
   const refreshStats = useCallback(() => {
     setBytes(estimateAiLocalBytes());
-    setRefresh((n) => n + 1);
   }, []);
 
   useEffect(() => {

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { Check, ChevronDown, Minus, Sparkles, X } from "lucide-react";
+import { Banknote, Check, ChevronDown, Minus, Sparkles, X } from "lucide-react";
 import Link from "next/link";
 
 import { SEO_CONFIG } from "~/app";
@@ -94,12 +94,18 @@ export default function AiLandingPage() {
         className={cn(
           "border-b border-border bg-gradient-to-b from-muted/50 via-background",
           `
-            to-background px-4 py-16
+            to-background py-16
             sm:py-24
           `,
         )}
       >
-        <div className="container mx-auto max-w-4xl text-center">
+        <div
+          className={`
+            container mx-auto max-w-7xl px-4 text-center
+            sm:px-6
+            lg:px-8
+          `}
+        >
           <p
             className={cn(
               `
@@ -143,22 +149,31 @@ export default function AiLandingPage() {
               <Link href="/chat">Start chatting</Link>
             </Button>
             <Button asChild size="lg" variant="outline">
-              <Link href="/signup">Create account</Link>
-            </Button>
-            <Button asChild size="lg" variant="outline">
-              <Link href={cultureAiProductHref}>Culture AI subscription</Link>
+              <Link href={cultureAiProductHref}>Get even more from AI</Link>
             </Button>
             <Button asChild size="lg" variant="secondary">
               <Link href="/membership">Membership (includes AI)</Link>
             </Button>
           </div>
+          <p
+            className={cn(
+              "mx-auto mt-6 flex max-w-2xl items-center justify-center gap-2",
+              "text-sm text-muted-foreground",
+            )}
+          >
+            <Banknote aria-hidden className="h-4 w-4 shrink-0" />
+            <span>30-day money-back guarantee</span>
+          </p>
         </div>
       </section>
 
-      <section className={`
-        container mx-auto max-w-5xl px-4 py-16
-        sm:py-20
-      `}>
+      <section
+        className={`
+        container mx-auto max-w-7xl px-4 py-16
+        sm:px-6 sm:py-20
+        lg:px-8
+      `}
+      >
         <div className="mx-auto max-w-2xl text-center">
           <h2
             className={cn(
@@ -232,12 +247,18 @@ export default function AiLandingPage() {
       <section
         className={cn(
           `
-            border-y border-border bg-muted/20 px-4 py-16
+            border-y border-border bg-muted/20 py-16
             sm:py-20
           `,
         )}
       >
-        <div className="container mx-auto max-w-5xl">
+        <div
+          className={`
+          container mx-auto max-w-7xl px-4
+          sm:px-6
+          lg:px-8
+        `}
+        >
           <div className="mx-auto max-w-2xl text-center">
             <h2
               className={cn(
@@ -314,23 +335,7 @@ export default function AiLandingPage() {
                     <Partial />
                   </TableCell>
                 </TableRow>
-                <TableRow>
-                  <TableCell className="whitespace-normal">
-                    Grounded in our store & community context
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Yes />
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <No />
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <No />
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <No />
-                  </TableCell>
-                </TableRow>
+
                 <TableRow>
                   <TableCell className="whitespace-normal">
                     Client code open for audit
@@ -365,23 +370,7 @@ export default function AiLandingPage() {
                     <Yes />
                   </TableCell>
                 </TableRow>
-                <TableRow>
-                  <TableCell className="whitespace-normal">
-                    Tied to a real-world community & brand
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Yes />
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <No />
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <No />
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <No />
-                  </TableCell>
-                </TableRow>
+
               </TableBody>
             </Table>
             <p className="mt-4 text-center text-xs text-muted-foreground">
@@ -392,17 +381,20 @@ export default function AiLandingPage() {
         </div>
       </section>
 
-      <section className={`
-        container mx-auto max-w-5xl px-4 py-16
-        sm:py-20
-      `}>
+      <section
+        className={`
+        container mx-auto max-w-7xl px-4 py-16
+        sm:px-6 sm:py-20
+        lg:px-8
+      `}
+      >
         <div className="mx-auto max-w-2xl text-center">
           <h2
             className={cn(
               "font-heading text-3xl font-bold tracking-tight text-foreground",
             )}
           >
-            Culture AI subscription
+            Get even more from AI
           </h2>
           <p className="mt-3 text-muted-foreground">
             The prices below are for the{" "}
@@ -419,7 +411,7 @@ export default function AiLandingPage() {
           </p>
         </div>
         <div className={`
-          mx-auto mt-10 grid max-w-5xl gap-6
+          mt-10 grid gap-6
           lg:grid-cols-2
         `}>
           <div
@@ -446,8 +438,17 @@ export default function AiLandingPage() {
               monthly plan to your cart and complete checkout.
             </p>
             <Button asChild className="mt-6 w-full">
-              <Link href={cultureAiProductHref}>Open AI subscription product</Link>
+              <Link href={cultureAiProductHref}>Unlock Culture AI in the store</Link>
             </Button>
+            <p
+              className={cn(
+                "mt-3 flex items-center justify-center gap-2 text-sm",
+                "text-muted-foreground",
+              )}
+            >
+              <Banknote aria-hidden className="h-4 w-4 shrink-0" />
+              <span>30-day money-back guarantee</span>
+            </p>
           </div>
           <div
             className={cn(
@@ -488,13 +489,22 @@ export default function AiLandingPage() {
               cart.
             </p>
             <Button asChild className="mt-6 w-full">
-              <Link href={cultureAiProductHref}>Open AI subscription product</Link>
+              <Link href={cultureAiProductHref}>Unlock Culture AI in the store</Link>
             </Button>
+            <p
+              className={cn(
+                "mt-3 flex items-center justify-center gap-2 text-sm",
+                "text-muted-foreground",
+              )}
+            >
+              <Banknote aria-hidden className="h-4 w-4 shrink-0" />
+              <span>30-day money-back guarantee</span>
+            </p>
           </div>
         </div>
         <div
           className={cn(
-            "mx-auto mt-8 max-w-3xl rounded-xl border border-border bg-muted/20",
+            "mt-8 w-full rounded-xl border border-border bg-muted/20",
             "p-6 text-center",
           )}
         >
@@ -517,12 +527,18 @@ export default function AiLandingPage() {
       <section
         className={cn(
           `
-            border-t border-border bg-muted/15 px-4 py-16
+            border-t border-border bg-muted/15 py-16
             sm:py-20
           `,
         )}
       >
-        <div className="container mx-auto max-w-3xl">
+        <div
+          className={`
+          container mx-auto max-w-7xl px-4
+          sm:px-6
+          lg:px-8
+        `}
+        >
           <h2
             className={cn(
               "font-heading text-center text-3xl font-bold tracking-tight",
@@ -587,7 +603,13 @@ export default function AiLandingPage() {
         </div>
       </section>
 
-      <section className="container mx-auto max-w-3xl px-4 pb-20 text-center">
+      <section
+        className={`
+        container mx-auto max-w-7xl px-4 pb-20 text-center
+        sm:px-6
+        lg:px-8
+      `}
+      >
         <h2 className="font-heading text-2xl font-bold text-foreground">
           Ready when you are
         </h2>

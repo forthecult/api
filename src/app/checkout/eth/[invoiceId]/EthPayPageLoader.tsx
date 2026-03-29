@@ -9,10 +9,10 @@ const EthPayPageClient = dynamic(
   {
     loading: () => (
       <div className="container mx-auto min-h-screen px-4 py-8">
-        <Skeleton className="mb-6 h-16 w-full max-w-6xl" />
+        <Skeleton className="mb-6 h-16 w-full max-w-7xl" />
         <div
           className={`
-          mx-auto flex max-w-6xl flex-col gap-6
+          mx-auto flex max-w-7xl flex-col gap-6
           sm:flex-row
         `}
         >

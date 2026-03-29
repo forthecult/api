@@ -104,10 +104,16 @@ export default function ServicesPage() {
       <section
         className={cn(
           "border-b border-border bg-gradient-to-b from-muted/40 to-background",
-          "px-4 py-16 sm:py-20",
+          "py-16 sm:py-20",
         )}
       >
-        <div className="container mx-auto max-w-3xl text-center">
+        <div
+          className={`
+          container mx-auto max-w-7xl px-4 text-center
+          sm:px-6
+          lg:px-8
+        `}
+        >
           <p
             className={`
               mb-3 text-xs font-semibold tracking-[0.2em] text-primary uppercase
@@ -146,7 +152,7 @@ export default function ServicesPage() {
         aria-labelledby="dex-heading"
         className="border-b border-border px-4 py-14 sm:py-20"
       >
-        <div className="container mx-auto max-w-5xl">
+        <div className="container mx-auto max-w-7xl">
           <h2
             className={`
               font-heading text-2xl font-bold tracking-tight text-foreground
@@ -251,7 +257,7 @@ export default function ServicesPage() {
         aria-labelledby="wallets-heading"
         className="border-b border-border bg-muted/15 px-4 py-14 sm:py-20"
       >
-        <div className="container mx-auto max-w-5xl">
+        <div className="container mx-auto max-w-7xl">
           <h2
             className={`
               font-heading text-2xl font-bold tracking-tight text-foreground
@@ -332,7 +338,7 @@ export default function ServicesPage() {
         aria-labelledby="ai-heading"
         className="border-b border-border px-4 py-14 sm:py-20"
       >
-        <div className="container mx-auto max-w-5xl">
+        <div className="container mx-auto max-w-7xl">
           <h2
             className={`
               font-heading text-2xl font-bold tracking-tight text-foreground
@@ -401,7 +407,7 @@ export default function ServicesPage() {
         aria-labelledby="swap-heading"
         className="border-b border-border bg-muted/15 px-4 py-14 sm:py-20"
       >
-        <div className="container mx-auto max-w-5xl">
+        <div className="container mx-auto max-w-7xl">
           <h2
             className={`
               font-heading text-2xl font-bold tracking-tight text-foreground
@@ -463,7 +469,7 @@ export default function ServicesPage() {
         aria-labelledby="privacy-heading"
         className="border-b border-border px-4 py-14 sm:py-20"
       >
-        <div className="container mx-auto max-w-5xl">
+        <div className="container mx-auto max-w-7xl">
           <h2
             className={`
               font-heading text-2xl font-bold tracking-tight text-foreground
@@ -562,8 +568,8 @@ export default function ServicesPage() {
       <section className="border-t border-border px-4 py-14">
         <div
           className={`
-            container mx-auto max-w-3xl rounded-xl border border-border bg-card/50
-            p-8 text-center
+            container mx-auto w-full max-w-7xl rounded-xl border border-border
+            bg-card/50 p-8 text-center
           `}
         >
           <Shield

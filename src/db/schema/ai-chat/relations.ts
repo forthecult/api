@@ -6,6 +6,8 @@ import {
   aiEncryptedBackupTable,
   aiMemoryTable,
   aiChatConversationTable,
+  aiMessagingChannelTable,
+  aiMessagingUserLinkTable,
   aiRagChunkTable,
 } from "./tables";
 
@@ -49,3 +51,28 @@ export const aiRagChunkRelations = relations(aiRagChunkTable, ({ one }) => ({
     references: [userTable.id],
   }),
 }));
+
+export const aiMessagingChannelRelations = relations(
+  aiMessagingChannelTable,
+  ({ one }) => ({
+    user: one(userTable, {
+      fields: [aiMessagingChannelTable.userId],
+      references: [userTable.id],
+    }),
+  }),
+);
+
+export const aiMessagingUserLinkRelations = relations(
+  aiMessagingUserLinkTable,
+  ({ one }) => ({
+    channel: one(aiMessagingChannelTable, {
+      fields: [aiMessagingUserLinkTable.messagingChannelId],
+      references: [aiMessagingChannelTable.id],
+    }),
+    user: one(userTable, {
+      fields: [aiMessagingUserLinkTable.userId],
+      references: [userTable.id],
+    }),
+  }),
+);
+
