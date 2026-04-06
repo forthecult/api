@@ -13,7 +13,6 @@ import {
   WalletProvider,
 } from "@solana/wallet-adapter-react";
 import {
-  PhantomWalletAdapter,
   SolflareWalletAdapter,
   WalletConnectWalletAdapter,
 } from "@solana/wallet-adapter-wallets";
@@ -41,12 +40,9 @@ export function SolanaWalletProvider({
   // Get RPC endpoint from config (ANKR default; override via NEXT_PUBLIC_SOLANA_RPC_URL)
   const rpcEndpoint = useMemo(() => getSolanaRpcUrl(), []);
 
-  // base list: Phantom, Solflare, optional WalletConnect. no @solana-mobile so desktop never loads that chunk.
+  // Phantom via Wallet Standard only — do not add PhantomWalletAdapter (duplicate registration breaks extensions).
   const baseWallets = useMemo((): WalletAdapter[] => {
-    const list: WalletAdapter[] = [
-      new PhantomWalletAdapter(),
-      new SolflareWalletAdapter(),
-    ];
+    const list: WalletAdapter[] = [new SolflareWalletAdapter()];
     const wcEnabled =
       process.env.NEXT_PUBLIC_SOLANA_WALLETCONNECT_ENABLED !== "false";
     const wcProjectId =

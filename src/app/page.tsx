@@ -270,13 +270,25 @@ export default async function HomePage() {
     .map((c) => `${c.name}=${c.value}`)
     .join("; ");
 
-  const [shopCategories, categoriesWithImage, featuredProducts, reviewTestimonials] =
-    await Promise.all([
-      fetchCategories(),
-      getCategoriesWithProductsAndDisplayImage({ topLevelOnly: true }),
-      fetchFeaturedProducts(cookieHeader),
-      fetchReviewsForTestimonials(),
-    ]);
+  const settled = await Promise.allSettled([
+    fetchCategories(),
+    getCategoriesWithProductsAndDisplayImage({ topLevelOnly: true }),
+    fetchFeaturedProducts(cookieHeader),
+    fetchReviewsForTestimonials(),
+  ]);
+  const shopCategories =
+    settled[0].status === "fulfilled" ? settled[0].value : [];
+  const categoriesWithImage =
+    settled[1].status === "fulfilled" ? settled[1].value : [];
+  const featuredProducts =
+    settled[2].status === "fulfilled" ? settled[2].value : [];
+  const reviewTestimonials =
+    settled[3].status === "fulfilled" ? settled[3].value : [];
+  for (const [i, r] of settled.entries()) {
+    if (r.status === "rejected") {
+      console.error(`[HomePage] data fetch failed (index ${i}):`, r.reason);
+    }
+  }
 
   const topLevelShopFiltered = shopCategories.filter(
     (c) => c.slug && c.productCount > 0 && !EXCLUDED_SLUGS.includes(c.slug),
