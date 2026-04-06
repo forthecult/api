@@ -61,8 +61,9 @@ const DECIMAL_MAP: Record<CryptoCode, number> = {
   SOL: 4,
   TON: 4,
   TROLL: 6,
-  XAG: 2,
-  XAU: 2,
+  /** spot is usd/troy oz; product prices are usually a small fraction of an oz */
+  XAG: 6,
+  XAU: 6,
   XMR: 6,
 };
 

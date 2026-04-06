@@ -1,0 +1,20 @@
+---
+description: Never expose environment variables or deployment internals in customer-visible UI, API responses, or public docs
+globs: "**/*.{tsx,ts,md,mdx}"
+alwaysApply: false
+---
+
+# Security — no env or deployment details in customer surfaces
+
+**Environment variable names, secret/key names, hosting provider–specific fixes, and internal configuration must not appear in:**
+
+- Customer storefront or **signed-in dashboard** UI (`src/app/dashboard/**`, `src/app/chat/**`, etc.)
+- **Toast**, inline help, or error text shown to end users
+- **JSON** `error` / `warning` fields returned to browsers from API routes (use generic messages; log details server-side)
+- **Public** or vendor-facing documentation (use internal runbooks under `docs/` for operators)
+
+**Do:** “Contact support,” “try again later,” “this isn’t available right now.”
+
+**Don’t:** “Set `NEXT_PUBLIC_*`,” “use `VERCEL_URL`,” “configure `*_SECRET`.”
+
+Full checklist: `docs/SECURITY-DEVELOPMENT-STANDARDS.md`. Align with `no-sensitive-auth-in-public-docs.mdc` for auth and vendor naming.

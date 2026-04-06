@@ -263,33 +263,22 @@ export function DashboardAiChannelsClient() {
           dark:text-amber-100
         `}
       >
-        <p className="font-medium">Public base URL</p>
+        <p className="font-medium">Integration URLs</p>
         <p className="mt-1 text-muted-foreground">
           {baseUrl ? (
             <>
-              Webhooks use{" "}
+              Webhook and callback URLs use this site address:{" "}
               <code className="rounded bg-muted px-1 py-0.5 text-xs">
                 {baseUrl}
               </code>
-              . Set{" "}
-              <code className="rounded bg-muted px-1 py-0.5 text-xs">
-                NEXT_PUBLIC_APP_URL
-              </code>{" "}
-              in production if auto-detection is wrong.
+              . If anything looks incorrect, contact support.
             </>
           ) : (
             <>
-              <strong>Set{" "}
-              <code className="rounded bg-muted px-1 py-0.5 text-xs">
-                NEXT_PUBLIC_APP_URL
-              </code>{" "}
-              </strong>
-              (or rely on{" "}
-              <code className="rounded bg-muted px-1 py-0.5 text-xs">
-                VERCEL_URL
-              </code>
-              ) so Telegram can register a webhook. Discord and Slack URLs are
-              still shown for copy-paste.
+              Your public site address for integrations could not be determined
+              right now. You can still copy the webhook paths below; if Telegram,
+              Discord, or Slack do not connect after you save, try again later or
+              contact support.
             </>
           )}
         </p>

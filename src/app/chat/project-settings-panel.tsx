@@ -213,12 +213,8 @@ export function ProjectSettingsPanel({
             Upload spreadsheets, docs, PDFs, or add a share link from Google
             Drive, Dropbox, OneDrive, Proton Drive, or similar. Executable and
             unsafe file types are not accepted. Links to localhost, private
-            networks, and common internal/metadata hosts are blocked; the
-            blocklist is maintained in code and can be extended via{" "}
-            <code className="rounded bg-muted px-1 py-0.5 text-[10px]">
-              NEXT_PUBLIC_KNOWLEDGE_URL_BLOCKLIST
-            </code>{" "}
-            / allowlist env vars—review periodically as threats evolve.
+            networks, and common internal or metadata hosts are blocked by site
+            policy; the list is maintained and updated as needed.
           </p>
 
           <div className="flex flex-wrap gap-2">

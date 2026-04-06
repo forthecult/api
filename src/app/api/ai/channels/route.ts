@@ -111,7 +111,7 @@ export async function PUT(request: Request) {
         }
       } else {
         warnings.push(
-          "Set NEXT_PUBLIC_APP_URL (or VERCEL_URL) so Telegram can receive webhooks. Credentials were saved; save again after the env var is set.",
+          "Telegram could not register a webhook because the site’s public URL is not available yet. Your bot token was saved—try saving again in a moment, or contact support if messages still do not arrive.",
         );
       }
       if (errors.length === 0) {

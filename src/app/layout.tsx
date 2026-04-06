@@ -3,21 +3,26 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, JetBrains_Mono, Manrope } from "next/font/google";
 import { cookies, headers } from "next/headers";
 import { Suspense } from "react";
+
 import { SEO_CONFIG } from "~/app";
+import { LazySolanaWalletProvider } from "~/app/checkout/crypto/lazy-solana-wallet-provider";
 import { getPublicSiteUrl, isAgentSubdomain } from "~/lib/app-url";
 import { getCurrentUserTheme } from "~/lib/get-current-user-theme";
 import { CartProvider } from "~/lib/hooks/use-cart";
 import { CountryCurrencyProvider } from "~/lib/hooks/use-country-currency";
-import { CryptoCurrencyProvider } from "~/lib/hooks/use-crypto-currency";
 import "~/css/globals.css";
+import { CryptoCurrencyProvider } from "~/lib/hooks/use-crypto-currency";
+import { LazyWagmiProvider } from "~/lib/lazy-wagmi-provider";
 import { AgentSubdomainLayout } from "~/ui/components/agent-subdomain-layout";
-import { DeferredSpeedInsights } from "~/ui/components/deferred-speed-insights";
 import { AuthWalletModalProvider } from "~/ui/components/auth/auth-wallet-modal-provider";
 import { BackToTopButton } from "~/ui/components/back-to-top-button";
+import { ChunkLoadErrorHandler } from "~/ui/components/chunk-load-error-handler";
 import { ConditionalFooter } from "~/ui/components/conditional-footer";
+import { ConsoleSecurityWarning } from "~/ui/components/console-security-warning";
 import { DeferredCriticalRoutePrefetcher } from "~/ui/components/deferred-critical-route-prefetcher";
-import { MainWithDogePadding } from "~/ui/components/main-with-doge-padding";
+import { DeferredSpeedInsights } from "~/ui/components/deferred-speed-insights";
 import { ConditionalHeader } from "~/ui/components/header/conditional-header";
+import { MainWithDogePadding } from "~/ui/components/main-with-doge-padding";
 import {
   OrganizationStructuredData,
   WebSiteStructuredData,
@@ -25,12 +30,8 @@ import {
 import { SupportChatWidgetWrapper } from "~/ui/components/support-chat/support-chat-widget-wrapper";
 import { ThemePersistSync } from "~/ui/components/theme-persist-sync";
 import { ThemeProvider } from "~/ui/components/theme-provider";
-import { ChunkLoadErrorHandler } from "~/ui/components/chunk-load-error-handler";
-import { ConsoleSecurityWarning } from "~/ui/components/console-security-warning";
 import { WalletErrorBoundary } from "~/ui/components/wallet-error-boundary";
-import { LazyWagmiProvider } from "~/lib/lazy-wagmi-provider";
 import { Toaster } from "~/ui/primitives/sonner";
-import { LazySolanaWalletProvider } from "~/app/checkout/crypto/lazy-solana-wallet-provider";
 
 const geistSans = Geist({
   subsets: ["latin"],
@@ -228,10 +229,10 @@ async function CookieCountryProvider({
 
 function LayoutShell({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <>
+    <div className="flex min-h-screen flex-col">
       <ConditionalHeader showAuth={true} />
-      <main className="flex min-h-screen flex-col bg-background">
-        <MainWithDogePadding className="flex flex-1 flex-col">
+      <main className="flex min-h-0 flex-1 flex-col bg-background">
+        <MainWithDogePadding className="flex min-h-0 flex-1 flex-col">
           {children}
         </MainWithDogePadding>
       </main>
@@ -239,7 +240,7 @@ function LayoutShell({ children }: Readonly<{ children: React.ReactNode }>) {
       <BackToTopButton />
       <SupportChatWidgetWrapper />
       <Toaster />
-    </>
+    </div>
   );
 }
 

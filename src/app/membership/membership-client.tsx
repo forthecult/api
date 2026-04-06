@@ -97,7 +97,7 @@ interface TokenPriceResponse {
   status: boolean;
 }
 
-/** When true, staking/signup is disabled and the message "Membership signup will be available shortly" is shown. Set via NEXT_PUBLIC_STAKING_SIGNUP_DISABLED. */
+/** When true, staking/signup is disabled and the message "Membership signup will be available shortly" is shown. Controlled by build-time config (see deployment docs). */
 const STAKING_SIGNUP_DISABLED =
   process.env.NEXT_PUBLIC_STAKING_SIGNUP_DISABLED === "true";
 
@@ -1461,7 +1461,7 @@ export function MembershipClient() {
           md:py-20
         `}
         >
-          <div className="mx-auto w-full max-w-7xl text-center">
+          <div className="mx-auto w-full max-w-3xl text-center">
             <h2
               className={`
               font-display text-2xl font-semibold text-foreground
@@ -1470,7 +1470,7 @@ export function MembershipClient() {
             >
               How It Works
             </h2>
-            <p className="mt-3 text-muted-foreground">
+            <p className="mt-3 text-base text-muted-foreground md:text-lg">
               Three simple steps to unlock your membership benefits.
             </p>
           </div>
@@ -1519,7 +1519,9 @@ export function MembershipClient() {
                 <h3 className="text-lg font-semibold text-foreground">
                   {title}
                 </h3>
-                <p className="mt-2 text-sm text-muted-foreground">{desc}</p>
+                <p className="mt-2 text-base leading-relaxed text-muted-foreground">
+                  {desc}
+                </p>
               </div>
             ))}
           </div>
@@ -1536,7 +1538,7 @@ export function MembershipClient() {
         >
           <div
             className={`
-            mx-auto w-full max-w-7xl overflow-hidden rounded-2xl border
+            mx-auto w-full max-w-4xl overflow-hidden rounded-2xl border
  border-border bg-card p-8 
             md:p-10
           `}
@@ -1552,10 +1554,10 @@ export function MembershipClient() {
             >
               {MEMBERSHIP_HOW_IT_WORKS.heading}
             </h2>
-            <p className="mt-2 text-muted-foreground">
+            <p className="mt-2 text-base text-muted-foreground md:text-lg">
               {MEMBERSHIP_HOW_IT_WORKS.subheading}
             </p>
-            <p className="mt-4 text-muted-foreground">
+            <p className="mt-4 text-base leading-relaxed text-muted-foreground md:text-lg">
               {MEMBERSHIP_HOW_IT_WORKS.body}
             </p>
           </div>
@@ -1579,7 +1581,7 @@ export function MembershipClient() {
             >
               Staking Requirement
             </h2>
-            <p className="mx-auto mt-3 max-w-2xl text-center text-muted-foreground">
+            <p className="mx-auto mt-3 max-w-2xl text-center text-base text-muted-foreground md:text-lg">
               Membership stakes are tied to how many members have already joined.
               The table below shows the USD value to stake for each tier.
             </p>
@@ -1651,7 +1653,7 @@ export function MembershipClient() {
               </Table>
             </div>
 
-            <p className="mx-auto mt-6 max-w-2xl text-center text-sm text-muted-foreground">
+            <p className="mx-auto mt-6 max-w-2xl text-center text-base leading-relaxed text-muted-foreground">
               We structure it this way to reward early members who share our
               vision and choose to support us from the start. They commit more
               tokens and lock them for their chosen period, so they get access
@@ -1860,7 +1862,7 @@ export function MembershipClient() {
         `}
           id="subscribe"
         >
-          <div className="mx-auto w-full max-w-7xl text-center">
+          <div className="mx-auto w-full max-w-3xl text-center">
             <Badge className="mb-4 gap-1.5" variant="secondary">
               <CreditCard className="h-3.5 w-3.5" />
               No crypto required
@@ -1873,7 +1875,7 @@ export function MembershipClient() {
             >
               Subscribe with a credit card
             </h2>
-            <p className="mt-3 text-muted-foreground">
+            <p className="mt-3 text-base text-muted-foreground md:text-lg">
               Pay a flat monthly or annual fee—no wallet, no tokens needed.
               Cancel anytime.
             </p>
@@ -2076,7 +2078,7 @@ export function MembershipClient() {
             </div>
           )}
 
-          <p className="mt-8 text-center text-xs text-muted-foreground">
+          <p className="mt-8 text-center text-sm leading-relaxed text-muted-foreground md:text-base">
             Pay with card (Stripe) or PayPal—same membership benefits. Cancel or change plan from your billing settings.
           </p>
         </section>
@@ -2092,7 +2094,7 @@ export function MembershipClient() {
         >
           <div
             className={`
-            mx-auto w-full max-w-7xl overflow-hidden rounded-2xl border-2
+            mx-auto w-full max-w-4xl overflow-hidden rounded-2xl border-2
             border-primary/20 bg-gradient-to-br from-primary/5 via-card
             to-primary/5 p-8
             md:p-10
@@ -2109,7 +2111,7 @@ export function MembershipClient() {
             >
               Lifetime Membership NFT
             </h2>
-            <p className="mt-3 text-muted-foreground">
+            <p className="mt-3 text-base leading-relaxed text-muted-foreground md:text-lg">
               Early stakers can mint a Lifetime Membership NFT—a permanent pass
               to full membership benefits, including a free data plan for life
               while you hold it.
@@ -2117,20 +2119,20 @@ export function MembershipClient() {
 
             <div className="mt-8 space-y-6">
               <div className="rounded-xl border border-border bg-card/50 p-5">
-                <h3 className="font-semibold text-foreground">
+                <h3 className="text-lg font-semibold text-foreground">
                   Path 1: First 11 stakers (30-day lock)
                 </h3>
-                <p className="mt-2 text-sm text-muted-foreground">
+                <p className="mt-2 text-base leading-relaxed text-muted-foreground">
                   The first 11 members who stake for 30 days are eligible to
                   mint a Lifetime Membership NFT. While you hold the NFT, you
                   keep full membership—including a free eSIM data plan for life.
                 </p>
               </div>
               <div className="rounded-xl border border-border bg-card/50 p-5">
-                <h3 className="font-semibold text-foreground">
+                <h3 className="text-lg font-semibold text-foreground">
                   Path 2: First 100 stakers (12-month lock)
                 </h3>
-                <p className="mt-2 text-sm text-muted-foreground">
+                <p className="mt-2 text-base leading-relaxed text-muted-foreground">
                   The first 100 members who stake for 12 months are eligible to
                   mint a Lifetime Membership NFT. This NFT is transferrable and
                   resellable—you can sell or gift it, and the new holder gets
@@ -2139,7 +2141,7 @@ export function MembershipClient() {
               </div>
             </div>
 
-            <ul className="mt-6 space-y-2 text-sm text-muted-foreground">
+            <ul className="mt-6 space-y-2 text-base text-muted-foreground">
               <li className="flex items-start gap-2">
                 <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                 <span>
@@ -2165,7 +2167,7 @@ export function MembershipClient() {
           md:py-20
         `}
         >
-          <div className="mx-auto w-full max-w-7xl text-center">
+          <div className="mx-auto w-full max-w-3xl text-center">
             <h2
               className={`
               font-display text-2xl font-semibold text-foreground
@@ -2174,12 +2176,12 @@ export function MembershipClient() {
             >
               Compare Benefits
             </h2>
-            <p className="mt-3 text-muted-foreground">
+            <p className="mt-3 text-base text-muted-foreground md:text-lg">
               A detailed look at what each tier unlocks.
             </p>
           </div>
 
-          <div className="mt-10 overflow-x-auto rounded-xl border border-border">
+          <div className="mx-auto mt-10 w-full max-w-7xl overflow-x-auto rounded-xl border border-border">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -2408,7 +2410,7 @@ export function MembershipClient() {
         >
           <div
             className={`
-            mx-auto w-full max-w-7xl overflow-hidden rounded-2xl border-2
+            mx-auto w-full max-w-4xl overflow-hidden rounded-2xl border-2
             border-primary/20 bg-gradient-to-r from-primary/5 via-primary/10
             to-primary/5
           `}
@@ -2435,7 +2437,7 @@ export function MembershipClient() {
               >
                 Stake 12 Months, Get eSIM Benefits for 14 Months
               </h2>
-              <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">
+              <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-muted-foreground md:text-lg">
                 Commit to a 12-month stake and we&apos;ll extend your eSIM
                 benefits to 14 months—that&apos;s 2 extra months completely
                 free. Your membership benefits, shipping discounts, and
@@ -2529,7 +2531,7 @@ export function MembershipClient() {
           md:py-20
         `}
         >
-          <div className="mx-auto w-full max-w-7xl text-center">
+          <div className="mx-auto w-full max-w-3xl text-center">
             <h2
               className={`
               font-display text-2xl font-semibold text-foreground
@@ -2538,7 +2540,7 @@ export function MembershipClient() {
             >
               Dynamic Staking Requirements
             </h2>
-            <p className="mt-3 text-muted-foreground">
+            <p className="mt-3 text-base text-muted-foreground md:text-lg">
               Staking thresholds adjust automatically based on two factors,
               keeping membership fair and accessible.
             </p>
@@ -2546,7 +2548,7 @@ export function MembershipClient() {
 
           <div
             className={`
-            mx-auto mt-12 grid w-full max-w-7xl gap-8
+            mx-auto mt-12 grid w-full max-w-5xl gap-8
             md:grid-cols-2
           `}
           >
@@ -2563,7 +2565,7 @@ export function MembershipClient() {
                 <CardTitle className="text-lg">Token Price</CardTitle>
               </CardHeader>
               <CardContent>
-                <CardDescription className="text-muted-foreground">
+                <CardDescription className="text-base leading-relaxed text-muted-foreground">
                   As the {tokenSymbol} token price (market cap) increases, the
                   number of tokens required to stake decreases proportionally—so
                   the dollar value of membership stays reasonable.
@@ -2583,7 +2585,7 @@ export function MembershipClient() {
                 <CardTitle className="text-lg">Staker Count</CardTitle>
               </CardHeader>
               <CardContent>
-                <CardDescription className="text-muted-foreground">
+                <CardDescription className="text-base leading-relaxed text-muted-foreground">
                   Similar to a bonding curve, the more people already staked at
                   a tier, the slightly higher the threshold becomes. Early
                   members benefit from lower requirements.
@@ -2604,7 +2606,7 @@ export function MembershipClient() {
           `}
             id="claim-free-esim"
           >
-            <div className="mx-auto w-full max-w-7xl">
+            <div className="mx-auto w-full max-w-4xl">
               <Card
                 className={`
                 overflow-hidden border-2 border-primary/30 bg-gradient-to-br
@@ -2807,7 +2809,7 @@ export function MembershipClient() {
           md:py-20
         `}
         >
-          <div className="mx-auto w-full max-w-7xl">
+          <div className="mx-auto w-full max-w-3xl">
             <h2
               className={`
               font-display text-center text-2xl font-semibold text-foreground
@@ -2830,9 +2832,10 @@ export function MembershipClient() {
                   <summary
                     className={`
                     flex cursor-pointer list-none items-center justify-between
-                    gap-2 px-6 py-5 font-medium text-foreground
+                    gap-2 px-6 py-5 text-base font-medium text-foreground
                     transition-colors
                     hover:text-primary
+                    md:text-lg
                     [&::-webkit-details-marker]:hidden
                   `}
                   >
@@ -2844,7 +2847,9 @@ export function MembershipClient() {
                     `}
                     />
                   </summary>
-                  <p className="px-6 pr-12 pb-5 text-muted-foreground">{a}</p>
+                  <p className="px-6 pr-12 pb-5 text-base leading-relaxed text-muted-foreground md:text-lg">
+                    {a}
+                  </p>
                 </details>
               ))}
             </div>
@@ -2868,7 +2873,7 @@ export function MembershipClient() {
           >
             Ready to Join?
           </h2>
-          <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
+          <p className="mx-auto mt-3 max-w-2xl text-base leading-relaxed text-muted-foreground md:text-lg">
             Stake {tokenSymbol} or subscribe with a credit card to start
             enjoying exclusive membership benefits today.
           </p>

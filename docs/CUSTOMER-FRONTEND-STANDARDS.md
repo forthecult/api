@@ -31,6 +31,11 @@ Standards and best practices for the customer-facing storefront (non-dashboard) 
 
 ## Duplications to avoid
 
-- Do not repeat `process.env.NEXT_SERVER_APP_URL || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"`; use `getServerBaseUrl()`.
+- In **server / internal code**, do not repeat ad-hoc `process.env.*` URL chains; use `getServerBaseUrl()` from `~/lib/app-url`. Never expose env var **names** or values in customer-facing UI or API responses (see `docs/SECURITY-DEVELOPMENT-STANDARDS.md`).
 - Do not repeat long container/section class strings; use `PageContainer` / `PageSection`.
 - Do not add new one-off spinner markup; use `Spinner` or `PageLoadingFallback`.
+
+## Security (customer-visible surfaces)
+
+- Follow **`docs/SECURITY-DEVELOPMENT-STANDARDS.md`**: environment variable names, hosting/deployment details, and internal configuration must **not** appear in user-visible copy, toasts, or JSON error messages returned to the browser (including dashboard and chat).
+- The “Duplications to avoid” note above about `getServerBaseUrl()` applies to **implementation in code** only—never surface raw `process.env` names or values to customers or vendors.

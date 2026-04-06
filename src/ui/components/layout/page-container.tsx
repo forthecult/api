@@ -60,7 +60,7 @@ export function SectionHeading({
   title,
 }: SectionHeadingProps) {
   return (
-    <div className={cn("mx-auto max-w-7xl space-y-4 text-center", className)}>
+    <div className={cn("mx-auto max-w-3xl space-y-4 text-center", className)}>
       <h2
         className={`
         font-heading text-2xl font-bold tracking-tight text-[#F5F1EB]
@@ -72,7 +72,7 @@ export function SectionHeading({
       {subtitle ? (
         <p
           className={`
-          text-muted-foreground
+          text-base text-muted-foreground
           md:text-lg
         `}
         >
@@ -112,7 +112,7 @@ export function SectionHeadingBlock({
       `}
       />
       {description ? (
-        <p className="mt-4 max-w-2xl text-center text-muted-foreground">
+        <p className="mt-4 max-w-2xl text-center text-base text-muted-foreground md:text-lg">
           {description}
         </p>
       ) : null}

@@ -576,9 +576,11 @@ export function ChatPageClient() {
     const firstUser = messages.find((m) => m.role === "user");
     if (!firstUser) return;
     const t = messageText(firstUser).trim() || "Chat";
-    upsertSessionTitle(sessionId, t, {
-      projectId: selectedProjectId ?? null,
-    });
+    upsertSessionTitle(
+      sessionId,
+      t,
+      selectedProjectId ? { projectId: selectedProjectId } : {},
+    );
   }, [messages, selectedProjectId, sessionId, upsertSessionTitle]);
 
   const onSubmit = (e: React.FormEvent) => {
@@ -733,7 +735,7 @@ export function ChatPageClient() {
     setMessages((prev) => prev.filter((m) => m.id !== id));
   };
 
-  const startSpeech = async () => {
+  const startSpeech = () => {
     type RecognitionCtor = new () => {
       continuous: boolean;
       interimResults: boolean;
@@ -760,19 +762,63 @@ export function ChatPageClient() {
       return;
     }
 
-    if (navigator.mediaDevices?.getUserMedia) {
+    const micBlockedToast = () => {
+      toast.error(
+        "Microphone access was blocked. Global defaults are not enough: open this site’s settings—click the lock or tune icon in the address bar, find Microphone, set it to Ask or Allow, then try the mic again.",
+      );
+    };
+
+    const runRecognition = () => {
+      const recognition = new SR();
+      recognition.lang = "en-US";
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+      recognition.continuous = false;
+      recognition.onresult = (ev: Event) => {
+        const res = ev as unknown as {
+          results?: { transcript?: string }[][];
+        };
+        const r = res.results?.[0]?.[0];
+        const transcript = r?.transcript?.trim();
+        if (transcript)
+          setInput((prev) => (prev ? `${prev} ${transcript}` : transcript));
+      };
+      recognition.onerror = (ev: Event) => {
+        const code = (ev as unknown as { error?: string }).error ?? "unknown";
+        if (code === "aborted") return;
+        if (code === "not-allowed") micBlockedToast();
+        else if (code === "no-speech")
+          toast.message("No speech detected—try again.");
+        else toast.error(`Speech recognition: ${code}`);
+      };
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: true,
-        });
+        recognition.start();
+        toast.message("Listening… speak now.");
+      } catch {
+        toast.error("Could not start speech recognition.");
+      }
+    };
+
+    /**
+     * Request the mic with `.then()` (not `async`/`await`) so the call stays
+     * in the same user-gesture turn. Otherwise Chrome may deny without a prompt.
+     */
+    if (!navigator.mediaDevices?.getUserMedia) {
+      runRecognition();
+      return;
+    }
+
+    navigator.mediaDevices
+      .getUserMedia({ audio: true })
+      .then((stream) => {
         stream.getTracks().forEach((t) => t.stop());
-      } catch (e) {
+        runRecognition();
+      })
+      .catch((e: unknown) => {
         const err = e as DOMException;
         const name = err?.name ?? "";
         if (name === "NotAllowedError" || name === "PermissionDeniedError") {
-          toast.error(
-            "Microphone access was denied. Allow the microphone in your browser address bar or site settings, then try again.",
-          );
+          micBlockedToast();
           return;
         }
         if (name === "NotFoundError" || name === "DevicesNotFoundError") {
@@ -786,41 +832,7 @@ export function ChatPageClient() {
           return;
         }
         toast.error("Could not access the microphone.");
-        return;
-      }
-    }
-
-    const recognition = new SR();
-    recognition.lang = "en-US";
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
-    recognition.continuous = false;
-    recognition.onresult = (ev: Event) => {
-      const res = ev as unknown as {
-        results?: { transcript?: string }[][];
-      };
-      const r = res.results?.[0]?.[0];
-      const transcript = r?.transcript?.trim();
-      if (transcript)
-        setInput((prev) => (prev ? `${prev} ${transcript}` : transcript));
-    };
-    recognition.onerror = (ev: Event) => {
-      const code = (ev as unknown as { error?: string }).error ?? "unknown";
-      if (code === "aborted") return;
-      if (code === "not-allowed")
-        toast.error(
-          "Speech recognition was blocked. Check browser permissions for the microphone and speech recognition.",
-        );
-      else if (code === "no-speech")
-        toast.message("No speech detected—try again.");
-      else toast.error(`Speech recognition: ${code}`);
-    };
-    try {
-      recognition.start();
-      toast.message("Listening… speak now.");
-    } catch {
-      toast.error("Could not start speech recognition.");
-    }
+      });
   };
 
   const onPickImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -875,10 +887,11 @@ export function ChatPageClient() {
   }, [messages.length, busy]);
 
   return (
-    <div className={`
-      flex h-[min(100dvh,100vh)] max-h-[100dvh] w-full overflow-hidden
-      bg-background
-    `}>
+    <div
+      className={`
+        flex h-full min-h-0 w-full flex-col overflow-hidden bg-background
+      `}
+    >
       <ChatSidebar
         characters={characters}
         charactersError={charactersError}

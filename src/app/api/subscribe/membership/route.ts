@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
   if (!tier || ![1, 2, 3].includes(tier)) {
     return NextResponse.json({ error: "Invalid tier" }, { status: 400 });
   }
-  if (!interval || !["monthly", "annual"].includes(interval)) {
+  if (!interval || !["annual", "monthly"].includes(interval)) {
     return NextResponse.json({ error: "Invalid interval" }, { status: 400 });
   }
   if (provider !== "stripe" && provider !== "paypal") {
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Plan not found" }, { status: 400 });
   }
 
-  const { plan, offer } = row;
+  const { offer, plan } = row;
   const baseUrl =
     process.env.NEXT_PUBLIC_APP_URL ??
     `${request.nextUrl.protocol}//${request.nextUrl.host}`;
@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         error:
-          "Stripe price not configured for this plan. Set NEXT_PUBLIC_STRIPE_PRICE_* env vars.",
+          "This membership plan is not available for checkout right now. Please try again later or contact support.",
       },
       { status: 503 },
     );

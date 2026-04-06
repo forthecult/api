@@ -321,7 +321,7 @@ export default async function HomePage() {
           `}
           />
           <PageContainer className="relative z-10">
-            <div className="mx-auto w-full max-w-7xl text-center">
+            <div className="mx-auto w-full max-w-4xl text-center">
               <div
                 className={`
                 mb-6 inline-flex items-center gap-2 rounded-full border
@@ -453,7 +453,7 @@ export default async function HomePage() {
                 mt-3 h-0.5 w-16 bg-gradient-to-r from-primary to-primary/30
               `}
               />
-              <p className="mt-4 max-w-2xl text-muted-foreground">
+              <p className="mt-4 max-w-2xl text-base text-muted-foreground md:text-lg">
                 Tech, apparel, wellness, and travel gear for how you live
               </p>
             </div>
@@ -495,7 +495,7 @@ export default async function HomePage() {
         `}
         >
           <PageContainer>
-            <div className="mx-auto w-full max-w-7xl space-y-8 text-center">
+            <div className="mx-auto w-full max-w-3xl space-y-8 text-center">
               <p
                 className={`
                 text-xs font-medium tracking-[0.2em] text-primary uppercase
@@ -514,7 +514,7 @@ export default async function HomePage() {
               </h2>
               <p
                 className={`
-                text-muted-foreground
+                text-base text-muted-foreground
                 md:text-lg
               `}
               >
@@ -573,7 +573,7 @@ export default async function HomePage() {
                 mt-3 h-0.5 w-16 bg-gradient-to-r from-primary to-primary/30
               `}
               />
-              <p className="mt-4 max-w-2xl text-muted-foreground">
+              <p className="mt-4 max-w-2xl text-base text-muted-foreground md:text-lg">
                 Browse tech, apparel, wellness, and travel essentials — each
                 category chosen for quality
               </p>
@@ -677,7 +677,7 @@ export default async function HomePage() {
         `}
         >
           <PageContainer>
-            <div className="mx-auto w-full max-w-7xl space-y-4 text-center">
+            <div className="mx-auto w-full max-w-3xl space-y-4 text-center">
               <p
                 className={`
                 text-xs font-medium tracking-[0.2em] text-primary uppercase
@@ -695,7 +695,7 @@ export default async function HomePage() {
               </h2>
               <p
                 className={`
-                text-muted-foreground
+                text-base text-muted-foreground
                 md:text-lg
               `}
               >
@@ -712,7 +712,7 @@ export default async function HomePage() {
                 </Button>
               </Link>
             </div>
-            <div className="mx-auto mt-12 w-full max-w-7xl">
+            <div className="mx-auto mt-12 w-full max-w-6xl">
               <Link
                 className={`
                   group relative block overflow-hidden rounded-lg border
@@ -787,7 +787,7 @@ export default async function HomePage() {
               />
               <p
                 className={`
-                mt-4 max-w-2xl text-muted-foreground
+                mt-4 max-w-2xl text-base text-muted-foreground
                 md:text-lg
               `}
               >
@@ -899,7 +899,7 @@ export default async function HomePage() {
               `}
               />
               <div className="bg-dot-grid absolute inset-0 opacity-50" />
-              <div className="relative z-10 mx-auto w-full max-w-7xl text-center">
+              <div className="relative z-10 mx-auto w-full max-w-3xl text-center">
                 <p
                   className={`
                   text-xs font-medium tracking-[0.2em] text-primary uppercase

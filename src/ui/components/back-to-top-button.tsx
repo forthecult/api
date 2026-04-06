@@ -42,10 +42,10 @@ export function BackToTopButton() {
       aria-label="Back to top"
       className={cn(
         `
-          fixed bottom-24 right-6 z-40 flex flex-col items-center gap-1
-          transition-opacity duration-200
+          group relative fixed bottom-40 right-6 z-40 transition-opacity duration-200
           focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2
           focus-visible:outline-ring
+          sm:bottom-44
         `,
         visible ? `pointer-events-auto opacity-100` : `pointer-events-none opacity-0`,
       )}
@@ -57,19 +57,27 @@ export function BackToTopButton() {
       }}
     >
       <span
-        className={`
-          flex size-9 items-center justify-center rounded-sm border
-          border-white/25 bg-[#0a1628] text-white shadow-sm
-          dark:border-white/20 dark:bg-[#0D0D0D]
-        `}
+        className={cn(
+          `
+            flex size-9 items-center justify-center rounded-sm border
+            shadow-sm transition-colors
+            border-border/50 bg-muted/45 text-muted-foreground/70
+            hover:bg-muted/70 hover:text-muted-foreground
+            dark:border-white/18 dark:bg-[#0D0D0D] dark:text-foreground
+            dark:hover:bg-[#141414]
+          `,
+        )}
       >
         <ChevronUp aria-hidden className="size-5" strokeWidth={2} />
       </span>
       <span
         className={`
-          border border-white/35 bg-[#0a1628]/95 px-2 py-0.5 text-[10px] font-semibold
-          uppercase tracking-wide text-white
-          dark:border-white/25 dark:bg-[#0D0D0D]/95
+          pointer-events-none absolute left-1/2 top-full z-10 mt-1.5 -translate-x-1/2
+          whitespace-nowrap rounded border border-border/60 bg-background/95 px-2 py-0.5
+          text-[10px] font-semibold uppercase tracking-wide text-foreground opacity-0
+          shadow-sm transition-opacity duration-150
+          group-hover:opacity-100 group-focus-visible:opacity-100
+          dark:border-white/25 dark:bg-[#0D0D0D]/95 dark:text-white
         `}
       >
         Back to top

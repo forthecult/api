@@ -249,7 +249,7 @@ export default function TokenPage() {
           md:py-16
         `}
         >
-          <div className="relative z-10 mx-auto w-full max-w-7xl space-y-6 text-center">
+          <div className="relative z-10 mx-auto w-full max-w-3xl space-y-6 text-center">
             <p className="text-base font-medium text-muted-foreground">
               {SEO_CONFIG.name}
             </p>
@@ -271,7 +271,7 @@ export default function TokenPage() {
                 CULT Token
               </span>
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-base leading-relaxed text-muted-foreground md:text-lg">
               Holding CULT gives free shipping. Spending CULT gives up to 20%
               discount on eligible purchases. We kept 13.37% supply for the team, locked for 1 year. You
               get the rest.
@@ -310,10 +310,10 @@ export default function TokenPage() {
             >
               Why Pump.fun?
             </h2>
-            <p className="max-w-7xl text-muted-foreground">
+            <p className="max-w-3xl text-base leading-relaxed text-muted-foreground">
               We believe in fair launches. Pump.fun was the natural choice.
             </p>
-            <p className="max-w-7xl text-muted-foreground">
+            <p className="max-w-3xl text-base leading-relaxed text-muted-foreground">
               We chose pump.fun because it embodies fair launch principles:
               equal pricing for everyone, transparent distribution, and no
               structural advantages for insiders. No VCs means no one telling us
@@ -409,7 +409,7 @@ export default function TokenPage() {
             >
               Membership
             </h2>
-            <p className="max-w-7xl text-muted-foreground">
+            <p className="max-w-3xl text-base leading-relaxed text-muted-foreground">
               Stake CULT to unlock tiered membership: first eSIM free, 30% off
               additional eSIMs, free shipping, and VPN subscription at APEX;
               25% off at PRIME; 15% off at BASE.
@@ -458,7 +458,7 @@ export default function TokenPage() {
             >
               Proposed token allocation
             </h2>
-            <p className="mt-2 max-w-7xl text-muted-foreground">
+            <p className="mt-2 max-w-3xl text-base leading-relaxed text-muted-foreground">
               Following fair launch standards: team 10–20%, public ≥30%,
               transparent vesting. We believe in the middle path.
             </p>
@@ -531,7 +531,7 @@ export default function TokenPage() {
             >
               Creator Fee Allocation
             </h2>
-            <p className="mt-2 max-w-7xl text-muted-foreground">
+            <p className="mt-2 max-w-3xl text-base leading-relaxed text-muted-foreground">
               Fee splits are sent to dedicated wallets. Verified allocations can
               be viewed on Solscan.
             </p>
@@ -716,7 +716,7 @@ export default function TokenPage() {
           >
             Hackathon Funding
           </h2>
-          <p className="max-w-7xl text-muted-foreground">
+          <p className="max-w-3xl text-base leading-relaxed text-muted-foreground">
             Funds will be used for:
           </p>
           <ul className="space-y-3">
@@ -790,7 +790,7 @@ export default function TokenPage() {
           >
             Voting
           </h2>
-          <p className="max-w-7xl text-muted-foreground">
+          <p className="max-w-3xl text-base leading-relaxed text-muted-foreground">
             We believe the community should decide the future of the ecosystem.
           </p>
           <div
