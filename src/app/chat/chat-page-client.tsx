@@ -943,10 +943,15 @@ export function ChatPageClient() {
         flex min-h-0 min-w-0 flex-1 flex-col
         lg:flex-row
       `}>
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+          <div
+            aria-hidden
+            className="pointer-events-none min-h-0 flex-[1] shrink-0 basis-0"
+          />
+          <div className="flex min-h-0 flex-[2] flex-col overflow-hidden">
         <header className={`
           flex shrink-0 items-center justify-between gap-2 border-b
-          border-border px-4 py-3
+          border-border px-4 py-2
         `}>
           <div className="min-w-0 flex-1">
             {selectedProject ? (
@@ -1120,8 +1125,7 @@ export function ChatPageClient() {
           <div className="mx-auto flex max-w-3xl flex-col gap-4">
             {messages.length === 0 ? (
               <div className={`
-                flex flex-col items-center justify-center gap-2 py-16
-                text-center
+                flex flex-col items-center justify-center gap-2 py-6 text-center
               `}>
                 <p className="max-w-sm text-sm text-muted-foreground">
                   {selectedProject
@@ -1295,7 +1299,8 @@ export function ChatPageClient() {
             </form>
           </div>
         </div>
-      </div>
+          </div>
+        </div>
             {selectedProject && !projectSettingsPanelCollapsed ? (
               <div
                 className={`

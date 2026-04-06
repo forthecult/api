@@ -70,16 +70,16 @@ export function SupportChatWidget({
   const [position, setPosition] = React.useState<{
     bottom: number;
     right: number;
-  }>({ bottom: 16, right: 16 });
+  }>({ bottom: 88, right: 16 });
   const isDraggingRef = React.useRef(false);
   const dragStartRef = React.useRef({
-    bottom: 16,
+    bottom: 88,
     mouseX: 0,
     mouseY: 0,
     right: 16,
   });
   const hasDraggedRef = React.useRef(false);
-  const latestPosRef = React.useRef({ bottom: 16, right: 16 });
+  const latestPosRef = React.useRef({ bottom: 88, right: 16 });
 
   // Load persisted position from localStorage
   React.useEffect(() => {
