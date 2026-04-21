@@ -8,7 +8,9 @@ export interface AiLocalExportFile {
 }
 
 /** Replace all `ftc-ai-*` keys with the snapshot (does not touch other site keys). */
-export function applyAiLocalStorageSnapshot(snapshot: Record<string, string>): void {
+export function applyAiLocalStorageSnapshot(
+  snapshot: Record<string, string>,
+): void {
   clearAiLocalStorageOnly();
   for (const [k, v] of Object.entries(snapshot)) {
     if (!k.startsWith(FTC_AI_KEY_PREFIX)) continue;
@@ -45,7 +47,7 @@ export function collectAiLocalStorageSnapshot(): Record<string, string> {
   if (typeof window === "undefined") return out;
   for (let i = 0; i < localStorage.length; i++) {
     const k = localStorage.key(i);
-    if (!k || !k.startsWith(FTC_AI_KEY_PREFIX)) continue;
+    if (!k?.startsWith(FTC_AI_KEY_PREFIX)) continue;
     const v = localStorage.getItem(k);
     if (v != null) out[k] = v;
   }

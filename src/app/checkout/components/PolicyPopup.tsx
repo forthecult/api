@@ -31,9 +31,9 @@ export function PolicyPopup({
       <DialogTrigger asChild>
         <button
           className={`
-          text-primary
-          hover:underline
-        `}
+            text-primary
+            hover:underline
+          `}
           type="button"
         >
           {children}

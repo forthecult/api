@@ -12,10 +12,7 @@ export function normalizeVeniceSampling(
     temperature >= 0 &&
     temperature <= 2;
   const hasP =
-    typeof topP === "number" &&
-    Number.isFinite(topP) &&
-    topP > 0 &&
-    topP <= 1;
+    typeof topP === "number" && Number.isFinite(topP) && topP > 0 && topP <= 1;
 
   if (hasT && hasP) {
     return { temperature: temperature as number };

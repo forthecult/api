@@ -68,7 +68,7 @@ export function SolanaWalletProvider({
   }, []);
 
   // load @solana-mobile only on mobile (dynamic import = separate chunk, never requested on desktop)
-  const [mobileAdapter, setMobileAdapter] = useState<WalletAdapter | null>(
+  const [mobileAdapter, setMobileAdapter] = useState<null | WalletAdapter>(
     null,
   );
   useEffect(() => {
@@ -111,8 +111,14 @@ export function SolanaWalletProvider({
   // so useSolanaWallet/useSolanaConnection in the stub file can read real context when this provider is mounted
   useEffect(() => {
     if (typeof window !== "undefined") {
-      (window as unknown as { __SOLANA_WALLET_CONTEXT?: typeof WalletContext }).__SOLANA_WALLET_CONTEXT = WalletContext;
-      (window as unknown as { __SOLANA_CONNECTION_CONTEXT?: typeof ConnectionContext }).__SOLANA_CONNECTION_CONTEXT = ConnectionContext;
+      (
+        window as unknown as { __SOLANA_WALLET_CONTEXT?: typeof WalletContext }
+      ).__SOLANA_WALLET_CONTEXT = WalletContext;
+      (
+        window as unknown as {
+          __SOLANA_CONNECTION_CONTEXT?: typeof ConnectionContext;
+        }
+      ).__SOLANA_CONNECTION_CONTEXT = ConnectionContext;
     }
   }, []);
 
@@ -181,9 +187,9 @@ function NetworkValidator({
     return (
       <div
         className={`
-        rounded-lg border border-destructive/50 bg-destructive/10 p-4
-        text-center
-      `}
+          rounded-lg border border-destructive/50 bg-destructive/10 p-4
+          text-center
+        `}
       >
         <p className="font-medium text-destructive">
           Wrong Solana Network Detected

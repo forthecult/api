@@ -34,7 +34,8 @@ export function useCryptoPrices({
     const ac = new AbortController();
     fetch("/api/crypto/prices", { signal: ac.signal })
       .then((res) => res.json())
-      .then((raw: unknown) => { const data = raw as {
+      .then((raw: unknown) => {
+        const data = raw as {
           CRUST?: number;
           CULT?: number;
           PUMP?: number;
@@ -42,20 +43,19 @@ export function useCryptoPrices({
           SOL?: number;
           SOLUNA?: number;
         };
-          if (typeof data?.SOL === "number" && data.SOL > 0)
-            setSolUsdRate(data.SOL);
-          if (typeof data?.CRUST === "number" && data.CRUST > 0)
-            setCrustPriceUsd(data.CRUST);
-          if (typeof data?.CULT === "number" && data.CULT > 0)
-            setCultPriceUsd(data.CULT);
-          if (typeof data?.PUMP === "number" && data.PUMP > 0)
-            setPumpPriceUsd(data.PUMP);
-          if (typeof data?.SOLUNA === "number" && data.SOLUNA > 0)
-            setSolunaPriceUsd(data.SOLUNA);
-          if (typeof data?.SKR === "number" && data.SKR > 0)
-            setSeekerPriceUsd(data.SKR);
-        },
-      )
+        if (typeof data?.SOL === "number" && data.SOL > 0)
+          setSolUsdRate(data.SOL);
+        if (typeof data?.CRUST === "number" && data.CRUST > 0)
+          setCrustPriceUsd(data.CRUST);
+        if (typeof data?.CULT === "number" && data.CULT > 0)
+          setCultPriceUsd(data.CULT);
+        if (typeof data?.PUMP === "number" && data.PUMP > 0)
+          setPumpPriceUsd(data.PUMP);
+        if (typeof data?.SOLUNA === "number" && data.SOLUNA > 0)
+          setSolunaPriceUsd(data.SOLUNA);
+        if (typeof data?.SKR === "number" && data.SKR > 0)
+          setSeekerPriceUsd(data.SKR);
+      })
       .catch((err: unknown) => {
         if (err instanceof DOMException && err.name === "AbortError") return;
         setSolUsdRate(SOL_USD_FALLBACK);

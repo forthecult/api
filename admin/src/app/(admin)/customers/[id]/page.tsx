@@ -163,30 +163,35 @@ export default function AdminCustomerDetailPage() {
   const [ordersLoading, setOrdersLoading] = useState(false);
 
   // Membership (tier + staking from on-chain + tier history from snapshots + admin grant)
-  const [membership, setMembership] = useState<{
+  const [membership, setMembership] = useState<null | {
     adminGrant: null | { expiresAt: string; tier: number };
     bestTier: null | number;
     history: {
-      periods: { startDate: string; endDate: string; tier: number }[];
-      rows: { date: string; tier: null | number; stakedAmountRaw: string; wallet: string }[];
+      periods: { endDate: string; startDate: string; tier: number }[];
+      rows: {
+        date: string;
+        stakedAmountRaw: string;
+        tier: null | number;
+        wallet: string;
+      }[];
     };
     memberSince: null | string;
     tokenSymbol: string;
     wallets: {
       address: string;
-      stakedBalance: string;
-      tier: null | number;
       lock: null | {
         durationLabel: string;
         isLocked: boolean;
-        unlocksAt: string;
         secondsRemaining: number;
         stakedAt: string;
+        unlocksAt: string;
       };
+      stakedBalance: string;
+      tier: null | number;
     }[];
-  } | null>(null);
+  }>(null);
   const [membershipLoading, setMembershipLoading] = useState(false);
-  const [grantDuration, setGrantDuration] = useState<"30d" | "1y">("30d");
+  const [grantDuration, setGrantDuration] = useState<"1y" | "30d">("30d");
   const [grantTier, setGrantTier] = useState<1 | 2 | 3>(3);
   const [grantLoading, setGrantLoading] = useState(false);
   const [grantMessage, setGrantMessage] = useState<null | {
@@ -421,22 +426,27 @@ export default function AdminCustomerDetailPage() {
         adminGrant: null | { expiresAt: string; tier: number };
         bestTier: null | number;
         history: {
-          periods: { startDate: string; endDate: string; tier: number }[];
-          rows: { date: string; tier: null | number; stakedAmountRaw: string; wallet: string }[];
+          periods: { endDate: string; startDate: string; tier: number }[];
+          rows: {
+            date: string;
+            stakedAmountRaw: string;
+            tier: null | number;
+            wallet: string;
+          }[];
         };
         memberSince: null | string;
         tokenSymbol: string;
         wallets: {
           address: string;
-          stakedBalance: string;
-          tier: null | number;
           lock: null | {
             durationLabel: string;
             isLocked: boolean;
-            unlocksAt: string;
             secondsRemaining: number;
             stakedAt: string;
+            unlocksAt: string;
           };
+          stakedBalance: string;
+          tier: null | number;
         }[];
       };
       setMembership(data);
@@ -550,8 +560,7 @@ export default function AdminCustomerDetailPage() {
       // If the lookup/editable address form has content, persist it to the customer's saved addresses
       const addr = editableAddress;
       const hasAllRequired =
-        addr &&
-        addr.address1.trim() &&
+        addr?.address1.trim() &&
         addr.city.trim() &&
         addr.zip.trim() &&
         addr.countryCode.trim();
@@ -797,8 +806,8 @@ export default function AdminCustomerDetailPage() {
         </Link>
         <div
           className={`
-          flex min-h-[200px] items-center justify-center text-muted-foreground
-        `}
+            flex min-h-[200px] items-center justify-center text-muted-foreground
+          `}
         >
           Loading…
         </div>
@@ -821,9 +830,9 @@ export default function AdminCustomerDetailPage() {
         </Link>
         <div
           className={`
-          rounded-lg border border-red-200 bg-red-50 p-4 text-red-800
-          dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
-        `}
+            rounded-lg border border-red-200 bg-red-50 p-4 text-red-800
+            dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
+          `}
         >
           {error ?? "Customer not found."}
           <Button
@@ -861,15 +870,15 @@ export default function AdminCustomerDetailPage() {
           <CardTitle className="sr-only">Customer details</CardTitle>
           <div
             className={`
-            flex flex-col gap-4
-            sm:flex-row sm:items-center sm:gap-6
-          `}
+              flex flex-col gap-4
+              sm:flex-row sm:items-center sm:gap-6
+            `}
           >
             <div
               className={`
-              relative h-16 w-16 shrink-0 overflow-hidden rounded-full border
-              bg-muted
-            `}
+                relative h-16 w-16 shrink-0 overflow-hidden rounded-full border
+                bg-muted
+              `}
             >
               {customer.image ? (
                 <Image
@@ -911,17 +920,17 @@ export default function AdminCustomerDetailPage() {
         <CardContent className="space-y-6">
           <div
             className={`
-            grid gap-4
-            sm:grid-cols-2
-          `}
+              grid gap-4
+              sm:grid-cols-2
+            `}
           >
             <div>
               <label className={labelClass} htmlFor="customer-first-name">
                 <span
                   className={`
-                  text-xs font-medium tracking-wider text-muted-foreground
-                  uppercase
-                `}
+                    text-xs font-medium tracking-wider text-muted-foreground
+                    uppercase
+                  `}
                 >
                   First name
                 </span>
@@ -939,9 +948,9 @@ export default function AdminCustomerDetailPage() {
               <label className={labelClass} htmlFor="customer-last-name">
                 <span
                   className={`
-                  text-xs font-medium tracking-wider text-muted-foreground
-                  uppercase
-                `}
+                    text-xs font-medium tracking-wider text-muted-foreground
+                    uppercase
+                  `}
                 >
                   Last name
                 </span>
@@ -958,9 +967,9 @@ export default function AdminCustomerDetailPage() {
             <div>
               <span
                 className={`
-                text-xs font-medium tracking-wider text-muted-foreground
-                uppercase
-              `}
+                  text-xs font-medium tracking-wider text-muted-foreground
+                  uppercase
+                `}
               >
                 Email
               </span>
@@ -970,9 +979,9 @@ export default function AdminCustomerDetailPage() {
               <label className={labelClass} htmlFor="customer-phone">
                 <span
                   className={`
-                  text-xs font-medium tracking-wider text-muted-foreground
-                  uppercase
-                `}
+                    text-xs font-medium tracking-wider text-muted-foreground
+                    uppercase
+                  `}
                 >
                   Phone
                 </span>
@@ -989,9 +998,9 @@ export default function AdminCustomerDetailPage() {
             <div>
               <span
                 className={`
-                text-xs font-medium tracking-wider text-muted-foreground
-                uppercase
-              `}
+                  text-xs font-medium tracking-wider text-muted-foreground
+                  uppercase
+                `}
               >
                 Location (from latest order)
               </span>
@@ -1002,15 +1011,15 @@ export default function AdminCustomerDetailPage() {
             </div>
             <div
               className={`
-              relative
-              sm:col-span-2
-            `}
+                relative
+                sm:col-span-2
+              `}
             >
               <span
                 className={`
-                text-xs font-medium tracking-wider text-muted-foreground
-                uppercase
-              `}
+                  text-xs font-medium tracking-wider text-muted-foreground
+                  uppercase
+                `}
               >
                 <MapPin aria-hidden className="mr-1 inline-block h-3.5 w-3.5" />
                 Look up address
@@ -1036,10 +1045,9 @@ export default function AdminCustomerDetailPage() {
                       z-10 max-h-40 overflow-auto rounded-md border border-input
                       bg-background py-1 shadow-md
                     `}
-                    role="listbox"
                   >
                     {addressFindResults.map((item) => (
-                      <li key={item.Id} role="option">
+                      <li key={item.Id}>
                         <button
                           className={`
                             w-full px-3 py-1.5 text-left text-sm
@@ -1054,9 +1062,7 @@ export default function AdminCustomerDetailPage() {
                           {item.Text}
                           {item.Description ? (
                             <span
-                              className={`
-                              block text-xs text-muted-foreground
-                            `}
+                              className={`block text-xs text-muted-foreground`}
                             >
                               {item.Description}
                             </span>
@@ -1069,14 +1075,14 @@ export default function AdminCustomerDetailPage() {
                 {editableAddress && (
                   <div
                     className={`
-                    space-y-2 rounded border border-input bg-muted/20 p-3
-                  `}
+                      space-y-2 rounded border border-input bg-muted/20 p-3
+                    `}
                   >
                     <div
                       className={`
-                      grid gap-2
-                      sm:grid-cols-2
-                    `}
+                        grid gap-2
+                        sm:grid-cols-2
+                      `}
                     >
                       <div className="sm:col-span-2">
                         <label className={labelClass}>Address line 1</label>
@@ -1203,9 +1209,9 @@ export default function AdminCustomerDetailPage() {
             <div className="sm:col-span-2">
               <span
                 className={`
-                text-xs font-medium tracking-wider text-muted-foreground
-                uppercase
-              `}
+                  text-xs font-medium tracking-wider text-muted-foreground
+                  uppercase
+                `}
               >
                 Address
               </span>
@@ -1263,9 +1269,9 @@ export default function AdminCustomerDetailPage() {
             <div>
               <span
                 className={`
-                text-xs font-medium tracking-wider text-muted-foreground
-                uppercase
-              `}
+                  text-xs font-medium tracking-wider text-muted-foreground
+                  uppercase
+                `}
               >
                 Token balance
               </span>
@@ -1276,9 +1282,9 @@ export default function AdminCustomerDetailPage() {
             <div>
               <span
                 className={`
-                text-xs font-medium tracking-wider text-muted-foreground
-                uppercase
-              `}
+                  text-xs font-medium tracking-wider text-muted-foreground
+                  uppercase
+                `}
               >
                 Created
               </span>
@@ -1287,9 +1293,9 @@ export default function AdminCustomerDetailPage() {
             <div>
               <span
                 className={`
-                text-xs font-medium tracking-wider text-muted-foreground
-                uppercase
-              `}
+                  text-xs font-medium tracking-wider text-muted-foreground
+                  uppercase
+                `}
               >
                 Updated
               </span>
@@ -1383,13 +1389,18 @@ export default function AdminCustomerDetailPage() {
             <p className="text-sm text-muted-foreground">Loading…</p>
           ) : membership ? (
             <div className="space-y-4">
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div
+                className={`
+                grid gap-4
+                sm:grid-cols-2
+              `}
+              >
                 <div>
                   <span
                     className={`
-                    text-xs font-medium tracking-wider text-muted-foreground
-                    uppercase
-                  `}
+                      text-xs font-medium tracking-wider text-muted-foreground
+                      uppercase
+                    `}
                   >
                     Current tier
                   </span>
@@ -1402,19 +1413,20 @@ export default function AdminCustomerDetailPage() {
                 <div>
                   <span
                     className={`
-                    text-xs font-medium tracking-wider text-muted-foreground
-                    uppercase
-                  `}
+                      text-xs font-medium tracking-wider text-muted-foreground
+                      uppercase
+                    `}
                   >
                     Member since
                   </span>
                   <p className="mt-1 text-sm">
                     {membership.memberSince
-                      ? new Date(
-                          membership.memberSince,
-                        ).toLocaleDateString(undefined, {
-                          dateStyle: "medium",
-                        })
+                      ? new Date(membership.memberSince).toLocaleDateString(
+                          undefined,
+                          {
+                            dateStyle: "medium",
+                          },
+                        )
                       : "—"}
                   </p>
                 </div>
@@ -1435,8 +1447,16 @@ export default function AdminCustomerDetailPage() {
                     className={cn(
                       "rounded-md border px-3 py-2 text-sm",
                       grantMessage.type === "success"
-                        ? "border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950/30 dark:text-green-200"
-                        : "border-red-200 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-950/30 dark:text-red-200",
+                        ? `
+                          border-green-200 bg-green-50 text-green-800
+                          dark:border-green-800 dark:bg-green-950/30
+                          dark:text-green-200
+                        `
+                        : `
+                          border-red-200 bg-red-50 text-red-800
+                          dark:border-red-800 dark:bg-red-950/30
+                          dark:text-red-200
+                        `,
                     )}
                   >
                     {grantMessage.text}
@@ -1475,9 +1495,7 @@ export default function AdminCustomerDetailPage() {
                     <select
                       className={inputClass}
                       onChange={(e) =>
-                        setGrantDuration(
-                          e.target.value === "1y" ? "1y" : "30d",
-                        )
+                        setGrantDuration(e.target.value === "1y" ? "1y" : "30d")
                       }
                       value={grantDuration}
                     >
@@ -1486,9 +1504,7 @@ export default function AdminCustomerDetailPage() {
                     </select>
                   </label>
                   <label className="flex flex-col gap-1">
-                    <span className="text-xs text-muted-foreground">
-                      Tier
-                    </span>
+                    <span className="text-xs text-muted-foreground">Tier</span>
                     <select
                       className={inputClass}
                       onChange={(e) =>
@@ -1496,7 +1512,7 @@ export default function AdminCustomerDetailPage() {
                           Math.min(
                             3,
                             Math.max(1, parseInt(e.target.value, 10) || 3),
-                          ) as 1 | 2 | 3
+                          ) as 1 | 2 | 3,
                         )
                       }
                       value={grantTier}
@@ -1526,22 +1542,31 @@ export default function AdminCustomerDetailPage() {
                 <div className="space-y-3">
                   <span
                     className={`
-                    text-xs font-medium tracking-wider text-muted-foreground
-                    uppercase
-                  `}
+                      text-xs font-medium tracking-wider text-muted-foreground
+                      uppercase
+                    `}
                   >
                     Linked Solana wallet(s)
                   </span>
                   <ul className="space-y-3 rounded-lg border p-3">
                     {membership.wallets.map((w) => (
                       <li
-                        key={w.address}
                         className="flex flex-col gap-1.5 text-sm"
+                        key={w.address}
                       >
-                        <span className="font-mono text-xs text-muted-foreground">
+                        <span
+                          className={`
+                          font-mono text-xs text-muted-foreground
+                        `}
+                        >
                           {w.address.slice(0, 4)}…{w.address.slice(-4)}
                         </span>
-                        <div className="grid gap-2 sm:grid-cols-2">
+                        <div
+                          className={`
+                          grid gap-2
+                          sm:grid-cols-2
+                        `}
+                        >
                           <span>
                             Staked:{" "}
                             <strong>
@@ -1570,11 +1595,12 @@ export default function AdminCustomerDetailPage() {
                               )}
                               {" · "}
                               Staked at{" "}
-                              {new Date(
-                                w.lock.stakedAt,
-                              ).toLocaleDateString(undefined, {
-                                dateStyle: "short",
-                              })}
+                              {new Date(w.lock.stakedAt).toLocaleDateString(
+                                undefined,
+                                {
+                                  dateStyle: "short",
+                                },
+                              )}
                             </span>
                           ) : (
                             <span className="text-muted-foreground">
@@ -1592,9 +1618,9 @@ export default function AdminCustomerDetailPage() {
                 <div className="space-y-3 border-t pt-4">
                   <span
                     className={`
-                    text-xs font-medium tracking-wider text-muted-foreground
-                    uppercase
-                  `}
+                      text-xs font-medium tracking-wider text-muted-foreground
+                      uppercase
+                    `}
                   >
                     Tier history
                   </span>
@@ -1604,19 +1630,18 @@ export default function AdminCustomerDetailPage() {
                         <li key={i}>
                           <strong>Tier {p.tier}</strong>
                           {" — "}
-                          {new Date(
-                            p.startDate,
-                          ).toLocaleDateString(undefined, {
+                          {new Date(p.startDate).toLocaleDateString(undefined, {
                             dateStyle: "medium",
                           })}
                           {p.startDate !== p.endDate && (
                             <>
                               {" → "}
-                              {new Date(
-                                p.endDate,
-                              ).toLocaleDateString(undefined, {
-                                dateStyle: "medium",
-                              })}
+                              {new Date(p.endDate).toLocaleDateString(
+                                undefined,
+                                {
+                                  dateStyle: "medium",
+                                },
+                              )}
                             </>
                           )}
                         </li>
@@ -1624,57 +1649,73 @@ export default function AdminCustomerDetailPage() {
                     </ul>
                   ) : (
                     <p className="text-sm text-muted-foreground">
-                      No tier history yet. Run the daily snapshot job to
-                      record history.
+                      No tier history yet. Run the daily snapshot job to record
+                      history.
                     </p>
                   )}
-                    {membership.history.rows.length > 0 && (
-                      <details className="text-sm">
-                        <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
-                          {membership.history.rows.length} daily snapshot(s)
-                        </summary>
-                        <div className="mt-2 max-h-48 overflow-auto rounded border">
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead>Date</TableHead>
-                                <TableHead>Wallet</TableHead>
-                                <TableHead>Tier</TableHead>
-                                <TableHead className="text-right">
-                                  Staked (raw)
-                                </TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {membership.history.rows
-                                .slice(0, 50)
-                                .map((r, i) => (
-                                  <TableRow key={i}>
-                                    <TableCell>{r.date}</TableCell>
-                                    <TableCell className="font-mono text-xs">
-                                      {r.wallet.slice(0, 4)}…{r.wallet.slice(-4)}
-                                    </TableCell>
-                                    <TableCell>
-                                      {r.tier != null ? `Tier ${r.tier}` : "—"}
-                                    </TableCell>
-                                    <TableCell className="text-right font-mono text-xs">
-                                      {r.stakedAmountRaw}
-                                    </TableCell>
-                                  </TableRow>
-                                ))}
-                            </TableBody>
-                          </Table>
-                          {membership.history.rows.length > 50 && (
-                            <p className="border-t px-2 py-1 text-xs text-muted-foreground">
-                              Showing first 50 of{" "}
-                              {membership.history.rows.length}
-                            </p>
-                          )}
-                        </div>
-                      </details>
-                    )}
-                  </div>
-                )}
+                  {membership.history.rows.length > 0 && (
+                    <details className="text-sm">
+                      <summary
+                        className={`
+                          cursor-pointer text-muted-foreground
+                          hover:text-foreground
+                        `}
+                      >
+                        {membership.history.rows.length} daily snapshot(s)
+                      </summary>
+                      <div
+                        className={`
+                          mt-2 max-h-48 overflow-auto rounded border
+                        `}
+                      >
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Date</TableHead>
+                              <TableHead>Wallet</TableHead>
+                              <TableHead>Tier</TableHead>
+                              <TableHead className="text-right">
+                                Staked (raw)
+                              </TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {membership.history.rows
+                              .slice(0, 50)
+                              .map((r, i) => (
+                                <TableRow key={i}>
+                                  <TableCell>{r.date}</TableCell>
+                                  <TableCell className="font-mono text-xs">
+                                    {r.wallet.slice(0, 4)}…{r.wallet.slice(-4)}
+                                  </TableCell>
+                                  <TableCell>
+                                    {r.tier != null ? `Tier ${r.tier}` : "—"}
+                                  </TableCell>
+                                  <TableCell
+                                    className={`
+                                      text-right font-mono text-xs
+                                    `}
+                                  >
+                                    {r.stakedAmountRaw}
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                          </TableBody>
+                        </Table>
+                        {membership.history.rows.length > 50 && (
+                          <p
+                            className={`
+                              border-t px-2 py-1 text-xs text-muted-foreground
+                            `}
+                          >
+                            Showing first 50 of {membership.history.rows.length}
+                          </p>
+                        )}
+                      </div>
+                    </details>
+                  )}
+                </div>
+              )}
             </div>
           ) : (
             <p className="text-sm text-muted-foreground">
@@ -1750,9 +1791,9 @@ export default function AdminCustomerDetailPage() {
               <div>
                 <span
                   className={`
-                  text-xs font-medium tracking-wider text-muted-foreground
-                  uppercase
-                `}
+                    text-xs font-medium tracking-wider text-muted-foreground
+                    uppercase
+                  `}
                 >
                   Code
                 </span>
@@ -1763,9 +1804,9 @@ export default function AdminCustomerDetailPage() {
               <div>
                 <span
                   className={`
-                  text-xs font-medium tracking-wider text-muted-foreground
-                  uppercase
-                `}
+                    text-xs font-medium tracking-wider text-muted-foreground
+                    uppercase
+                  `}
                 >
                   Status
                 </span>
@@ -1815,8 +1856,8 @@ export default function AdminCustomerDetailPage() {
                           <span className="font-semibold">Transactional</span>
                           <span
                             className={`
-                            text-xs font-normal text-muted-foreground
-                          `}
+                              text-xs font-normal text-muted-foreground
+                            `}
                           >
                             Orders, shipping, account
                           </span>
@@ -1827,8 +1868,8 @@ export default function AdminCustomerDetailPage() {
                           <span className="font-semibold">Marketing</span>
                           <span
                             className={`
-                            text-xs font-normal text-muted-foreground
-                          `}
+                              text-xs font-normal text-muted-foreground
+                            `}
                           >
                             Promotions, news, offers
                           </span>

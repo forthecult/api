@@ -30,7 +30,6 @@ export function defaultVisionChatModelId(): string {
   return process.env.VENICE_VISION_MODEL?.trim() || "llama-3.2-90b-vision";
 }
 
-
 export function getServerVeniceApiKey(): string | undefined {
   return process.env.VENICE_API_KEY?.trim() || undefined;
 }

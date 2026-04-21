@@ -23,79 +23,81 @@
 
 /* Culture brand light: Warm parchment + Amber */
 :root {
-  --background: #FAFAF7;
-  --foreground: #1A1611;
-  --card: #FFFFFF;
-  --card-foreground: #1A1611;
-  --popover: #FFFFFF;
-  --popover-foreground: #1A1611;
-  --primary: #B07830;
-  --primary-foreground: #FFFFFF;
-  --secondary: #F0ECE4;
-  --secondary-foreground: #1A1611;
-  --muted: #F0ECE4;
-  --muted-foreground: #78716C;
-  --accent: #B07830;
-  --accent-foreground: #FFFFFF;
-  --destructive: #B5594E;
-  --destructive-foreground: #FFFFFF;
-  --border: #E5DFD5;
-  --input: #E5DFD5;
-  --ring: #B07830;
-  --chart-1: #C4873A;
-  --chart-2: #6B8F71;
-  --chart-3: #B5594E;
-  --chart-4: #78716C;
-  --chart-5: #1A1611;
+  --background: #fafaf7;
+  --foreground: #1a1611;
+  --card: #ffffff;
+  --card-foreground: #1a1611;
+  --popover: #ffffff;
+  --popover-foreground: #1a1611;
+  --primary: #b07830;
+  --primary-foreground: #ffffff;
+  --secondary: #f0ece4;
+  --secondary-foreground: #1a1611;
+  --muted: #f0ece4;
+  --muted-foreground: #78716c;
+  --accent: #b07830;
+  --accent-foreground: #ffffff;
+  --destructive: #b5594e;
+  --destructive-foreground: #ffffff;
+  --border: #e5dfd5;
+  --input: #e5dfd5;
+  --ring: #b07830;
+  --chart-1: #c4873a;
+  --chart-2: #6b8f71;
+  --chart-3: #b5594e;
+  --chart-4: #78716c;
+  --chart-5: #1a1611;
   --radius: 0.625rem;
-  --sidebar: #F5F1EB;
-  --sidebar-foreground: #1A1611;
-  --sidebar-primary: #B07830;
-  --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #F0ECE4;
-  --sidebar-accent-foreground: #1A1611;
-  --sidebar-border: #E5DFD5;
-  --sidebar-ring: #B07830;
+  --sidebar: #f5f1eb;
+  --sidebar-foreground: #1a1611;
+  --sidebar-primary: #b07830;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f0ece4;
+  --sidebar-accent-foreground: #1a1611;
+  --sidebar-border: #e5dfd5;
+  --sidebar-ring: #b07830;
 }
 
 /* Culture brand dark: Obsidian + Parchment + Amber */
 .dark {
   --background: #111111;
-  --foreground: #F5F1EB;
-  --card: #1A1A1A;
-  --card-foreground: #F5F1EB;
-  --popover: #1A1A1A;
-  --popover-foreground: #F5F1EB;
-  --primary: #C4873A;
+  --foreground: #f5f1eb;
+  --card: #1a1a1a;
+  --card-foreground: #f5f1eb;
+  --popover: #1a1a1a;
+  --popover-foreground: #f5f1eb;
+  --primary: #c4873a;
   --primary-foreground: #111111;
-  --secondary: #1E1E1E;
-  --secondary-foreground: #F5F1EB;
-  --muted: #1E1E1E;
-  --muted-foreground: #8A857E;
-  --accent: #C4873A;
+  --secondary: #1e1e1e;
+  --secondary-foreground: #f5f1eb;
+  --muted: #1e1e1e;
+  --muted-foreground: #8a857e;
+  --accent: #c4873a;
   --accent-foreground: #111111;
-  --destructive: #B5594E;
-  --destructive-foreground: #F5F1EB;
-  --border: #2A2A2A;
-  --input: #2A2A2A;
-  --ring: #C4873A;
-  --chart-1: #C4873A;
-  --chart-2: #6B8F71;
-  --chart-3: #B5594E;
-  --chart-4: #8A857E;
-  --chart-5: #F5F1EB;
-  --sidebar: #1A1A1A;
-  --sidebar-foreground: #F5F1EB;
-  --sidebar-primary: #C4873A;
+  --destructive: #b5594e;
+  --destructive-foreground: #f5f1eb;
+  --border: #2a2a2a;
+  --input: #2a2a2a;
+  --ring: #c4873a;
+  --chart-1: #c4873a;
+  --chart-2: #6b8f71;
+  --chart-3: #b5594e;
+  --chart-4: #8a857e;
+  --chart-5: #f5f1eb;
+  --sidebar: #1a1a1a;
+  --sidebar-foreground: #f5f1eb;
+  --sidebar-primary: #c4873a;
   --sidebar-primary-foreground: #111111;
-  --sidebar-accent: #1E1E1E;
-  --sidebar-accent-foreground: #F5F1EB;
-  --sidebar-border: #2A2A2A;
-  --sidebar-ring: #C4873A;
+  --sidebar-accent: #1e1e1e;
+  --sidebar-accent-foreground: #f5f1eb;
+  --sidebar-border: #2a2a2a;
+  --sidebar-ring: #c4873a;
 }
 
 @theme inline {
-  --font-family-display: var(--font-heading), "Manrope", var(--font-geist-sans), ui-sans-serif, sans-serif;
+  --font-family-display:
+    var(--font-heading), "Manrope", var(--font-geist-sans), ui-sans-serif,
+    sans-serif;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -174,12 +176,16 @@
 
 /* JetBrains Mono for crypto prices, data values, and terminal aesthetic */
 .font-mono-crypto {
-  font-family: var(--font-mono-crypto), "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+  font-family:
+    var(--font-mono-crypto), "JetBrains Mono", "Fira Code", ui-monospace,
+    monospace;
 }
 
 /* Heading / display font (Manrope) */
 .font-heading {
-  font-family: var(--font-heading), "Manrope", var(--font-geist-sans), ui-sans-serif, sans-serif;
+  font-family:
+    var(--font-heading), "Manrope", var(--font-geist-sans), ui-sans-serif,
+    sans-serif;
 }
 
 /* LCP hero h1: system font only so it can paint without waiting on Manrope or layout from custom font metrics */
@@ -193,7 +199,7 @@
 
 /* Amber text gradient */
 .text-gradient-brand {
-  background: linear-gradient(135deg, #C4873A 0%, #D4A05A 50%, #C4873A 100%);
+  background: linear-gradient(135deg, #c4873a 0%, #d4a05a 50%, #c4873a 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -217,11 +223,15 @@
 
 /* Cult glow on hover */
 .cult-glow {
-  transition: box-shadow 0.3s ease, border-color 0.3s ease;
+  transition:
+    box-shadow 0.3s ease,
+    border-color 0.3s ease;
 }
 
 .cult-glow:hover {
-  box-shadow: 0 0 20px rgba(196, 135, 58, 0.15), 0 0 40px rgba(196, 135, 58, 0.05);
+  box-shadow:
+    0 0 20px rgba(196, 135, 58, 0.15),
+    0 0 40px rgba(196, 135, 58, 0.05);
   border-color: rgba(196, 135, 58, 0.3);
 }
 
@@ -237,7 +247,7 @@
   bottom: -2px;
   width: 0;
   height: 1px;
-  background: #C4873A;
+  background: #c4873a;
   transition: width 0.3s ease;
 }
 
@@ -254,13 +264,18 @@
 
 /* Dot grid background pattern */
 .bg-dot-grid {
-  background-image: radial-gradient(circle, rgba(196, 135, 58, 0.08) 1px, transparent 1px);
+  background-image: radial-gradient(
+    circle,
+    rgba(196, 135, 58, 0.08) 1px,
+    transparent 1px
+  );
   background-size: 24px 24px;
 }
 
 /* Animated border pulse for featured items */
 @keyframes border-pulse {
-  0%, 100% {
+  0%,
+  100% {
     border-color: rgba(196, 135, 58, 0.2);
   }
   50% {

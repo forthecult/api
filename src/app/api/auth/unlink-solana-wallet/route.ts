@@ -30,10 +30,7 @@ export async function POST(request: Request) {
   try {
     body = (await request.json()) as typeof body;
   } catch {
-    return NextResponse.json(
-      { error: "Invalid JSON body" },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
   const wallet = body.accountId?.trim();

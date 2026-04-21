@@ -1,7 +1,15 @@
 "use client";
 
-import React, { memo, useCallback, useContext, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
+
+import React, {
+  memo,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 
 import { whenIdle } from "~/lib/when-idle";
 import { PRELOAD_SOLANA_WALLET } from "~/ui/components/auth/auth-wallet-modal-events";
@@ -25,10 +33,10 @@ export function useSolanaReady() {
 const ProviderShell = memo(function ProviderShell({
   children,
   providerRef,
-  version,
+  version: _version,
 }: {
   children: ReactNode;
-  providerRef: React.RefObject<SolanaProviderComponent | null>;
+  providerRef: React.RefObject<null | SolanaProviderComponent>;
   version: number;
 }) {
   const Provider = providerRef.current ?? SolanaWalletStub;
@@ -46,8 +54,12 @@ const ProviderShell = memo(function ProviderShell({
  * Uses a stable shell component to minimize child remounts when provider loads.
  * Also listens for PRELOAD_SOLANA_WALLET event to trigger immediate loading.
  */
-export function LazySolanaWalletProvider({ children }: { children: ReactNode }) {
-  const providerRef = useRef<SolanaProviderComponent | null>(null);
+export function LazySolanaWalletProvider({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  const providerRef = useRef<null | SolanaProviderComponent>(null);
   const [isReady, setIsReady] = useState(false);
   const [version, setVersion] = useState(0);
   const loadingRef = useRef(false);

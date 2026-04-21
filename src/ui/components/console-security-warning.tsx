@@ -12,7 +12,7 @@ export function ConsoleSecurityWarning() {
       "color: white; background: #c00; font-size: 24px; font-weight: bold; padding: 6px 12px;";
     console.log("%cStop!", stopStyle);
     console.log(
-      "This is a browser feature intended for developers. If someone told you to copy-paste something here, it is a scam and will give them access to your money."
+      "This is a browser feature intended for developers. If someone told you to copy-paste something here, it is a scam and will give them access to your money.",
     );
   }, []);
   return null;

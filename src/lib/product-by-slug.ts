@@ -35,13 +35,13 @@ export interface ProductBySlugResult {
   description?: string;
   /** Bullet-point features for product page. */
   features?: string[];
-  /** Per-image alt text (same order as images). Used for gallery SEO when set. */
-  imageAlts?: (null | string)[];
   handlingDaysMax?: null | number;
   /** Fulfillment (handling) days min/max from Printify, Printful, or manual. Used for estimated delivery timeline. */
   handlingDaysMin?: null | number;
   hasVariants: boolean;
   id: string;
+  /** Per-image alt text (same order as images). Used for gallery SEO when set. */
+  imageAlts?: (null | string)[];
   images?: string[];
   imageUrl?: string;
   inStock: boolean;
@@ -85,41 +85,6 @@ export interface ProductBySlugResult {
 interface OptionDefinition {
   name: string;
   values: string[];
-}
-
-/**
- * Merge option definitions that share the same name so each dimension (e.g. Size)
- * has exactly one row and one selection. Fixes products where duplicate names
- * (e.g. two "Size" entries) would require two selections that no single variant satisfies.
- */
-function mergeOptionDefinitionsByName(
-  optionDefinitions: OptionDefinition[],
-): OptionDefinition[] {
-  if (optionDefinitions.length <= 1) return optionDefinitions;
-  const byName = new Map<string, string[]>();
-  const order: string[] = [];
-  for (const opt of optionDefinitions) {
-    const name = opt.name?.trim() || "Option";
-    const values = (opt.values ?? []).map((v) => String(v).trim()).filter(Boolean);
-    if (values.length === 0) continue;
-    if (!byName.has(name)) {
-      order.push(name);
-      byName.set(name, []);
-    }
-    const existing = byName.get(name)!;
-    for (const v of values) {
-      if (!existing.includes(v)) existing.push(v);
-    }
-  }
-  return order.map((name) => {
-    const values = byName.get(name)!;
-    const isSize =
-      name.toLowerCase() === "size";
-    return {
-      name,
-      values: isSize ? sortClothingSizes([...values]) : [...values].sort(),
-    };
-  });
 }
 
 /**
@@ -172,7 +137,7 @@ export async function getProductBySlugOrId(
     .where(or(eq(productsTable.id, slug), eq(productsTable.slug, slug)))
     .limit(1);
 
-  if (!product || !product.published) return null;
+  if (!product?.published) return null;
 
   // for amazon products, refresh price if stale (> 15 min)
   let priceCents = product.priceCents;
@@ -211,7 +176,7 @@ export async function getProductBySlugOrId(
   }
 
   const id = product.id;
-  const productSlug = product.slug ?? product.id;
+  const _productSlug = product.slug ?? product.id;
 
   const [mainCat, availableCountries, variantsRows, imagesRows] =
     await Promise.all([
@@ -547,9 +512,9 @@ async function createVariantRowsFromOptionDefinitions(
   const now = new Date();
 
   for (const combo of combinations) {
-    const size = combo["Size"] ?? combo["size"] ?? null;
-    const color = combo["Color"] ?? combo["color"] ?? null;
-    const gender = combo["Gender"] ?? combo["gender"] ?? null;
+    const size = combo.Size ?? combo.size ?? null;
+    const color = combo.Color ?? combo.color ?? null;
+    const gender = combo.Gender ?? combo.gender ?? null;
     const label =
       Object.entries(combo)
         .map(([k, v]) => `${k}: ${v}`)
@@ -569,4 +534,40 @@ async function createVariantRowsFromOptionDefinitions(
   }
 
   return true;
+}
+
+/**
+ * Merge option definitions that share the same name so each dimension (e.g. Size)
+ * has exactly one row and one selection. Fixes products where duplicate names
+ * (e.g. two "Size" entries) would require two selections that no single variant satisfies.
+ */
+function mergeOptionDefinitionsByName(
+  optionDefinitions: OptionDefinition[],
+): OptionDefinition[] {
+  if (optionDefinitions.length <= 1) return optionDefinitions;
+  const byName = new Map<string, string[]>();
+  const order: string[] = [];
+  for (const opt of optionDefinitions) {
+    const name = opt.name?.trim() || "Option";
+    const values = (opt.values ?? [])
+      .map((v) => String(v).trim())
+      .filter(Boolean);
+    if (values.length === 0) continue;
+    if (!byName.has(name)) {
+      order.push(name);
+      byName.set(name, []);
+    }
+    const existing = byName.get(name)!;
+    for (const v of values) {
+      if (!existing.includes(v)) existing.push(v);
+    }
+  }
+  return order.map((name) => {
+    const values = byName.get(name)!;
+    const isSize = name.toLowerCase() === "size";
+    return {
+      name,
+      values: isSize ? sortClothingSizes([...values]) : [...values].sort(),
+    };
+  });
 }

@@ -113,9 +113,9 @@ export default function AdminSupportTicketsPage() {
     return (
       <div
         className={`
-        rounded-lg border border-red-200 bg-red-50 p-4 text-red-800
-        dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
-      `}
+          rounded-lg border border-red-200 bg-red-50 p-4 text-red-800
+          dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
+        `}
       >
         {error}
         <Button
@@ -133,9 +133,9 @@ export default function AdminSupportTicketsPage() {
     <div className="space-y-6">
       <div
         className={`
-        flex flex-col gap-4
-        sm:flex-row sm:items-center sm:justify-between
-      `}
+          flex flex-col gap-4
+          sm:flex-row sm:items-center sm:justify-between
+        `}
       >
         <div className="flex items-center gap-2">
           <Headphones className="h-7 w-7" />
@@ -148,9 +148,9 @@ export default function AdminSupportTicketsPage() {
       <Card>
         <CardHeader
           className={`
-          flex flex-col gap-4
-          sm:flex-row sm:items-center sm:justify-between
-        `}
+            flex flex-col gap-4
+            sm:flex-row sm:items-center sm:justify-between
+          `}
         >
           <CardTitle className="sr-only">Support ticket list</CardTitle>
           <div className="flex flex-wrap items-center gap-3">
@@ -232,9 +232,9 @@ export default function AdminSupportTicketsPage() {
             <div className="relative max-w-md min-w-[200px] flex-1">
               <Search
                 className={`
-                absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2
-                text-muted-foreground
-              `}
+                  absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2
+                  text-muted-foreground
+                `}
               />
               <input
                 aria-label="Search tickets"
@@ -266,9 +266,9 @@ export default function AdminSupportTicketsPage() {
           {loading ? (
             <div
               className={`
-              flex min-h-[200px] items-center justify-center
-              text-muted-foreground
-            `}
+                flex min-h-[200px] items-center justify-center
+                text-muted-foreground
+              `}
             >
               Loading…
             </div>
@@ -279,10 +279,10 @@ export default function AdminSupportTicketsPage() {
                   <thead>
                     <tr
                       className={`
-                      border-b border-border bg-muted/50 text-left text-xs
-                      font-semibold tracking-wider text-muted-foreground
-                      uppercase
-                    `}
+                        border-b border-border bg-muted/50 text-left text-xs
+                        font-semibold tracking-wider text-muted-foreground
+                        uppercase
+                      `}
                     >
                       <th
                         className="p-4 font-medium whitespace-nowrap"
@@ -425,8 +425,8 @@ export default function AdminSupportTicketsPage() {
                           </td>
                           <td
                             className={`
-                            p-4 whitespace-nowrap text-muted-foreground
-                          `}
+                              p-4 whitespace-nowrap text-muted-foreground
+                            `}
                           >
                             {formatDate(ticket.createdAt)}
                           </td>
@@ -469,8 +469,8 @@ export default function AdminSupportTicketsPage() {
               {data.items.length > 0 && data.totalPages > 1 && (
                 <div
                   className={`
-                  mt-4 flex items-center justify-center gap-2 border-t pt-4
-                `}
+                    mt-4 flex items-center justify-center gap-2 border-t pt-4
+                  `}
                 >
                   <Button
                     aria-label="Previous page"

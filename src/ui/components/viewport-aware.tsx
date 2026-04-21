@@ -40,7 +40,7 @@ export function ViewportAware({
 
   if (!inView) {
     return (
-      <div ref={sentinelRef} aria-hidden style={{ minHeight: 1 }}>
+      <div aria-hidden ref={sentinelRef} style={{ minHeight: 1 }}>
         {fallback}
       </div>
     );

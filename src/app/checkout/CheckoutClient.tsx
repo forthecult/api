@@ -1,11 +1,9 @@
 "use client";
 
-import { useSolanaWallet } from "~/app/checkout/crypto/solana-wallet-stub";
 import { ArrowLeft, Loader2, Lock } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import {
-  forwardRef,
   useCallback,
   useEffect,
   useImperativeHandle,
@@ -14,6 +12,7 @@ import {
   useState,
 } from "react";
 
+import { useSolanaWallet } from "~/app/checkout/crypto/solana-wallet-stub";
 import { getAffiliateCodeFromDocument } from "~/lib/affiliate-tracking";
 import { useCurrentUser } from "~/lib/auth-client";
 import { useCart } from "~/lib/hooks/use-cart";
@@ -32,25 +31,21 @@ import {
   CardHeader,
   CardTitle,
 } from "~/ui/primitives/card";
+import { Skeleton } from "~/ui/primitives/skeleton";
+
+import type { BillingAddressFormRef } from "./components/BillingAddressForm";
+import type { PaymentMethodSectionRef } from "./components/PaymentMethodSection";
 
 import { checkoutReducer, initialCheckoutState } from "./checkout-reducer";
 import { defaultForm } from "./checkout-shared";
-import { preloadStripe } from "./stripe-preload";
-import {
-  BillingAddressForm,
-  type BillingAddressFormRef,
-} from "./components/BillingAddressForm";
 import { OrderSummary } from "./components/OrderSummary";
-import {
-  type PaymentMethodSectionRef,
-} from "./components/PaymentMethodSection";
 import {
   ShippingAddressForm,
   type ShippingAddressFormRef,
   type ShippingUpdate,
 } from "./components/ShippingAddressForm";
 import { useCoupons } from "./hooks/useCoupons";
-import { Skeleton } from "~/ui/primitives/skeleton";
+import { preloadStripe } from "./stripe-preload";
 
 const PaymentMethodSection = dynamic(
   () =>
@@ -134,13 +129,6 @@ const DigitalOnlyStubRef = function DigitalOnlyStubRef({
   return null;
 };
 
-/** Wallet address for tier-based discounts; uses stub hook so main bundle doesn't pull in @solana. */
-function useOptionalWalletAddress(): string | undefined {
-  const { publicKey } = useSolanaWallet();
-  const pk = publicKey as { toBase58?: () => string } | null;
-  return pk?.toBase58?.() ?? undefined;
-}
-
 export function CheckoutClient() {
   const { isHydrated, itemCount, items, removeItem, subtotal, updateQuantity } =
     useCart();
@@ -150,7 +138,9 @@ export function CheckoutClient() {
   // useSolanaWallet is from the stub (no @solana in main bundle); real provider sets globals when it loads.
   const wallet = useOptionalWalletAddress();
   /** When user is logged in but has no connected wallet (e.g. unlinked), tier from history for order payload. */
-  const [memberTierFromApi, setMemberTierFromApi] = useState<null | number>(null);
+  const [memberTierFromApi, setMemberTierFromApi] = useState<null | number>(
+    null,
+  );
   const isMobile = useIsMobile();
   const isLoggedIn = Boolean(user?.email);
   const isDigitalOnly =
@@ -192,7 +182,8 @@ export function CheckoutClient() {
     let cancelled = false;
     fetch("/api/user/membership", { credentials: "include" })
       .then((r) => r.json())
-      .then((raw: unknown) => { const data = raw as { memberTier?: number } | null;
+      .then((raw: unknown) => {
+        const data = raw as null | { memberTier?: number };
         if (cancelled) return;
         const t = data?.memberTier;
         setMemberTierFromApi(
@@ -202,7 +193,9 @@ export function CheckoutClient() {
       .catch(() => {
         if (!cancelled) setMemberTierFromApi(null);
       });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [user?.id, wallet]);
 
   const [shipping, setShipping] = useState<ShippingUpdate>({
@@ -249,7 +242,7 @@ export function CheckoutClient() {
     shippingCents,
     shippingFree,
     shippingLoading,
-    shippingSpeed,
+    shippingSpeed: _shippingSpeed,
     taxCents,
     taxNote,
   } = shipping;
@@ -326,7 +319,11 @@ export function CheckoutClient() {
         ...getTelegramOrderPayload(),
         ...getAffiliatePayload(),
         ...(appliedCoupon?.code ? { couponCode: appliedCoupon.code } : {}),
-        ...(wallet ? { wallet } : memberTierFromApi != null ? { memberTier: memberTierFromApi } : {}),
+        ...(wallet
+          ? { wallet }
+          : memberTierFromApi != null
+            ? { memberTier: memberTierFromApi }
+            : {}),
       },
       email,
       emailNewsVal,
@@ -349,7 +346,7 @@ export function CheckoutClient() {
     appliedCoupon,
     wallet,
     memberTierFromApi,
-    tierDiscountTotalCents,
+    coupons.tierDiscountTotalCents,
   ]);
 
   const hasEsimInCart = items.some((item) => item.digital === true);
@@ -408,9 +405,9 @@ export function CheckoutClient() {
             <ArrowLeft aria-hidden className="size-4" />
             <span
               className={`
-              hidden
-              sm:inline
-            `}
+                hidden
+                sm:inline
+              `}
             >
               Continue shopping
             </span>
@@ -418,9 +415,9 @@ export function CheckoutClient() {
           </Link>
           <div
             className={`
-            flex items-center gap-1.5 text-sm font-medium text-green-700
-            dark:text-green-400
-          `}
+              flex items-center gap-1.5 text-sm font-medium text-green-700
+              dark:text-green-400
+            `}
           >
             <Lock aria-hidden className="size-3.5" />
             Secure Checkout
@@ -436,10 +433,10 @@ export function CheckoutClient() {
           <div className="flex items-center gap-1.5">
             <span
               className={`
-              flex size-5 items-center justify-center rounded-full bg-primary
-              text-[10px] font-bold text-primary-foreground
-              sm:size-6 sm:text-xs
-            `}
+                flex size-5 items-center justify-center rounded-full bg-primary
+                text-[10px] font-bold text-primary-foreground
+                sm:size-6 sm:text-xs
+              `}
             >
               1
             </span>
@@ -448,17 +445,17 @@ export function CheckoutClient() {
           <div
             aria-hidden
             className={`
-            h-px w-6 bg-border
-            sm:w-10
-          `}
+              h-px w-6 bg-border
+              sm:w-10
+            `}
           />
           <div className="flex items-center gap-1.5">
             <span
               className={`
-              flex size-5 items-center justify-center rounded-full bg-primary
-              text-[10px] font-bold text-primary-foreground
-              sm:size-6 sm:text-xs
-            `}
+                flex size-5 items-center justify-center rounded-full bg-primary
+                text-[10px] font-bold text-primary-foreground
+                sm:size-6 sm:text-xs
+              `}
             >
               2
             </span>
@@ -467,17 +464,17 @@ export function CheckoutClient() {
           <div
             aria-hidden
             className={`
-            h-px w-6 bg-border
-            sm:w-10
-          `}
+              h-px w-6 bg-border
+              sm:w-10
+            `}
           />
           <div className="flex items-center gap-1.5">
             <span
               className={`
-              flex size-5 items-center justify-center rounded-full bg-muted
-              text-[10px] font-bold text-muted-foreground
-              sm:size-6 sm:text-xs
-            `}
+                flex size-5 items-center justify-center rounded-full bg-muted
+                text-[10px] font-bold text-muted-foreground
+                sm:size-6 sm:text-xs
+              `}
             >
               3
             </span>
@@ -487,18 +484,18 @@ export function CheckoutClient() {
 
         <div
           className={`
-          grid gap-8 pt-4
-          sm:grid-cols-[1fr,340px]
-          md:grid-cols-[1fr,380px]
-          lg:grid-cols-[1fr,400px]
-        `}
+            grid gap-8 pt-4
+            sm:grid-cols-[1fr,340px]
+            md:grid-cols-[1fr,380px]
+            lg:grid-cols-[1fr,400px]
+          `}
         >
           {/* Left: contact, address, shipping method, payment, place order + policy links */}
           <div
             className={`
-            min-w-0 space-y-6
-            sm:col-start-1
-          `}
+              min-w-0 space-y-6
+              sm:col-start-1
+            `}
           >
             {isDigitalOnly && isLoggedIn ? (
               <DigitalOnlyStubRef
@@ -525,7 +522,6 @@ export function CheckoutClient() {
             )}
 
             <PaymentMethodSection
-              ref={paymentSectionRef}
               billingFormRef={billingFormRef}
               buildOrderPayload={buildOrderPayload}
               canShipToCountry={canShipToCountry}
@@ -535,6 +531,7 @@ export function CheckoutClient() {
               onCryptoTotalLabelChange={setCryptoTotalLabel}
               onPaymentMethodKeyChange={setSelectedPaymentMethodKey}
               onPaymentReadyChange={setCanPlaceOrder}
+              ref={paymentSectionRef}
               setNavigatingToPay={setNavigatingToPay}
               setValidationErrors={setValidationErrors}
               shippingFormRef={shippingFormRef}
@@ -546,9 +543,9 @@ export function CheckoutClient() {
           {/* Right: Your order only — sticky offset below header (max-h-24) so header doesn't overlap */}
           <div
             className={`
-            min-w-0 space-y-6
-            sm:sticky sm:top-28 sm:col-start-2 sm:self-start
-          `}
+              min-w-0 space-y-6
+              sm:sticky sm:top-28 sm:col-start-2 sm:self-start
+            `}
           >
             <OrderSummary
               appliedCoupon={appliedCoupon}
@@ -582,9 +579,10 @@ export function CheckoutClient() {
         {/* Sticky Place order bar — visible total + CTA so checkout is always obvious */}
         <div
           className={`
-            sticky bottom-0 z-10 mt-6 flex flex-nowrap items-center justify-between
-            gap-4 border-t border-border bg-background/95 px-4 py-4
-            backdrop-blur supports-[backdrop-filter]:bg-background/80
+            sticky bottom-0 z-10 mt-6 flex flex-nowrap items-center
+            justify-between gap-4 border-t border-border bg-background/95 px-4
+            py-4 backdrop-blur
+            supports-[backdrop-filter]:bg-background/80
           `}
         >
           <div className="flex min-w-0 shrink flex-col gap-0.5">
@@ -615,4 +613,11 @@ export function CheckoutClient() {
       </div>
     </div>
   );
+}
+
+/** Wallet address for tier-based discounts; uses stub hook so main bundle doesn't pull in @solana. */
+function useOptionalWalletAddress(): string | undefined {
+  const { publicKey } = useSolanaWallet();
+  const pk = publicKey as null | { toBase58?: () => string };
+  return pk?.toBase58?.() ?? undefined;
 }

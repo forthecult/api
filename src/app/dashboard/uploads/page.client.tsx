@@ -24,10 +24,10 @@ const BentoMediaGallery = dynamic(
     loading: () => (
       <div
         className={`
-        grid auto-rows-[60px] grid-cols-1 gap-3
-        sm:grid-cols-3
-        md:grid-cols-4
-      `}
+          grid auto-rows-[60px] grid-cols-1 gap-3
+          sm:grid-cols-3
+          md:grid-cols-4
+        `}
       >
         {Array.from({ length: 6 }).map((_, i) => (
           <Skeleton

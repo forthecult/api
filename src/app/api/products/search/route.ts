@@ -1,5 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 
+import type { ProductSearchResultItem } from "~/lib/product-search";
+
 import {
   isAmazonProductApiConfigured,
   searchAmazonProducts,
@@ -13,7 +15,6 @@ import {
   MAX_SEARCH_LIMIT,
   runProductSearch,
 } from "~/lib/product-search";
-import type { ProductSearchResultItem } from "~/lib/product-search";
 
 interface SearchBody {
   category?: string;
@@ -27,31 +28,11 @@ interface SearchBody {
   offset?: number;
   query?: string;
   sort?: "newest" | "popular" | "price_asc" | "price_desc" | "rating";
-  source?: "all" | "store" | "amazon";
+  source?: "all" | "amazon" | "store";
   subcategory?: string;
 }
 
-type SourceFilter = "all" | "store" | "amazon";
-
-function parseSource(s: string | null): SourceFilter {
-  if (s === "store" || s === "amazon" || s === "all") return s;
-  return "all";
-}
-
-/** Map marketplace products to the same shape as store results; id = asin for checkout. Public API uses "marketplace" (no vendor names). */
-function mapAmazonToSearchItem(
-  p: { asin: string; name: string; price: { usd: number }; imageUrl?: string; inStock: boolean; productUrl: string },
-): ProductSearchResultItem & { source: "marketplace"; productUrl: string } {
-  return {
-    id: p.asin,
-    name: p.name,
-    price: { crypto: {}, usd: p.price.usd },
-    imageUrl: p.imageUrl,
-    inStock: p.inStock,
-    source: "marketplace",
-    productUrl: p.productUrl,
-  };
-}
+type SourceFilter = "all" | "amazon" | "store";
 
 /**
  * Search products via GET (query params). When source=all (default), returns both store and marketplace products.
@@ -84,7 +65,10 @@ export async function GET(request: NextRequest) {
 
     const amazonConfigured = isAmazonProductApiConfigured();
     const wantStore = source === "all" || source === "store";
-    const wantAmazon = (source === "all" || source === "amazon") && amazonConfigured && (q?.length ?? 0) > 0;
+    const wantAmazon =
+      (source === "all" || source === "amazon") &&
+      amazonConfigured &&
+      (q?.length ?? 0) > 0;
 
     const halfLimit = wantAmazon && wantStore ? Math.ceil(limit / 2) : limit;
     const [storeResult, amazonResult] = await Promise.all([
@@ -95,9 +79,13 @@ export async function GET(request: NextRequest) {
             limit: halfLimit,
             offset,
             query: q,
-            sort: ["newest", "popular", "price_asc", "price_desc", "rating"].includes(
-              sort,
-            )
+            sort: [
+              "newest",
+              "popular",
+              "price_asc",
+              "price_desc",
+              "rating",
+            ].includes(sort)
               ? sort
               : "newest",
             subcategoryId: subcategory ?? undefined,
@@ -105,9 +93,9 @@ export async function GET(request: NextRequest) {
         : null,
       wantAmazon
         ? searchAmazonProducts({
-            query: q ?? "",
             limit: Math.min(10, halfLimit),
             page: Math.floor(offset / limit) + 1,
+            query: q ?? "",
           }).catch((err) => {
             console.warn("Marketplace search failed:", err);
             return { products: [], totalResultCount: 0 };
@@ -121,7 +109,9 @@ export async function GET(request: NextRequest) {
     }
 
     if (source === "amazon" && amazonConfigured) {
-      const products = (amazonResult?.products ?? []).map(mapAmazonToSearchItem);
+      const products = (amazonResult?.products ?? []).map(
+        mapAmazonToSearchItem,
+      );
       return withPublicApiCors(
         NextResponse.json({
           limit,
@@ -136,9 +126,12 @@ export async function GET(request: NextRequest) {
       ...p,
       source: "store" as const,
     }));
-    const amazonProducts = (amazonResult?.products ?? []).map(mapAmazonToSearchItem);
+    const amazonProducts = (amazonResult?.products ?? []).map(
+      mapAmazonToSearchItem,
+    );
     const merged = [...storeProducts, ...amazonProducts].slice(0, limit);
-    const total = (storeResult?.total ?? 0) + (amazonResult?.totalResultCount ?? 0);
+    const total =
+      (storeResult?.total ?? 0) + (amazonResult?.totalResultCount ?? 0);
 
     return withPublicApiCors(
       NextResponse.json({
@@ -220,9 +213,9 @@ export async function POST(request: NextRequest) {
         : null,
       wantAmazon
         ? searchAmazonProducts({
-            query: typeof body.query === "string" ? body.query.trim() : "",
             limit: Math.min(10, halfLimit),
             page: Math.floor(offset / limit) + 1,
+            query: typeof body.query === "string" ? body.query.trim() : "",
           }).catch((err) => {
             console.warn("Marketplace search failed:", err);
             return { products: [], totalResultCount: 0 };
@@ -236,7 +229,9 @@ export async function POST(request: NextRequest) {
     }
 
     if (source === "amazon" && amazonConfigured) {
-      const products = (amazonResult?.products ?? []).map(mapAmazonToSearchItem);
+      const products = (amazonResult?.products ?? []).map(
+        mapAmazonToSearchItem,
+      );
       return withPublicApiCors(
         NextResponse.json({
           limit,
@@ -251,9 +246,12 @@ export async function POST(request: NextRequest) {
       ...p,
       source: "store" as const,
     }));
-    const amazonProducts = (amazonResult?.products ?? []).map(mapAmazonToSearchItem);
+    const amazonProducts = (amazonResult?.products ?? []).map(
+      mapAmazonToSearchItem,
+    );
     const merged = [...storeProducts, ...amazonProducts].slice(0, limit);
-    const total = (storeResult?.total ?? 0) + (amazonResult?.totalResultCount ?? 0);
+    const total =
+      (storeResult?.total ?? 0) + (amazonResult?.totalResultCount ?? 0);
 
     return withPublicApiCors(
       NextResponse.json({
@@ -272,4 +270,29 @@ export async function POST(request: NextRequest) {
       ),
     );
   }
+}
+
+/** Map marketplace products to the same shape as store results; id = asin for checkout. Public API uses "marketplace" (no vendor names). */
+function mapAmazonToSearchItem(p: {
+  asin: string;
+  imageUrl?: string;
+  inStock: boolean;
+  name: string;
+  price: { usd: number };
+  productUrl: string;
+}): ProductSearchResultItem & { productUrl: string; source: "marketplace" } {
+  return {
+    id: p.asin,
+    imageUrl: p.imageUrl,
+    inStock: p.inStock,
+    name: p.name,
+    price: { crypto: {}, usd: p.price.usd },
+    productUrl: p.productUrl,
+    source: "marketplace",
+  };
+}
+
+function parseSource(s: null | string): SourceFilter {
+  if (s === "store" || s === "amazon" || s === "all") return s;
+  return "all";
 }

@@ -1,9 +1,9 @@
+import { eq } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 
-import { adminAuthFailureResponse, getAdminAuth } from "~/lib/admin-api-auth";
 import { db } from "~/db";
 import { aiCharacterQuotaTable } from "~/db/schema/ai-chat/tables";
-import { eq } from "drizzle-orm";
+import { adminAuthFailureResponse, getAdminAuth } from "~/lib/admin-api-auth";
 
 export async function GET(request: NextRequest) {
   const authResult = await getAdminAuth(request);

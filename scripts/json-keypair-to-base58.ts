@@ -7,8 +7,8 @@
  * Default path: ~/address.json
  */
 
-import { readFileSync } from "fs";
-import { resolve } from "path";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import bs58 from "bs58";
 
 const path = process.argv[2] ?? resolve(process.env.HOME ?? "", "address.json");

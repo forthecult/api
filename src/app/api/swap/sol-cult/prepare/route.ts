@@ -46,7 +46,7 @@ export async function POST(request: Request) {
   try {
     const connection = new Connection(getSolanaRpcUrlServer());
     const userPublicKey = new PublicKey(wallet);
-    const { transaction, estimatedCultRaw } = await buildSwapSolToCult(
+    const { estimatedCultRaw, transaction } = await buildSwapSolToCult(
       connection,
       userPublicKey,
       lamports,

@@ -81,7 +81,8 @@ export function useLoqateAutocomplete({
       const timeoutId = setTimeout(() => ac.abort(), LOQATE_FIND_TIMEOUT_MS);
       fetch(`/api/loqate/find?${params.toString()}`, { signal: ac.signal })
         .then((res) => (res.ok ? res.json() : { Items: [] }))
-        .then((raw: unknown) => { const data = raw as { Items?: LoqateFindItem[] };
+        .then((raw: unknown) => {
+          const data = raw as { Items?: LoqateFindItem[] };
           setSuggestions(data.Items ?? []);
           // Only open dropdown if input is focused (prevents auto-open on page load with pre-filled data)
           if (inputFocusedRef.current && (data.Items?.length ?? 0) > 0) {

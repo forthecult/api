@@ -167,7 +167,7 @@ export function ShopMegaMenu({
         align="start"
         className={`
           w-[min(95vw,1060px)] rounded-lg border border-[#2A2A2A] bg-[#1A1A1A]
- p-0 
+          p-0
         `}
         sideOffset={4}
       >
@@ -183,9 +183,9 @@ export function ShopMegaMenu({
               {/* Section header */}
               <div
                 className={`
-                mb-3 flex items-center gap-1.5 text-sm font-bold
-                tracking-[0.15em] text-[#C4873A] uppercase
-              `}
+                  mb-3 flex items-center gap-1.5 text-sm font-bold
+                  tracking-[0.15em] text-[#C4873A] uppercase
+                `}
               >
                 {section.icon}
                 {section.label}
@@ -218,9 +218,9 @@ export function ShopMegaMenu({
                         {cat.name}
                         <ArrowRight
                           className={`
-                          h-4 w-4 opacity-0 transition-opacity
-                          group-hover:opacity-100
-                        `}
+                            h-4 w-4 opacity-0 transition-opacity
+                            group-hover:opacity-100
+                          `}
                         />
                       </Link>
 
@@ -244,8 +244,8 @@ export function ShopMegaMenu({
                                   {(sub.productCount ?? 0) > 0 && (
                                     <span
                                       className={`
-                                      ml-1 text-sm tabular-nums opacity-40
-                                    `}
+                                        ml-1 text-sm tabular-nums opacity-40
+                                      `}
                                     >
                                       ({sub.productCount})
                                     </span>
@@ -284,9 +284,9 @@ export function ShopMegaMenu({
         {/* ── Bottom CTA bar ── */}
         <div
           className={`
-          flex items-center justify-between border-t border-[#2A2A2A]
-          bg-[#111111] px-5 py-2.5
-        `}
+            flex items-center justify-between border-t border-[#2A2A2A]
+            bg-[#111111] px-5 py-2.5
+          `}
         >
           <Link
             className={`
@@ -301,16 +301,16 @@ export function ShopMegaMenu({
             Browse All Products
             <ArrowRight
               className={`
-              h-4 w-4 transition-transform
-              group-hover:translate-x-0.5
-            `}
+                h-4 w-4 transition-transform
+                group-hover:translate-x-0.5
+              `}
             />
           </Link>
           <span
             className={`
-            hidden text-xs tracking-wider text-[#8A857E] uppercase
-            sm:inline
-          `}
+              hidden text-xs tracking-wider text-[#8A857E] uppercase
+              sm:inline
+            `}
           >
             Free worldwide shipping for CULT Members
           </span>

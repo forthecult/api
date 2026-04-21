@@ -140,7 +140,7 @@ export function SignUpPageClient() {
             </p>
           </div>
 
- <Card className="border-none ">
+          <Card className="border-none">
             <CardContent className="pt-2">
               <form className="space-y-4" onSubmit={handleSubmit}>
                 <div className="grid grid-cols-2 gap-2">

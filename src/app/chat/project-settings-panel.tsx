@@ -146,8 +146,7 @@ export function ProjectSettingsPanel({
         }
       })();
     const inferred = guessProviderFromUrl(url);
-    const provider =
-      inferred !== "other" ? inferred : linkProvider;
+    const provider = inferred !== "other" ? inferred : linkProvider;
     onKnowledgeChange([
       ...knowledgeItems,
       {
@@ -178,10 +177,7 @@ export function ProjectSettingsPanel({
           <div className="flex items-center gap-1.5">
             <h2 className="text-sm font-semibold">Instructions</h2>
             <span title="How the assistant should behave for this project">
-              <Info
-                aria-hidden
-                className="h-3.5 w-3.5 text-muted-foreground"
-              />
+              <Info aria-hidden className="h-3.5 w-3.5 text-muted-foreground" />
             </span>
           </div>
           <textarea
@@ -202,10 +198,7 @@ export function ProjectSettingsPanel({
           <div className="flex items-center gap-1.5">
             <h2 className="text-sm font-semibold">Project knowledge</h2>
             <span title="Documents and links the model can use as context">
-              <Info
-                aria-hidden
-                className="h-3.5 w-3.5 text-muted-foreground"
-              />
+              <Info aria-hidden className="h-3.5 w-3.5 text-muted-foreground" />
             </span>
           </div>
 
@@ -237,7 +230,10 @@ export function ProjectSettingsPanel({
               variant="outline"
             >
               {busy ? (
-                <Loader2 aria-hidden className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                <Loader2
+                  aria-hidden
+                  className="mr-1.5 h-3.5 w-3.5 animate-spin"
+                />
               ) : (
                 <Paperclip aria-hidden className="mr-1.5 h-3.5 w-3.5" />
               )}
@@ -252,9 +248,9 @@ export function ProjectSettingsPanel({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-56">
-                <DropdownMenuLabel className={`
-                  text-xs font-normal text-muted-foreground
-                `}>
+                <DropdownMenuLabel
+                  className={`text-xs font-normal text-muted-foreground`}
+                >
                   Paste a share link to a file or folder
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
@@ -315,12 +311,14 @@ export function ProjectSettingsPanel({
                         {it.url}
                       </p>
                     ) : it.needsExtraction ? (
-                      <p className={`
-                        text-xs text-amber-700
-                        dark:text-amber-400
-                      `}>
-                        Reference file — add a link or paste text in instructions
-                        for full content.
+                      <p
+                        className={`
+                          text-xs text-amber-700
+                          dark:text-amber-400
+                        `}
+                      >
+                        Reference file — add a link or paste text in
+                        instructions for full content.
                       </p>
                     ) : (
                       <p className="text-xs text-muted-foreground">

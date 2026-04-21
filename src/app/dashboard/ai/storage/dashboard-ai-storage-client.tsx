@@ -4,10 +4,7 @@ import { Info, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
-import {
-  applyAiFullImport,
-  buildAiFullExport,
-} from "~/lib/ai-full-export";
+import { applyAiFullImport, buildAiFullExport } from "~/lib/ai-full-export";
 import {
   buildAiExportPayload,
   clearAiLocalStorageOnly,
@@ -32,7 +29,7 @@ export function DashboardAiStorageClient() {
   const signedIn = Boolean(session?.user?.id);
 
   const [bytes, setBytes] = useState(0);
-  const [refresh, setRefresh] = useState(0);
+  const [_refresh, setRefresh] = useState(0);
   const [busy, setBusy] = useState(false);
   const [passphrase, setPassphrase] = useState("");
   const [cloudBackupAt, setCloudBackupAt] = useState<null | string>(null);
@@ -48,7 +45,7 @@ export function DashboardAiStorageClient() {
 
   useEffect(() => {
     refreshStats();
-  }, [refreshStats, refresh]);
+  }, [refreshStats]);
 
   useEffect(() => {
     if (!signedIn) {
@@ -72,7 +69,7 @@ export function DashboardAiStorageClient() {
     return () => {
       cancelled = true;
     };
-  }, [signedIn, refresh]);
+  }, [signedIn]);
 
   const pctOfQuota = Math.min(1, bytes / QUOTA_BYTES);
 
@@ -256,18 +253,22 @@ export function DashboardAiStorageClient() {
       </div>
 
       <section className="space-y-2">
-        <h2 className={`
-          text-xs font-semibold tracking-wide text-muted-foreground uppercase
-        `}>
+        <h2
+          className={`
+            text-xs font-semibold tracking-wide text-muted-foreground uppercase
+          `}
+        >
           Limits
         </h2>
         <div className="rounded-xl border border-border bg-card p-4">
-          <div className={`
-            flex flex-wrap items-center justify-between gap-2 border-b
-            border-border/80 py-2
-            first:pt-0
-            last:border-b-0 last:pb-0
-          `}>
+          <div
+            className={`
+              flex flex-wrap items-center justify-between gap-2 border-b
+              border-border/80 py-2
+              first:pt-0
+              last:border-b-0 last:pb-0
+            `}
+          >
             <div className="flex items-center gap-2 text-sm">
               <span className="font-medium">Chat</span>
               <span
@@ -282,12 +283,15 @@ export function DashboardAiStorageClient() {
               {signedIn ? "Account chat" : "Guest limits apply on /chat"}
             </span>
           </div>
-          <div className={`
-            flex flex-wrap items-center justify-between gap-2 py-2
-          `}>
+          <div
+            className={`flex flex-wrap items-center justify-between gap-2 py-2`}
+          >
             <div className="flex items-center gap-2 text-sm">
               <span className="font-medium">Image</span>
-              <span className="inline-flex text-muted-foreground" title="Vision uploads">
+              <span
+                className="inline-flex text-muted-foreground"
+                title="Vision uploads"
+              >
                 <Info className="h-3.5 w-3.5" />
               </span>
             </div>
@@ -297,23 +301,29 @@ export function DashboardAiStorageClient() {
       </section>
 
       <section className="space-y-2">
-        <h2 className={`
-          text-xs font-semibold tracking-wide text-muted-foreground uppercase
-        `}>
+        <h2
+          className={`
+            text-xs font-semibold tracking-wide text-muted-foreground uppercase
+          `}
+        >
           Local data
         </h2>
         <div className="space-y-4 rounded-xl border border-border bg-card p-4">
           <div>
-            <div className={`
-              flex flex-wrap items-center justify-between gap-2 text-sm
-            `}>
+            <div
+              className={`
+                flex flex-wrap items-center justify-between gap-2 text-sm
+              `}
+            >
               <span className="font-medium">Browser storage</span>
-              <span className={`
-                inline-flex items-center gap-1 text-muted-foreground
-              `}>
-                <span title="Estimate of local chat data"><Info aria-hidden className={`
-                  h-3.5 w-3.5
-                `} /></span>
+              <span
+                className={`
+                  inline-flex items-center gap-1 text-muted-foreground
+                `}
+              >
+                <span title="Estimate of local chat data">
+                  <Info aria-hidden className={`h-3.5 w-3.5`} />
+                </span>
                 {formatPct(pctOfQuota)}% of ~2 GB
               </span>
             </div>
@@ -337,16 +347,18 @@ export function DashboardAiStorageClient() {
             </p>
           </div>
 
-          <div className={`
-            flex flex-col gap-3 border-t border-border pt-4
-            sm:flex-row sm:items-start sm:justify-between
-          `}>
+          <div
+            className={`
+              flex flex-col gap-3 border-t border-border pt-4
+              sm:flex-row sm:items-start sm:justify-between
+            `}
+          >
             <div>
               <p className="font-medium">Delete all local chats</p>
               <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-                Removes chat sessions, messages, and projects from this
-                browser. Account memories and custom prompts are not
-                deleted—use the sections below or the cloud backup tools.
+                Removes chat sessions, messages, and projects from this browser.
+                Account memories and custom prompts are not deleted—use the
+                sections below or the cloud backup tools.
               </p>
             </div>
             <Button
@@ -361,10 +373,12 @@ export function DashboardAiStorageClient() {
             </Button>
           </div>
 
-          <div className={`
-            flex flex-col gap-3 border-t border-border pt-4
-            sm:flex-row sm:items-center sm:justify-between
-          `}>
+          <div
+            className={`
+              flex flex-col gap-3 border-t border-border pt-4
+              sm:flex-row sm:items-center sm:justify-between
+            `}
+          >
             <div>
               <p className="font-medium">Download</p>
               <p className="mt-1 max-w-xl text-sm text-muted-foreground">
@@ -382,16 +396,18 @@ export function DashboardAiStorageClient() {
             </Button>
           </div>
 
-          <div className={`
-            flex flex-col gap-3 border-t border-border pt-4
-            sm:flex-row sm:items-center sm:justify-between
-          `}>
+          <div
+            className={`
+              flex flex-col gap-3 border-t border-border pt-4
+              sm:flex-row sm:items-center sm:justify-between
+            `}
+          >
             <div>
               <p className="font-medium">Upload / restore</p>
               <p className="mt-1 max-w-xl text-sm text-muted-foreground">
-                Import a previously exported JSON file. Replaces local
-                browser data and, when the file includes server data, updates
-                your account.
+                Import a previously exported JSON file. Replaces local browser
+                data and, when the file includes server data, updates your
+                account.
               </p>
             </div>
             <div>
@@ -413,17 +429,19 @@ export function DashboardAiStorageClient() {
       </section>
 
       <section className="space-y-2">
-        <h2 className={`
-          text-xs font-semibold tracking-wide text-muted-foreground uppercase
-        `}>
+        <h2
+          className={`
+            text-xs font-semibold tracking-wide text-muted-foreground uppercase
+          `}
+        >
           Cloud backup (encrypted)
         </h2>
         <div className="space-y-4 rounded-xl border border-border bg-card p-4">
           <p className="text-sm text-muted-foreground">
             Stores one encrypted blob per account in our database (same as other
             dashboard data). You can replace it anytime. For DynamoDB-style
-            storage, the backend can map this to a dedicated store; the UI
-            stays the same.
+            storage, the backend can map this to a dedicated store; the UI stays
+            the same.
           </p>
           <div className="space-y-2">
             <Label htmlFor="ai-bak-pass">Passphrase</Label>

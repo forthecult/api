@@ -88,7 +88,8 @@ export function DashboardAiCloudClient() {
 
   const deleteConversation = async (id: string) => {
     if (!signedIn) return;
-    if (!window.confirm("Delete this saved conversation from the cloud?")) return;
+    if (!window.confirm("Delete this saved conversation from the cloud?"))
+      return;
     setBusy(true);
     try {
       const res = await fetch(
@@ -131,10 +132,12 @@ export function DashboardAiCloudClient() {
 
   if (!signedIn) {
     return (
-      <div className={`
-        rounded-xl border border-border bg-card p-6 text-sm
-        text-muted-foreground
-      `}>
+      <div
+        className={`
+          rounded-xl border border-border bg-card p-6 text-sm
+          text-muted-foreground
+        `}
+      >
         Sign in to manage cloud RAG chunks and saved conversations.
       </div>
     );
@@ -155,9 +158,11 @@ export function DashboardAiCloudClient() {
       </div>
 
       <section className="space-y-3">
-        <h2 className={`
-          text-xs font-semibold tracking-wide text-muted-foreground uppercase
-        `}>
+        <h2
+          className={`
+            text-xs font-semibold tracking-wide text-muted-foreground uppercase
+          `}
+        >
           RAG chunks
         </h2>
         <div className="rounded-xl border border-border bg-card p-4">
@@ -185,9 +190,11 @@ export function DashboardAiCloudClient() {
                     <p className="mt-1 text-sm whitespace-pre-wrap">
                       {c.contentPreview}
                     </p>
-                    <p className={`
-                      mt-1 font-mono text-[10px] text-muted-foreground
-                    `}>
+                    <p
+                      className={`
+                        mt-1 font-mono text-[10px] text-muted-foreground
+                      `}
+                    >
                       {c.id}
                     </p>
                   </div>
@@ -210,9 +217,11 @@ export function DashboardAiCloudClient() {
       </section>
 
       <section className="space-y-3">
-        <h2 className={`
-          text-xs font-semibold tracking-wide text-muted-foreground uppercase
-        `}>
+        <h2
+          className={`
+            text-xs font-semibold tracking-wide text-muted-foreground uppercase
+          `}
+        >
           Saved conversations
         </h2>
         <div className="rounded-xl border border-border bg-card p-4">
@@ -231,10 +240,12 @@ export function DashboardAiCloudClient() {
                   className="rounded-lg border border-border/80 p-3"
                   key={c.id}
                 >
-                  <div className={`
-                    flex flex-col gap-3
-                    sm:flex-row sm:items-end sm:justify-between
-                  `}>
+                  <div
+                    className={`
+                      flex flex-col gap-3
+                      sm:flex-row sm:items-end sm:justify-between
+                    `}
+                  >
                     <div className="min-w-0 flex-1 space-y-1">
                       <Label className="text-xs" htmlFor={`title-${c.id}`}>
                         Title

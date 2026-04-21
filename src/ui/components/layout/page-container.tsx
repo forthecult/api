@@ -63,18 +63,18 @@ export function SectionHeading({
     <div className={cn("mx-auto max-w-3xl space-y-4 text-center", className)}>
       <h2
         className={`
-        font-heading text-2xl font-bold tracking-tight text-[#F5F1EB]
-        md:text-3xl
-      `}
+          font-heading text-2xl font-bold tracking-tight text-[#F5F1EB]
+          md:text-3xl
+        `}
       >
         {title}
       </h2>
       {subtitle ? (
         <p
           className={`
-          text-base text-muted-foreground
-          md:text-lg
-        `}
+            text-base text-muted-foreground
+            md:text-lg
+          `}
         >
           {subtitle}
         </p>
@@ -99,20 +99,25 @@ export function SectionHeadingBlock({
     >
       <h2
         className={`
-        font-heading text-3xl leading-tight font-bold tracking-tight
-        text-[#F5F1EB]
-        md:text-4xl
-      `}
+          font-heading text-3xl leading-tight font-bold tracking-tight
+          text-[#F5F1EB]
+          md:text-4xl
+        `}
       >
         {title}
       </h2>
       <div
         className={`
-        mt-2 h-0.5 w-16 bg-gradient-to-r from-[#C4873A] to-[#C4873A]/30
-      `}
+          mt-2 h-0.5 w-16 bg-gradient-to-r from-[#C4873A] to-[#C4873A]/30
+        `}
       />
       {description ? (
-        <p className="mt-4 max-w-2xl text-center text-base text-muted-foreground md:text-lg">
+        <p
+          className={`
+            mt-4 max-w-2xl text-center text-base text-muted-foreground
+            md:text-lg
+          `}
+        >
           {description}
         </p>
       ) : null}

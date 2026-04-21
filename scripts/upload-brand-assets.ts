@@ -57,7 +57,7 @@ async function main() {
       console.error(msg);
       process.exit(1);
     }
-    console.log(msg + " Skipping brand asset upload.");
+    console.log(`${msg} Skipping brand asset upload.`);
     process.exit(0);
   }
 

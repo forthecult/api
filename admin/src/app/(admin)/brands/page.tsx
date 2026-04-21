@@ -177,9 +177,9 @@ export default function AdminBrandsPage() {
     return (
       <div
         className={`
-        rounded-lg border border-red-200 bg-red-50 p-4 text-red-800
-        dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
-      `}
+          rounded-lg border border-red-200 bg-red-50 p-4 text-red-800
+          dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
+        `}
       >
         {error}
         <Button
@@ -197,9 +197,9 @@ export default function AdminBrandsPage() {
     <div className="space-y-6">
       <div
         className={`
-        flex flex-col gap-4
-        sm:flex-row sm:items-center sm:justify-between
-      `}
+          flex flex-col gap-4
+          sm:flex-row sm:items-center sm:justify-between
+        `}
       >
         <h2 className="text-2xl font-semibold tracking-tight">
           Product Brands
@@ -214,17 +214,17 @@ export default function AdminBrandsPage() {
       <Card>
         <CardHeader
           className={`
-          flex flex-col gap-4
-          sm:flex-row sm:items-center sm:justify-between
-        `}
+            flex flex-col gap-4
+            sm:flex-row sm:items-center sm:justify-between
+          `}
         >
           <CardTitle className="sr-only">Product brands</CardTitle>
           <div className="relative max-w-md flex-1">
             <Search
               className={`
-              absolute top-1/2 left-3 size-4 -translate-y-1/2
-              text-muted-foreground
-            `}
+                absolute top-1/2 left-3 size-4 -translate-y-1/2
+                text-muted-foreground
+              `}
             />
             <input
               aria-label="Search brands"
@@ -267,9 +267,9 @@ export default function AdminBrandsPage() {
           {loading ? (
             <div
               className={`
-              flex min-h-[200px] items-center justify-center
-              text-muted-foreground
-            `}
+                flex min-h-[200px] items-center justify-center
+                text-muted-foreground
+              `}
             >
               Loading…
             </div>
@@ -280,9 +280,9 @@ export default function AdminBrandsPage() {
                   <thead>
                     <tr
                       className={`
-                      border-b bg-muted/50 text-left text-xs font-semibold
-                      tracking-wider text-muted-foreground uppercase
-                    `}
+                        border-b bg-muted/50 text-left text-xs font-semibold
+                        tracking-wider text-muted-foreground uppercase
+                      `}
                     >
                       {COLUMNS.map((col) => {
                         const isSortable =
@@ -372,9 +372,9 @@ export default function AdminBrandsPage() {
                       data.items.map((row) => (
                         <tr
                           className={`
-                          border-b
-                          last:border-0
-                        `}
+                            border-b
+                            last:border-0
+                          `}
                           key={row.id}
                         >
                           <td className="p-4 font-mono text-muted-foreground">
@@ -394,9 +394,9 @@ export default function AdminBrandsPage() {
                           <td className="p-4">
                             <div
                               className={`
-                              relative size-10 overflow-hidden rounded-md border
-                              bg-muted
-                            `}
+                                relative size-10 overflow-hidden rounded-md
+                                border bg-muted
+                              `}
                             >
                               {row.logoUrl ? (
                                 <Image
@@ -409,9 +409,9 @@ export default function AdminBrandsPage() {
                               ) : (
                                 <div
                                   className={`
-                                  flex size-full items-center justify-center
-                                  text-xs text-muted-foreground
-                                `}
+                                    flex size-full items-center justify-center
+                                    text-xs text-muted-foreground
+                                  `}
                                 >
                                   —
                                 </div>
@@ -507,8 +507,8 @@ export default function AdminBrandsPage() {
               {data.items.length > 0 && (
                 <div
                   className={`
-                  flex items-center justify-center gap-2 border-t p-4
-                `}
+                    flex items-center justify-center gap-2 border-t p-4
+                  `}
                 >
                   <Button
                     aria-label="Previous page"

@@ -9,10 +9,6 @@ import { adminAuthFailureResponse, getAdminAuth } from "~/lib/admin-api-auth";
 const DEFAULT_PAGE_SIZE = 20;
 const MAX_PAGE_SIZE = 100;
 
-function escapeLike(s: string): string {
-  return s.replace(/[%_\\]/g, (c) => `\\${c}`);
-}
-
 export async function GET(request: NextRequest) {
   try {
     const authResult = await getAdminAuth(request);
@@ -27,7 +23,8 @@ export async function GET(request: NextRequest) {
       Math.max(
         1,
         Number.parseInt(
-          request.nextUrl.searchParams.get("limit") ?? String(DEFAULT_PAGE_SIZE),
+          request.nextUrl.searchParams.get("limit") ??
+            String(DEFAULT_PAGE_SIZE),
           10,
         ),
       ),
@@ -127,10 +124,7 @@ export async function POST(request: NextRequest) {
       );
     }
     if (typeof body.body !== "string") {
-      return NextResponse.json(
-        { error: "body is required" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "body is required" }, { status: 400 });
     }
 
     const now = new Date();
@@ -170,6 +164,15 @@ export async function POST(request: NextRequest) {
   }
 }
 
+function escapeLike(s: string): string {
+  return s.replace(/[%_\\]/g, (c) => `\\${c}`);
+}
+
+function parseDateTime(s: string): Date | null {
+  const d = new Date(s);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
 function parseTags(value: null | string | undefined): string[] {
   if (value == null || value === "") return [];
   try {
@@ -186,9 +189,4 @@ function serializeTags(tags: null | string[] | undefined): null | string {
   if (!Array.isArray(tags) || tags.length === 0) return null;
   const cleaned = tags.filter((t) => typeof t === "string" && t.trim());
   return cleaned.length > 0 ? JSON.stringify(cleaned) : null;
-}
-
-function parseDateTime(s: string): Date | null {
-  const d = new Date(s);
-  return Number.isNaN(d.getTime()) ? null : d;
 }

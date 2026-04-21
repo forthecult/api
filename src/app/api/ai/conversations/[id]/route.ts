@@ -5,7 +5,9 @@ import { db } from "~/db";
 import { aiChatConversationTable } from "~/db/schema/ai-chat/tables";
 import { auth } from "~/lib/auth";
 
-interface Params { params: Promise<{ id: string }> }
+interface Params {
+  params: Promise<{ id: string }>;
+}
 
 export async function DELETE(request: Request, context: Params) {
   const session = await auth.api.getSession({ headers: request.headers });

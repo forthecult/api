@@ -24,8 +24,7 @@ export function HeaderSearch() {
     <form
       className={`
         flex h-9 max-w-[min(100vw-12rem,16rem)] min-w-[10rem] items-center gap-2
-        rounded-full border border-border bg-muted/40 px-3
-        transition-colors
+        rounded-full border border-border bg-muted/40 px-3 transition-colors
         focus-within:border-primary/50 focus-within:bg-muted/60
       `}
       onSubmit={handleSubmit}
@@ -40,7 +39,8 @@ export function HeaderSearch() {
       <Input
         aria-label="Search products"
         className={`
-          h-7 min-w-0 flex-1 border-0 bg-transparent px-0 py-0 text-sm shadow-none
+          h-7 min-w-0 flex-1 border-0 bg-transparent px-0 py-0 text-sm
+          shadow-none
           placeholder:text-muted-foreground
           focus-visible:ring-0
         `}

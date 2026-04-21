@@ -215,8 +215,8 @@ export default function AdminShippingOptionEditPage() {
     return (
       <div
         className={`
-        flex min-h-[200px] items-center justify-center text-muted-foreground
-      `}
+          flex min-h-[200px] items-center justify-center text-muted-foreground
+        `}
       >
         Loading…
       </div>
@@ -237,9 +237,9 @@ export default function AdminShippingOptionEditPage() {
         </Link>
         <div
           className={`
-          rounded-lg border border-red-200 bg-red-50 p-4 text-red-800
-          dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
-        `}
+            rounded-lg border border-red-200 bg-red-50 p-4 text-red-800
+            dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
+          `}
         >
           {error}
         </div>
@@ -273,9 +273,9 @@ export default function AdminShippingOptionEditPage() {
             {error && (
               <div
                 className={`
-                rounded-md border border-destructive/50 bg-destructive/10 px-3
-                py-2 text-sm text-destructive
-              `}
+                  rounded-md border border-destructive/50 bg-destructive/10 px-3
+                  py-2 text-sm text-destructive
+                `}
               >
                 {error}
               </div>
@@ -283,9 +283,9 @@ export default function AdminShippingOptionEditPage() {
 
             <div
               className={`
-              grid gap-6
-              sm:grid-cols-2
-            `}
+                grid gap-6
+                sm:grid-cols-2
+              `}
             >
               <div className="space-y-2">
                 <label className={labelClass} htmlFor="name">
@@ -343,9 +343,9 @@ export default function AdminShippingOptionEditPage() {
 
             <div
               className={`
-              grid gap-6
-              sm:grid-cols-2
-            `}
+                grid gap-6
+                sm:grid-cols-2
+              `}
             >
               <div className="space-y-2">
                 <label className={labelClass} htmlFor="minOrder">
@@ -379,9 +379,9 @@ export default function AdminShippingOptionEditPage() {
 
             <div
               className={`
-              grid gap-6
-              sm:grid-cols-2
-            `}
+                grid gap-6
+                sm:grid-cols-2
+              `}
             >
               <div className="space-y-2">
                 <label className={labelClass} htmlFor="minQty">
@@ -415,9 +415,9 @@ export default function AdminShippingOptionEditPage() {
 
             <div
               className={`
-              grid gap-6
-              sm:grid-cols-2
-            `}
+                grid gap-6
+                sm:grid-cols-2
+              `}
             >
               <div className="space-y-2">
                 <label className={labelClass} htmlFor="minWeight">
@@ -451,9 +451,9 @@ export default function AdminShippingOptionEditPage() {
 
             <div
               className={`
-              grid gap-6
-              sm:grid-cols-2
-            `}
+                grid gap-6
+                sm:grid-cols-2
+              `}
             >
               <div className="space-y-2">
                 <label className={labelClass} htmlFor="type">
@@ -563,9 +563,9 @@ export default function AdminShippingOptionEditPage() {
 
             <div
               className={`
-              grid gap-6
-              sm:grid-cols-2
-            `}
+                grid gap-6
+                sm:grid-cols-2
+              `}
             >
               <div className="space-y-2">
                 <label className={labelClass} htmlFor="sourceUrl">

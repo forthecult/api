@@ -54,7 +54,7 @@ export function StatsPageClient() {
         }
         const data = (await res.json()) as StoreStats;
         if (!cancelled) setStats(data);
-      } catch (e) {
+      } catch (_e) {
         if (!cancelled) setError("Failed to load stats");
       } finally {
         if (!cancelled) setLoading(false);
@@ -70,10 +70,10 @@ export function StatsPageClient() {
     return (
       <div
         className={`
-        grid gap-4
-        sm:grid-cols-2
-        lg:grid-cols-3
-      `}
+          grid gap-4
+          sm:grid-cols-2
+          lg:grid-cols-3
+        `}
       >
         {[1, 2, 3, 4, 5, 6].map((i) => (
           <Card key={i}>
@@ -167,8 +167,8 @@ export function StatsPageClient() {
           <Card key={card.title}>
             <CardHeader
               className={`
-              flex flex-row items-center justify-between space-y-0 pb-2
-            `}
+                flex flex-row items-center justify-between space-y-0 pb-2
+              `}
             >
               <CardTitle className="text-sm font-medium">
                 {card.title}

@@ -35,8 +35,9 @@ export function CategorySelect({
   disabled = false,
   emptyLabel,
   id = "categoryId",
-  inputClass = "w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-  labelClass,
+  inputClass:
+    _inputClass = "w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+  labelClass: _labelClass,
   onChange,
   options,
   placeholder = "Search categories…",
@@ -199,7 +200,6 @@ export function CategorySelect({
         {open ? (
           <input
             aria-label="Search categories"
-            autoFocus
             className={`
               min-w-0 flex-1 bg-transparent
               focus:outline-none
@@ -242,7 +242,6 @@ export function CategorySelect({
           `}
           id={`${id}-listbox`}
           ref={listRef}
-          role="listbox"
         >
           <li
             aria-selected={value === ""}
@@ -254,7 +253,6 @@ export function CategorySelect({
             data-index={0}
             onClick={() => handleSelect("")}
             onMouseEnter={() => setFocusedIndex(0)}
-            role="option"
           >
             None
           </li>
@@ -270,7 +268,6 @@ export function CategorySelect({
               key={c.id}
               onClick={() => handleSelect(c.id)}
               onMouseEnter={() => setFocusedIndex(i + 1)}
-              role="option"
             >
               {displayName(c)}
             </li>

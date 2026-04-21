@@ -22,7 +22,7 @@ const BASE =
 // For staging/production (non-localhost), require ADMIN_SEED_PASSWORD so the secret isn't in the repo.
 const isLocal =
   BASE.startsWith("http://localhost:") || BASE.startsWith("http://127.0.0.1:");
-const PASSWORD =
+const _PASSWORD =
   process.env.ADMIN_SEED_PASSWORD ?? (isLocal ? "Admin123!" : undefined);
 
 async function main() {

@@ -57,7 +57,7 @@ export function ProductActions({
 }: ProductActionsProps) {
   const { addItem } = useCart();
   const { selectedCountry: footerCountry } = useCountryCurrency();
-  const { shippingCountry } = useShippingCountry();
+  const { shippingCountry: _shippingCountry } = useShippingCountry();
   const { addToWishlist, isInWishlist, removeFromWishlist } = useWishlist();
 
   const [quantity, setQuantity] = React.useState(1);
@@ -142,6 +142,7 @@ export function ProductActions({
     price,
     quantity,
     variantRequired,
+    variantLabel,
   ]);
 
   const handleWishlistToggle = React.useCallback(async () => {
@@ -166,15 +167,15 @@ export function ProductActions({
     return (
       <div
         className={`
-        flex flex-col gap-4
-        sm:flex-row sm:items-center
-      `}
+          flex flex-col gap-4
+          sm:flex-row sm:items-center
+        `}
       >
         <div
           className={`
-          flex flex-1 flex-col gap-4
-          sm:flex-row sm:items-center
-        `}
+            flex flex-1 flex-col gap-4
+            sm:flex-row sm:items-center
+          `}
         >
           {/* Quantity controls shown but disabled for layout consistency */}
           <div className="flex items-center opacity-60">
@@ -241,9 +242,9 @@ export function ProductActions({
   return (
     <div
       className={`
-      flex flex-col gap-4
-      sm:flex-row sm:items-center
-    `}
+        flex flex-col gap-4
+        sm:flex-row sm:items-center
+      `}
     >
       {/* Quantity */}
       <div className="flex items-center">

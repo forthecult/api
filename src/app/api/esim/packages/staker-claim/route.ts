@@ -23,19 +23,19 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const countryIdParam = searchParams.get("country")?.trim();
     const regionIdParam = searchParams.get("region")?.trim();
-    const packageType = (searchParams.get("package_type") as
-      | "DATA-ONLY"
-      | "DATA-VOICE-SMS"
-      | null) ?? "DATA-ONLY";
+    const packageType =
+      (searchParams.get("package_type") as
+        | "DATA-ONLY"
+        | "DATA-VOICE-SMS"
+        | null) ?? "DATA-ONLY";
 
     const markup = Number(process.env.ESIM_MARKUP_PERCENT) || 30;
 
-    const result =
-      countryIdParam
-        ? await getEsimCountryPackages(Number(countryIdParam), packageType, 1)
-        : regionIdParam
-          ? await getEsimContinentPackages(Number(regionIdParam), packageType, 1)
-          : await getEsimGlobalPackages(packageType);
+    const result = countryIdParam
+      ? await getEsimCountryPackages(Number(countryIdParam), packageType, 1)
+      : regionIdParam
+        ? await getEsimContinentPackages(Number(regionIdParam), packageType, 1)
+        : await getEsimGlobalPackages(packageType);
 
     const enriched = await Promise.all(
       result.data.map(async (pkg) => {

@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 
 import { getServerVeniceApiKey } from "~/lib/ai/venice";
 
-type Params = { params: Promise<{ slug: string }> };
+interface Params {
+  params: Promise<{ slug: string }>;
+}
 
 export async function GET(_request: Request, context: Params) {
   const key = getServerVeniceApiKey();

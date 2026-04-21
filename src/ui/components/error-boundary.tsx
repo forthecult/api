@@ -62,15 +62,15 @@ export class ErrorBoundary extends Component<
       return (
         <div
           className={`
-          flex min-h-[400px] flex-col items-center justify-center p-8
-        `}
+            flex min-h-[400px] flex-col items-center justify-center p-8
+          `}
         >
           <div className="flex flex-col items-center gap-4 text-center">
             <div
               className={`
-              flex h-16 w-16 items-center justify-center rounded-full
-              bg-destructive/10
-            `}
+                flex h-16 w-16 items-center justify-center rounded-full
+                bg-destructive/10
+              `}
             >
               <AlertTriangle className="h-8 w-8 text-destructive" />
             </div>
@@ -86,8 +86,8 @@ export class ErrorBoundary extends Component<
                 </summary>
                 <pre
                   className={`
-                  mt-2 max-h-40 overflow-auto rounded-md bg-muted p-3 text-xs
-                `}
+                    mt-2 max-h-40 overflow-auto rounded-md bg-muted p-3 text-xs
+                  `}
                 >
                   {this.state.error.message}
                   {this.state.errorInfo?.componentStack}

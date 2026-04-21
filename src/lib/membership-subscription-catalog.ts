@@ -1,12 +1,8 @@
 import "server-only";
-
 import { and, eq, sql } from "drizzle-orm";
 
 import { db } from "~/db";
-import {
-  subscriptionOfferTable,
-  subscriptionPlanTable,
-} from "~/db/schema";
+import { subscriptionOfferTable, subscriptionPlanTable } from "~/db/schema";
 import { SUBSCRIPTION_PRICES } from "~/lib/membership-tiers";
 
 /** Single catalog offer: paid membership (BASE / PRIME / APEX). */
@@ -20,17 +16,6 @@ export type MembershipBillingInterval = "annual" | "monthly";
 export interface MembershipPlanMetadata {
   billingInterval: MembershipBillingInterval;
   membershipTier: number;
-}
-
-export function parseMembershipPlanMetadata(
-  row: typeof subscriptionPlanTable.$inferSelect,
-): MembershipPlanMetadata | null {
-  const m = row.metadata as Record<string, unknown> | null | undefined;
-  const tier = m?.membershipTier;
-  const bi = m?.billingInterval;
-  if (typeof tier !== "number" || tier < 1 || tier > 3) return null;
-  if (bi !== "monthly" && bi !== "annual") return null;
-  return { billingInterval: bi, membershipTier: tier };
 }
 
 /** Ensures `subscription_offer` + six `subscription_plan` rows exist for membership. Idempotent. */
@@ -60,9 +45,7 @@ export async function ensureMembershipCatalogSeeded(): Promise<void> {
     const tier = price.tierId;
     for (const interval of ["monthly", "annual"] as const) {
       const planId =
-        interval === "monthly"
-          ? `mem_plan_${tier}_m`
-          : `mem_plan_${tier}_a`;
+        interval === "monthly" ? `mem_plan_${tier}_m` : `mem_plan_${tier}_a`;
       const intervalUnit = interval === "monthly" ? "month" : "year";
       const priceCents =
         interval === "monthly"
@@ -70,12 +53,12 @@ export async function ensureMembershipCatalogSeeded(): Promise<void> {
           : Math.round(price.annualUsd * 100);
       const stripePriceId =
         interval === "monthly"
-          ? price.monthlyPriceId ?? null
-          : price.annualPriceId ?? null;
+          ? (price.monthlyPriceId ?? null)
+          : (price.annualPriceId ?? null);
       const paypalPlanId =
         interval === "monthly"
-          ? price.paypalMonthlyPlanId ?? null
-          : price.paypalAnnualPlanId ?? null;
+          ? (price.paypalMonthlyPlanId ?? null)
+          : (price.paypalAnnualPlanId ?? null);
 
       const [existing] = await db
         .select({ id: subscriptionPlanTable.id })
@@ -100,9 +83,9 @@ export async function ensureMembershipCatalogSeeded(): Promise<void> {
             metadata: metadataJson,
             offerId: MEMBERSHIP_OFFER_ID,
             payCryptoManual: false,
+            paypalPlanId,
             payPaypal: Boolean(paypalPlanId),
             payStripe: Boolean(stripePriceId),
-            paypalPlanId,
             priceCents,
             published: true,
             sortOrder: tier * 10 + (interval === "monthly" ? 0 : 1),
@@ -121,9 +104,9 @@ export async function ensureMembershipCatalogSeeded(): Promise<void> {
           metadata: metadataJson,
           offerId: MEMBERSHIP_OFFER_ID,
           payCryptoManual: false,
+          paypalPlanId,
           payPaypal: Boolean(paypalPlanId),
           payStripe: Boolean(stripePriceId),
-          paypalPlanId,
           priceCents,
           published: true,
           sortOrder: tier * 10 + (interval === "monthly" ? 0 : 1),
@@ -160,4 +143,15 @@ export async function findMembershipPlanByTierInterval(
     )
     .limit(1);
   return row ?? null;
+}
+
+export function parseMembershipPlanMetadata(
+  row: typeof subscriptionPlanTable.$inferSelect,
+): MembershipPlanMetadata | null {
+  const m = row.metadata as null | Record<string, unknown> | undefined;
+  const tier = m?.membershipTier;
+  const bi = m?.billingInterval;
+  if (typeof tier !== "number" || tier < 1 || tier > 3) return null;
+  if (bi !== "monthly" && bi !== "annual") return null;
+  return { billingInterval: bi, membershipTier: tier };
 }

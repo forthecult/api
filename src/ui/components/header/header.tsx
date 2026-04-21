@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, Menu, Search, ShoppingCart, UserIcon } from "lucide-react";
+import { ChevronDown, Menu, Search, ShoppingCart } from "lucide-react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
@@ -45,24 +45,30 @@ const ShopMegaMenu = dynamic(
       default: m.ShopMegaMenu,
     })),
   {
-    ssr: false,
     // Match the real trigger (Shop + chevron) so no flash when chunk loads
     loading: () => (
       <span
         className={cn(
-          "accent-underline inline-flex items-center gap-1 py-1.5 text-base font-medium tracking-wider text-[#8A857E]",
-          "transition-colors hover:text-[#C4873A]",
+          `
+            accent-underline inline-flex items-center gap-1 py-1.5 text-base
+            font-medium tracking-wider text-[#8A857E]
+          `,
+          `
+            transition-colors
+            hover:text-[#C4873A]
+          `,
         )}
       >
         Shop
         <ChevronDown aria-hidden className="h-5 w-5" />
       </span>
     ),
+    ssr: false,
   },
 );
 
 /** Throttle function for scroll handlers */
-function throttle<T extends (...args: unknown[]) => void>(
+function _throttle<T extends (...args: unknown[]) => void>(
   fn: T,
   delay: number,
 ): T {
@@ -243,56 +249,71 @@ export function Header({ isAdmin: isAdminProp, showAuth = true }: HeaderProps) {
     try {
       const cached = sessionStorage.getItem(NOTIF_CACHE_KEY);
       if (cached !== null) return cached === "1";
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     return null;
   });
 
-  const fetchNotificationPrefs = useCallback((forceRefresh = false): (() => void) | undefined => {
-    if (!user?.id) {
-      setWebsiteNotificationsOn(null);
-      try { sessionStorage.removeItem(NOTIF_CACHE_KEY); } catch { /* ignore */ }
-      return undefined;
-    }
-
-    // Use cached value unless force-refreshing (e.g. after settings change)
-    if (!forceRefresh) {
-      try {
-        const cached = sessionStorage.getItem(NOTIF_CACHE_KEY);
-        if (cached !== null) {
-          setWebsiteNotificationsOn(cached === "1");
-          return undefined;
+  const fetchNotificationPrefs = useCallback(
+    (forceRefresh = false): (() => void) | undefined => {
+      if (!user?.id) {
+        setWebsiteNotificationsOn(null);
+        try {
+          sessionStorage.removeItem(NOTIF_CACHE_KEY);
+        } catch {
+          /* ignore */
         }
-      } catch { /* ignore */ }
-    }
+        return undefined;
+      }
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
+      // Use cached value unless force-refreshing (e.g. after settings change)
+      if (!forceRefresh) {
+        try {
+          const cached = sessionStorage.getItem(NOTIF_CACHE_KEY);
+          if (cached !== null) {
+            setWebsiteNotificationsOn(cached === "1");
+            return undefined;
+          }
+        } catch {
+          /* ignore */
+        }
+      }
 
-    fetch("/api/user/notifications", {
-      credentials: "include",
-      signal: controller.signal,
-    })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((raw: unknown) => {
-        const data = raw as null | {
-          marketing?: { website?: boolean };
-          transactional?: { website?: boolean };
-        };
-        if (!data) return;
-        const transactional = data.transactional?.website ?? true;
-        const marketing = data.marketing?.website ?? false;
-        const enabled = Boolean(transactional || marketing);
-        setWebsiteNotificationsOn(enabled);
-        try { sessionStorage.setItem(NOTIF_CACHE_KEY, enabled ? "1" : "0"); } catch { /* ignore */ }
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+      fetch("/api/user/notifications", {
+        credentials: "include",
+        signal: controller.signal,
       })
-      .catch(() => setWebsiteNotificationsOn(null))
-      .finally(() => clearTimeout(timeoutId));
+        .then((res) => (res.ok ? res.json() : null))
+        .then((raw: unknown) => {
+          const data = raw as null | {
+            marketing?: { website?: boolean };
+            transactional?: { website?: boolean };
+          };
+          if (!data) return;
+          const transactional = data.transactional?.website ?? true;
+          const marketing = data.marketing?.website ?? false;
+          const enabled = Boolean(transactional || marketing);
+          setWebsiteNotificationsOn(enabled);
+          try {
+            sessionStorage.setItem(NOTIF_CACHE_KEY, enabled ? "1" : "0");
+          } catch {
+            /* ignore */
+          }
+        })
+        .catch(() => setWebsiteNotificationsOn(null))
+        .finally(() => clearTimeout(timeoutId));
 
-    return () => {
-      clearTimeout(timeoutId);
-      controller.abort();
-    };
-  }, [user?.id]);
+      return () => {
+        clearTimeout(timeoutId);
+        controller.abort();
+      };
+    },
+    [user?.id],
+  );
 
   useEffect(() => {
     const cleanup = fetchNotificationPrefs();
@@ -451,9 +472,9 @@ export function Header({ isAdmin: isAdminProp, showAuth = true }: HeaderProps) {
           {/* Left: desktop = logo + nav; mobile = hamburger + logo. Same container padding as dashboard so content aligns. */}
           <div
             className={`
-            flex items-center gap-4
-            md:gap-6
-          `}
+              flex items-center gap-4
+              md:gap-6
+            `}
           >
             {!isCheckout && (
               <Button
@@ -505,9 +526,9 @@ export function Header({ isAdmin: isAdminProp, showAuth = true }: HeaderProps) {
             {!isCheckout && (
               <nav
                 className={`
-                hidden
-                md:flex
-              `}
+                  hidden
+                  md:flex
+                `}
               >
                 <ul className="flex items-center gap-6">
                   {authPending ? (
@@ -542,7 +563,11 @@ export function Header({ isAdmin: isAdminProp, showAuth = true }: HeaderProps) {
                         ) : (
                           <Link
                             className={cn(
-                              "accent-underline text-base font-medium tracking-wider transition-colors hover:text-primary",
+                              `
+                                accent-underline text-base font-medium
+                                tracking-wider transition-colors
+                                hover:text-primary
+                              `,
                               isShopActive
                                 ? "font-semibold text-primary"
                                 : "text-muted-foreground",
@@ -608,9 +633,9 @@ export function Header({ isAdmin: isAdminProp, showAuth = true }: HeaderProps) {
           {/* Right: search, user, cart; on mobile same order, no NotificationsWidget */}
           <div
             className={`
-            flex items-center gap-2
-            md:gap-4
-          `}
+              flex items-center gap-2
+              md:gap-4
+            `}
           >
             {authPending ? (
               <>
@@ -623,9 +648,9 @@ export function Header({ isAdmin: isAdminProp, showAuth = true }: HeaderProps) {
                 {!isCheckout && (
                   <div
                     className={`
-                    hidden
-                    md:block
-                  `}
+                      hidden
+                      md:block
+                    `}
                   >
                     <HeaderSearch />
                   </div>
@@ -634,9 +659,9 @@ export function Header({ isAdmin: isAdminProp, showAuth = true }: HeaderProps) {
                 {!isCheckout && user && websiteNotificationsOn === true && (
                   <div
                     className={`
-                    hidden
-                    md:flex
-                  `}
+                      hidden
+                      md:flex
+                    `}
                   >
                     <NotificationsWidget />
                   </div>
@@ -644,9 +669,9 @@ export function Header({ isAdmin: isAdminProp, showAuth = true }: HeaderProps) {
                 {showAuth && !isCheckout && (user || !isCheckout) && (
                   <div
                     className={`
-                    hidden
-                    md:block
-                  `}
+                      hidden
+                      md:block
+                    `}
                   >
                     {user ? (
                       <HeaderUserDropdown

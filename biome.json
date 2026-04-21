@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.3.14/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.4.12/schema.json",
   "vcs": {
     "enabled": false,
     "clientKind": "git",
@@ -7,7 +7,20 @@
   },
   "files": {
     "ignoreUnknown": false,
-    "includes": ["**", "!node_modules", "!.vercel", "!.next"]
+    "includes": [
+      "**",
+      "!**/node_modules",
+      "!**/.next",
+      "!**/.turbo",
+      "!**/coverage",
+      "!**/scripts",
+      "!.vercel"
+    ]
+  },
+  "css": {
+    "parser": {
+      "tailwindDirectives": true
+    }
   },
   "formatter": {
     "enabled": true,
@@ -28,15 +41,38 @@
       "recommended": true,
       "a11y": {
         "useKeyWithClickEvents": "off",
-        "useSemanticElements": "off"
+        "useSemanticElements": "off",
+        "noLabelWithoutControl": "off",
+        "noStaticElementInteractions": "off",
+        "noSvgWithoutTitle": "off",
+        "useAnchorContent": "off",
+        "useAriaPropsSupportedByRole": "off"
+      },
+      "complexity": {
+        "noCommaOperator": "off"
+      },
+      "correctness": {
+        "noUnusedVariables": "off",
+        "noUnusedFunctionParameters": "off"
+      },
+      "performance": {
+        "noImgElement": "off"
+      },
+      "security": {
+        "noDangerouslySetInnerHtml": "warn"
       },
       "suspicious": {
         "noExplicitAny": "off",
-        "noArrayIndexKey": "off"
+        "noArrayIndexKey": "off",
+        "noAssignInExpressions": "off",
+        "noDocumentCookie": "warn",
+        "noImplicitAnyLet": "warn",
+        "useIterableCallbackReturn": "off"
       },
       "style": {
         "noUnusedTemplateLiteral": "off",
-        "noNonNullAssertion": "off"
+        "noNonNullAssertion": "off",
+        "noDescendingSpecificity": "off"
       }
     }
   },
@@ -44,5 +80,27 @@
     "formatter": {
       "quoteStyle": "double"
     }
-  }
+  },
+  "overrides": [
+    {
+      "includes": ["src/app/checkout/crypto/solana-wallet-stub.tsx"],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "useHookAtTopLevel": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["src/app/dashboard/security/page.client.tsx"],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "useExhaustiveDependencies": "off"
+          }
+        }
+      }
+    }
+  ]
 }

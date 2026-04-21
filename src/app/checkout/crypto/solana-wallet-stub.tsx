@@ -1,7 +1,8 @@
 "use client";
 
-import * as React from "react";
 import type { ReactNode } from "react";
+
+import * as React from "react";
 
 /**
  * Stub wallet/connection state so useSolanaWallet/useSolanaConnection work before
@@ -19,10 +20,10 @@ declare global {
 }
 
 /** PublicKey-like (real adapter uses @solana/web3.js PublicKey). Stub uses null. */
-export type StubPublicKey = { toBase58(): string } | null;
+export type StubPublicKey = null | { toBase58(): string };
 
 /** Wallet-like (real has adapter: Adapter with icon, name). Stub uses null. */
-export type StubWallet = { adapter: { icon?: string; name?: string } } | null;
+export type StubWallet = null | { adapter: { icon?: string; name?: string } };
 
 /** Minimal wallet-like shape so stub and real context both type-check (real has Wallet[]). */
 export interface StubWalletState {
@@ -30,8 +31,8 @@ export interface StubWalletState {
   connect: () => Promise<void>;
   connected: boolean;
   connecting: boolean;
-  disconnecting: boolean;
   disconnect: () => Promise<void>;
+  disconnecting: boolean;
   publicKey: StubPublicKey;
   select: (name?: string) => void;
   /** matches @solana/wallet-adapter sendTransaction(transaction, connection, options) */
@@ -41,12 +42,15 @@ export interface StubWalletState {
     options?: unknown,
   ) => Promise<string>;
   signAllTransactions: undefined;
+  signIn: undefined;
   /** real adapter provides (message: Uint8Array) => Promise<...>; stub leaves undefined */
   signMessage?: (message: Uint8Array) => Promise<unknown>;
-  signIn: undefined;
   signTransaction: undefined;
   wallet: StubWallet;
-  wallets: Array<{ adapter: { icon?: string; name?: string }; readyState?: number | string }>;
+  wallets: {
+    adapter: { icon?: string; name?: string };
+    readyState?: number | string;
+  }[];
 }
 
 const STUB_WALLET: StubWalletState = {
@@ -54,8 +58,8 @@ const STUB_WALLET: StubWalletState = {
   connect: () => Promise.resolve(),
   connected: false,
   connecting: false,
-  disconnecting: false,
   disconnect: () => Promise.resolve(),
+  disconnecting: false,
   publicKey: null,
   select: (_name?: string) => {},
   sendTransaction: async (_transaction, _connection, _options) => {
@@ -72,24 +76,9 @@ const STUB_WALLET: StubWalletState = {
 const STUB_CONNECTION: { connection?: unknown } = { connection: null };
 
 const StubWalletContext = React.createContext<StubWalletState>(STUB_WALLET);
-const StubConnectionContext =
-  React.createContext<{ connection?: unknown }>(STUB_CONNECTION);
-
-export function useSolanaWallet(): StubWalletState {
-  const real = typeof window !== "undefined" && window.__SOLANA_WALLET_CONTEXT
-    ? React.useContext(window.__SOLANA_WALLET_CONTEXT)
-    : undefined;
-  const stub = React.useContext(StubWalletContext);
-  return (real ?? stub) as StubWalletState;
-}
-
-export function useSolanaConnection(): { connection?: unknown } {
-  const real = typeof window !== "undefined" && window.__SOLANA_CONNECTION_CONTEXT
-    ? React.useContext(window.__SOLANA_CONNECTION_CONTEXT)
-    : undefined;
-  const stub = React.useContext(StubConnectionContext);
-  return real ?? stub;
-}
+const StubConnectionContext = React.createContext<{ connection?: unknown }>(
+  STUB_CONNECTION,
+);
 
 /**
  * Minimal provider so useSolanaWallet/useSolanaConnection work before the real
@@ -103,4 +92,22 @@ export function SolanaWalletStub({ children }: { children: ReactNode }) {
       </StubWalletContext.Provider>
     </StubConnectionContext.Provider>
   );
+}
+
+export function useSolanaConnection(): { connection?: unknown } {
+  const real =
+    typeof window !== "undefined" && window.__SOLANA_CONNECTION_CONTEXT
+      ? React.useContext(window.__SOLANA_CONNECTION_CONTEXT)
+      : undefined;
+  const stub = React.useContext(StubConnectionContext);
+  return real ?? stub;
+}
+
+export function useSolanaWallet(): StubWalletState {
+  const real =
+    typeof window !== "undefined" && window.__SOLANA_WALLET_CONTEXT
+      ? React.useContext(window.__SOLANA_WALLET_CONTEXT)
+      : undefined;
+  const stub = React.useContext(StubWalletContext);
+  return (real ?? stub) as StubWalletState;
 }

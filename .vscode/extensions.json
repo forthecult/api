@@ -1,10 +1,10 @@
 {
   "recommendations": [
-    "usernamehw.errorlens",
-    "aaron-bond.better-comments",
     "biomejs.biome",
     "dbaeumer.vscode-eslint",
-    "chunsen.bracket-select",
+    "bradlc.vscode-tailwindcss",
+    "usernamehw.errorlens",
+    "aaron-bond.better-comments",
     "davidanson.vscode-markdownlint",
     "yzhang.markdown-all-in-one"
   ]

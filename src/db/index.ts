@@ -6,7 +6,6 @@ import { DB_DEV_LOGGER } from "~/app";
 
 import * as schema from "./schema";
 
-// Ensure the database URL is set
 if (!process.env.DATABASE_URL) {
   throw new Error("🔴 DATABASE_URL environment variable is not set");
 }

@@ -8,10 +8,7 @@ import { desc, eq } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
-import {
-  subscriptionOfferTable,
-  subscriptionPlanTable,
-} from "~/db/schema";
+import { subscriptionOfferTable, subscriptionPlanTable } from "~/db/schema";
 import { adminAuthFailureResponse, getAdminAuth } from "~/lib/admin-api-auth";
 
 export async function GET(request: NextRequest) {
@@ -68,9 +65,9 @@ export async function POST(request: NextRequest) {
         intervalCount?: number;
         intervalUnit: string;
         payCryptoManual?: boolean;
+        paypalPlanId?: string;
         payPaypal?: boolean;
         payStripe?: boolean;
-        paypalPlanId?: string;
         priceCents: number;
         published?: boolean;
         sortOrder?: number;
@@ -93,7 +90,10 @@ export async function POST(request: NextRequest) {
       .where(eq(subscriptionOfferTable.slug, slug))
       .limit(1);
     if (dup) {
-      return NextResponse.json({ error: "Slug already exists" }, { status: 409 });
+      return NextResponse.json(
+        { error: "Slug already exists" },
+        { status: 409 },
+      );
     }
 
     const offerId = createId();
@@ -118,9 +118,9 @@ export async function POST(request: NextRequest) {
         intervalUnit: p.intervalUnit,
         offerId,
         payCryptoManual: p.payCryptoManual ?? false,
+        paypalPlanId: p.paypalPlanId ?? null,
         payPaypal: p.payPaypal ?? false,
         payStripe: p.payStripe ?? false,
-        paypalPlanId: p.paypalPlanId ?? null,
         priceCents: p.priceCents,
         published: p.published ?? true,
         sortOrder: p.sortOrder ?? 0,

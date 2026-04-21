@@ -5,39 +5,27 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 
 import { cn } from "~/lib/cn";
+import { DashboardNavContent } from "~/ui/components/dashboard-nav-content";
 import { Sheet, SheetContent } from "~/ui/primitives/sheet";
 
-import { DashboardNavContent } from "~/ui/components/dashboard-nav-content";
 import { SidebarLoader } from "./sidebar-loader";
 
 const PATH_TITLES: Record<string, string> = {
   "/dashboard": "Dashboard",
-  "/dashboard/orders": "My Orders",
-  "/dashboard/wishlist": "Wishlist",
-  "/dashboard/support-tickets": "Support Tickets",
-  "/dashboard/affiliate": "Affiliate",
-  "/dashboard/esim": "My eSIMs",
-  "/dashboard/ai": "AI",
-  "/dashboard/profile": "Profile Info",
-  "/dashboard/settings": "Notifications",
-  "/dashboard/security": "Security",
   "/dashboard/addresses": "Addresses",
-  "/dashboard/payment-methods": "Payment Methods",
+  "/dashboard/affiliate": "Affiliate",
+  "/dashboard/ai": "AI",
   "/dashboard/billing": "Billing",
+  "/dashboard/esim": "My eSIMs",
+  "/dashboard/orders": "My Orders",
+  "/dashboard/payment-methods": "Payment Methods",
+  "/dashboard/profile": "Profile Info",
+  "/dashboard/security": "Security",
+  "/dashboard/settings": "Notifications",
+  "/dashboard/support-tickets": "Support Tickets",
   "/dashboard/uploads": "Uploads",
+  "/dashboard/wishlist": "Wishlist",
 };
-
-function getDashboardTitle(pathname: string | null): string {
-  if (!pathname) return "Dashboard";
-  // Exact match first
-  if (PATH_TITLES[pathname]) return PATH_TITLES[pathname];
-  if (pathname.startsWith("/dashboard/ai")) return "AI";
-  // Support ticket detail
-  if (pathname.startsWith("/dashboard/support-tickets/")) return "Support Ticket";
-  // Order detail
-  if (pathname.startsWith("/dashboard/orders/")) return "Order";
-  return "Dashboard";
-}
 
 export function DashboardLayoutClient({
   children,
@@ -58,7 +46,12 @@ export function DashboardLayoutClient({
         )}
       >
         {/* Sidebar: hidden on mobile */}
-        <div className="hidden shrink-0 md:block">
+        <div
+          className={`
+            hidden shrink-0
+            md:block
+          `}
+        >
           <SidebarLoader />
         </div>
 
@@ -66,20 +59,23 @@ export function DashboardLayoutClient({
           {/* Mobile: header with title + burger to the right */}
           <div
             className={cn(
-              "mb-4 flex items-center justify-between gap-3 md:hidden",
+              `
+                mb-4 flex items-center justify-between gap-3
+                md:hidden
+              `,
             )}
           >
-            <h1 className="text-xl font-semibold tracking-tight truncate">
+            <h1 className="truncate text-xl font-semibold tracking-tight">
               {title}
             </h1>
             <button
-              type="button"
               aria-label="Open dashboard menu"
               className={cn(
                 "shrink-0 rounded-md p-2 text-muted-foreground",
                 "hover:bg-muted hover:text-foreground",
               )}
               onClick={() => setMobileNavOpen(true)}
+              type="button"
             >
               <Menu className="h-6 w-6" />
             </button>
@@ -100,11 +96,22 @@ export function DashboardLayoutClient({
 
       <Sheet onOpenChange={setMobileNavOpen} open={mobileNavOpen}>
         <SheetContent
-          className="flex w-[min(85vw,320px)] flex-col gap-0 overflow-hidden p-0"
+          className={`
+            flex w-[min(85vw,320px)] flex-col gap-0 overflow-hidden p-0
+          `}
           side="left"
         >
-          <div className="flex shrink-0 items-center justify-between border-b px-4 py-3">
-            <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+          <div
+            className={`
+              flex shrink-0 items-center justify-between border-b px-4 py-3
+            `}
+          >
+            <span
+              className={`
+                text-sm font-semibold tracking-wider text-muted-foreground
+                uppercase
+              `}
+            >
               Menu
             </span>
           </div>
@@ -115,4 +122,17 @@ export function DashboardLayoutClient({
       </Sheet>
     </div>
   );
+}
+
+function getDashboardTitle(pathname: null | string): string {
+  if (!pathname) return "Dashboard";
+  // Exact match first
+  if (PATH_TITLES[pathname]) return PATH_TITLES[pathname];
+  if (pathname.startsWith("/dashboard/ai")) return "AI";
+  // Support ticket detail
+  if (pathname.startsWith("/dashboard/support-tickets/"))
+    return "Support Ticket";
+  // Order detail
+  if (pathname.startsWith("/dashboard/orders/")) return "Order";
+  return "Dashboard";
 }

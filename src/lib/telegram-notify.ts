@@ -27,9 +27,9 @@ export type OrderNotificationKind =
   | "shipped";
 
 export interface OrderNotificationOptions {
-  kind: OrderNotificationKind;
   /** When true, message and button direct to eSIM dashboard to activate eSIM. */
   isEsimOrder?: boolean;
+  kind: OrderNotificationKind;
   trackingNumber?: string;
   trackingUrl?: string;
 }

@@ -9,7 +9,7 @@
  *   BTCPAY_API_KEY    - API token from Server side pairing / Access tokens
  */
 
-const PAYMENT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+const _PAYMENT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
 
 export interface BtcpayConfig {
   apiKey: null | string;

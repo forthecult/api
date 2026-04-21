@@ -69,7 +69,9 @@ async function main() {
   const printifyProductId = product.printifyProductId;
 
   if (printifyProductId) {
-    console.log("Syncing from Printify (overwrite: true) to fix variants and images...");
+    console.log(
+      "Syncing from Printify (overwrite: true) to fix variants and images...",
+    );
     const syncRes = await fetch(`${API_BASE}/api/admin/printify/sync`, {
       method: "POST",
       headers,

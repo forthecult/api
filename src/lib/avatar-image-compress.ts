@@ -22,11 +22,13 @@ export async function compressAvatarImage(file: File): Promise<File> {
 
   const type = file.type === "image/png" ? "image/png" : "image/jpeg";
   const blob = await canvas.convertToBlob({
-    type,
     quality: type === "image/jpeg" ? JPEG_QUALITY : 0.92,
+    type,
   });
   if (!blob) return file;
 
-  const name = file.name.replace(/\.[^.]+$/, "") + (type === "image/jpeg" ? ".jpg" : ".png");
+  const name =
+    file.name.replace(/\.[^.]+$/, "") +
+    (type === "image/jpeg" ? ".jpg" : ".png");
   return new File([blob], name, { type });
 }

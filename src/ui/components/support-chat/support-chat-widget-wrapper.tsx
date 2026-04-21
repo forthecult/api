@@ -37,7 +37,11 @@ export function SupportChatWidgetWrapper() {
     if (!canLoad) return;
     let cancelled = false;
     fetch("/api/support-chat/widget-visible", { credentials: "include" })
-      .then((res) => (res.ok ? res.json() : { personalAi: true, supportAgent: true, visible: true }))
+      .then((res) =>
+        res.ok
+          ? res.json()
+          : { personalAi: true, supportAgent: true, visible: true },
+      )
       .then((raw: unknown) => {
         const data = raw as {
           personalAi?: boolean;

@@ -1,8 +1,6 @@
 "use client";
 
 import {
-  ChevronDown,
-  ChevronUp,
   CloudUpload,
   GripVertical,
   ImageIcon,
@@ -55,7 +53,6 @@ interface Product {
   availableCountryCodes?: string[];
   barcode: null | string;
   brand: null | string;
-  model: null | string;
   categoryId: null | string;
   categoryIds?: string[];
   compareAtPriceCents: null | number;
@@ -74,6 +71,7 @@ interface Product {
   mainImageAlt?: null | string;
   mainImageTitle?: null | string;
   metaDescription: null | string;
+  model: null | string;
   name: string;
   optionDefinitionsJson: null | string;
   pageTitle: null | string;
@@ -161,7 +159,7 @@ export default function AdminProductEditPage() {
   const [description, setDescription] = useState("");
   const [features, setFeatures] = useState<string[]>([]);
   /** Kept for backwards compatibility; description is no longer in an accordion. */
-  const descriptionAccordionOpen = false;
+  const _descriptionAccordionOpen = false;
   const [imageUrl, setImageUrl] = useState("");
   const [mainImageAlt, setMainImageAlt] = useState("");
   const [mainImageTitle, setMainImageTitle] = useState("");
@@ -287,7 +285,7 @@ export default function AdminProductEditPage() {
       const el = continentCheckboxRefs.current[i];
       if (el) el.indeterminate = isContinentPartiallySelected(i);
     });
-  }, [availableCountrySet, isContinentPartiallySelected]);
+  }, [isContinentPartiallySelected]);
 
   const fetchProduct = useCallback(async () => {
     if (!id) return;
@@ -765,7 +763,6 @@ export default function AdminProductEditPage() {
           ),
           barcode: barcode.trim() || null,
           brand: brand.trim() || null,
-          model: model.trim() || null,
           categoryIds,
           compareAtPriceCents: compareAtPriceCents.trim()
             ? Number.parseInt(compareAtPriceCents, 10)
@@ -794,6 +791,7 @@ export default function AdminProductEditPage() {
           mainImageAlt: mainImageAlt.trim() || null,
           mainImageTitle: mainImageTitle.trim() || null,
           metaDescription: metaDescription.trim() || null,
+          model: model.trim() || null,
           name: name.trim(),
           optionDefinitionsJson:
             hasVariants && optionDefinitions.length > 0
@@ -952,7 +950,6 @@ export default function AdminProductEditPage() {
       optionDefinitions,
       variants,
       tokenGated,
-      tokenGates,
       availableCountryCodes,
       fetchProduct,
     ],
@@ -1227,8 +1224,8 @@ export default function AdminProductEditPage() {
     return (
       <div
         className={`
-        flex min-h-[200px] items-center justify-center text-muted-foreground
-      `}
+          flex min-h-[200px] items-center justify-center text-muted-foreground
+        `}
       >
         Loading…
       </div>
@@ -1249,9 +1246,9 @@ export default function AdminProductEditPage() {
         </Link>
         <div
           className={`
-          rounded-lg border border-red-200 bg-red-50 p-4 text-red-800
-          dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
-        `}
+            rounded-lg border border-red-200 bg-red-50 p-4 text-red-800
+            dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
+          `}
         >
           {error}
         </div>
@@ -1303,9 +1300,9 @@ export default function AdminProductEditPage() {
       {error && (
         <div
           className={`
-          rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800
-          dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
-        `}
+            rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800
+            dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
+          `}
         >
           {error}
         </div>
@@ -1320,9 +1317,9 @@ export default function AdminProductEditPage() {
           <CardContent className="space-y-4">
             <div
               className={`
-              grid gap-4
-              sm:grid-cols-2
-            `}
+                grid gap-4
+                sm:grid-cols-2
+              `}
             >
               <div className="space-y-2">
                 <label className={labelClass} htmlFor="name">
@@ -1484,9 +1481,9 @@ export default function AdminProductEditPage() {
           <CardContent className="space-y-4">
             <div
               className={`
-              grid gap-4
-              sm:grid-cols-3
-            `}
+                grid gap-4
+                sm:grid-cols-3
+              `}
             >
               <div className="space-y-2">
                 <label className={labelClass} htmlFor="priceCents">
@@ -1576,9 +1573,9 @@ export default function AdminProductEditPage() {
           <CardContent className="space-y-4">
             <div
               className={`
-              grid gap-4
-              sm:grid-cols-2
-            `}
+                grid gap-4
+                sm:grid-cols-2
+              `}
             >
               <div className="space-y-2">
                 <label className={labelClass} htmlFor="sku">
@@ -1698,9 +1695,9 @@ export default function AdminProductEditPage() {
             )}
             <div
               className={`
-              grid gap-4
-              sm:grid-cols-2
-            `}
+                grid gap-4
+                sm:grid-cols-2
+              `}
             >
               <div className="space-y-2">
                 <label className={labelClass} htmlFor="hsCode">
@@ -1741,9 +1738,9 @@ export default function AdminProductEditPage() {
                 </p>
                 <div
                   className={`
-                  grid gap-3
-                  sm:grid-cols-2
-                `}
+                    grid gap-3
+                    sm:grid-cols-2
+                  `}
                 >
                   <div className="sm:col-span-2">
                     <label
@@ -1918,15 +1915,14 @@ export default function AdminProductEditPage() {
                       {primaryImageLoadError ? (
                         <span
                           className={`
-                          flex flex-col items-center gap-0.5 p-1 text-center
-                          text-[10px] text-destructive
-                        `}
+                            flex flex-col items-center gap-0.5 p-1 text-center
+                            text-[10px] text-destructive
+                          `}
                         >
                           <ImageIcon className="size-5" />
                           Failed to load
                         </span>
                       ) : (
-                        /* eslint-disable-next-line @next/next/no-img-element */
                         <img
                           alt=""
                           className="size-full object-cover"
@@ -1944,9 +1940,9 @@ export default function AdminProductEditPage() {
               </div>
               <div
                 className={`
-                mt-2 grid gap-2
-                sm:grid-cols-2
-              `}
+                  mt-2 grid gap-2
+                  sm:grid-cols-2
+                `}
               >
                 <div>
                   <label className={labelClass} htmlFor="mainImageAlt">
@@ -2077,7 +2073,7 @@ export default function AdminProductEditPage() {
                       title="Click to expand"
                       type="button"
                     >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      {}
                       <img
                         alt={img.alt ?? ""}
                         className="size-full object-cover"
@@ -2147,8 +2143,8 @@ export default function AdminProductEditPage() {
               product?.source === "printify") && (
               <div
                 className={`
-                mt-4 flex flex-wrap items-center gap-2 border-t pt-4
-              `}
+                  mt-4 flex flex-wrap items-center gap-2 border-t pt-4
+                `}
               >
                 <p className="text-sm text-muted-foreground">
                   Images from Printful/Printify are on their CDN. Re-host to
@@ -2186,10 +2182,10 @@ export default function AdminProductEditPage() {
           <CardContent className="space-y-4">
             <div
               className={`
-              grid gap-4
-              sm:grid-cols-2
-              lg:grid-cols-3
-            `}
+                grid gap-4
+                sm:grid-cols-2
+                lg:grid-cols-3
+              `}
             >
               <div>
                 <BrandSelect
@@ -2213,7 +2209,8 @@ export default function AdminProductEditPage() {
                   value={model}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Blank product model; must match size chart (provider + brand + model).
+                  Blank product model; must match size chart (provider + brand +
+                  model).
                 </p>
               </div>
               <div className="space-y-2">
@@ -2312,8 +2309,8 @@ export default function AdminProductEditPage() {
                           >
                             <GripVertical
                               className={`
-                              h-4 w-4 shrink-0 text-muted-foreground
-                            `}
+                                h-4 w-4 shrink-0 text-muted-foreground
+                              `}
                             />
                           </div>
                           <div className="flex-1">
@@ -2367,17 +2364,13 @@ export default function AdminProductEditPage() {
                               title="Drag to reorder"
                             >
                               <GripVertical
-                                className={`
-                                h-4 w-4 text-muted-foreground
-                              `}
+                                className={`h-4 w-4 text-muted-foreground`}
                               />
                             </div>
                             <div className="flex-1 space-y-3">
                               <div>
                                 <label
-                                  className={`
-                                  mb-1 block text-sm font-medium
-                                `}
+                                  className={`mb-1 block text-sm font-medium`}
                                 >
                                   Option name
                                 </label>
@@ -2410,9 +2403,7 @@ export default function AdminProductEditPage() {
 
                               <div>
                                 <label
-                                  className={`
-                                  mb-1 block text-sm font-medium
-                                `}
+                                  className={`mb-1 block text-sm font-medium`}
                                 >
                                   Option values
                                 </label>
@@ -2466,8 +2457,8 @@ export default function AdminProductEditPage() {
 
                               <div
                                 className={`
-                                flex items-center justify-between pt-2
-                              `}
+                                  flex items-center justify-between pt-2
+                                `}
                               >
                                 <Button
                                   onClick={() => {
@@ -2518,8 +2509,8 @@ export default function AdminProductEditPage() {
                       <h4 className="font-medium">Variants</h4>
                       <div
                         className={`
-                        flex items-center gap-2 text-sm text-muted-foreground
-                      `}
+                          flex items-center gap-2 text-sm text-muted-foreground
+                        `}
                       >
                         <span>Select</span>
                         <button
@@ -2566,9 +2557,9 @@ export default function AdminProductEditPage() {
                           {variants.map((v, vi) => (
                             <tr
                               className={`
-                              border-b
-                              last:border-0
-                            `}
+                                border-b
+                                last:border-0
+                              `}
                               key={vi}
                             >
                               <td className="p-2">
@@ -2581,10 +2572,10 @@ export default function AdminProductEditPage() {
                                 <div className="flex items-center gap-3">
                                   <div
                                     className={`
-                                    flex h-10 w-10 shrink-0 items-center
-                                    justify-center overflow-hidden rounded
-                                    border border-dashed bg-muted/30
-                                  `}
+                                      flex h-10 w-10 shrink-0 items-center
+                                      justify-center overflow-hidden rounded
+                                      border border-dashed bg-muted/30
+                                    `}
                                   >
                                     {v.imageUrl ? (
                                       <button
@@ -2615,8 +2606,8 @@ export default function AdminProductEditPage() {
                                     ) : (
                                       <ImageIcon
                                         className={`
-                                        h-4 w-4 text-muted-foreground
-                                      `}
+                                          h-4 w-4 text-muted-foreground
+                                        `}
                                       />
                                     )}
                                   </div>
@@ -2664,8 +2655,8 @@ export default function AdminProductEditPage() {
                                     !v.printfulSyncVariantId && (
                                       <span
                                         className={`
-                                        mt-0.5 block text-muted-foreground
-                                      `}
+                                          mt-0.5 block text-muted-foreground
+                                        `}
                                       >
                                         Printify: {v.printifyVariantId}
                                       </span>
@@ -2817,7 +2808,7 @@ export default function AdminProductEditPage() {
               className="relative max-h-[90vh] max-w-[90vw]"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
+              {}
               <img
                 alt="Expanded view"
                 className={`
@@ -2835,13 +2826,13 @@ export default function AdminProductEditPage() {
         {editingVariantIndex !== null && variants[editingVariantIndex] && (
           <div
             className={`
-            fixed inset-0 z-50 flex items-center justify-center bg-black/50
-          `}
+              fixed inset-0 z-50 flex items-center justify-center bg-black/50
+            `}
           >
             <div
               className={`
-              w-full max-w-md rounded-lg bg-background p-6 shadow-lg
-            `}
+                w-full max-w-md rounded-lg bg-background p-6 shadow-lg
+              `}
             >
               <h3 className="mb-4 text-lg font-semibold">
                 Edit Variant:{" "}
@@ -2991,8 +2982,9 @@ export default function AdminProductEditPage() {
               product?.source === "printify") && (
               <div
                 className={`
-                flex flex-wrap items-center gap-2 text-sm text-muted-foreground
-              `}
+                  flex flex-wrap items-center gap-2 text-sm
+                  text-muted-foreground
+                `}
               >
                 <p className="basis-full">
                   {product?.source === "printful" ? "Printful" : "Printify"}{" "}
@@ -3220,10 +3212,10 @@ export default function AdminProductEditPage() {
                 </label>
                 <div
                   className={`
-                  grid grid-cols-2 gap-x-4 gap-y-1
-                  sm:grid-cols-3
-                  md:grid-cols-4
-                `}
+                    grid grid-cols-2 gap-x-4 gap-y-1
+                    sm:grid-cols-3
+                    md:grid-cols-4
+                  `}
                 >
                   {entry.countries.map((country) => {
                     const noShip = isShippingExcluded(country.code);

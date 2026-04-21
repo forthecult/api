@@ -8,7 +8,7 @@
  * - erc20: EVM ERC20 balance (future)
  */
 
-import { Connection, PublicKey } from "@solana/web3.js";
+import { Connection } from "@solana/web3.js";
 import { eq, or } from "drizzle-orm";
 
 import { db } from "~/db";
@@ -71,6 +71,19 @@ export function formatTokenGateSummaryToDisplay(
     (g) => `≥ ${g.quantity} ${g.tokenSymbol} on ${networkLabel(g.network)}`,
   );
   return parts.length === 1 ? parts[0]! : parts.join(", or ");
+}
+
+/**
+ * Returns category IDs that a product belongs to (for token-gate passthrough from category).
+ */
+export async function getCategoryIdsForProduct(
+  productId: string,
+): Promise<string[]> {
+  const rows = await db
+    .select({ categoryId: productCategoriesTable.categoryId })
+    .from(productCategoriesTable)
+    .where(eq(productCategoriesTable.productId, productId));
+  return rows.map((r) => r.categoryId).filter(Boolean);
 }
 
 /** Fetch token gates for a category (by id or slug). */
@@ -242,16 +255,32 @@ export async function getTokenGateConfig(
 }
 
 /**
- * Returns category IDs that a product belongs to (for token-gate passthrough from category).
+ * Whether a product's token gates are satisfied by a category's gates.
+ * Used when the user has already passed the category gate: if the product
+ * requires the same (or a weaker) token requirement, we treat the product as passed.
+ * Product passes if at least one product gate is satisfied by some category gate
+ * (same token: network + mint/contract or symbol, and category quantity >= product quantity).
  */
-export async function getCategoryIdsForProduct(
-  productId: string,
-): Promise<string[]> {
-  const rows = await db
-    .select({ categoryId: productCategoriesTable.categoryId })
-    .from(productCategoriesTable)
-    .where(eq(productCategoriesTable.productId, productId));
-  return rows.map((r) => r.categoryId).filter(Boolean);
+export function productGatesSatisfiedByCategory(
+  productGates: TokenGateRule[],
+  categoryGates: TokenGateRule[],
+): boolean {
+  if (productGates.length === 0) return true;
+  const norm = (s: null | string) => (s ?? "solana").toLowerCase().trim();
+  for (const pg of productGates) {
+    const pNet = norm(pg.network);
+    const pMint = (pg.mintOrContract ?? "").trim().toLowerCase();
+    const pSym = (pg.tokenSymbol ?? "").trim().toUpperCase();
+    for (const cg of categoryGates) {
+      const cNet = norm(cg.network);
+      const cMint = (cg.mintOrContract ?? "").trim().toLowerCase();
+      const cSym = (cg.tokenSymbol ?? "").trim().toUpperCase();
+      const sameToken =
+        pNet === cNet && (pMint && cMint ? pMint === cMint : pSym === cSym);
+      if (sameToken && cg.quantity >= pg.quantity) return true;
+    }
+  }
+  return false;
 }
 
 /**
@@ -276,42 +305,9 @@ export async function productPassedViaCategoryGate(
     if (
       categoryConfig.tokenGated &&
       categoryConfig.gates.length > 0 &&
-      productGatesSatisfiedByCategory(
-        productConfig.gates,
-        categoryConfig.gates,
-      )
+      productGatesSatisfiedByCategory(productConfig.gates, categoryConfig.gates)
     ) {
       return true;
-    }
-  }
-  return false;
-}
-
-/**
- * Whether a product's token gates are satisfied by a category's gates.
- * Used when the user has already passed the category gate: if the product
- * requires the same (or a weaker) token requirement, we treat the product as passed.
- * Product passes if at least one product gate is satisfied by some category gate
- * (same token: network + mint/contract or symbol, and category quantity >= product quantity).
- */
-export function productGatesSatisfiedByCategory(
-  productGates: TokenGateRule[],
-  categoryGates: TokenGateRule[],
-): boolean {
-  if (productGates.length === 0) return true;
-  const norm = (s: null | string) => (s ?? "solana").toLowerCase().trim();
-  for (const pg of productGates) {
-    const pNet = norm(pg.network);
-    const pMint = (pg.mintOrContract ?? "").trim().toLowerCase();
-    const pSym = (pg.tokenSymbol ?? "").trim().toUpperCase();
-    for (const cg of categoryGates) {
-      const cNet = norm(cg.network);
-      const cMint = (cg.mintOrContract ?? "").trim().toLowerCase();
-      const cSym = (cg.tokenSymbol ?? "").trim().toUpperCase();
-      const sameToken =
-        pNet === cNet &&
-        (pMint && cMint ? pMint === cMint : pSym === cSym);
-      if (sameToken && cg.quantity >= pg.quantity) return true;
     }
   }
   return false;
@@ -404,7 +400,7 @@ export async function getSolanaTokenBalance(
         "[token-gate] Found balance via",
         programName,
         "program for mint:",
-        mintAddress.slice(0, 8) + "...",
+        `${mintAddress.slice(0, 8)}...`,
       );
     }
     return {

@@ -5,8 +5,6 @@
  * for consistent limits across instances.
  */
 
-import type { NextRequest } from "next/server";
-
 interface RateLimitEntry {
   count: number;
   resetAt: number;

@@ -24,22 +24,11 @@ interface OrderPaymentInfo {
   totalCents: number;
 }
 
-function normalizeTonOrder(raw: Record<string, unknown>): OrderPaymentInfo {
-  return {
-    comment: raw.comment as string | undefined,
-    depositAddress: raw.depositAddress as string | undefined,
-    email: raw.email as string | undefined,
-    expiresAt: String(raw.expiresAt ?? ""),
-    orderId: String(raw.orderId ?? ""),
-    paymentType: raw.paymentType as string | undefined,
-    tonAmount: raw.tonAmount as string | undefined,
-    totalCents: Number(raw.totalCents) || 0,
-  };
-}
-
 export function TonPayClient({
   initialOrder,
-}: { initialOrder?: Record<string, unknown> } = {}) {
+}: {
+  initialOrder?: Record<string, unknown>;
+} = {}) {
   const params = useParams();
   const router = useRouter();
   const pathId = (params?.invoiceId as string) ?? "";
@@ -75,7 +64,8 @@ export function TonPayClient({
         }
         return res.json();
       })
-      .then((raw: unknown) => { const data = raw as OrderPaymentInfo;
+      .then((raw: unknown) => {
+        const data = raw as OrderPaymentInfo;
         if (!cancelled) {
           setOrder(data);
           setTimeLeft(getInitialTimeLeft(data.expiresAt));
@@ -182,14 +172,14 @@ export function TonPayClient({
     return (
       <div
         className={`
-        flex min-h-screen w-full items-center justify-center bg-background
-      `}
+          flex min-h-screen w-full items-center justify-center bg-background
+        `}
       >
         <div
           className={`
-          flex flex-col gap-4 rounded-lg border border-border bg-card p-6
-          text-center
-        `}
+            flex flex-col gap-4 rounded-lg border border-border bg-card p-6
+            text-center
+          `}
         >
           <p className="text-sm text-muted-foreground">
             Missing order. Start checkout from your cart.
@@ -212,8 +202,8 @@ export function TonPayClient({
     return (
       <div
         className={`
-        flex min-h-screen w-full items-center justify-center bg-background
-      `}
+          flex min-h-screen w-full items-center justify-center bg-background
+        `}
       >
         <p className="text-sm text-muted-foreground">Loading order…</p>
       </div>
@@ -224,14 +214,14 @@ export function TonPayClient({
     return (
       <div
         className={`
-        flex min-h-screen w-full items-center justify-center bg-background
-      `}
+          flex min-h-screen w-full items-center justify-center bg-background
+        `}
       >
         <div
           className={`
-          flex flex-col gap-4 rounded-lg border border-border bg-card p-6
-          text-center
-        `}
+            flex flex-col gap-4 rounded-lg border border-border bg-card p-6
+            text-center
+          `}
         >
           <p className="text-sm text-muted-foreground">
             {orderError ?? "Order not found"}
@@ -254,16 +244,16 @@ export function TonPayClient({
     <div className="min-h-screen w-full overflow-x-hidden bg-background">
       <header
         className={`
-        sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur
-        supports-[backdrop-filter]:bg-background/60
-      `}
+          sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur
+          supports-[backdrop-filter]:bg-background/60
+        `}
       >
         <div
           className={`
-          container mx-auto max-w-7xl px-4
-          sm:px-6
-          lg:px-8
-        `}
+            container mx-auto max-w-7xl px-4
+            sm:px-6
+            lg:px-8
+          `}
         >
           <div className="flex h-16 items-center justify-between">
             <Link
@@ -301,21 +291,22 @@ export function TonPayClient({
 
       <div
         className={`
-        mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8
-        sm:px-5
-      `}
+          mx-auto w-full max-w-7xl px-4 py-8
+          sm:px-5 sm:px-6
+          lg:px-8
+        `}
       >
         <div
           className={`
-          flex min-w-0 flex-col gap-6
-          min-[560px]:flex-row min-[560px]:items-start
-        `}
+            flex min-w-0 flex-col gap-6
+            min-[560px]:flex-row min-[560px]:items-start
+          `}
         >
           <div
             className={`
-            min-w-0 flex-1 rounded-xl border border-border bg-card p-6
-            min-[560px]:min-w-[560px]
-          `}
+              min-w-0 flex-1 rounded-xl border border-border bg-card p-6
+              min-[560px]:min-w-[560px]
+            `}
           >
             <div className="flex flex-col gap-4">
               <div className="flex items-center gap-3">
@@ -328,9 +319,9 @@ export function TonPayClient({
                 />
                 <h1
                   className={`
-                  text-2xl font-semibold tracking-tight
-                  md:text-3xl
-                `}
+                    text-2xl font-semibold tracking-tight
+                    md:text-3xl
+                  `}
                 >
                   Pay with TON
                 </h1>
@@ -365,9 +356,9 @@ export function TonPayClient({
                   </div>
                   <div
                     className={`
-                    flex items-start gap-3 rounded-lg border border-border
-                    bg-muted/30 p-4
-                  `}
+                      flex items-start gap-3 rounded-lg border border-border
+                      bg-muted/30 p-4
+                    `}
                   >
                     <Info
                       aria-hidden
@@ -385,9 +376,7 @@ export function TonPayClient({
               ) : (
                 <>
                   <div
-                    className={`
-                    rounded-lg border border-border bg-muted/30 p-4
-                  `}
+                    className={`rounded-lg border border-border bg-muted/30 p-4`}
                   >
                     <h2 className="mb-4 text-base font-semibold">
                       Payment details
@@ -416,9 +405,9 @@ export function TonPayClient({
                           <div className="flex flex-wrap items-center gap-2">
                             <code
                               className={`
-                              rounded bg-muted px-2 py-1 font-mono text-xs
-                              break-all
-                            `}
+                                rounded bg-muted px-2 py-1 font-mono text-xs
+                                break-all
+                              `}
                             >
                               {depositAddress}
                             </code>
@@ -445,9 +434,9 @@ export function TonPayClient({
                           <div className="flex flex-wrap items-center gap-2">
                             <code
                               className={`
-                              rounded bg-muted px-2 py-1 font-mono text-xs
-                              break-all
-                            `}
+                                rounded bg-muted px-2 py-1 font-mono text-xs
+                                break-all
+                              `}
                             >
                               {comment}
                             </code>
@@ -487,8 +476,8 @@ export function TonPayClient({
                       </p>
                       <div
                         className={`
-                        flex items-center gap-2 text-sm text-muted-foreground
-                      `}
+                          flex items-center gap-2 text-sm text-muted-foreground
+                        `}
                       >
                         <Loader2
                           aria-hidden
@@ -500,21 +489,21 @@ export function TonPayClient({
                   ) : (
                     <div
                       className={`
-                      flex items-center gap-3 rounded-lg border
-                      border-amber-500/40 bg-amber-500/10 p-4
-                    `}
+                        flex items-center gap-3 rounded-lg border
+                        border-amber-500/40 bg-amber-500/10 p-4
+                      `}
                     >
                       <AlertCircle
                         className={`
-                        size-5 shrink-0 text-amber-600
-                        dark:text-amber-500
-                      `}
+                          size-5 shrink-0 text-amber-600
+                          dark:text-amber-500
+                        `}
                       />
                       <p
                         className={`
-                        text-sm font-medium text-amber-800
-                        dark:text-amber-200
-                      `}
+                          text-sm font-medium text-amber-800
+                          dark:text-amber-200
+                        `}
                       >
                         Payment details are missing. Please go back to checkout
                         and try again.
@@ -528,18 +517,16 @@ export function TonPayClient({
 
           <div
             className={`
-            min-w-0 shrink-0
-            min-[560px]:sticky min-[560px]:top-8 min-[560px]:w-[510px]
-            min-[560px]:self-start
-          `}
+              min-w-0 shrink-0
+              min-[560px]:sticky min-[560px]:top-8 min-[560px]:w-[510px]
+              min-[560px]:self-start
+            `}
           >
             <div className="rounded-xl border border-border bg-card px-6 py-5">
               <h2 className="mb-4 text-xl font-semibold">Order details</h2>
               <dl className="space-y-3 text-base">
                 <div
-                  className={`
-                  flex flex-wrap items-center justify-between gap-2
-                `}
+                  className={`flex flex-wrap items-center justify-between gap-2`}
                 >
                   <dt className="text-muted-foreground">Email address</dt>
                   <dd className="flex items-center gap-2">
@@ -559,9 +546,7 @@ export function TonPayClient({
                   </dd>
                 </div>
                 <div
-                  className={`
-                  flex flex-wrap items-center justify-between gap-2
-                `}
+                  className={`flex flex-wrap items-center justify-between gap-2`}
                 >
                   <dt className="text-muted-foreground">Payment method</dt>
                   <dd className="flex items-center gap-2">
@@ -579,9 +564,7 @@ export function TonPayClient({
                   </dd>
                 </div>
                 <div
-                  className={`
-                  flex flex-wrap items-center justify-between gap-2
-                `}
+                  className={`flex flex-wrap items-center justify-between gap-2`}
                 >
                   <dt className="text-muted-foreground">Order ID</dt>
                   <dd>
@@ -592,17 +575,17 @@ export function TonPayClient({
                 </div>
                 <div
                   className={`
-                  flex flex-wrap items-center justify-between gap-2 border-t
-                  border-border pt-3
-                `}
+                    flex flex-wrap items-center justify-between gap-2 border-t
+                    border-border pt-3
+                  `}
                 >
                   <dt className="text-muted-foreground">Fiat value</dt>
                   <dd className="font-medium">USD {amountUsdStr}</dd>
                 </div>
                 <div
                   className={`
-                  flex flex-wrap items-center justify-between gap-2 text-lg
-                `}
+                    flex flex-wrap items-center justify-between gap-2 text-lg
+                  `}
                 >
                   <dt className="font-medium">Total</dt>
                   <dd className="font-semibold">{tonAmount} TON</dd>
@@ -610,8 +593,8 @@ export function TonPayClient({
               </dl>
               <p
                 className={`
-                mt-4 flex items-center gap-2 text-sm text-muted-foreground
-              `}
+                  mt-4 flex items-center gap-2 text-sm text-muted-foreground
+                `}
               >
                 <Info
                   aria-hidden
@@ -635,4 +618,17 @@ function getInitialTimeLeft(expiresAt: null | string): number {
     : Number(expiresAt);
   if (!Number.isFinite(ts)) return EXPIRY_MINUTES * 60;
   return Math.max(0, Math.floor((ts - Date.now()) / 1000));
+}
+
+function normalizeTonOrder(raw: Record<string, unknown>): OrderPaymentInfo {
+  return {
+    comment: raw.comment as string | undefined,
+    depositAddress: raw.depositAddress as string | undefined,
+    email: raw.email as string | undefined,
+    expiresAt: String(raw.expiresAt ?? ""),
+    orderId: String(raw.orderId ?? ""),
+    paymentType: raw.paymentType as string | undefined,
+    tonAmount: raw.tonAmount as string | undefined,
+    totalCents: Number(raw.totalCents) || 0,
+  };
 }

@@ -77,7 +77,9 @@ async function main() {
       console.error("Sync failed:", await syncRes.text());
     }
   }
-  console.log("\nAll done. Store variants now match Printify for these products.");
+  console.log(
+    "\nAll done. Store variants now match Printify for these products.",
+  );
 }
 
 main().catch((err) => {

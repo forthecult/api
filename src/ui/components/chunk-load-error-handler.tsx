@@ -5,34 +5,6 @@ import { useEffect } from "react";
 export const CHUNK_ERROR_RELOAD_KEY = "chunk-error-reload";
 const SESSION_KEY = CHUNK_ERROR_RELOAD_KEY;
 
-function isChunkLoadError(error: unknown): boolean {
-  if (error instanceof Error) {
-    if (error.name === "ChunkLoadError") return true;
-    if (error.message && /loading chunk .* failed/i.test(error.message))
-      return true;
-  }
-  if (typeof error === "object" && error !== null && "message" in error) {
-    const msg = String((error as { message?: unknown }).message ?? "");
-    if (/loading chunk .* failed/i.test(msg)) return true;
-  }
-  return false;
-}
-
-function isNetworkError(error: unknown): boolean {
-  if (error instanceof Error) {
-    if (error.message === "network error" || error.message === "Failed to fetch")
-      return true;
-    if (error.name === "TypeError" && /network error/i.test(error.message))
-      return true;
-  }
-  if (typeof error === "object" && error !== null && "message" in error) {
-    const msg = String((error as { message?: unknown }).message ?? "");
-    if (msg === "network error" || /network error|failed to fetch/i.test(msg))
-      return true;
-  }
-  return false;
-}
-
 /**
  * Listens for uncaught ChunkLoadErrors and network errors (e.g. RSC fetch failed
  * with ERR_NETWORK_CHANGED) and triggers a single full reload per tab to
@@ -41,8 +13,7 @@ function isNetworkError(error: unknown): boolean {
 export function ChunkLoadErrorHandler() {
   useEffect(() => {
     const handle = (error: unknown) => {
-      const isRecoverable =
-        isChunkLoadError(error) || isNetworkError(error);
+      const isRecoverable = isChunkLoadError(error) || isNetworkError(error);
       if (!isRecoverable) return;
       if (typeof sessionStorage === "undefined") return;
       if (sessionStorage.getItem(SESSION_KEY)) return; // already reloaded once
@@ -76,4 +47,35 @@ export function clearChunkReloadFlag(): void {
   } catch {
     // ignore
   }
+}
+
+function isChunkLoadError(error: unknown): boolean {
+  if (error instanceof Error) {
+    if (error.name === "ChunkLoadError") return true;
+    if (error.message && /loading chunk .* failed/i.test(error.message))
+      return true;
+  }
+  if (typeof error === "object" && error !== null && "message" in error) {
+    const msg = String((error as { message?: unknown }).message ?? "");
+    if (/loading chunk .* failed/i.test(msg)) return true;
+  }
+  return false;
+}
+
+function isNetworkError(error: unknown): boolean {
+  if (error instanceof Error) {
+    if (
+      error.message === "network error" ||
+      error.message === "Failed to fetch"
+    )
+      return true;
+    if (error.name === "TypeError" && /network error/i.test(error.message))
+      return true;
+  }
+  if (typeof error === "object" && error !== null && "message" in error) {
+    const msg = String((error as { message?: unknown }).message ?? "");
+    if (msg === "network error" || /network error|failed to fetch/i.test(msg))
+      return true;
+  }
+  return false;
 }

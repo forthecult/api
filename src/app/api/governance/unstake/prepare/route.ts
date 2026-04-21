@@ -17,16 +17,18 @@ import {
   getLockStatus,
   getStakingProgramId,
   type LockTier,
-  TIER_30_DAYS,
   TIER_12_MONTHS,
+  TIER_30_DAYS,
 } from "~/lib/cult-staking";
 import { buildUnstakeTransaction } from "~/lib/cult-staking-instructions";
 import { getSolanaRpcUrlServer } from "~/lib/solana-pay";
 
 const bodySchema = z.object({
-  lockTier: z.number().refine((t) => t === TIER_30_DAYS || t === TIER_12_MONTHS, {
-    message: `Lock tier must be ${TIER_30_DAYS} (30 days) or ${TIER_12_MONTHS} (12 months)`,
-  }),
+  lockTier: z
+    .number()
+    .refine((t) => t === TIER_30_DAYS || t === TIER_12_MONTHS, {
+      message: `Lock tier must be ${TIER_30_DAYS} (30 days) or ${TIER_12_MONTHS} (12 months)`,
+    }),
   wallet: z.string().min(32).max(44),
 });
 

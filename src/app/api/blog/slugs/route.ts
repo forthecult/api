@@ -6,11 +6,14 @@ import { getAllPublishedSlugs } from "~/lib/blog";
 export async function GET() {
   try {
     const slugs = await getAllPublishedSlugs();
-    return NextResponse.json({ slugs }, {
-      headers: {
-        "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=7200",
+    return NextResponse.json(
+      { slugs },
+      {
+        headers: {
+          "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=7200",
+        },
       },
-    });
+    );
   } catch (err) {
     console.error("Blog slugs error:", err);
     return NextResponse.json({ slugs: [] });

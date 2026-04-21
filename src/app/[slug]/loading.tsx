@@ -4,9 +4,9 @@ export default function SlugLoading() {
       <main className="flex-1 py-10">
         <div
           className={`
-          container mx-auto px-4
-          md:px-6
-        `}
+            container mx-auto px-4
+            md:px-6
+          `}
         >
           <div className="mb-4 flex gap-2">
             <div className="h-4 w-16 animate-pulse rounded bg-muted" />
@@ -16,9 +16,9 @@ export default function SlugLoading() {
           <div className="mb-6 h-9 w-36 animate-pulse rounded bg-muted" />
           <div
             className={`
-            grid grid-cols-1 gap-8
-            md:grid-cols-2
-          `}
+              grid grid-cols-1 gap-8
+              md:grid-cols-2
+            `}
           >
             <div className="aspect-square animate-pulse rounded-lg bg-muted" />
             <div className="flex flex-col space-y-4">

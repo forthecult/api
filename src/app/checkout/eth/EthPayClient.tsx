@@ -6,14 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import {
-  useAccount,
-  useChainId,
-  useConnect,
-  useConnection,
-  useConnectors,
-  useDisconnect,
-} from "wagmi";
+import { useConnect, useConnection, useConnectors, useDisconnect } from "wagmi";
 
 import { SEO_CONFIG } from "~/app";
 import { useCurrentUser } from "~/lib/auth-client";
@@ -24,7 +17,6 @@ import { Dialog, DialogContent, DialogTitle } from "~/ui/primitives/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
@@ -55,7 +47,7 @@ const TOKEN_LABELS: Record<string, string> = {
   usdt: "USDT",
 };
 
-const MULTI_CHAIN_WALLET_NAMES = new Set([
+const _MULTI_CHAIN_WALLET_NAMES = new Set([
   "Ctrl Wallet",
   "Phantom",
   "Ronin Wallet",
@@ -147,33 +139,11 @@ const CHAIN_ID_MAP: Record<string, number> = {
   polygon: 137,
 };
 
-function normalizeEthOrder(
-  data: Record<string, unknown> & Partial<OrderData>,
-): OrderData {
-  const chainRaw = data.chain ?? data.cryptoCurrencyNetwork ?? "ethereum";
-  const chainName = String(chainRaw).toLowerCase();
-  const tokenRaw = data.token ?? data.cryptoCurrency ?? "eth";
-  return {
-    chain: chainName,
-    chainId: (data.chainId as number) ?? CHAIN_ID_MAP[chainName] ?? 1,
-    cryptoAmount: data.cryptoAmount,
-    depositAddress:
-      (data.depositAddress as string) ??
-      (data.solanaPayDepositAddress as string) ??
-      "",
-    email: data.email,
-    expiresAt: String(data.expiresAt ?? ""),
-    orderId: String(data.orderId ?? data.id ?? ""),
-    paymentStatus: data.paymentStatus,
-    token: String(tokenRaw).toLowerCase(),
-    tokenAddress: data.tokenAddress,
-    totalCents: Number(data.totalCents) || 0,
-  };
-}
-
 export function EthPayClient({
   initialOrder,
-}: { initialOrder?: Record<string, unknown> } = {}) {
+}: {
+  initialOrder?: Record<string, unknown>;
+} = {}) {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -209,7 +179,7 @@ export function EthPayClient({
         if (cancelled) return;
         setOrder(
           normalizeEthOrder(
-            raw as Record<string, unknown> & Partial<OrderData>,
+            raw as Partial<OrderData> & Record<string, unknown>,
           ),
         );
         setOrderLoading(false);
@@ -230,7 +200,7 @@ export function EthPayClient({
   const amountUsd = order ? order.totalCents / 100 : 0;
   const chain = (order?.chain || "ethereum").toLowerCase();
   const token = (order?.token || "eth").toLowerCase();
-  const depositAddress = order?.depositAddress || "";
+  const _depositAddress = order?.depositAddress || "";
 
   const [ethUsdRate, setEthUsdRate] = useState<null | number>(null);
 
@@ -246,7 +216,7 @@ export function EthPayClient({
   const { disconnect } = useDisconnect();
   const sdkState = useSDK();
   const sdk = sdkState?.sdk;
-  const metaMaskConnected = sdkState?.connected ?? false;
+  const _metaMaskConnected = sdkState?.connected ?? false;
   const metaMaskConnecting = sdkState?.connecting ?? false;
   const metaMaskAccounts =
     (sdkState as { accounts?: string[] })?.accounts ?? undefined;
@@ -326,7 +296,8 @@ export function EthPayClient({
   useEffect(() => {
     fetch("/api/crypto/prices")
       .then((res) => res.json())
-      .then((raw: unknown) => { const data = raw as { ETH?: number };
+      .then((raw: unknown) => {
+        const data = raw as { ETH?: number };
         if (typeof data?.ETH === "number" && data.ETH > 0)
           setEthUsdRate(data.ETH);
       })
@@ -451,15 +422,15 @@ export function EthPayClient({
     return (
       <div
         className={`
-        flex min-h-screen w-full items-center justify-center bg-background
-      `}
+          flex min-h-screen w-full items-center justify-center bg-background
+        `}
       >
         <div className="space-y-4 text-center">
           <div
             className={`
-            mx-auto size-8 animate-spin rounded-full border-4 border-primary
-            border-t-transparent
-          `}
+              mx-auto size-8 animate-spin rounded-full border-4 border-primary
+              border-t-transparent
+            `}
           />
           <p className="text-muted-foreground">Loading order...</p>
         </div>
@@ -472,8 +443,8 @@ export function EthPayClient({
     return (
       <div
         className={`
-        flex min-h-screen w-full items-center justify-center bg-background
-      `}
+          flex min-h-screen w-full items-center justify-center bg-background
+        `}
       >
         <div className="max-w-md space-y-4 px-4 text-center">
           <div className="text-4xl text-destructive">⚠️</div>
@@ -493,16 +464,16 @@ export function EthPayClient({
     <div className="min-h-screen w-full overflow-x-hidden bg-background">
       <header
         className={`
-        sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur
-        supports-[backdrop-filter]:bg-background/60
-      `}
+          sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur
+          supports-[backdrop-filter]:bg-background/60
+        `}
       >
         <div
           className={`
-          container mx-auto max-w-7xl px-4
-          sm:px-6
-          lg:px-8
-        `}
+            container mx-auto max-w-7xl px-4
+            sm:px-6
+            lg:px-8
+          `}
         >
           <div className="flex h-16 items-center justify-between">
             <Link
@@ -540,10 +511,10 @@ export function EthPayClient({
               ) : (
                 <span
                   className={`
-                  font-heading text-lg font-bold tracking-[0.2em] text-[#1A1611]
-                  uppercase
-                  dark:text-[#F5F1EB]
-                `}
+                    font-heading text-lg font-bold tracking-[0.2em]
+                    text-[#1A1611] uppercase
+                    dark:text-[#F5F1EB]
+                  `}
                 >
                   {SEO_CONFIG.name}
                 </span>
@@ -573,16 +544,16 @@ export function EthPayClient({
                 <DropdownMenuContent align="end" className="w-64">
                   <DropdownMenuLabel
                     className={`
-                    text-xs font-medium tracking-wider text-muted-foreground
-                    uppercase
-                  `}
+                      text-xs font-medium tracking-wider text-muted-foreground
+                      uppercase
+                    `}
                   >
                     Connected
                   </DropdownMenuLabel>
                   <div
                     className={`
-                    flex items-center justify-between gap-2 px-2 py-2
-                  `}
+                      flex items-center justify-between gap-2 px-2 py-2
+                    `}
                   >
                     <span
                       className={`
@@ -639,21 +610,22 @@ export function EthPayClient({
 
       <div
         className={`
-        mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8
-        sm:px-5
-      `}
+          mx-auto w-full max-w-7xl px-4 py-8
+          sm:px-5 sm:px-6
+          lg:px-8
+        `}
       >
         <div
           className={`
-          flex min-w-0 flex-col gap-6
-          min-[560px]:flex-row min-[560px]:items-start
-        `}
+            flex min-w-0 flex-col gap-6
+            min-[560px]:flex-row min-[560px]:items-start
+          `}
         >
           <div
             className={`
-            min-w-0 flex-1 rounded-xl border border-border bg-card p-6
-            min-[560px]:min-w-[560px]
-          `}
+              min-w-0 flex-1 rounded-xl border border-border bg-card p-6
+              min-[560px]:min-w-[560px]
+            `}
           >
             <div className="flex flex-col gap-4">
               <div className="flex items-center gap-3">
@@ -666,9 +638,9 @@ export function EthPayClient({
                 />
                 <h1
                   className={`
-                  text-2xl font-semibold tracking-tight
-                  md:text-3xl
-                `}
+                    text-2xl font-semibold tracking-tight
+                    md:text-3xl
+                  `}
                 >
                   {paymentTitle}
                 </h1>
@@ -699,10 +671,10 @@ export function EthPayClient({
               {paymentStatus.status === "confirmed" && (
                 <div
                   className={`
-                  flex items-center gap-3 rounded-lg border border-green-500/30
-                  bg-green-500/10 p-4 text-green-700
-                  dark:text-green-400
-                `}
+                    flex items-center gap-3 rounded-lg border
+                    border-green-500/30 bg-green-500/10 p-4 text-green-700
+                    dark:text-green-400
+                  `}
                 >
                   <CheckCircle2 className="size-5 shrink-0" />
                   <div>
@@ -717,9 +689,9 @@ export function EthPayClient({
               {paymentStatus.status === "error" && (
                 <div
                   className={`
-                  flex items-center gap-3 rounded-lg border
-                  border-destructive/30 bg-destructive/10 p-4 text-destructive
-                `}
+                    flex items-center gap-3 rounded-lg border
+                    border-destructive/30 bg-destructive/10 p-4 text-destructive
+                  `}
                 >
                   <AlertCircle className="size-5 shrink-0" />
                   <div>
@@ -790,7 +762,7 @@ export function EthPayClient({
                         font-mono text-primary
                         hover:underline
                       `}
-                      href={`https://${chain === "ethereum" ? "" : chain + "."}etherscan.io/tx/${paymentTxHash}`}
+                      href={`https://${chain === "ethereum" ? "" : `${chain}.`}etherscan.io/tx/${paymentTxHash}`}
                       rel="noopener noreferrer"
                       target="_blank"
                     >
@@ -804,18 +776,16 @@ export function EthPayClient({
 
           <div
             className={`
-            min-w-0 shrink-0
-            min-[560px]:sticky min-[560px]:top-8 min-[560px]:w-[510px]
-            min-[560px]:self-start
-          `}
+              min-w-0 shrink-0
+              min-[560px]:sticky min-[560px]:top-8 min-[560px]:w-[510px]
+              min-[560px]:self-start
+            `}
           >
             <div className="rounded-xl border border-border bg-card px-6 py-5">
               <h2 className="mb-4 text-xl font-semibold">Order details</h2>
               <dl className="space-y-3 text-base">
                 <div
-                  className={`
-                  flex flex-wrap items-center justify-between gap-2
-                `}
+                  className={`flex flex-wrap items-center justify-between gap-2`}
                 >
                   <dt className="text-muted-foreground">Email address</dt>
                   <dd className="flex items-center gap-2">
@@ -835,9 +805,7 @@ export function EthPayClient({
                   </dd>
                 </div>
                 <div
-                  className={`
-                  flex flex-wrap items-center justify-between gap-2
-                `}
+                  className={`flex flex-wrap items-center justify-between gap-2`}
                 >
                   <dt className="text-muted-foreground">Payment method</dt>
                   <dd className="flex items-center gap-2">
@@ -857,9 +825,7 @@ export function EthPayClient({
                   </dd>
                 </div>
                 <div
-                  className={`
-                  flex flex-wrap items-center justify-between gap-2
-                `}
+                  className={`flex flex-wrap items-center justify-between gap-2`}
                 >
                   <dt className="text-muted-foreground">Invoice id</dt>
                   <dd>
@@ -870,9 +836,9 @@ export function EthPayClient({
                 </div>
                 <div
                   className={`
-                  flex flex-wrap items-center justify-between gap-2 border-t
-                  border-border pt-3
-                `}
+                    flex flex-wrap items-center justify-between gap-2 border-t
+                    border-border pt-3
+                  `}
                 >
                   <dt className="text-muted-foreground">Fiat value</dt>
                   <dd className="font-medium">
@@ -881,8 +847,8 @@ export function EthPayClient({
                 </div>
                 <div
                   className={`
-                  flex flex-wrap items-center justify-between gap-2 text-lg
-                `}
+                    flex flex-wrap items-center justify-between gap-2 text-lg
+                  `}
                 >
                   <dt className="font-medium">Total</dt>
                   <dd className="font-semibold">
@@ -895,8 +861,8 @@ export function EthPayClient({
               {!isStablecoin && (
                 <p
                   className={`
-                  mt-4 flex items-center gap-2 text-sm text-muted-foreground
-                `}
+                    mt-4 flex items-center gap-2 text-sm text-muted-foreground
+                  `}
                 >
                   We&apos;ve converted this price from USD to ETH at our rate of
                   approximately {rateLabel}.
@@ -926,8 +892,8 @@ export function EthPayClient({
         >
           <div
             className={`
-            flex items-center gap-2 border-b border-border px-5 py-4
-          `}
+              flex items-center gap-2 border-b border-border px-5 py-4
+            `}
           >
             {connectStep === "network" && (
               <button
@@ -952,9 +918,9 @@ export function EthPayClient({
                 <div>
                   <p
                     className={`
-                    mb-2 text-xs font-medium tracking-wider
-                    text-muted-foreground uppercase
-                  `}
+                      mb-2 text-xs font-medium tracking-wider
+                      text-muted-foreground uppercase
+                    `}
                   >
                     Suggested
                   </p>
@@ -984,23 +950,22 @@ export function EthPayClient({
                       {isMetaMaskDetected && (
                         <span
                           className={`
-                          flex items-center gap-1.5 rounded-full bg-green-500/15
-                          px-2 py-0.5 text-xs font-medium text-green-700
-                          dark:text-green-400
-                        `}
+                            flex items-center gap-1.5 rounded-full
+                            bg-green-500/15 px-2 py-0.5 text-xs font-medium
+                            text-green-700
+                            dark:text-green-400
+                          `}
                         >
                           <span
                             className={`
-                            size-1.5 shrink-0 rounded-full bg-green-500
-                          `}
+                              size-1.5 shrink-0 rounded-full bg-green-500
+                            `}
                           />
                           Detected
                         </span>
                       )}
                       <ChevronRight
-                        className={`
-                        size-4 shrink-0 text-muted-foreground
-                      `}
+                        className={`size-4 shrink-0 text-muted-foreground`}
                       />
                     </button>
                     <button
@@ -1026,23 +991,22 @@ export function EthPayClient({
                       {phantomConnector && (
                         <span
                           className={`
-                          flex items-center gap-1.5 rounded-full bg-green-500/15
-                          px-2 py-0.5 text-xs font-medium text-green-700
-                          dark:text-green-400
-                        `}
+                            flex items-center gap-1.5 rounded-full
+                            bg-green-500/15 px-2 py-0.5 text-xs font-medium
+                            text-green-700
+                            dark:text-green-400
+                          `}
                         >
                           <span
                             className={`
-                            size-1.5 shrink-0 rounded-full bg-green-500
-                          `}
+                              size-1.5 shrink-0 rounded-full bg-green-500
+                            `}
                           />
                           Detected
                         </span>
                       )}
                       <ChevronRight
-                        className={`
-                        size-4 shrink-0 text-muted-foreground
-                      `}
+                        className={`size-4 shrink-0 text-muted-foreground`}
                       />
                     </button>
                   </div>
@@ -1050,9 +1014,9 @@ export function EthPayClient({
                 <div>
                   <p
                     className={`
-                    mb-2 text-xs font-medium tracking-wider
-                    text-muted-foreground uppercase
-                  `}
+                      mb-2 text-xs font-medium tracking-wider
+                      text-muted-foreground uppercase
+                    `}
                   >
                     Others
                   </p>
@@ -1081,24 +1045,22 @@ export function EthPayClient({
                         {connector.type === "injected" && (
                           <span
                             className={`
-                            flex items-center gap-1.5 rounded-full
-                            bg-green-500/15 px-2 py-0.5 text-xs font-medium
-                            text-green-700
-                            dark:text-green-400
-                          `}
+                              flex items-center gap-1.5 rounded-full
+                              bg-green-500/15 px-2 py-0.5 text-xs font-medium
+                              text-green-700
+                              dark:text-green-400
+                            `}
                           >
                             <span
                               className={`
-                              size-1.5 shrink-0 rounded-full bg-green-500
-                            `}
+                                size-1.5 shrink-0 rounded-full bg-green-500
+                              `}
                             />
                             Detected
                           </span>
                         )}
                         <ChevronRight
-                          className={`
-                          size-4 shrink-0 text-muted-foreground
-                        `}
+                          className={`size-4 shrink-0 text-muted-foreground`}
                         />
                       </button>
                     ))}
@@ -1115,9 +1077,9 @@ export function EthPayClient({
               <div className="space-y-2">
                 <p
                   className={`
-                  mb-3 text-xs font-medium tracking-wider text-muted-foreground
-                  uppercase
-                `}
+                    mb-3 text-xs font-medium tracking-wider
+                    text-muted-foreground uppercase
+                  `}
                 >
                   Connect {multiChainConnectorForNetwork?.name ?? "wallet"} to
                 </p>
@@ -1141,9 +1103,7 @@ export function EthPayClient({
                   />
                   <span className="font-medium">Ethereum (this page)</span>
                   <ChevronRight
-                    className={`
-                    ml-auto size-4 shrink-0 text-muted-foreground
-                  `}
+                    className={`ml-auto size-4 shrink-0 text-muted-foreground`}
                   />
                 </button>
                 <button
@@ -1164,9 +1124,7 @@ export function EthPayClient({
                   />
                   <span className="font-medium">Solana</span>
                   <ChevronRight
-                    className={`
-                    ml-auto size-4 shrink-0 text-muted-foreground
-                  `}
+                    className={`ml-auto size-4 shrink-0 text-muted-foreground`}
                   />
                 </button>
                 <button
@@ -1187,9 +1145,7 @@ export function EthPayClient({
                   />
                   <span className="font-medium">Sui</span>
                   <ChevronRight
-                    className={`
-                    ml-auto size-4 shrink-0 text-muted-foreground
-                  `}
+                    className={`ml-auto size-4 shrink-0 text-muted-foreground`}
                   />
                 </button>
               </div>
@@ -1199,4 +1155,28 @@ export function EthPayClient({
       </Dialog>
     </div>
   );
+}
+
+function normalizeEthOrder(
+  data: Partial<OrderData> & Record<string, unknown>,
+): OrderData {
+  const chainRaw = data.chain ?? data.cryptoCurrencyNetwork ?? "ethereum";
+  const chainName = String(chainRaw).toLowerCase();
+  const tokenRaw = data.token ?? data.cryptoCurrency ?? "eth";
+  return {
+    chain: chainName,
+    chainId: (data.chainId as number) ?? CHAIN_ID_MAP[chainName] ?? 1,
+    cryptoAmount: data.cryptoAmount,
+    depositAddress:
+      (data.depositAddress as string) ??
+      (data.solanaPayDepositAddress as string) ??
+      "",
+    email: data.email,
+    expiresAt: String(data.expiresAt ?? ""),
+    orderId: String(data.orderId ?? data.id ?? ""),
+    paymentStatus: data.paymentStatus,
+    token: String(tokenRaw).toLowerCase(),
+    tokenAddress: data.tokenAddress,
+    totalCents: Number(data.totalCents) || 0,
+  };
 }

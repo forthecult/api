@@ -3,8 +3,8 @@ import { NextResponse } from "next/server";
 
 import { db } from "~/db";
 import { esimOrdersTable, orderItemsTable, ordersTable } from "~/db/schema";
-import { postOrderBookkeeping } from "~/lib/checkout/create-order-helpers";
 import { getCurrentUser } from "~/lib/auth";
+import { postOrderBookkeeping } from "~/lib/checkout/create-order-helpers";
 import { resolveAutomaticCouponForCheckout } from "~/lib/coupon";
 import { getEsimPackageDetail } from "~/lib/esim-api";
 
@@ -33,7 +33,7 @@ export async function POST(request: Request) {
     const {
       email: bodyEmail,
       packageId,
-      packageType = "DATA-ONLY",
+      packageType: _packageType = "DATA-ONLY",
       paymentMethod = "stripe",
       paymentMethodKey: bodyPaymentMethodKey,
     } = body;
@@ -82,9 +82,7 @@ export async function POST(request: Request) {
     if (paymentMethodKey) {
       const productId = `esim_${packageId}`;
       const automaticResult = await resolveAutomaticCouponForCheckout({
-        items: [
-          { priceCents, productId, quantity: 1 },
-        ],
+        items: [{ priceCents, productId, quantity: 1 }],
         paymentMethodKey,
         productCount: 1,
         productIds: [productId],

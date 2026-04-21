@@ -1,4 +1,3 @@
-import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
 import { db } from "~/db";
@@ -85,14 +84,14 @@ export async function GET() {
     }
 
     return NextResponse.json({
-      data: list,
       chains: getSupportedChains(),
+      data: list,
     });
   } catch (err) {
     console.error("Payment methods GET error:", err);
     return NextResponse.json({
-      data: [],
       chains: getSupportedChains(),
+      data: [],
     });
   }
 }

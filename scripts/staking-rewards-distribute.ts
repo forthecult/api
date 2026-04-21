@@ -86,7 +86,7 @@ async function main() {
     return;
   }
 
-  const decimals = 1e6; // CULT decimals
+  const _decimals = 1e6; // CULT decimals
   console.log(
     `Stakers: ${stakers.length}, total staked (raw): ${totalStaked}, reward: ${rewardSol} SOL`,
   );

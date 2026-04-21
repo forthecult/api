@@ -323,11 +323,15 @@ export async function exportProductToPrintify(
     );
 
     // GET shop product often omits variant cost; fetch catalog so we have cost for the floor.
-    let catalogCostByVariantId = new Map<number, number>();
+    const catalogCostByVariantId = new Map<number, number>();
     const missingCost = printifyProduct.variants.some(
       (pv) => !pv.cost || Number(pv.cost) <= 0,
     );
-    if (missingCost && printifyProduct.blueprint_id && printifyProduct.print_provider_id) {
+    if (
+      missingCost &&
+      printifyProduct.blueprint_id &&
+      printifyProduct.print_provider_id
+    ) {
       try {
         const catalog = await fetchPrintifyVariants(
           printifyProduct.blueprint_id,
@@ -335,7 +339,7 @@ export async function exportProductToPrintify(
           { showOutOfStock: true },
         );
         const withCost = catalog as {
-          variants?: { id: number; cost?: number }[];
+          variants?: { cost?: number; id: number }[];
         };
         if (withCost.variants?.length) {
           for (const v of withCost.variants) {
@@ -673,8 +677,7 @@ async function createLocalProductFromPrintify(
   // Printify variant cost is in cents (same as price).
   const costs = enabledVariants.map((v) => v.cost);
   const costRaw = costs.length > 0 ? Math.min(...costs) : 0;
-  const costPerItemCents =
-    costRaw > 0 ? Math.round(costRaw) : null;
+  const costPerItemCents = costRaw > 0 ? Math.round(costRaw) : null;
 
   // Weight from first variant (grams)
   const weightGrams =
@@ -1122,8 +1125,7 @@ async function updateLocalProductFromPrintify(
   const priceCents = prices.length > 0 ? Math.min(...prices) : undefined;
   const costs = enabledVariants.map((v) => v.cost);
   const costRaw = costs.length > 0 ? Math.min(...costs) : 0;
-  const costPerItemCents =
-    costRaw > 0 ? Math.round(costRaw) : null;
+  const costPerItemCents = costRaw > 0 ? Math.round(costRaw) : null;
   const weightGrams =
     enabledVariants.length > 0 && enabledVariants[0]!.grams > 0
       ? enabledVariants[0]!.grams

@@ -114,7 +114,7 @@ export async function GET(request: NextRequest) {
         error: "Failed to load reviews",
         ...(isColumnError ? { hint: hint.trim() } : {}),
         ...(process.env.NODE_ENV === "development" && message
-          ? { detail: message + (hint ? " " + hint : "") }
+          ? { detail: message + (hint ? ` ${hint}` : "") }
           : {}),
       },
       { status: 500 },

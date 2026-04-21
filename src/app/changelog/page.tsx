@@ -346,25 +346,25 @@ export default function ChangelogPage() {
   return (
     <div
       className={`
-      container mx-auto max-w-7xl px-4 py-12
-      sm:px-6 sm:py-16
-      lg:px-8
-    `}
+        container mx-auto max-w-7xl px-4 py-12
+        sm:px-6 sm:py-16
+        lg:px-8
+      `}
     >
       {/* Header */}
       <header className="mb-12 border-b border-border pb-10">
         <p
           className={`
-          text-xs font-semibold tracking-wider text-primary uppercase
-        `}
+            text-xs font-semibold tracking-wider text-primary uppercase
+          `}
         >
           Building in public
         </p>
         <h1
           className={`
-          mt-2 text-3xl font-bold tracking-tight text-foreground
-          sm:text-4xl
-        `}
+            mt-2 text-3xl font-bold tracking-tight text-foreground
+            sm:text-4xl
+          `}
         >
           Changelog
         </h1>
@@ -413,9 +413,9 @@ export default function ChangelogPage() {
             <div className="flex flex-wrap items-baseline gap-3">
               <span
                 className={`
-                rounded-md bg-muted px-2 py-0.5 text-sm font-bold
-                text-foreground tabular-nums
-              `}
+                  rounded-md bg-muted px-2 py-0.5 text-sm font-bold
+                  text-foreground tabular-nums
+                `}
               >
                 v{release.version}
               </span>
@@ -427,8 +427,8 @@ export default function ChangelogPage() {
             {/* Release title */}
             <h2
               className={`
-              mt-2 text-lg font-semibold tracking-tight text-foreground
-            `}
+                mt-2 text-lg font-semibold tracking-tight text-foreground
+              `}
             >
               {release.title}
             </h2>
@@ -463,9 +463,9 @@ export default function ChangelogPage() {
       {/* Footer note */}
       <div
         className={`
-        mt-12 rounded-lg border border-primary/30 bg-primary/5 px-5 py-5
-        text-center
-      `}
+          mt-12 rounded-lg border border-primary/30 bg-primary/5 px-5 py-5
+          text-center
+        `}
       >
         <p className="text-sm font-medium text-foreground">
           We ship fast and we ship often. This store was built from scratch in
@@ -485,9 +485,9 @@ export default function ChangelogPage() {
           Have a feature request?{" "}
           <Link
             className={`
-            underline
-            hover:text-foreground
-          `}
+              underline
+              hover:text-foreground
+            `}
             href="/contact"
           >
             Let us know

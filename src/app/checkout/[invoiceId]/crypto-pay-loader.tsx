@@ -4,14 +4,19 @@ import dynamic from "next/dynamic";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import { useOrderPrefetch } from "./order-prefetch-context";
 import { Skeleton } from "~/ui/primitives/skeleton";
+
+import { useOrderPrefetch } from "./order-prefetch-context";
 
 const CryptoPayClient = dynamic(
   () => import("../crypto/CryptoPayClient").then((m) => m.CryptoPayClient),
   {
     loading: () => (
-      <div className="flex min-h-screen w-full items-center justify-center bg-background">
+      <div
+        className={`
+          flex min-h-screen w-full items-center justify-center bg-background
+        `}
+      >
         <p className="text-sm text-muted-foreground">Loading order…</p>
       </div>
     ),
@@ -84,7 +89,12 @@ export function CryptoPayLoader() {
     if (pt === "eth" || pt === "btcpay" || pt === "ton" || pt === "solana")
       setPaymentType(pt);
     else setPaymentType("solana");
-  }, [orderId, paymentType, prefetch?.order?.paymentType, prefetch?.orderLoading]);
+  }, [
+    orderId,
+    paymentType,
+    prefetch?.order?.paymentType,
+    prefetch?.orderLoading,
+  ]);
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -115,15 +125,21 @@ export function CryptoPayLoader() {
   }, []);
 
   const initialOrder = prefetch?.order ?? undefined;
-  if (paymentType === "eth") return <EthPayClient initialOrder={initialOrder} />;
+  if (paymentType === "eth")
+    return <EthPayClient initialOrder={initialOrder} />;
   if (paymentType === "btcpay")
     return <BtcPayClient initialOrder={initialOrder} />;
-  if (paymentType === "ton") return <TonPayClient initialOrder={initialOrder} />;
+  if (paymentType === "ton")
+    return <TonPayClient initialOrder={initialOrder} />;
   if (paymentType === "solana")
     return <CryptoPayClient initialOrder={initialOrder} />;
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center bg-background">
+    <div
+      className={`
+        flex min-h-screen w-full items-center justify-center bg-background
+      `}
+    >
       <p className="text-sm text-muted-foreground">Loading order…</p>
     </div>
   );

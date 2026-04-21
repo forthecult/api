@@ -20,12 +20,24 @@ const LazyConditionalHeader = dynamic(
   },
 );
 
-function isCryptoPayPage(pathname: null | string): boolean {
-  if (pathname == null) return false;
-  if (!pathname.startsWith("/checkout/")) return false;
-  if (pathname === "/checkout/cancelled" || pathname === "/checkout/success")
-    return false;
-  return pathname.length > "/checkout/".length;
+/**
+ * Renders a minimal header placeholder until the main thread is idle, then
+ * loads and shows the full ConditionalHeader (TopBanner + Header). Keeps the
+ * header chunk out of the critical path so LCP (e.g. hero) can paint first.
+ */
+export function DeferredHeader(props: { showAuth?: boolean }) {
+  const pathname = usePathname();
+  const [loadHeader, setLoadHeader] = useState(false);
+
+  useEffect(() => {
+    return whenIdle(() => setLoadHeader(true), 100);
+  }, []);
+
+  if (isCryptoPayPage(pathname)) return null;
+  if (pathname?.startsWith("/telegram")) return null;
+
+  if (!loadHeader) return <HeaderPlaceholder />;
+  return <LazyConditionalHeader {...props} />;
 }
 
 /** Minimal bar (same height as header) to avoid CLS while the real header chunk loads. */
@@ -40,14 +52,13 @@ function HeaderPlaceholder() {
       <div
         className={cn(
           "container mx-auto flex h-16 max-w-7xl items-center px-4",
-          "sm:px-6 lg:px-8",
+          `
+            sm:px-6
+            lg:px-8
+          `,
         )}
       >
-        <Link
-          aria-label="Home"
-          className="flex items-center gap-2"
-          href="/"
-        >
+        <Link aria-label="Home" className="flex items-center gap-2" href="/">
           {SEO_CONFIG.brandLogoUrl ? (
             <img
               alt=""
@@ -67,22 +78,10 @@ function HeaderPlaceholder() {
   );
 }
 
-/**
- * Renders a minimal header placeholder until the main thread is idle, then
- * loads and shows the full ConditionalHeader (TopBanner + Header). Keeps the
- * header chunk out of the critical path so LCP (e.g. hero) can paint first.
- */
-export function DeferredHeader(props: { showAuth?: boolean }) {
-  const pathname = usePathname();
-  const [loadHeader, setLoadHeader] = useState(false);
-
-  useEffect(() => {
-    return whenIdle(() => setLoadHeader(true), 100);
-  }, []);
-
-  if (isCryptoPayPage(pathname)) return null;
-  if (pathname?.startsWith("/telegram")) return null;
-
-  if (!loadHeader) return <HeaderPlaceholder />;
-  return <LazyConditionalHeader {...props} />;
+function isCryptoPayPage(pathname: null | string): boolean {
+  if (pathname == null) return false;
+  if (!pathname.startsWith("/checkout/")) return false;
+  if (pathname === "/checkout/cancelled" || pathname === "/checkout/success")
+    return false;
+  return pathname.length > "/checkout/".length;
 }

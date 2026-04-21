@@ -220,7 +220,7 @@ async function generateViaOpenClaw(
     let res: Response;
     try {
       res = await doFetch();
-    } catch (firstErr) {
+    } catch (_firstErr) {
       // One retry on timeout or network failure (e.g. HeadersTimeoutError)
       await new Promise((r) => setTimeout(r, OPENCLAW_RETRY_DELAY_MS));
       res = await doFetch();

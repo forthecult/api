@@ -24,8 +24,8 @@ export function LoginPageClient() {
       fallback={
         <div
           className={`
-          flex min-h-[50vh] items-center justify-center text-muted-foreground
-        `}
+            flex min-h-[50vh] items-center justify-center text-muted-foreground
+          `}
         >
           Loading…
         </div>
@@ -37,7 +37,7 @@ export function LoginPageClient() {
 }
 
 function LoginPageClientInner() {
-  const router = useRouter();
+  const _router = useRouter();
   const searchParams = useSearchParams();
 
   // Check for callbackUrl from query params (e.g., from admin app redirect)
@@ -110,9 +110,9 @@ function LoginPageClientInner() {
     return (
       <div
         className={`
-        flex h-screen w-full max-w-[100vw] items-center justify-center
-        overflow-x-hidden
-      `}
+          flex h-screen w-full max-w-[100vw] items-center justify-center
+          overflow-x-hidden
+        `}
       >
         <p className="text-muted-foreground">
           {isRedirecting || user ? "Redirecting…" : "Checking session…"}
@@ -128,7 +128,7 @@ function LoginPageClientInner() {
         title="Welcome back!"
       />
 
- <Card className="border-none ">
+      <Card className="border-none">
         <CardContent className="pt-2">
           <SocialLoginButtons
             disabled={loading}

@@ -139,7 +139,7 @@ export async function GET(request: NextRequest) {
     const whereClause =
       filterConditions.length > 0 ? and(...filterConditions) : undefined;
 
-    const orderByCustomer = sortBy === "customer";
+    const _orderByCustomer = sortBy === "customer";
     const baseSelect = {
       createdAt: ordersTable.createdAt,
       email: ordersTable.email,

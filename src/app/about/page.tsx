@@ -46,16 +46,16 @@ export default function AboutPage() {
       <AboutPageStructuredData />
       <div
         className={`
-        container mx-auto max-w-7xl px-4 py-12
-        sm:px-6 sm:py-16
-        lg:px-8
-      `}
+          container mx-auto max-w-7xl px-4 py-12
+          sm:px-6 sm:py-16
+          lg:px-8
+        `}
       >
         <header className="mb-12 border-b border-border pb-10">
           <div
             className={`
-            overflow-hidden rounded-lg border border-border bg-muted/30
-          `}
+              overflow-hidden rounded-lg border border-border bg-muted/30
+            `}
           >
             <Image
               alt="Culture brand — premium apparel and lifestyle. Photos by George J. Patterson."
@@ -70,9 +70,9 @@ export default function AboutPage() {
           </div>
           <h1
             className={`
-            mt-8 text-3xl font-bold tracking-tight text-foreground
-            sm:text-4xl
-          `}
+              mt-8 text-3xl font-bold tracking-tight text-foreground
+              sm:text-4xl
+            `}
           >
             About Us
           </h1>
@@ -85,9 +85,9 @@ export default function AboutPage() {
           {/* Origin & staying power */}
           <section
             className={`
-            rounded-lg border border-border bg-card/50 px-5 py-5
-            sm:px-6
-          `}
+              rounded-lg border border-border bg-card/50 px-5 py-5
+              sm:px-6
+            `}
           >
             <h2 className="text-lg font-semibold tracking-tight text-foreground">
               Where it started — and where we're going
@@ -112,21 +112,21 @@ export default function AboutPage() {
           {/* Where culture and technology merge — Web3 */}
           <section
             className={`
-            rounded-lg border border-border bg-card/50 px-5 py-5
-            sm:px-6
-          `}
+              rounded-lg border border-border bg-card/50 px-5 py-5
+              sm:px-6
+            `}
           >
             <p
               className={`
-              text-xs font-semibold tracking-wider text-primary uppercase
-            `}
+                text-xs font-semibold tracking-wider text-primary uppercase
+              `}
             >
               We love Web3
             </p>
             <h2
               className={`
-              mt-1 text-lg font-semibold tracking-tight text-foreground
-            `}
+                mt-1 text-lg font-semibold tracking-tight text-foreground
+              `}
             >
               Where culture and technology merge
             </h2>
@@ -154,21 +154,21 @@ export default function AboutPage() {
           {/* Pure style, we care for you — health */}
           <section
             className={`
-            rounded-lg border border-border bg-card/50 px-5 py-5
-            sm:px-6
-          `}
+              rounded-lg border border-border bg-card/50 px-5 py-5
+              sm:px-6
+            `}
           >
             <p
               className={`
-              text-xs font-semibold tracking-wider text-primary uppercase
-            `}
+                text-xs font-semibold tracking-wider text-primary uppercase
+              `}
             >
               We care for you
             </p>
             <h2
               className={`
-              mt-1 text-lg font-semibold tracking-tight text-foreground
-            `}
+                mt-1 text-lg font-semibold tracking-tight text-foreground
+              `}
             >
               Pure style for a healthier you
             </h2>
@@ -186,14 +186,12 @@ export default function AboutPage() {
           {/* Exquisite essentials — quality merch */}
           <section
             className={`
-            rounded-lg border border-border bg-card/50 px-5 py-5
-            sm:px-6
-          `}
+              rounded-lg border border-border bg-card/50 px-5 py-5
+              sm:px-6
+            `}
           >
             <div
-              className={`
-              mb-5 overflow-hidden rounded-lg border border-border
-            `}
+              className={`mb-5 overflow-hidden rounded-lg border border-border`}
             >
               <Image
                 alt="Culture merchandise — limited edition apparel and accessories. Premium quality."
@@ -207,15 +205,15 @@ export default function AboutPage() {
             </div>
             <p
               className={`
-              text-xs font-semibold tracking-wider text-primary uppercase
-            `}
+                text-xs font-semibold tracking-wider text-primary uppercase
+              `}
             >
               We want the best for you
             </p>
             <h2
               className={`
-              mt-1 text-lg font-semibold tracking-tight text-foreground
-            `}
+                mt-1 text-lg font-semibold tracking-tight text-foreground
+              `}
             >
               Exquisite essentials
             </h2>
@@ -237,9 +235,9 @@ export default function AboutPage() {
           {/* AI-native & community */}
           <section
             className={`
-            rounded-lg border border-border bg-card/50 px-5 py-5
-            sm:px-6
-          `}
+              rounded-lg border border-border bg-card/50 px-5 py-5
+              sm:px-6
+            `}
           >
             <h2 className="text-lg font-semibold tracking-tight text-foreground">
               Built for the future — and for degens
@@ -270,14 +268,14 @@ export default function AboutPage() {
           {/* Closing — we're not going anywhere */}
           <section
             className={`
-            rounded-lg border border-primary/30 bg-primary/5 px-5 py-5
-            sm:px-6
-          `}
+              rounded-lg border border-primary/30 bg-primary/5 px-5 py-5
+              sm:px-6
+            `}
           >
             <p
               className={`
-              text-center text-lg leading-relaxed font-medium text-foreground
-            `}
+                text-center text-lg leading-relaxed font-medium text-foreground
+              `}
             >
               A decade ago we sold Bitcoin tees to cypherpunks. Today we're the
               lifestyle brand for everyone who gets it: sovereignty over your
@@ -290,9 +288,9 @@ export default function AboutPage() {
             Page photography by George J. Patterson.{" "}
             <Link
               className={`
-              underline
-              hover:text-foreground
-            `}
+                underline
+                hover:text-foreground
+              `}
               href="/lookbook"
             >
               View lookbook

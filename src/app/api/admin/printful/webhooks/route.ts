@@ -3,12 +3,9 @@ import { type NextRequest, NextResponse } from "next/server";
 import { getAdminAuth } from "~/lib/admin-api-auth";
 import {
   disableWebhook,
-  disableWebhookV2,
   getPrintfulIfConfigured,
   getWebhookConfig,
-  getWebhookConfigV2,
   setWebhookConfig,
-  setWebhookConfigV2,
 } from "~/lib/printful";
 
 /**

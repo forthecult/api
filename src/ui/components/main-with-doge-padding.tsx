@@ -27,10 +27,12 @@ export function MainWithDogePadding({
     <div
       className={cn(
         className,
-        isDoge && !skipFooterOverlapPadding && `
-          pb-44
-          sm:pb-48
-        `,
+        isDoge &&
+          !skipFooterOverlapPadding &&
+          `
+            pb-44
+            sm:pb-48
+          `,
       )}
     >
       {children}

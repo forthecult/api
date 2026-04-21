@@ -1,7 +1,9 @@
 "use client";
 
 import type { ComponentType } from "react";
+
 import { useEffect, useState } from "react";
+
 import { whenIdle } from "~/lib/when-idle";
 
 /**
@@ -10,7 +12,7 @@ import { whenIdle } from "~/lib/when-idle";
  * content can paint before the prefetcher chunk loads.
  */
 export function DeferredCriticalRoutePrefetcher() {
-  const [Component, setComponent] = useState<null | ComponentType>(null);
+  const [Component, setComponent] = useState<ComponentType | null>(null);
 
   useEffect(() => {
     const isMobile =

@@ -101,9 +101,9 @@ export function SignupPageClient() {
     return (
       <div
         className={`
-        flex h-screen w-full max-w-[100vw] items-center justify-center
-        overflow-x-hidden
-      `}
+          flex h-screen w-full max-w-[100vw] items-center justify-center
+          overflow-x-hidden
+        `}
       >
         <p className="text-muted-foreground">Checking session…</p>
       </div>
@@ -114,12 +114,12 @@ export function SignupPageClient() {
     <AuthFormLayout>
       <AuthFormHeader title="Create Account" />
 
- <Card className="border-none ">
+      <Card className="border-none">
         <CardContent
           className={`
-          px-4 py-3
-          sm:px-6 sm:py-4
-        `}
+            px-4 py-3
+            sm:px-6 sm:py-4
+          `}
         >
           <SocialLoginButtons
             disabled={loading}

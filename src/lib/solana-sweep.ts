@@ -9,13 +9,13 @@
  */
 
 import {
+  ACCOUNT_SIZE,
   createAssociatedTokenAccountInstruction,
   createTransferCheckedInstruction,
   getAssociatedTokenAddressSync,
   getMint,
   TOKEN_PROGRAM_ID,
   unpackAccount,
-  ACCOUNT_SIZE,
 } from "@solana/spl-token";
 import { TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
 import {
@@ -96,7 +96,7 @@ interface TokenAccountInfo {
 }
 
 export function getTokenLabel(mint: string): string {
-  return KNOWN_MINT_LABELS[mint] ?? mint.slice(0, 8) + "…";
+  return KNOWN_MINT_LABELS[mint] ?? `${mint.slice(0, 8)}…`;
 }
 
 /**
@@ -398,7 +398,7 @@ async function getTokenAccountsWithBalance(
   });
   for (const { account, pubkey } of rawResp.value) {
     if (byAta.has(pubkey.toBase58())) continue;
-    let data: Buffer =
+    const data: Buffer =
       typeof account.data === "string"
         ? Buffer.from(account.data, "base64")
         : Buffer.from(account.data);

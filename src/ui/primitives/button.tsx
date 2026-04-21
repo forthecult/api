@@ -8,8 +8,8 @@ import { cn } from "~/lib/cn";
 const buttonVariants = cva(
   `
     inline-flex shrink-0 items-center justify-center gap-2 rounded-md text-sm
-    font-medium whitespace-nowrap transition-colors duration-200
-    ease-in-out outline-none
+    font-medium whitespace-nowrap transition-colors duration-200 ease-in-out
+    outline-none
     focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/60
     disabled:pointer-events-none disabled:opacity-50
     aria-invalid:border-destructive aria-invalid:ring-destructive/20

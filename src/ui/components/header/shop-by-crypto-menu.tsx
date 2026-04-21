@@ -128,7 +128,7 @@ export function ShopByCryptoMenu({
         align="start"
         className={`
           max-h-[min(80vh,520px)] w-[min(95vw,960px)] overflow-auto rounded-xl
- border bg-popover p-0 
+          border bg-popover p-0
         `}
         onMouseEnter={handleContentEnter}
         onMouseLeave={handleContentLeave}
@@ -151,9 +151,9 @@ export function ShopByCryptoMenu({
               >
                 <span
                   className={`
-                  rounded-lg px-3 py-2 text-xs font-semibold tracking-wider
-                  text-muted-foreground uppercase
-                `}
+                    rounded-lg px-3 py-2 text-xs font-semibold tracking-wider
+                    text-muted-foreground uppercase
+                  `}
                 >
                   {columnLabel}
                 </span>

@@ -1,4 +1,4 @@
-import { findReference, validateTransfer, type Amount } from "@solana/pay";
+import { type Amount, findReference, validateTransfer } from "@solana/pay";
 import {
   Connection,
   PublicKey,

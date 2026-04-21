@@ -204,19 +204,25 @@ export function SettingsPageClient() {
                 <p className="text-sm text-muted-foreground">Saving...</p>
               )}
               {/* Mobile: stacked by channel (no horizontal scroll) */}
-              <div className="space-y-4 md:hidden">
+              <div
+                className={`
+                  space-y-4
+                  md:hidden
+                `}
+              >
                 {NOTIFICATION_CHANNELS.map((channel) => {
                   const Icon = channel.icon;
                   const disabled = isChannelDisabled(channel);
                   return (
                     <div
-                      key={channel.id}
                       className="rounded-lg border bg-card p-4"
+                      key={channel.id}
                     >
                       <div className="mb-3 flex items-center gap-3">
                         <div
                           className={`
-                            flex h-9 w-9 shrink-0 items-center justify-center rounded-lg
+                            flex h-9 w-9 shrink-0 items-center justify-center
+                            rounded-lg
                             ${
                               disabled
                                 ? "bg-muted text-muted-foreground"
@@ -244,7 +250,11 @@ export function SettingsPageClient() {
                         <label
                           className={`
                             flex items-center justify-between gap-3
-                            ${disabled || notificationSaving ? "cursor-not-allowed opacity-60" : "cursor-pointer"}
+                            ${
+                              disabled || notificationSaving
+                                ? `cursor-not-allowed opacity-60`
+                                : `cursor-pointer`
+                            }
                           `}
                         >
                           <span className="text-sm">
@@ -272,7 +282,11 @@ export function SettingsPageClient() {
                         <label
                           className={`
                             flex items-center justify-between gap-3
-                            ${disabled || notificationSaving ? "cursor-not-allowed opacity-60" : "cursor-pointer"}
+                            ${
+                              disabled || notificationSaving
+                                ? `cursor-not-allowed opacity-60`
+                                : `cursor-pointer`
+                            }
                           `}
                         >
                           <span className="text-sm">
@@ -303,7 +317,12 @@ export function SettingsPageClient() {
               </div>
 
               {/* Desktop: table (channel × transactional × marketing) */}
-              <div className="hidden rounded-lg border md:block">
+              <div
+                className={`
+                  hidden rounded-lg border
+                  md:block
+                `}
+              >
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -311,7 +330,11 @@ export function SettingsPageClient() {
                       <TableHead className="text-center">
                         <div className="flex flex-col items-center gap-1">
                           <span className="font-semibold">Transactional</span>
-                          <span className="text-xs font-normal text-muted-foreground">
+                          <span
+                            className={`
+                              text-xs font-normal text-muted-foreground
+                            `}
+                          >
                             Orders, shipping, account
                           </span>
                         </div>
@@ -319,7 +342,11 @@ export function SettingsPageClient() {
                       <TableHead className="text-center">
                         <div className="flex flex-col items-center gap-1">
                           <span className="font-semibold">Marketing</span>
-                          <span className="text-xs font-normal text-muted-foreground">
+                          <span
+                            className={`
+                              text-xs font-normal text-muted-foreground
+                            `}
+                          >
                             Promotions, news, offers
                           </span>
                         </div>
@@ -336,7 +363,8 @@ export function SettingsPageClient() {
                             <div className="flex items-center gap-3">
                               <div
                                 className={`
-                                  flex h-9 w-9 items-center justify-center rounded-lg
+                                  flex h-9 w-9 items-center justify-center
+                                  rounded-lg
                                   ${
                                     disabled
                                       ? "bg-muted text-muted-foreground"
@@ -412,9 +440,7 @@ export function SettingsPageClient() {
                 <div className="rounded-lg border border-muted bg-muted/30 p-4">
                   <div className="flex items-start gap-3">
                     <MessageCircle
-                      className={`
-                      mt-0.5 h-5 w-5 text-muted-foreground
-                    `}
+                      className={`mt-0.5 h-5 w-5 text-muted-foreground`}
                     />
                     <div className="space-y-1">
                       <p className="text-sm font-medium">Telegram not linked</p>
@@ -441,9 +467,7 @@ export function SettingsPageClient() {
                 <div className="rounded-lg border border-muted bg-muted/30 p-4">
                   <div className="flex items-start gap-3">
                     <DiscordIcon
-                      className={`
-                      mt-0.5 h-5 w-5 text-muted-foreground
-                    `}
+                      className={`mt-0.5 h-5 w-5 text-muted-foreground`}
                     />
                     <div className="space-y-1">
                       <p className="text-sm font-medium">Discord not linked</p>
@@ -468,9 +492,9 @@ export function SettingsPageClient() {
               {/* Info about notification types */}
               <div
                 className={`
-                grid gap-4
-                sm:grid-cols-2
-              `}
+                  grid gap-4
+                  sm:grid-cols-2
+                `}
               >
                 <div className="rounded-lg border bg-card p-4">
                   <h4 className="mb-2 font-medium">

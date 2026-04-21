@@ -95,10 +95,10 @@ export function RelatedProductsSection({
     >
       <div
         className={`
-        w-full max-w-7xl px-4
-        sm:px-6
-        lg:px-8
-      `}
+          w-full max-w-7xl px-4
+          sm:px-6
+          lg:px-8
+        `}
       >
         <h2
           className="mb-6 text-left text-2xl font-bold text-foreground"
@@ -112,13 +112,13 @@ export function RelatedProductsSection({
           </p>
         ) : (
           <div
-            ref={gridRef}
             className={`
-            grid grid-cols-1 gap-x-8 gap-y-6
-            sm:grid-cols-2 sm:gap-x-10
-            md:grid-cols-3
-            lg:grid-cols-4 lg:gap-x-12
-          `}
+              grid grid-cols-1 gap-x-8 gap-y-6
+              sm:grid-cols-2 sm:gap-x-10
+              md:grid-cols-3
+              lg:grid-cols-4 lg:gap-x-12
+            `}
+            ref={gridRef}
           >
             {products.map((product) => (
               <ProductCard

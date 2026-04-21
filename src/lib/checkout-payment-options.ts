@@ -19,10 +19,10 @@ export interface PaymentVisibility {
   creditCard: boolean;
   cryptoBitcoin: boolean;
   cryptoCrust: boolean;
+  cryptoCult: boolean;
   cryptoDogecoin: boolean;
   cryptoEthereum: boolean;
   cryptoMonero: boolean;
-  cryptoCult: boolean;
   cryptoPump: boolean;
   cryptoSeeker: boolean;
   cryptoSolana: boolean;
@@ -150,7 +150,7 @@ const OTHER_CRYPTO_OPTIONS: { label: string; value: string }[] = [
   { label: "TON", value: "ton" },
 ];
 
-const ETH_CHAIN_OPTIONS: { label: string; value: string }[] = [
+const _ETH_CHAIN_OPTIONS: { label: string; value: string }[] = [
   { label: "ETH (Ethereum)", value: "ethereum" },
   { label: "ETH (Arbitrum)", value: "arbitrum" },
   { label: "ETH (Base)", value: "base" },

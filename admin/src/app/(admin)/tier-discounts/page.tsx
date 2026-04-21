@@ -155,9 +155,9 @@ export default function AdminTierDiscountsPage() {
     return (
       <div
         className={`
-        rounded-lg border border-red-200 bg-red-50 p-4 text-red-800
-        dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
-      `}
+          rounded-lg border border-red-200 bg-red-50 p-4 text-red-800
+          dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
+        `}
       >
         {error}
         <Button className="mt-2" onClick={() => void fetchList()} type="button">
@@ -171,9 +171,9 @@ export default function AdminTierDiscountsPage() {
     <div className="space-y-6">
       <div
         className={`
-        flex flex-col gap-4
-        sm:flex-row sm:items-center sm:justify-between
-      `}
+          flex flex-col gap-4
+          sm:flex-row sm:items-center sm:justify-between
+        `}
       >
         <h2 className="text-2xl font-semibold tracking-tight">
           Member tier discounts
@@ -198,18 +198,18 @@ export default function AdminTierDiscountsPage() {
           {loading ? (
             <div
               className={`
-              flex min-h-[200px] items-center justify-center
-              text-muted-foreground
-            `}
+                flex min-h-[200px] items-center justify-center
+                text-muted-foreground
+              `}
             >
               Loading…
             </div>
           ) : data?.items.length === 0 ? (
             <div
               className={`
-              flex min-h-[200px] flex-col items-center justify-center gap-2 p-8
-              text-muted-foreground
-            `}
+                flex min-h-[200px] flex-col items-center justify-center gap-2
+                p-8 text-muted-foreground
+              `}
             >
               <p>No tier discounts yet.</p>
               <Link href="/tier-discounts/create">
@@ -225,9 +225,9 @@ export default function AdminTierDiscountsPage() {
                 <thead>
                   <tr
                     className={`
-                    border-b bg-muted/50 text-left text-xs font-semibold
-                    tracking-wider text-muted-foreground uppercase
-                  `}
+                      border-b bg-muted/50 text-left text-xs font-semibold
+                      tracking-wider text-muted-foreground uppercase
+                    `}
                   >
                     <SortHeader column="memberTier" label="Tier" />
                     <th className="p-4 font-medium whitespace-nowrap">Label</th>

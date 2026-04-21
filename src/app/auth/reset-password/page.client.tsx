@@ -72,9 +72,9 @@ export function ResetPasswordClient() {
     return (
       <div
         className={`
-        container mx-auto flex min-h-[60vh] max-w-md flex-col justify-center
-        gap-6 p-4
-      `}
+          container mx-auto flex min-h-[60vh] max-w-md flex-col justify-center
+          gap-6 p-4
+        `}
       >
         <div className="flex items-center gap-2">
           <KeyRound className="h-8 w-8 text-muted-foreground" />
@@ -101,17 +101,17 @@ export function ResetPasswordClient() {
     return (
       <div
         className={`
-        container mx-auto flex min-h-[60vh] max-w-md flex-col justify-center
-        gap-6 p-4
-      `}
+          container mx-auto flex min-h-[60vh] max-w-md flex-col justify-center
+          gap-6 p-4
+        `}
       >
         <Card>
           <CardHeader>
             <CardTitle
               className={`
-              text-green-600
-              dark:text-green-400
-            `}
+                text-green-600
+                dark:text-green-400
+              `}
             >
               Password changed
             </CardTitle>
@@ -129,9 +129,9 @@ export function ResetPasswordClient() {
   return (
     <div
       className={`
-      container mx-auto flex min-h-[60vh] max-w-md flex-col justify-center gap-6
-      p-4
-    `}
+        container mx-auto flex min-h-[60vh] max-w-md flex-col justify-center
+        gap-6 p-4
+      `}
     >
       <div className="flex items-center gap-2">
         <KeyRound className="h-8 w-8 text-muted-foreground" />
@@ -152,8 +152,8 @@ export function ResetPasswordClient() {
             {error && (
               <div
                 className={`
-                rounded-md bg-destructive/10 p-3 text-sm text-destructive
-              `}
+                  rounded-md bg-destructive/10 p-3 text-sm text-destructive
+                `}
               >
                 {error}
               </div>

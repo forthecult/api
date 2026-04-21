@@ -5,23 +5,6 @@ import { aiRagChunkTable } from "~/db/schema/ai-chat/tables";
 
 import { embedTextVenice } from "./embeddings";
 
-function cosineSimilarity(a: number[], b: number[]): number {
-  const n = Math.min(a.length, b.length);
-  if (n === 0) return 0;
-  let dot = 0;
-  let na = 0;
-  let nb = 0;
-  for (let i = 0; i < n; i++) {
-    const x = a[i]!;
-    const y = b[i]!;
-    dot += x * y;
-    na += x * x;
-    nb += y * y;
-  }
-  const denom = Math.sqrt(na) * Math.sqrt(nb);
-  return denom === 0 ? 0 : dot / denom;
-}
-
 export async function retrieveRagContextLines(options: {
   apiKey: string;
   limit?: number;
@@ -45,7 +28,7 @@ export async function retrieveRagContextLines(options: {
       and(eq(aiRagChunkTable.scope, "global"), isNull(aiRagChunkTable.userId)),
     );
 
-  let userRows: { content: string; embedding: number[] | null }[] = [];
+  let userRows: { content: string; embedding: null | number[] }[] = [];
   if (options.userRagEnabled && options.userId) {
     userRows = await db
       .select({
@@ -80,4 +63,21 @@ export async function retrieveRagContextLines(options: {
     if (out.length >= limit) break;
   }
   return out;
+}
+
+function cosineSimilarity(a: number[], b: number[]): number {
+  const n = Math.min(a.length, b.length);
+  if (n === 0) return 0;
+  let dot = 0;
+  let na = 0;
+  let nb = 0;
+  for (let i = 0; i < n; i++) {
+    const x = a[i]!;
+    const y = b[i]!;
+    dot += x * y;
+    na += x * x;
+    nb += y * y;
+  }
+  const denom = Math.sqrt(na) * Math.sqrt(nb);
+  return denom === 0 ? 0 : dot / denom;
 }

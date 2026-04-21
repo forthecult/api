@@ -40,6 +40,7 @@ import { ProductDetailAccordion } from "./product-detail-accordion";
 import { ProductImageGallery } from "./product-image-gallery";
 import { ProductReviewsCarousel } from "./product-reviews-carousel";
 import { ProductShare } from "./product-share";
+import { ProductShippingEstimateProvider } from "./product-shipping-estimate-context";
 import { ProductVariantImageProvider } from "./product-variant-image-context";
 import { ProductVariantSection } from "./product-variant-section";
 /* -------------------------------------------------------------------------- */
@@ -115,18 +116,15 @@ export async function generateMetadata({
   const defaultOgPath = "/lookbook/culture-brand-lifestyle-premium-apparel.jpg";
   const imageUrl = productGate.tokenGated
     ? `${siteUrl}${defaultOgPath}`
-    : product.image && product.image.startsWith("http")
+    : product.image?.startsWith("http")
       ? product.image
       : product.image
         ? `${siteUrl}${product.image.startsWith("/") ? "" : "/"}${product.image}`
         : `${siteUrl}${defaultOgPath}`;
   return {
     description: metaDesc,
-    robots: { follow: true, index: true },
     openGraph: {
       description: metaDesc,
-      title: `${product.name} | ${SEO_CONFIG.name}`,
-      type: "website",
       images: [
         {
           alt: productGate.tokenGated ? SEO_CONFIG.name : product.name,
@@ -135,13 +133,16 @@ export async function generateMetadata({
           width: 1200,
         },
       ],
+      title: `${product.name} | ${SEO_CONFIG.name}`,
+      type: "website",
     },
+    robots: { follow: true, index: true },
     title: product.name,
     twitter: {
       card: "summary_large_image",
       description: metaDesc,
-      title: product.name,
       images: [imageUrl],
+      title: product.name,
     },
   };
 }
@@ -223,9 +224,9 @@ export default async function ProductDetailPage({ params }: PageProps) {
         <main className="flex-1 py-10">
           <div
             className={`
-            container mx-auto px-4
-            md:px-6
-          `}
+              container mx-auto px-4
+              md:px-6
+            `}
           >
             <Breadcrumbs items={breadcrumbTrail} />
             {/* Back link */}
@@ -243,9 +244,9 @@ export default async function ProductDetailPage({ params }: PageProps) {
             <ProductVariantImageProvider>
               <div
                 className={`
-                grid grid-cols-1 gap-8
-                md:grid-cols-2
-              `}
+                  grid grid-cols-1 gap-8
+                  md:grid-cols-2
+                `}
               >
                 <ProductImageGallery
                   discountPercentage={discountPercentage}
@@ -256,145 +257,151 @@ export default async function ProductDetailPage({ params }: PageProps) {
                 />
 
                 {/* Product info */}
-                <div className="flex flex-col">
-                  {/* Title & rating (only when there are reviews) */}
-                  <div className="mb-6">
-                    <h1 className="text-3xl font-bold">{product.name}</h1>
+                <ProductShippingEstimateProvider
+                  availableCountryCodes={product.availableCountryCodes}
+                  productId={product.id}
+                >
+                  <div className="flex flex-col">
+                    {/* Title & rating (only when there are reviews) */}
+                    <div className="mb-6">
+                      <h1 className="text-3xl font-bold">{product.name}</h1>
 
-                    {product.rating > 0 && (
-                      <div className="mt-2 flex items-center gap-2">
-                        <div
-                          aria-label={`Rating ${product.rating} out of 5`}
-                          className="flex items-center"
-                        >
-                          {range(5).map((i) => (
-                            <Star
-                              className={`
-                                h-5 w-5
-                                ${
-                                  i < Math.floor(product.rating)
-                                    ? "fill-primary text-primary"
-                                    : i < product.rating
-                                      ? "fill-primary/50 text-primary"
-                                      : "text-muted-foreground"
-                                }
-                              `}
-                              key={`star-${i}`}
-                            />
-                          ))}
+                      {product.rating > 0 && (
+                        <div className="mt-2 flex items-center gap-2">
+                          <div
+                            aria-label={`Rating ${product.rating} out of 5`}
+                            className="flex items-center"
+                          >
+                            {range(5).map((i) => (
+                              <Star
+                                className={`
+                                  h-5 w-5
+                                  ${
+                                    i < Math.floor(product.rating)
+                                      ? "fill-primary text-primary"
+                                      : i < product.rating
+                                        ? "fill-primary/50 text-primary"
+                                        : "text-muted-foreground"
+                                  }
+                                `}
+                                key={`star-${i}`}
+                              />
+                            ))}
+                          </div>
+                          <span className="text-sm text-muted-foreground">
+                            ({product.rating.toFixed(1)})
+                          </span>
                         </div>
-                        <span className="text-sm text-muted-foreground">
-                          ({product.rating.toFixed(1)})
-                        </span>
-                      </div>
-                    )}
-                  </div>
+                      )}
+                    </div>
 
-                  {/* Category */}
-                  <div className="mb-2">
-                    <p className="text-lg font-medium text-muted-foreground">
-                      {product.category}
-                    </p>
-                  </div>
+                    {/* Category */}
+                    <div className="mb-2">
+                      <p className="text-lg font-medium text-muted-foreground">
+                        {product.category}
+                      </p>
+                    </div>
 
-                  {/* Brand & model: show only when brand is not the fulfillment provider placeholder */}
-                  {(() => {
-                    const b = product.brand?.trim();
-                    const m = product.model?.trim();
-                    const isProviderBrand =
-                      b?.toLowerCase() === "printful" ||
-                      b?.toLowerCase() === "printify" ||
-                      b?.toLowerCase() === "generic brand";
-                    if (!b && !m) return null;
-                    if (isProviderBrand) return null;
-                    return (
-                      <div
-                        className={`
-                        mb-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm
-                        text-muted-foreground
-                      `}
-                      >
-                        {b && (
-                          <span>
-                            <span className="font-medium text-foreground">
-                              Brand:
-                            </span>{" "}
-                            {b}
-                          </span>
-                        )}
-                        {m && (
-                          <span>
-                            <span className="font-medium text-foreground">
-                              Model:
-                            </span>{" "}
-                            {m}
-                          </span>
-                        )}
-                      </div>
-                    );
-                  })()}
-
-                  {/* Features only at top (bullet points); description is in accordion below */}
-                  {product.features.length > 0 && (
-                    <ul className="mb-6 space-y-2 text-muted-foreground">
-                      {product.features.map((feature) => (
-                        <li
-                          className="flex items-start"
-                          key={`feature-${product.id}-${slugify(feature)}`}
-                        >
-                          <span
-                            className={`
-                            mt-1 mr-2 h-2 w-2 shrink-0 rounded-full bg-primary
+                    {/* Brand & model: show only when brand is not the fulfillment provider placeholder */}
+                    {(() => {
+                      const b = product.brand?.trim();
+                      const m = product.model?.trim();
+                      const isProviderBrand =
+                        b?.toLowerCase() === "printful" ||
+                        b?.toLowerCase() === "printify" ||
+                        b?.toLowerCase() === "generic brand";
+                      if (!b && !m) return null;
+                      if (isProviderBrand) return null;
+                      return (
+                        <div
+                          className={`
+                            mb-4 flex flex-wrap items-center gap-x-4 gap-y-1
+                            text-sm text-muted-foreground
                           `}
-                          />
-                          <span>{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
+                        >
+                          {b && (
+                            <span>
+                              <span className="font-medium text-foreground">
+                                Brand:
+                              </span>{" "}
+                              {b}
+                            </span>
+                          )}
+                          {m && (
+                            <span>
+                              <span className="font-medium text-foreground">
+                                Model:
+                              </span>{" "}
+                              {m}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })()}
 
-                  {/* Variant options (when present), price, stock, add to cart */}
-                  <ProductVariantSection
-                    handlingDaysMax={product.handlingDaysMax}
-                    handlingDaysMin={product.handlingDaysMin}
-                    hasVariants={product.hasVariants ?? false}
-                    optionDefinitions={product.optionDefinitions ?? []}
-                    product={{
-                      availableCountryCodes: product.availableCountryCodes,
-                      category: product.category,
-                      continueSellingWhenOutOfStock:
-                        product.continueSellingWhenOutOfStock,
-                      id: product.id,
-                      image: product.image,
-                      inStock: product.inStock,
-                      name: product.name,
-                      originalPrice: product.originalPrice,
-                      price: product.price,
-                      slug: product.slug,
-                    }}
-                    variants={product.variants ?? []}
-                  />
-                  <EstimatedDeliveryTimeline
-                    className="mb-6"
-                    handlingDaysMax={product.handlingDaysMax}
-                    handlingDaysMin={product.handlingDaysMin}
-                    transitDaysMax={product.transitDaysMax}
-                    transitDaysMin={product.transitDaysMin}
-                  />
-                  <ProductDetailAccordion
-                    category={product.category}
-                    description={sanitizeProductDescription(
-                      product.description,
+                    {/* Features only at top (bullet points); description is in accordion below */}
+                    {product.features.length > 0 && (
+                      <ul className="mb-6 space-y-2 text-muted-foreground">
+                        {product.features.map((feature) => (
+                          <li
+                            className="flex items-start"
+                            key={`feature-${product.id}-${slugify(feature)}`}
+                          >
+                            <span
+                              className={`
+                                mt-1 mr-2 h-2 w-2 shrink-0 rounded-full
+                                bg-primary
+                              `}
+                            />
+                            <span>{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
                     )}
-                    descriptionIsHtml
-                    sizeChart={product.sizeChart ?? undefined}
-                  />
-                  <ProductShare
-                    className="mt-6"
-                    title={product.name}
-                    url={`${siteUrl}/products/${product.id}`}
-                  />
-                </div>
+
+                    {/* Variant options (when present), price, stock, add to cart */}
+                    <ProductVariantSection
+                      handlingDaysMax={product.handlingDaysMax}
+                      handlingDaysMin={product.handlingDaysMin}
+                      hasVariants={product.hasVariants ?? false}
+                      optionDefinitions={product.optionDefinitions ?? []}
+                      product={{
+                        availableCountryCodes: product.availableCountryCodes,
+                        category: product.category,
+                        continueSellingWhenOutOfStock:
+                          product.continueSellingWhenOutOfStock,
+                        id: product.id,
+                        image: product.image,
+                        inStock: product.inStock,
+                        name: product.name,
+                        originalPrice: product.originalPrice,
+                        price: product.price,
+                        slug: product.slug,
+                      }}
+                      variants={product.variants ?? []}
+                    />
+                    <EstimatedDeliveryTimeline
+                      className="mb-6"
+                      handlingDaysMax={product.handlingDaysMax}
+                      handlingDaysMin={product.handlingDaysMin}
+                      transitDaysMax={product.transitDaysMax}
+                      transitDaysMin={product.transitDaysMin}
+                    />
+                    <ProductDetailAccordion
+                      category={product.category}
+                      description={sanitizeProductDescription(
+                        product.description,
+                      )}
+                      descriptionIsHtml
+                      sizeChart={product.sizeChart ?? undefined}
+                    />
+                    <ProductShare
+                      className="mt-6"
+                      title={product.name}
+                      url={`${siteUrl}/products/${product.id}`}
+                    />
+                  </div>
+                </ProductShippingEstimateProvider>
               </div>
             </ProductVariantImageProvider>
 
@@ -404,9 +411,9 @@ export default async function ProductDetailPage({ params }: PageProps) {
             {Object.keys(product.specs).length > 0 && (
               <div
                 className={`
-                grid grid-cols-1 gap-8
-                md:grid-cols-2
-              `}
+                  grid grid-cols-1 gap-8
+                  md:grid-cols-2
+                `}
               >
                 {Object.keys(product.specs).length > 0 && (
                   <section>

@@ -471,12 +471,11 @@ export async function exportProductToPrintful(
         .map(async (v) => {
           const syncVariant = syncVariantById.get(v.printfulSyncVariantId!);
           const catalogVariantId = syncVariant?.product?.variant_id;
-          let costCents: number | null = null;
+          let costCents: null | number = null;
           if (catalogVariantId != null) {
             try {
               const priceRes = await fetchVariantPrices(catalogVariantId);
-              const firstTechnique =
-                priceRes?.data?.variant?.techniques?.[0];
+              const firstTechnique = priceRes?.data?.variant?.techniques?.[0];
               const priceStr =
                 firstTechnique?.discounted_price ?? firstTechnique?.price;
               if (priceStr != null) {

@@ -108,9 +108,9 @@ export default function DashboardPage() {
     return (
       <div
         className={`
-        rounded-lg border border-red-200 bg-red-50 p-4 text-red-800
-        dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
-      `}
+          rounded-lg border border-red-200 bg-red-50 p-4 text-red-800
+          dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
+        `}
       >
         {error}
         <Button
@@ -128,9 +128,9 @@ export default function DashboardPage() {
     <div className="space-y-8">
       <div
         className={`
-        flex flex-col gap-4
-        sm:flex-row sm:items-center sm:justify-between
-      `}
+          flex flex-col gap-4
+          sm:flex-row sm:items-center sm:justify-between
+        `}
       >
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
@@ -165,10 +165,10 @@ export default function DashboardPage() {
       {loading ? (
         <div
           className={`
-          grid gap-4
-          md:grid-cols-2
-          lg:grid-cols-4
-        `}
+            grid gap-4
+            md:grid-cols-2
+            lg:grid-cols-4
+          `}
         >
           {Array.from({ length: 8 }).map((_, i) => (
             <Card className="animate-pulse" key={i}>
@@ -185,15 +185,13 @@ export default function DashboardPage() {
         <>
           <div
             className={`
-            grid gap-4
-            md:grid-cols-2
-          `}
+              grid gap-4
+              md:grid-cols-2
+            `}
           >
             <Card>
               <CardHeader
-                className={`
-                flex flex-row items-center justify-between pb-2
-              `}
+                className={`flex flex-row items-center justify-between pb-2`}
               >
                 <CardTitle className="text-sm font-medium">
                   {rangeLabel} visits
@@ -209,9 +207,7 @@ export default function DashboardPage() {
             </Card>
             <Card>
               <CardHeader
-                className={`
-                flex flex-row items-center justify-between pb-2
-              `}
+                className={`flex flex-row items-center justify-between pb-2`}
               >
                 <CardTitle className="text-sm font-medium">
                   {rangeLabel} total sales
@@ -228,16 +224,14 @@ export default function DashboardPage() {
 
           <div
             className={`
-            grid gap-4
-            md:grid-cols-2
-            lg:grid-cols-5
-          `}
+              grid gap-4
+              md:grid-cols-2
+              lg:grid-cols-5
+            `}
           >
             <Card>
               <CardHeader
-                className={`
-                flex flex-row items-center justify-between pb-2
-              `}
+                className={`flex flex-row items-center justify-between pb-2`}
               >
                 <CardTitle className="text-sm font-medium">Orders</CardTitle>
                 <ShoppingCart className="h-4 w-4 text-muted-foreground" />
@@ -250,9 +244,7 @@ export default function DashboardPage() {
             </Card>
             <Card>
               <CardHeader
-                className={`
-                flex flex-row items-center justify-between pb-2
-              `}
+                className={`flex flex-row items-center justify-between pb-2`}
               >
                 <CardTitle className="text-sm font-medium">
                   Average order value
@@ -269,9 +261,7 @@ export default function DashboardPage() {
             </Card>
             <Card>
               <CardHeader
-                className={`
-                flex flex-row items-center justify-between pb-2
-              `}
+                className={`flex flex-row items-center justify-between pb-2`}
               >
                 <CardTitle className="text-sm font-medium">
                   Sold items

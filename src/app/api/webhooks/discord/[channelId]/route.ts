@@ -87,7 +87,10 @@ export async function POST(
   }
 
   if (interaction.type !== 2) {
-    return jsonResponse({ data: { content: "Unsupported interaction." }, type: 4 });
+    return jsonResponse({
+      data: { content: "Unsupported interaction." },
+      type: 4,
+    });
   }
 
   const name = interaction.data?.name;

@@ -8,7 +8,11 @@ import type { Stripe } from "@stripe/stripe-js";
 
 const KEY = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? "";
 
-let cached: Promise<Stripe | null> | null = null;
+let cached: null | Promise<null | Stripe> = null;
+
+export function getStripePromise(): null | Promise<null | Stripe> {
+  return cached;
+}
 
 export function preloadStripe(): void {
   if (cached || !KEY) return;
@@ -17,10 +21,6 @@ export function preloadStripe(): void {
   );
 }
 
-export function getStripePromise(): Promise<Stripe | null> | null {
-  return cached;
-}
-
-export function setStripePromiseFromLoad(p: Promise<Stripe | null>): void {
+export function setStripePromiseFromLoad(p: Promise<null | Stripe>): void {
   if (!cached) cached = p;
 }

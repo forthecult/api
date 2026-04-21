@@ -161,7 +161,9 @@ export async function PUT(request: Request) {
         await registerDiscordSlashCommand(applicationId, botToken);
       } catch (e) {
         errors.push(
-          e instanceof Error ? e.message : "Discord command registration failed",
+          e instanceof Error
+            ? e.message
+            : "Discord command registration failed",
         );
       }
       if (errors.length === 0) {
@@ -182,9 +184,7 @@ export async function PUT(request: Request) {
   if (body.slack !== undefined) {
     const row = await getOrCreateChannelRow(userId, "slack");
     const botToken =
-      typeof body.slack.botToken === "string"
-        ? body.slack.botToken.trim()
-        : "";
+      typeof body.slack.botToken === "string" ? body.slack.botToken.trim() : "";
     const signingSecret =
       typeof body.slack.signingSecret === "string"
         ? body.slack.signingSecret.trim()
@@ -284,8 +284,7 @@ async function buildChannelsPayload(userId: string): Promise<{
     out[provider] = {
       credentialsComplete,
       discordApplicationIdMasked: maskSecret(row.discordApplicationId),
-      discordLinkCode:
-        provider === "discord" ? row.discordLinkCode : null,
+      discordLinkCode: provider === "discord" ? row.discordLinkCode : null,
       discordPublicKeyMasked: maskSecret(row.discordPublicKey),
       id: row.id,
       provider,
@@ -388,9 +387,7 @@ async function telegramDeleteWebhook(token: string): Promise<void> {
   );
 }
 
-async function telegramGetBotUsername(
-  token: string,
-): Promise<null | string> {
+async function telegramGetBotUsername(token: string): Promise<null | string> {
   try {
     const r = await fetch(
       `https://api.telegram.org/bot${encodeURIComponent(token)}/getMe`,

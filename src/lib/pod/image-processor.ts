@@ -238,7 +238,7 @@ export async function validateForPrint(
 
   try {
     analysis = await analyzeImage(buffer);
-  } catch (e) {
+  } catch (_e) {
     return {
       errors: ["Failed to read image"],
       valid: false,

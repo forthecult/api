@@ -21,9 +21,9 @@ export default function TermsOfServicePage() {
       <header className="mb-12 border-b border-border pb-10">
         <h1
           className={`
-          text-3xl font-bold tracking-tight text-foreground
-          sm:text-4xl
-        `}
+            text-3xl font-bold tracking-tight text-foreground
+            sm:text-4xl
+          `}
         >
           Terms of service
         </h1>
@@ -40,9 +40,9 @@ export default function TermsOfServicePage() {
       <div className="space-y-10">
         <section
           className={`
-          rounded-lg border border-border bg-card/50 px-5 py-5
-          sm:px-6
-        `}
+            rounded-lg border border-border bg-card/50 px-5 py-5
+            sm:px-6
+          `}
         >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Agreement and acceptance
@@ -89,9 +89,9 @@ export default function TermsOfServicePage() {
 
         <section
           className={`
-          rounded-lg border border-border bg-card/50 px-5 py-5
-          sm:px-6
-        `}
+            rounded-lg border border-border bg-card/50 px-5 py-5
+            sm:px-6
+          `}
         >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Eligibility and acceptable use
@@ -109,9 +109,9 @@ export default function TermsOfServicePage() {
 
         <section
           className={`
-          rounded-lg border border-border bg-card/50 px-5 py-5
-          sm:px-6
-        `}
+            rounded-lg border border-border bg-card/50 px-5 py-5
+            sm:px-6
+          `}
         >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Orders and products
@@ -139,9 +139,9 @@ export default function TermsOfServicePage() {
 
         <section
           className={`
-          rounded-lg border border-border bg-card/50 px-5 py-5
-          sm:px-6
-        `}
+            rounded-lg border border-border bg-card/50 px-5 py-5
+            sm:px-6
+          `}
         >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Pricing and payment
@@ -156,9 +156,9 @@ export default function TermsOfServicePage() {
 
         <section
           className={`
-          rounded-lg border border-border bg-card/50 px-5 py-5
-          sm:px-6
-        `}
+            rounded-lg border border-border bg-card/50 px-5 py-5
+            sm:px-6
+          `}
         >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Third-party tools and links
@@ -175,9 +175,9 @@ export default function TermsOfServicePage() {
 
         <section
           className={`
-          rounded-lg border border-border bg-card/50 px-5 py-5
-          sm:px-6
-        `}
+            rounded-lg border border-border bg-card/50 px-5 py-5
+            sm:px-6
+          `}
         >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             User content and feedback
@@ -194,9 +194,9 @@ export default function TermsOfServicePage() {
 
         <section
           className={`
-          rounded-lg border border-border bg-card/50 px-5 py-5
-          sm:px-6
-        `}
+            rounded-lg border border-border bg-card/50 px-5 py-5
+            sm:px-6
+          `}
         >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Personal information
@@ -219,9 +219,9 @@ export default function TermsOfServicePage() {
 
         <section
           className={`
-          rounded-lg border border-border bg-card/50 px-5 py-5
-          sm:px-6
-        `}
+            rounded-lg border border-border bg-card/50 px-5 py-5
+            sm:px-6
+          `}
         >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Prohibited uses
@@ -239,9 +239,9 @@ export default function TermsOfServicePage() {
 
         <section
           className={`
-          rounded-lg border border-border bg-card/50 px-5 py-5
-          sm:px-6
-        `}
+            rounded-lg border border-border bg-card/50 px-5 py-5
+            sm:px-6
+          `}
         >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Disclaimers and limitation of liability
@@ -262,9 +262,9 @@ export default function TermsOfServicePage() {
 
         <section
           className={`
-          rounded-lg border border-border bg-card/50 px-5 py-5
-          sm:px-6
-        `}
+            rounded-lg border border-border bg-card/50 px-5 py-5
+            sm:px-6
+          `}
         >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Indemnification
@@ -280,9 +280,9 @@ export default function TermsOfServicePage() {
 
         <section
           className={`
-          rounded-lg border border-border bg-card/50 px-5 py-5
-          sm:px-6
-        `}
+            rounded-lg border border-border bg-card/50 px-5 py-5
+            sm:px-6
+          `}
         >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Termination and survival
@@ -298,9 +298,9 @@ export default function TermsOfServicePage() {
 
         <section
           className={`
-          rounded-lg border border-border bg-card/50 px-5 py-5
-          sm:px-6
-        `}
+            rounded-lg border border-border bg-card/50 px-5 py-5
+            sm:px-6
+          `}
         >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Governing law and disputes
@@ -318,9 +318,9 @@ export default function TermsOfServicePage() {
 
         <section
           className={`
-          rounded-lg border border-border bg-card/50 px-5 py-5
-          sm:px-6
-        `}
+            rounded-lg border border-border bg-card/50 px-5 py-5
+            sm:px-6
+          `}
         >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Severability and entire agreement
@@ -336,9 +336,9 @@ export default function TermsOfServicePage() {
 
         <section
           className={`
-          rounded-lg border border-border bg-card/50 px-5 py-5
-          sm:px-6
-        `}
+            rounded-lg border border-border bg-card/50 px-5 py-5
+            sm:px-6
+          `}
         >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Contact

@@ -29,8 +29,6 @@ import {
   SheetTrigger,
 } from "~/ui/primitives/sheet";
 
-import type { CartItem } from "./cart";
-
 interface CartClientProps {
   className?: string;
 }
@@ -113,9 +111,9 @@ export function CartClient({ className }: CartClientProps) {
     <>
       <div
         className={`
-        flex h-full max-h-[100dvh] flex-col
-        md:max-h-full
-      `}
+          flex h-full max-h-[100dvh] flex-col
+          md:max-h-full
+        `}
       >
         {/* Fixed header */}
         <div className="shrink-0 border-b px-6 py-4">
@@ -134,9 +132,9 @@ export function CartClient({ className }: CartClientProps) {
           {cartItems.length === 0 ? (
             <div
               className={`
-              flex flex-col items-center justify-center py-12 duration-200
-              animate-in fade-in
-            `}
+                flex flex-col items-center justify-center py-12 duration-200
+                animate-in fade-in
+              `}
             >
               <div
                 className={`
@@ -169,7 +167,7 @@ export function CartClient({ className }: CartClientProps) {
               {cartItems.map((item) => (
                 <div
                   className={`
- group relative flex rounded-lg border bg-card p-2 
+                    group relative flex rounded-lg border bg-card p-2
                     transition-colors duration-200 animate-in fade-in
                     slide-in-from-bottom-2
                     hover:bg-accent/50
@@ -178,8 +176,8 @@ export function CartClient({ className }: CartClientProps) {
                 >
                   <div
                     className={`
-                    relative h-20 w-20 overflow-hidden rounded bg-white
-                  `}
+                      relative h-20 w-20 overflow-hidden rounded bg-white
+                    `}
                   >
                     {failedImageIds.has(item.id) || !item.image?.trim() ? (
                       <Image
@@ -325,9 +323,9 @@ export function CartClient({ className }: CartClientProps) {
                   <SheetClose asChild>
                     <Link
                       href="/checkout"
+                      onClick={() => setIsOpen(false)}
                       onFocus={() => prefetchCheckout()}
                       onMouseEnter={() => prefetchCheckout()}
-                      onClick={() => setIsOpen(false)}
                     >
                       <Button className="w-full" size="lg">
                         Checkout
@@ -338,9 +336,9 @@ export function CartClient({ className }: CartClientProps) {
                   <DrawerClose asChild>
                     <Link
                       href="/checkout"
+                      onClick={() => setIsOpen(false)}
                       onFocus={() => prefetchCheckout()}
                       onMouseEnter={() => prefetchCheckout()}
-                      onClick={() => setIsOpen(false)}
                     >
                       <Button className="w-full" size="lg">
                         Checkout
@@ -350,9 +348,9 @@ export function CartClient({ className }: CartClientProps) {
                 )}
                 <p
                   className={`
-                  mt-4 flex items-center justify-center gap-1.5 text-center
-                  text-sm text-muted-foreground
-                `}
+                    mt-4 flex items-center justify-center gap-1.5 text-center
+                    text-sm text-muted-foreground
+                  `}
                 >
                   <Lock aria-hidden className="size-4" />
                   Secure Checkout

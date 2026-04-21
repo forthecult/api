@@ -18,7 +18,7 @@ interface FeedItem {
 
 export function NotificationsWidget() {
   const [notifications, setNotifications] = React.useState<Notification[]>([]);
-  const [loading, setLoading] = React.useState(true);
+  const [_loading, setLoading] = React.useState(true);
 
   const fetchFeed = React.useCallback(async () => {
     try {

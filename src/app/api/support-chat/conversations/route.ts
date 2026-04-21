@@ -21,12 +21,6 @@ const SOURCE_HEADER = "x-support-source";
 const GUEST_ID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-function parseSource(headers: Headers): SupportChatSource {
-  const raw = headers.get(SOURCE_HEADER)?.toLowerCase().trim();
-  if (raw === "web" || raw === "mobile") return raw;
-  return "web";
-}
-
 /**
  * GET /api/support-chat/conversations
  * Returns conversations for the current user (session) or guest (X-Support-Guest-Id).
@@ -192,4 +186,10 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
+}
+
+function parseSource(headers: Headers): SupportChatSource {
+  const raw = headers.get(SOURCE_HEADER)?.toLowerCase().trim();
+  if (raw === "web" || raw === "mobile") return raw;
+  return "web";
 }

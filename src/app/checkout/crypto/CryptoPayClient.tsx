@@ -1,6 +1,6 @@
 "use client";
 
-import { encodeURL, type Amount } from "@solana/pay";
+import { type Amount, encodeURL } from "@solana/pay";
 import {
   createAssociatedTokenAccountInstruction,
   createTransferCheckedInstruction,
@@ -10,7 +10,6 @@ import {
   TOKEN_2022_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
-import { useSolanaConnection, useSolanaWallet } from "~/app/checkout/crypto/solana-wallet-stub";
 import { Keypair, PublicKey } from "@solana/web3-compat";
 import {
   type Connection as ConnectionType,
@@ -35,10 +34,12 @@ import QRCode from "qrcode";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { InitialOrderLike } from "~/hooks/use-crypto-order";
+
 import {
-  type OrderPaymentInfo,
-  useCryptoOrder,
-} from "~/hooks/use-crypto-order";
+  useSolanaConnection,
+  useSolanaWallet,
+} from "~/app/checkout/crypto/solana-wallet-stub";
+import { useCryptoOrder } from "~/hooks/use-crypto-order";
 import { useCryptoPrices } from "~/hooks/use-crypto-prices";
 import { usePaymentCountdown } from "~/hooks/use-payment-countdown";
 import { listUserAccounts, useCurrentUser } from "~/lib/auth-client";
@@ -128,7 +129,9 @@ type PayStatus =
 
 export function CryptoPayClient({
   initialOrder,
-}: { initialOrder?: InitialOrderLike } = {}) {
+}: {
+  initialOrder?: InitialOrderLike;
+} = {}) {
   const { connection: connectionRaw } = useSolanaConnection();
   const connection = connectionRaw as ConnectionType | undefined;
   const {
@@ -175,9 +178,9 @@ export function CryptoPayClient({
   const [qrDataUrl, setQrDataUrl] = useState<null | string>(null);
   const [showQrDialog, setShowQrDialog] = useState(false);
   /** User's Solana account from auth (when signed in with wallet). Used to auto-connect on pay page. */
-  const [userSolanaAccountId, setUserSolanaAccountId] = useState<
-    null | string
-  >(null);
+  const [userSolanaAccountId, setUserSolanaAccountId] = useState<null | string>(
+    null,
+  );
   const autoConnectAttemptedRef = useRef(false);
   const isMobile = useIsMobile();
 
@@ -195,7 +198,7 @@ export function CryptoPayClient({
         if (cancelled || res.error) return;
         const solana = (res.data ?? []).find(
           (a: { providerId?: string }) => a.providerId === "solana",
-        ) as { accountId: string } | undefined;
+        ) as undefined | { accountId: string };
         if (!cancelled && solana?.accountId)
           setUserSolanaAccountId(solana.accountId);
       })
@@ -272,7 +275,7 @@ export function CryptoPayClient({
     if (SOLANA_TOKENS.includes(orderToken as (typeof SOLANA_TOKENS)[number])) {
       setToken(orderToken as (typeof SOLANA_TOKENS)[number]);
     }
-  }, [order?.token]);
+  }, [order?.token, SOLANA_TOKENS.includes]);
 
   const amountUsd =
     token === "sui" && suiFromHash
@@ -355,9 +358,7 @@ export function CryptoPayClient({
       : 0;
   const amountSeekerStr = amountSeeker.toFixed(6);
   const amountCult =
-    amountUsd > 0 && cultTokenPriceUsd > 0
-      ? amountUsd / cultTokenPriceUsd
-      : 0;
+    amountUsd > 0 && cultTokenPriceUsd > 0 ? amountUsd / cultTokenPriceUsd : 0;
   const amountCultStr = amountCult.toFixed(6);
   const amountUsdStr = amountUsd.toFixed(2);
   const amountSui =
@@ -377,12 +378,12 @@ export function CryptoPayClient({
             : token === "cult" && cultTokenPriceUsd > 0
               ? `1 CULT ≈ ${cultTokenPriceUsd.toLocaleString("en-US", { maximumFractionDigits: 6, minimumFractionDigits: 4 })} USD`
               : token === "usdc"
-              ? "1 USDC = 1 USD"
-              : token === "whitewhale"
-                ? "1 WhiteWhale ≈ 1 USD"
-                : token === "troll"
-                  ? "1 TROLL ≈ 1 USD"
-                  : `1 SOL = ${rate.toLocaleString("en-US", { maximumFractionDigits: 2, minimumFractionDigits: 2 })} USD`;
+                ? "1 USDC = 1 USD"
+                : token === "whitewhale"
+                  ? "1 WhiteWhale ≈ 1 USD"
+                  : token === "troll"
+                    ? "1 TROLL ≈ 1 USD"
+                    : `1 SOL = ${rate.toLocaleString("en-US", { maximumFractionDigits: 2, minimumFractionDigits: 2 })} USD`;
 
   const email = user?.email ?? order?.email ?? "";
   const paymentMethodLabel =
@@ -396,15 +397,15 @@ export function CryptoPayClient({
             ? "Pump (PUMP)"
             : token === "troll"
               ? "Troll (TROLL)"
-                : token === "soluna"
+              : token === "soluna"
                 ? "SOLUNA (SOLUNA)"
                 : token === "seeker"
                   ? "Seeker (SKR)"
                   : token === "cult"
                     ? "Culture (CULT)"
                     : token === "sui"
-                    ? "Sui (SUI)"
-                    : "Solana";
+                      ? "Sui (SUI)"
+                      : "Solana";
 
   useEffect(() => {
     if (token === "sui") {
@@ -582,10 +583,12 @@ export function CryptoPayClient({
     seekerSolPerToken,
     solUsdRate,
     order?.depositAddress,
-    order?.orderId,
+    suiUsdRate,
+    pathId,
+    cultSolPerToken,
   ]);
 
-  const showQrView =
+  const _showQrView =
     !isExpired && (token === "sui" ? true : !connected || payStatus === "idle");
   const qrUrlString =
     token === "sui" ? suiPaymentUri : (paymentUrl?.toString() ?? null);
@@ -758,6 +761,7 @@ export function CryptoPayClient({
     rate,
     router,
     publicKey,
+    cultSolPerToken,
   ]);
 
   const copyAddress = useCallback(() => {
@@ -780,8 +784,8 @@ export function CryptoPayClient({
             : token === "cult"
               ? amountCultStr
               : token === "usdc" || token === "whitewhale" || token === "troll"
-              ? amountUsdStr
-              : amountSolStr;
+                ? amountUsdStr
+                : amountSolStr;
   const amountUnit =
     token === "crust"
       ? "CRUST"
@@ -901,11 +905,7 @@ export function CryptoPayClient({
           );
           splTokenMint = new PublicKeyFromWeb3(SKR_MINT_MAINNET);
         } else if (token === "cult") {
-          if (
-            cultSolPerToken == null ||
-            cultSolPerToken <= 0 ||
-            rate <= 0
-          ) {
+          if (cultSolPerToken == null || cultSolPerToken <= 0 || rate <= 0) {
             setPayError("CULT price unavailable. Please try again.");
             setPayStatus("error");
             return;
@@ -934,12 +934,7 @@ export function CryptoPayClient({
         let tokenProgramId = TOKEN_PROGRAM_ID;
 
         try {
-          mint = await getMint(
-            conn,
-            splTokenMint,
-            undefined,
-            TOKEN_PROGRAM_ID,
-          );
+          mint = await getMint(conn, splTokenMint, undefined, TOKEN_PROGRAM_ID);
         } catch {
           // Try Token-2022 Program if standard Token Program fails
           try {
@@ -1168,12 +1163,7 @@ export function CryptoPayClient({
         await getMint(conn, splTokenMint, undefined, TOKEN_PROGRAM_ID);
       } catch {
         try {
-          await getMint(
-            conn,
-            splTokenMint,
-            undefined,
-            TOKEN_2022_PROGRAM_ID,
-          );
+          await getMint(conn, splTokenMint, undefined, TOKEN_2022_PROGRAM_ID);
           tokenProgramId = TOKEN_2022_PROGRAM_ID;
         } catch {
           return { reason: "token", sufficient: false };
@@ -1201,8 +1191,7 @@ export function CryptoPayClient({
       // amountBaseUnits is already in smallest token units — do NOT multiply by 10^decimals again
       const requiredTokens = amountBaseUnits.integerValue(BigNumber.ROUND_CEIL);
       const tokenSufficient = BigInt(requiredTokens.toString()) <= balance;
-      if (!tokenSufficient)
-        return { reason: "token", sufficient: false };
+      if (!tokenSufficient) return { reason: "token", sufficient: false };
       if (solBalance < MIN_SOL_FOR_TOKEN_TX_LAMPORTS)
         return { reason: "sol_for_fees", sufficient: false };
       return { sufficient: true };
@@ -1262,14 +1251,14 @@ export function CryptoPayClient({
     return (
       <div
         className={`
-        flex min-h-screen w-full items-center justify-center bg-background
-      `}
+          flex min-h-screen w-full items-center justify-center bg-background
+        `}
       >
         <div
           className={`
-          flex flex-col gap-4 rounded-lg border border-border bg-card p-6
-          text-center
-        `}
+            flex flex-col gap-4 rounded-lg border border-border bg-card p-6
+            text-center
+          `}
         >
           <p className="text-sm text-muted-foreground">
             Missing order. Start checkout from your cart.
@@ -1292,8 +1281,8 @@ export function CryptoPayClient({
     return (
       <div
         className={`
-        flex min-h-screen w-full items-center justify-center bg-background
-      `}
+          flex min-h-screen w-full items-center justify-center bg-background
+        `}
       >
         <p className="text-sm text-muted-foreground">Loading order…</p>
       </div>
@@ -1305,14 +1294,14 @@ export function CryptoPayClient({
     return (
       <div
         className={`
-        flex min-h-screen w-full items-center justify-center bg-background
-      `}
+          flex min-h-screen w-full items-center justify-center bg-background
+        `}
       >
         <div
           className={`
-          flex flex-col gap-4 rounded-lg border border-border bg-card p-6
-          text-center
-        `}
+            flex flex-col gap-4 rounded-lg border border-border bg-card p-6
+            text-center
+          `}
         >
           <p className="text-sm text-muted-foreground">
             {isSuiFlow
@@ -1347,8 +1336,8 @@ export function CryptoPayClient({
     return (
       <div
         className={`
-        flex min-h-screen w-full items-center justify-center bg-background
-      `}
+          flex min-h-screen w-full items-center justify-center bg-background
+        `}
       >
         <p className="text-sm text-muted-foreground">Loading order…</p>
       </div>
@@ -1359,22 +1348,23 @@ export function CryptoPayClient({
     <div className="min-h-screen w-full overflow-x-hidden bg-background">
       <div
         className={`
-        mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8
-        sm:px-5
-      `}
+          mx-auto w-full max-w-7xl px-4 py-8
+          sm:px-5 sm:px-6
+          lg:px-8
+        `}
       >
         <div
           className={`
-          flex min-w-0 flex-col gap-6
-          min-[560px]:flex-row min-[560px]:items-start
-        `}
+            flex min-w-0 flex-col gap-6
+            min-[560px]:flex-row min-[560px]:items-start
+          `}
         >
           {/* Left: payment box */}
           <div
             className={`
-            min-w-0 flex-1 rounded-xl border border-border bg-card p-6
-            min-[560px]:min-w-[560px]
-          `}
+              min-w-0 flex-1 rounded-xl border border-border bg-card p-6
+              min-[560px]:min-w-[560px]
+            `}
           >
             <div className="flex flex-col gap-4">
               <div className="flex items-center gap-3">
@@ -1387,9 +1377,9 @@ export function CryptoPayClient({
                 />
                 <h1
                   className={`
-                  text-2xl font-semibold tracking-tight
-                  md:text-3xl
-                `}
+                    text-2xl font-semibold tracking-tight
+                    md:text-3xl
+                  `}
                 >
                   {title}
                 </h1>
@@ -1398,15 +1388,15 @@ export function CryptoPayClient({
               {token === "sui" && !getSuiPayRecipient() ? (
                 <div
                   className={`
-                  flex flex-col gap-6 rounded-lg border border-amber-500/40
-                  bg-amber-500/10 p-4
-                `}
+                    flex flex-col gap-6 rounded-lg border border-amber-500/40
+                    bg-amber-500/10 p-4
+                  `}
                 >
                   <p
                     className={`
-                    text-sm font-medium text-amber-800
-                    dark:text-amber-200
-                  `}
+                      text-sm font-medium text-amber-800
+                      dark:text-amber-200
+                    `}
                   >
                     Sui Payment Kit is not configured. Set
                     NEXT_PUBLIC_SUI_PAY_RECIPIENT in .env.
@@ -1451,9 +1441,9 @@ export function CryptoPayClient({
                   </div>
                   <div
                     className={`
-                    flex items-start gap-3 rounded-lg border border-border
-                    bg-muted/30 p-4
-                  `}
+                      flex items-start gap-3 rounded-lg border border-border
+                      bg-muted/30 p-4
+                    `}
                   >
                     <Info
                       aria-hidden
@@ -1476,51 +1466,51 @@ export function CryptoPayClient({
                     {token === "crust" && crustSolPerToken === null ? (
                       <div
                         className={`
-                        flex min-h-[320px] min-w-[320px] items-center
-                        justify-center rounded-lg border border-border bg-muted
-                        p-8 text-center text-sm text-muted-foreground
-                      `}
+                          flex min-h-[320px] min-w-[320px] items-center
+                          justify-center rounded-lg border border-border
+                          bg-muted p-8 text-center text-sm text-muted-foreground
+                        `}
                       >
                         Loading CRUST price from pump.fun…
                       </div>
                     ) : token === "pump" && pumpSolPerToken === null ? (
                       <div
                         className={`
-                        flex min-h-[320px] min-w-[320px] items-center
-                        justify-center rounded-lg border border-border bg-muted
-                        p-8 text-center text-sm text-muted-foreground
-                      `}
+                          flex min-h-[320px] min-w-[320px] items-center
+                          justify-center rounded-lg border border-border
+                          bg-muted p-8 text-center text-sm text-muted-foreground
+                        `}
                       >
                         Loading Pump price from pump.fun…
                       </div>
                     ) : token === "soluna" && solunaSolPerToken === null ? (
                       <div
                         className={`
-                        flex min-h-[320px] min-w-[320px] items-center
-                        justify-center rounded-lg border border-border bg-muted
-                        p-8 text-center text-sm text-muted-foreground
-                      `}
+                          flex min-h-[320px] min-w-[320px] items-center
+                          justify-center rounded-lg border border-border
+                          bg-muted p-8 text-center text-sm text-muted-foreground
+                        `}
                       >
                         Loading SOLUNA price from soluna…
                       </div>
                     ) : token === "seeker" && seekerSolPerToken === null ? (
                       <div
                         className={`
-                        flex min-h-[320px] min-w-[320px] items-center
-                        justify-center rounded-lg border border-border bg-muted
-                        p-8 text-center text-sm text-muted-foreground
-                      `}
+                          flex min-h-[320px] min-w-[320px] items-center
+                          justify-center rounded-lg border border-border
+                          bg-muted p-8 text-center text-sm text-muted-foreground
+                        `}
                       >
                         Loading Seeker (SKR) price…
                       </div>
                     ) : token === "crust" && crustSolPerToken === 0 ? (
                       <div
                         className={`
-                        flex min-h-[320px] min-w-[320px] flex-col items-center
-                        justify-center gap-2 rounded-lg border
-                        border-destructive/40 bg-destructive/10 p-8 text-center
-                        text-sm text-destructive
-                      `}
+                          flex min-h-[320px] min-w-[320px] flex-col items-center
+                          justify-center gap-2 rounded-lg border
+                          border-destructive/40 bg-destructive/10 p-8
+                          text-center text-sm text-destructive
+                        `}
                       >
                         <AlertCircle aria-hidden className="size-10 shrink-0" />
                         <p className="font-medium">CRUST price unavailable</p>
@@ -1532,11 +1522,11 @@ export function CryptoPayClient({
                     ) : token === "pump" && pumpSolPerToken === 0 ? (
                       <div
                         className={`
-                        flex min-h-[320px] min-w-[320px] flex-col items-center
-                        justify-center gap-2 rounded-lg border
-                        border-destructive/40 bg-destructive/10 p-8 text-center
-                        text-sm text-destructive
-                      `}
+                          flex min-h-[320px] min-w-[320px] flex-col items-center
+                          justify-center gap-2 rounded-lg border
+                          border-destructive/40 bg-destructive/10 p-8
+                          text-center text-sm text-destructive
+                        `}
                       >
                         <AlertCircle aria-hidden className="size-10 shrink-0" />
                         <p className="font-medium">Pump price unavailable</p>
@@ -1548,11 +1538,11 @@ export function CryptoPayClient({
                     ) : token === "soluna" && solunaSolPerToken === 0 ? (
                       <div
                         className={`
-                        flex min-h-[320px] min-w-[320px] flex-col items-center
-                        justify-center gap-2 rounded-lg border
-                        border-destructive/40 bg-destructive/10 p-8 text-center
-                        text-sm text-destructive
-                      `}
+                          flex min-h-[320px] min-w-[320px] flex-col items-center
+                          justify-center gap-2 rounded-lg border
+                          border-destructive/40 bg-destructive/10 p-8
+                          text-center text-sm text-destructive
+                        `}
                       >
                         <AlertCircle aria-hidden className="size-10 shrink-0" />
                         <p className="font-medium">SOLUNA price unavailable</p>
@@ -1564,11 +1554,11 @@ export function CryptoPayClient({
                     ) : token === "seeker" && seekerSolPerToken === 0 ? (
                       <div
                         className={`
-                        flex min-h-[320px] min-w-[320px] flex-col items-center
-                        justify-center gap-2 rounded-lg border
-                        border-destructive/40 bg-destructive/10 p-8 text-center
-                        text-sm text-destructive
-                      `}
+                          flex min-h-[320px] min-w-[320px] flex-col items-center
+                          justify-center gap-2 rounded-lg border
+                          border-destructive/40 bg-destructive/10 p-8
+                          text-center text-sm text-destructive
+                        `}
                       >
                         <AlertCircle aria-hidden className="size-10 shrink-0" />
                         <p className="font-medium">
@@ -1591,10 +1581,10 @@ export function CryptoPayClient({
                         {/* Logo overlay in the center of the QR code */}
                         <div
                           className={`
-                          absolute inset-0 flex items-center justify-center
-                        `}
+                            absolute inset-0 flex items-center justify-center
+                          `}
                         >
- <div className="rounded-full bg-white p-1.5 ">
+                          <div className="rounded-full bg-white p-1.5">
                             <img
                               alt=""
                               className="size-9 object-contain"
@@ -1615,14 +1605,16 @@ export function CryptoPayClient({
                       >
                         <div
                           className={`
-                          flex flex-col items-center gap-3 text-muted-foreground
-                        `}
+                            flex flex-col items-center gap-3
+                            text-muted-foreground
+                          `}
                         >
                           <div
                             className={`
-                            size-6 animate-spin rounded-full border-2
-                            border-muted-foreground/30 border-t-muted-foreground
-                          `}
+                              size-6 animate-spin rounded-full border-2
+                              border-muted-foreground/30
+                              border-t-muted-foreground
+                            `}
                           />
                           <span className="text-sm">Loading QR code…</span>
                         </div>
@@ -1633,9 +1625,9 @@ export function CryptoPayClient({
                     <Dialog onOpenChange={setShowQrDialog} open={showQrDialog}>
                       <DialogContent
                         className={`
-                        flex max-w-[min(360px,100vw)] flex-col items-center
-                        gap-4 p-6
-                      `}
+                          flex max-w-[min(360px,100vw)] flex-col items-center
+                          gap-4 p-6
+                        `}
                       >
                         <DialogTitle className="sr-only">
                           Payment QR code
@@ -1645,8 +1637,8 @@ export function CryptoPayClient({
                         </p>
                         <div
                           className={`
-                          relative inline-block rounded-lg bg-white p-2
-                        `}
+                            relative inline-block rounded-lg bg-white p-2
+                          `}
                         >
                           <img
                             alt="Payment QR code"
@@ -1657,14 +1649,10 @@ export function CryptoPayClient({
                           />
                           <div
                             className={`
-                            absolute inset-0 flex items-center justify-center
-                          `}
-                          >
-                            <div
-                              className={`
- rounded-full bg-white p-1.5 
+                              absolute inset-0 flex items-center justify-center
                             `}
-                            >
+                          >
+                            <div className={`rounded-full bg-white p-1.5`}>
                               <img
                                 alt=""
                                 className="size-8 object-contain"
@@ -1686,9 +1674,7 @@ export function CryptoPayClient({
                     </Dialog>
                   )}
                   <div
-                    className={`
-                    rounded-lg border border-border bg-muted/30 p-5
-                  `}
+                    className={`rounded-lg border border-border bg-muted/30 p-5`}
                   >
                     <h2 className="mb-5 text-lg font-semibold">
                       Payment details
@@ -1701,9 +1687,9 @@ export function CryptoPayClient({
                         <div className="flex flex-wrap items-center gap-2">
                           <code
                             className={`
-                            rounded bg-background px-3 py-1.5 font-mono text-sm
-                            break-all
-                          `}
+                              rounded bg-background px-3 py-1.5 font-mono
+                              text-sm break-all
+                            `}
                           >
                             {paymentAddress || "—"}
                           </code>
@@ -1759,8 +1745,8 @@ export function CryptoPayClient({
                         </p>
                         <p
                           className={`
-                          font-mono text-lg font-semibold tabular-nums
-                        `}
+                            font-mono text-lg font-semibold tabular-nums
+                          `}
                         >
                           {formattedTime}
                         </p>
@@ -1771,9 +1757,9 @@ export function CryptoPayClient({
               ) : (
                 <div
                   className={`
-                  flex flex-col gap-6 rounded-lg border border-border
-                  bg-muted/30 p-6
-                `}
+                    flex flex-col gap-6 rounded-lg border border-border
+                    bg-muted/30 p-6
+                  `}
                 >
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
@@ -1817,21 +1803,21 @@ export function CryptoPayClient({
                     <div className="flex flex-col gap-4">
                       <div
                         className={`
-                        flex items-center gap-2 rounded-md border
-                        border-green-500/40 bg-green-500/10 p-4
-                      `}
+                          flex items-center gap-2 rounded-md border
+                          border-green-500/40 bg-green-500/10 p-4
+                        `}
                       >
                         <Check
                           className={`
-                          size-5 shrink-0 text-green-600
-                          dark:text-green-500
-                        `}
+                            size-5 shrink-0 text-green-600
+                            dark:text-green-500
+                          `}
                         />
                         <p
                           className={`
-                          text-sm font-medium text-green-800
-                          dark:text-green-200
-                        `}
+                            text-sm font-medium text-green-800
+                            dark:text-green-200
+                          `}
                         >
                           Transaction sent. Waiting for confirmation…
                         </p>
@@ -1846,14 +1832,12 @@ export function CryptoPayClient({
                     <div className="flex flex-col gap-6">
                       <div
                         className={`
-                        flex items-start gap-3 rounded-md border
-                        border-destructive/40 bg-destructive/10 p-4
-                      `}
+                          flex items-start gap-3 rounded-md border
+                          border-destructive/40 bg-destructive/10 p-4
+                        `}
                       >
                         <AlertCircle
-                          className={`
-                          size-5 shrink-0 text-destructive
-                        `}
+                          className={`size-5 shrink-0 text-destructive`}
                         />
                         <p className="text-sm font-medium text-destructive">
                           {payError ?? "Transaction failed. Please try again."}
@@ -1879,9 +1863,7 @@ export function CryptoPayClient({
                       <div className="flex items-center gap-3">
                         <span className="h-px flex-1 bg-border" />
                         <span
-                          className={`
-                          text-sm font-medium text-muted-foreground
-                        `}
+                          className={`text-sm font-medium text-muted-foreground`}
                         >
                           or
                         </span>
@@ -1904,21 +1886,21 @@ export function CryptoPayClient({
                     <div className="flex flex-col gap-6">
                       <div
                         className={`
-                        flex items-start gap-3 rounded-md border
-                        border-amber-500/40 bg-amber-500/10 p-4
-                      `}
+                          flex items-start gap-3 rounded-md border
+                          border-amber-500/40 bg-amber-500/10 p-4
+                        `}
                       >
                         <AlertCircle
                           className={`
-                          size-5 shrink-0 text-amber-600
-                          dark:text-amber-500
-                        `}
+                            size-5 shrink-0 text-amber-600
+                            dark:text-amber-500
+                          `}
                         />
                         <p
                           className={`
-                          text-sm font-medium text-amber-800
-                          dark:text-amber-200
-                        `}
+                            text-sm font-medium text-amber-800
+                            dark:text-amber-200
+                          `}
                         >
                           {insufficientReason === "sol_for_fees"
                             ? `You have enough ${TOKEN_LABEL[token] ?? "funds"} for this order, but you need a small amount of SOL in your wallet for network fees (e.g. ~0.00005 SOL). Add a little SOL and try again, or pay manually below.`
@@ -2016,14 +1998,14 @@ export function CryptoPayClient({
                     ) : (
                       <div
                         className={`
-                        flex flex-col items-center gap-3 text-muted-foreground
-                      `}
+                          flex flex-col items-center gap-3 text-muted-foreground
+                        `}
                       >
                         <div
                           className={`
-                          size-6 animate-spin rounded-full border-2
-                          border-muted-foreground/30 border-t-muted-foreground
-                        `}
+                            size-6 animate-spin rounded-full border-2
+                            border-muted-foreground/30 border-t-muted-foreground
+                          `}
                         />
                         <span className="text-sm">Loading QR code…</span>
                       </div>
@@ -2036,18 +2018,16 @@ export function CryptoPayClient({
           {/* Right: Order details box */}
           <div
             className={`
-            min-w-0 shrink-0
-            min-[560px]:sticky min-[560px]:top-8 min-[560px]:w-[510px]
-            min-[560px]:self-start
-          `}
+              min-w-0 shrink-0
+              min-[560px]:sticky min-[560px]:top-8 min-[560px]:w-[510px]
+              min-[560px]:self-start
+            `}
           >
             <div className="rounded-xl border border-border bg-card px-6 py-5">
               <h2 className="mb-4 text-xl font-semibold">Order details</h2>
               <dl className="space-y-3 text-base">
                 <div
-                  className={`
-                  flex flex-wrap items-center justify-between gap-2
-                `}
+                  className={`flex flex-wrap items-center justify-between gap-2`}
                 >
                   <dt className="text-muted-foreground">Email address</dt>
                   <dd className="flex items-center gap-2">
@@ -2067,9 +2047,7 @@ export function CryptoPayClient({
                   </dd>
                 </div>
                 <div
-                  className={`
-                  flex flex-wrap items-center justify-between gap-2
-                `}
+                  className={`flex flex-wrap items-center justify-between gap-2`}
                 >
                   <dt className="text-muted-foreground">Payment method</dt>
                   <dd className="flex items-center gap-2">
@@ -2087,9 +2065,7 @@ export function CryptoPayClient({
                   </dd>
                 </div>
                 <div
-                  className={`
-                  flex flex-wrap items-center justify-between gap-2
-                `}
+                  className={`flex flex-wrap items-center justify-between gap-2`}
                 >
                   <dt className="text-muted-foreground">Order ID</dt>
                   <dd>
@@ -2100,9 +2076,9 @@ export function CryptoPayClient({
                 </div>
                 <div
                   className={`
-                  flex flex-wrap items-center justify-between gap-2 border-t
-                  border-border pt-3
-                `}
+                    flex flex-wrap items-center justify-between gap-2 border-t
+                    border-border pt-3
+                  `}
                 >
                   <dt className="text-muted-foreground">Fiat value</dt>
                   <dd className="font-medium">
@@ -2111,8 +2087,8 @@ export function CryptoPayClient({
                 </div>
                 <div
                   className={`
-                  flex flex-wrap items-center justify-between gap-2 text-lg
-                `}
+                    flex flex-wrap items-center justify-between gap-2 text-lg
+                  `}
                 >
                   <dt className="font-medium">Total</dt>
                   <dd className="font-semibold">
@@ -2129,19 +2105,19 @@ export function CryptoPayClient({
                               : token === "cult"
                                 ? `${amountCultStr} CULT`
                                 : token === "usdc"
-                                ? `${amountUsdStr} USDC`
-                                : token === "whitewhale"
-                                  ? `${amountUsdStr} WhiteWhale`
-                                  : token === "troll"
-                                    ? `${amountUsdStr} TROLL`
-                                    : `${amountSolStr} SOL`}
+                                  ? `${amountUsdStr} USDC`
+                                  : token === "whitewhale"
+                                    ? `${amountUsdStr} WhiteWhale`
+                                    : token === "troll"
+                                      ? `${amountUsdStr} TROLL`
+                                      : `${amountSolStr} SOL`}
                   </dd>
                 </div>
               </dl>
               <p
                 className={`
-                mt-4 flex items-center gap-2 text-sm text-muted-foreground
-              `}
+                  mt-4 flex items-center gap-2 text-sm text-muted-foreground
+                `}
               >
                 <ArrowLeftRight
                   aria-hidden
@@ -2160,12 +2136,12 @@ export function CryptoPayClient({
                           : token === "cult"
                             ? `We've converted this price from USD to CULT at our rate of approximately ${rateLabel}.`
                             : token === "usdc"
-                            ? `Pay in USDC (Solana). ${rateLabel}.`
-                            : token === "whitewhale"
-                              ? `Pay in WhiteWhale. ${rateLabel}.`
-                              : token === "troll"
-                                ? `Pay in TROLL. ${rateLabel}.`
-                                : `We've converted this price from USD to SOL at our rate of approximately ${rateLabel}.`}
+                              ? `Pay in USDC (Solana). ${rateLabel}.`
+                              : token === "whitewhale"
+                                ? `Pay in WhiteWhale. ${rateLabel}.`
+                                : token === "troll"
+                                  ? `Pay in TROLL. ${rateLabel}.`
+                                  : `We've converted this price from USD to SOL at our rate of approximately ${rateLabel}.`}
               </p>
             </div>
           </div>

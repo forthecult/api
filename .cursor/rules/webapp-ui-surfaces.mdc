@@ -1,0 +1,15 @@
+---
+description: Webapp UI — flat surfaces, borders/rings over shadows (performance and consistency)
+globs: "webapp/**/*.tsx,webapp/**/globals.css,webapp/**/primitives/**/*.tsx"
+alwaysApply: false
+---
+
+# webapp ui surfaces (speed-first)
+
+- **avoid decorative `shadow-*`** on buttons, inputs, cards, popovers, dialogs, and menus. shadows increase paint/compositing work; prefer `border border-border`, `bg-card` / `bg-muted`, and `focus-visible:ring-*` for hierarchy.
+- **do not add** `hover:shadow-md`, `shadow-sm`, `shadow-xs`, or `shadow-lg` to new components unless there is a strong accessibility reason already not covered by rings.
+- **forms:** inputs use border + ring on focus only; no box shadow for elevation.
+- **primitives:** shared controls live under `webapp/src/ui/primitives/`; change primitives instead of one-off shadows in feature code.
+- **exceptions:** rare marketing hero sections may use minimal shadow only when explicitly designed; default store ui stays flat.
+
+when editing legacy files, remove redundant shadows in the same area if the change already touches that component.

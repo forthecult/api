@@ -1,7 +1,5 @@
 "use client";
 
-import React from "react";
-
 import { cn } from "~/lib/cn";
 import {
   type TestimonialAuthor,
@@ -72,8 +70,8 @@ export function TestimonialsSection({
 
         <div
           className={`
-            marquee-edge-fade relative flex w-full flex-col items-center justify-center
-            overflow-hidden
+            marquee-edge-fade relative flex w-full flex-col items-center
+            justify-center overflow-hidden
           `}
         >
           <div

@@ -13,12 +13,12 @@ import type Stripe from "stripe";
 
 import { type NextRequest, NextResponse } from "next/server";
 
+import { getStripe } from "~/lib/stripe";
 import {
   handleCatalogStripeCheckoutSession,
   syncCatalogStripeSubscription,
   syncCatalogStripeSubscriptionFromMetadata,
 } from "~/lib/subscription-catalog-stripe";
-import { getStripe } from "~/lib/stripe";
 
 const webhookSecret = process.env.STRIPE_SUBSCRIPTION_WEBHOOK_SECRET;
 
@@ -54,19 +54,19 @@ export async function POST(request: NextRequest) {
         const session = event.data.object as Stripe.Checkout.Session;
         if (session.mode !== "subscription") break;
 
-        const handled = await handleCatalogStripeCheckoutSession(session, stripe);
+        const handled = await handleCatalogStripeCheckoutSession(
+          session,
+          stripe,
+        );
         if (!handled) {
           console.error(
             "[subscription-webhook] checkout.session.completed: unhandled subscription session",
-            { mode: session.mode, subscriptionKind: session.metadata?.subscriptionKind },
+            {
+              mode: session.mode,
+              subscriptionKind: session.metadata?.subscriptionKind,
+            },
           );
         }
-        break;
-      }
-
-      case "customer.subscription.updated": {
-        const subscription = event.data.object as Stripe.Subscription;
-        await syncSubscription(subscription);
         break;
       }
 
@@ -76,16 +76,16 @@ export async function POST(request: NextRequest) {
         break;
       }
 
+      case "customer.subscription.updated": {
+        const subscription = event.data.object as Stripe.Subscription;
+        await syncSubscription(subscription);
+        break;
+      }
+
       case "invoice.payment_failed": {
         const invoice = event.data.object as Stripe.Invoice;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const invoiceAny = invoice as any;
-        const subscriptionId: null | string =
-          typeof invoiceAny.subscription === "string"
-            ? invoiceAny.subscription
-            : typeof invoiceAny.parent?.subscription_details?.subscription === "string"
-              ? invoiceAny.parent.subscription_details.subscription
-              : null;
+
+        const subscriptionId = subscriptionIdFromFailedPaymentInvoice(invoice);
         if (subscriptionId) {
           const sub = await stripe.subscriptions.retrieve(subscriptionId);
           await syncSubscription(sub);
@@ -104,8 +104,20 @@ export async function POST(request: NextRequest) {
   }
 }
 
+function subscriptionIdFromFailedPaymentInvoice(
+  invoice: Stripe.Invoice,
+): null | string {
+  const legacy = (invoice as Stripe.Invoice & { subscription?: unknown })
+    .subscription;
+  if (typeof legacy === "string") return legacy;
+
+  const fromParent = invoice.parent?.subscription_details?.subscription;
+  return typeof fromParent === "string" ? fromParent : null;
+}
+
 async function syncSubscription(subscription: Stripe.Subscription) {
-  const fromMeta = await syncCatalogStripeSubscriptionFromMetadata(subscription);
+  const fromMeta =
+    await syncCatalogStripeSubscriptionFromMetadata(subscription);
   if (fromMeta) return;
   await syncCatalogStripeSubscription(subscription);
 }

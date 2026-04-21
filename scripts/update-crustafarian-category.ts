@@ -52,10 +52,9 @@ const CATEGORY_CONTENT = {
 async function main() {
   console.log("API base:", API_BASE);
 
-  const listRes = await fetch(
-    `${API_BASE}/api/admin/categories?limit=500`,
-    { headers },
-  );
+  const listRes = await fetch(`${API_BASE}/api/admin/categories?limit=500`, {
+    headers,
+  });
   if (!listRes.ok) {
     throw new Error(`Categories list failed: ${listRes.status}`);
   }
@@ -65,8 +64,7 @@ async function main() {
   const categories = listData.items ?? [];
   const category = categories.find(
     (c) =>
-      c.slug === CRUSTAFARIAN_SLUG ||
-      c.name.toLowerCase() === "crustafarian",
+      c.slug === CRUSTAFARIAN_SLUG || c.name.toLowerCase() === "crustafarian",
   );
   if (!category) {
     console.error(

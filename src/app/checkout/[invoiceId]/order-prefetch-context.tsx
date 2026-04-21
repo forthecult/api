@@ -2,12 +2,12 @@
 
 import {
   createContext,
+  type ReactNode,
   useCallback,
   useContext,
   useEffect,
   useRef,
   useState,
-  type ReactNode,
 } from "react";
 
 /** Raw order response from GET /api/checkout/orders/[orderId]. Used to avoid a second fetch in pay clients. */
@@ -20,17 +20,13 @@ export type PrefetchedOrder = Record<string, unknown> & {
   totalCents?: number;
 };
 
-type OrderPrefetchState = {
+interface OrderPrefetchState {
   order: null | PrefetchedOrder;
   orderError: null | string;
   orderLoading: boolean;
-};
-
-const OrderPrefetchContext = createContext<OrderPrefetchState | null>(null);
-
-export function useOrderPrefetch(): OrderPrefetchState | null {
-  return useContext(OrderPrefetchContext);
 }
+
+const OrderPrefetchContext = createContext<null | OrderPrefetchState>(null);
 
 export function OrderPrefetchProvider({
   children,
@@ -66,7 +62,8 @@ export function OrderPrefetchProvider({
         }
         return res.json();
       })
-      .then((raw: unknown) => { const data = raw as PrefetchedOrder;
+      .then((raw: unknown) => {
+        const data = raw as PrefetchedOrder;
         setState({ order: data, orderError: null, orderLoading: false });
       })
       .catch((err: unknown) => {
@@ -88,4 +85,8 @@ export function OrderPrefetchProvider({
       {children}
     </OrderPrefetchContext.Provider>
   );
+}
+
+export function useOrderPrefetch(): null | OrderPrefetchState {
+  return useContext(OrderPrefetchContext);
 }

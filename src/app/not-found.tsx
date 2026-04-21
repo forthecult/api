@@ -17,9 +17,9 @@ export default function NotFound() {
         </div>
         <div
           className={`
-          flex flex-col gap-3
-          sm:flex-row
-        `}
+            flex flex-col gap-3
+            sm:flex-row
+          `}
         >
           <Link href="/products">
             <Button variant="default">

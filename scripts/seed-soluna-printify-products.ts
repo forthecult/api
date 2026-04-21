@@ -59,7 +59,7 @@ const PRODUCT_SEARCHES: { search: string; productLabel: string }[] = [
   { search: "poker playing cards", productLabel: "Poker Playing Cards" },
 ];
 
-const SOLUNA_CATEGORY_ID = "soluna";
+const _SOLUNA_CATEGORY_ID = "soluna";
 const SOLANA_CATEGORY_ID = "solana";
 
 const BASE_TITLE = "SOLUNA";

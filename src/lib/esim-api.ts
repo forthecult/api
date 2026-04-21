@@ -216,7 +216,10 @@ export async function getEsimContinentPackages(
   meta: PaginationMeta;
   status: boolean;
 }> {
-  const params = new URLSearchParams({ group: ESIM_PACKAGES_GROUP, page: String(page) });
+  const params = new URLSearchParams({
+    group: ESIM_PACKAGES_GROUP,
+    page: String(page),
+  });
   if (packageType) params.set("package_type", packageType);
   return esimFetch(`/packages/continent/${continentId}?${params}`);
 }
@@ -247,7 +250,10 @@ export async function getEsimCountryPackages(
   meta: PaginationMeta;
   status: boolean;
 }> {
-  const params = new URLSearchParams({ group: ESIM_PACKAGES_GROUP, page: String(page) });
+  const params = new URLSearchParams({
+    group: ESIM_PACKAGES_GROUP,
+    page: String(page),
+  });
   if (packageType) params.set("package_type", packageType);
   return esimFetch(`/packages/country/${countryId}?${params}`);
 }
@@ -267,7 +273,9 @@ export async function getEsimGlobalPackages(
   meta: PaginationMeta;
   status: boolean;
 }> {
-  return esimFetch(`/packages/global/${packageType}?group=${ESIM_PACKAGES_GROUP}`);
+  return esimFetch(
+    `/packages/global/${packageType}?group=${ESIM_PACKAGES_GROUP}`,
+  );
 }
 
 /** Get order details */
@@ -315,7 +323,9 @@ export async function getEsimPackages(
   meta: PaginationMeta;
   status: boolean;
 }> {
-  return esimFetch(`/packages?group=${ESIM_PACKAGES_GROUP}&package_type=${packageType}&page=${page}`);
+  return esimFetch(
+    `/packages?group=${ESIM_PACKAGES_GROUP}&package_type=${packageType}&page=${page}`,
+  );
 }
 
 /** Get all packages & pricing grouped by country */
@@ -427,7 +437,7 @@ async function esimFetch<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
-  let lastRes: Response | null = null;
+  let lastRes: null | Response = null;
   for (let attempt = 0; attempt <= ESIM_429_MAX_RETRIES; attempt++) {
     const controller = new AbortController();
     const useTimeout = !options.signal;
@@ -440,12 +450,12 @@ async function esimFetch<T>(
       const token = await getAccessToken();
       const res = await fetch(`${ESIM_API_BASE}${path}`, {
         ...options,
-        signal,
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
           ...options.headers,
         },
+        signal,
       });
       if (timeoutId != null) clearTimeout(timeoutId);
       lastRes = res;
@@ -455,7 +465,7 @@ async function esimFetch<T>(
         const waitMs =
           retryAfter != null && /^\d+$/.test(retryAfter.trim())
             ? Number(retryAfter) * 1000
-            : ESIM_429_BACKOFF_MS[attempt] ?? 10_000;
+            : (ESIM_429_BACKOFF_MS[attempt] ?? 10_000);
         await new Promise((r) => setTimeout(r, waitMs));
         continue;
       }

@@ -7,9 +7,9 @@ import { db } from "~/db";
 import { esimOrdersTable, ordersTable } from "~/db/schema";
 import { getCurrentUserOrRedirect } from "~/lib/auth";
 import { formatCents, formatDateLong } from "~/lib/format";
+import { Badge } from "~/ui/primitives/badge";
 import { Button } from "~/ui/primitives/button";
 import { Card, CardContent, CardHeader } from "~/ui/primitives/card";
-import { Badge } from "~/ui/primitives/badge";
 
 import { ReorderButton } from "../ReorderButton";
 
@@ -86,9 +86,7 @@ export default async function OrderDetailPage({
 
       <Card>
         <CardHeader
-          className={`
-          flex flex-row items-center justify-between space-y-0 pb-2
-        `}
+          className={`flex flex-row items-center justify-between space-y-0 pb-2`}
         >
           <span className="text-sm font-medium text-muted-foreground capitalize">
             Status
@@ -102,7 +100,9 @@ export default async function OrderDetailPage({
           </div>
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Payment</span>
-            <span>{formatPaymentMethod(order.paymentMethod, order.cryptoCurrency)}</span>
+            <span>
+              {formatPaymentMethod(order.paymentMethod, order.cryptoCurrency)}
+            </span>
           </div>
           {isCryptoPayment(order.paymentMethod) &&
             order.cryptoAmount != null &&
@@ -153,7 +153,9 @@ export default async function OrderDetailPage({
       {/* eSIM details — activate from order page when order is eSIM-only */}
       {esimOrders.length > 0 && (
         <Card>
-          <CardHeader className="flex flex-row items-center gap-2 space-y-0 pb-2">
+          <CardHeader
+            className={`flex flex-row items-center gap-2 space-y-0 pb-2`}
+          >
             <Smartphone className="size-5 text-muted-foreground" />
             <div>
               <h2 className="text-lg font-medium">eSIM details</h2>
@@ -166,10 +168,15 @@ export default async function OrderDetailPage({
           <CardContent className="space-y-4">
             {esimOrders.map((esim) => (
               <div
+                className={`
+                  flex flex-col gap-2 rounded-lg border border-border
+                  bg-muted/30 p-3
+                `}
                 key={esim.id}
-                className="flex flex-col gap-2 rounded-lg border border-border bg-muted/30 p-3"
               >
-                <div className="flex flex-wrap items-center justify-between gap-2">
+                <div
+                  className={`flex flex-wrap items-center justify-between gap-2`}
+                >
                   <p className="text-sm font-medium">{esim.packageName}</p>
                   <Badge
                     variant={
@@ -182,14 +189,15 @@ export default async function OrderDetailPage({
                   >
                     {esim.status === "active"
                       ? "Ready"
-                      : esim.status === "processing" || esim.status === "pending"
+                      : esim.status === "processing" ||
+                          esim.status === "pending"
                         ? "Preparing"
                         : esim.status}
                   </Badge>
                 </div>
                 {(esim.status === "active" || esim.status === "processing") &&
                   esim.activationLink && (
-                    <Button asChild size="sm" className="w-fit">
+                    <Button asChild className="w-fit" size="sm">
                       <a
                         href={esim.activationLink}
                         rel="noopener noreferrer"
@@ -202,7 +210,7 @@ export default async function OrderDetailPage({
                   )}
               </div>
             ))}
-            <Button asChild variant="outline" size="sm">
+            <Button asChild size="sm" variant="outline">
               <Link href="/dashboard/esim">
                 <Smartphone className="mr-1.5 size-3.5" />
                 View in eSIM dashboard
@@ -271,6 +279,31 @@ export default async function OrderDetailPage({
   );
 }
 
+function formatPaymentMethod(
+  method: string | undefined,
+  cryptoCurrency?: null | string,
+): string {
+  const m = (method ?? "").toLowerCase();
+  if (m === "stripe") return "Credit / Debit card";
+  if (m === "solana_pay") {
+    const token = (cryptoCurrency ?? "").toUpperCase();
+    if (token === "SOL") return "SOL (Solana)";
+    if (token) return `${token} (Solana)`;
+    return "Solana";
+  }
+  if (m === "eth_pay") {
+    const token = (cryptoCurrency ?? "").toUpperCase();
+    if (token === "ETH") return "ETH (Ethereum)";
+    if (token) return `${token} (Ethereum)`;
+    return "Ethereum";
+  }
+  if (m === "btcpay") return "Bitcoin";
+  if (m === "ton_pay") return "TON";
+  if (m === "paypal") return "PayPal";
+  if (m === "crypto") return "Crypto";
+  return method ?? "—";
+}
+
 function getOrderStatusLabel(order: {
   fulfillmentStatus?: null | string;
   paymentStatus?: null | string;
@@ -300,29 +333,4 @@ function isCryptoPayment(method: string | undefined): boolean {
     m === "ton_pay" ||
     m === "crypto"
   );
-}
-
-function formatPaymentMethod(
-  method: string | undefined,
-  cryptoCurrency?: string | null,
-): string {
-  const m = (method ?? "").toLowerCase();
-  if (m === "stripe") return "Credit / Debit card";
-  if (m === "solana_pay") {
-    const token = (cryptoCurrency ?? "").toUpperCase();
-    if (token === "SOL") return "SOL (Solana)";
-    if (token) return `${token} (Solana)`;
-    return "Solana";
-  }
-  if (m === "eth_pay") {
-    const token = (cryptoCurrency ?? "").toUpperCase();
-    if (token === "ETH") return "ETH (Ethereum)";
-    if (token) return `${token} (Ethereum)`;
-    return "Ethereum";
-  }
-  if (m === "btcpay") return "Bitcoin";
-  if (m === "ton_pay") return "TON";
-  if (m === "paypal") return "PayPal";
-  if (m === "crypto") return "Crypto";
-  return method ?? "—";
 }

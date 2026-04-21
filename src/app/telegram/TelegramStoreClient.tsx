@@ -37,7 +37,7 @@ export function TelegramStoreClient() {
   const [selectedCategory, setSelectedCategory] = React.useState<string>("all");
   const [page, setPage] = React.useState(1);
   const [totalPages, setTotalPages] = React.useState(1);
-  const [total, setTotal] = React.useState(0);
+  const [_total, setTotal] = React.useState(0);
   const [loading, setLoading] = React.useState(true);
   const [loadingMore, setLoadingMore] = React.useState(false);
   const [tgReady, setTgReady] = React.useState(false);
@@ -87,7 +87,7 @@ export function TelegramStoreClient() {
       typeof window !== "undefined" ? window.Telegram?.WebApp : undefined;
     if (!tg?.BackButton) return;
     tg.BackButton.hide();
-  }, [tgReady]);
+  }, []);
 
   // Fetch products (same API as main site: page, limit, category slug)
   const fetchProducts = React.useCallback(
@@ -103,32 +103,29 @@ export function TelegramStoreClient() {
       if (categorySlug !== "all") params.set("category", categorySlug);
       fetch(`${base}/api/products?${params}`)
         .then((res) => res.json())
-        .then((raw: unknown) => { const data = raw as {
+        .then((raw: unknown) => {
+          const data = raw as {
             categories?: CategoryOption[];
             items?: Product[];
             total?: number;
             totalPages?: number;
           };
-            const items = (data.items ?? []).map((p) => ({
-              ...p,
-              inStock: p.inStock ?? true,
-              rating: p.rating ?? 0,
-            }));
-            if (append) {
-              setProducts((prev) => [...prev, ...items]);
-            } else {
-              setProducts(items);
-              if (data.categories && data.categories.length > 0) {
-                setCategories([
-                  { name: "All", slug: "all" },
-                  ...data.categories,
-                ]);
-              }
+          const items = (data.items ?? []).map((p) => ({
+            ...p,
+            inStock: p.inStock ?? true,
+            rating: p.rating ?? 0,
+          }));
+          if (append) {
+            setProducts((prev) => [...prev, ...items]);
+          } else {
+            setProducts(items);
+            if (data.categories && data.categories.length > 0) {
+              setCategories([{ name: "All", slug: "all" }, ...data.categories]);
             }
-            setTotal(data.total ?? 0);
-            setTotalPages(data.totalPages ?? 1);
-          },
-        )
+          }
+          setTotal(data.total ?? 0);
+          setTotalPages(data.totalPages ?? 1);
+        })
         .catch(() => {
           if (!append) setProducts([]);
         })
@@ -181,9 +178,9 @@ export function TelegramStoreClient() {
     <div className="flex min-h-screen flex-col pb-24">
       <header
         className={`
-        sticky top-0 z-10 border-b border-[var(--tg-theme-hint-color,#999)]/20
-        bg-[var(--tg-theme-bg-color,#fff)] px-4 py-3
-      `}
+          sticky top-0 z-10 border-b border-[var(--tg-theme-hint-color,#999)]/20
+          bg-[var(--tg-theme-bg-color,#fff)] px-4 py-3
+        `}
       >
         <div className="flex items-center justify-between">
           <span className="font-semibold text-[var(--tg-theme-text-color,#000)]">
@@ -203,11 +200,11 @@ export function TelegramStoreClient() {
               {itemCount > 0 ? (
                 <span
                   className={`
-                  absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center
-                  justify-center rounded-full
-                  bg-[var(--tg-theme-button-color,#3390ec)] px-1 text-[10px]
-                  font-bold text-[var(--tg-theme-button-text-color,#fff)]
-                `}
+                    absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center
+                    justify-center rounded-full
+                    bg-[var(--tg-theme-button-color,#3390ec)] px-1 text-[10px]
+                    font-bold text-[var(--tg-theme-button-text-color,#fff)]
+                  `}
                 >
                   {itemCount > 99 ? "99+" : itemCount}
                 </span>
@@ -224,8 +221,8 @@ export function TelegramStoreClient() {
       <div className="flex-1 px-4 py-6">
         <h1
           className={`
-          mb-3 text-lg font-semibold text-[var(--tg-theme-text-color,#000)]
-        `}
+            mb-3 text-lg font-semibold text-[var(--tg-theme-text-color,#000)]
+          `}
         >
           Products
         </h1>
@@ -262,9 +259,9 @@ export function TelegramStoreClient() {
         {loading ? (
           <div
             className={`
-            grid grid-cols-2 gap-4
-            sm:grid-cols-3
-          `}
+              grid grid-cols-2 gap-4
+              sm:grid-cols-3
+            `}
           >
             {[1, 2, 3, 4, 5, 6].map((i) => (
               <div
@@ -284,9 +281,9 @@ export function TelegramStoreClient() {
           <>
             <div
               className={`
-              grid grid-cols-2 gap-4
-              sm:grid-cols-3
-            `}
+                grid grid-cols-2 gap-4
+                sm:grid-cols-3
+              `}
             >
               {products.map((p) => (
                 <ProductCard
@@ -329,8 +326,8 @@ export function TelegramStoreClient() {
 
         <div
           className={`
-          mt-8 border-t border-[var(--tg-theme-hint-color,#999)]/20 pt-6
-        `}
+            mt-8 border-t border-[var(--tg-theme-hint-color,#999)]/20 pt-6
+          `}
         >
           <Button
             asChild

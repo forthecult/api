@@ -112,7 +112,11 @@ async function main() {
     headers,
   });
   if (!getRes.ok) {
-    console.error("Failed to fetch product:", getRes.status, await getRes.text());
+    console.error(
+      "Failed to fetch product:",
+      getRes.status,
+      await getRes.text(),
+    );
     process.exit(1);
   }
   const fullProduct = (await getRes.json()) as {
@@ -148,11 +152,7 @@ async function main() {
   });
 
   if (!patchRes.ok) {
-    console.error(
-      "PATCH failed:",
-      patchRes.status,
-      await patchRes.text(),
-    );
+    console.error("PATCH failed:", patchRes.status, await patchRes.text());
     process.exit(1);
   }
 

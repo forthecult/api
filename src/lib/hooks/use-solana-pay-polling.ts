@@ -159,6 +159,7 @@ export function useSolanaPayPolling({
     skipRedirect,
     router,
     stopPolling,
+    payerWalletAddress?.trim,
   ]);
 
   return {

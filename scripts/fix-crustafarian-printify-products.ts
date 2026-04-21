@@ -47,10 +47,7 @@ const CRUSTAFARIANISM_BASE = resolve(
   process.cwd(),
   "public/crypto/crustafarianism",
 );
-const CRUSTAFARIAN_MAIN_IMAGE = resolve(
-  CRUSTAFARIANISM_BASE,
-  "crust-logo.png",
-);
+const CRUSTAFARIAN_MAIN_IMAGE = resolve(CRUSTAFARIANISM_BASE, "crust-logo.png");
 const DESIGN_DIR = resolve(CRUSTAFARIANISM_BASE, "design");
 const DESIGN_ART_DIR = resolve(CRUSTAFARIANISM_BASE, "design art");
 
@@ -105,13 +102,17 @@ function resolveDesignPath(key: string): string | null {
 }
 
 /** Pick one of the 5 designs for this product type. Transparent logo for small/merch; full artwork for display/large. */
-function designKeyForProduct(productLabel: string): (typeof CRUSTAFARIAN_DESIGN_KEYS)[number] {
+function designKeyForProduct(
+  productLabel: string,
+): (typeof CRUSTAFARIAN_DESIGN_KEYS)[number] {
   const base = productLabel
     .toLowerCase()
     .replace(/\s+/g, "-")
     .replace(/[^a-z0-9-]/g, "");
   if (PRODUCTS_USE_TRANSPARENT_LOGO.has(base)) return TRANSPARENT_DESIGN_KEY;
-  const fullArtKeys = CRUSTAFARIAN_DESIGN_KEYS.filter((k) => k !== TRANSPARENT_DESIGN_KEY);
+  const fullArtKeys = CRUSTAFARIAN_DESIGN_KEYS.filter(
+    (k) => k !== TRANSPARENT_DESIGN_KEY,
+  );
   const idx = base.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
   return fullArtKeys[idx % fullArtKeys.length];
 }
@@ -130,7 +131,9 @@ function designFileForProduct(productLabel: string): {
       ? CRUSTAFARIAN_MAIN_IMAGE
       : resolve(CRUSTAFARIANISM_BASE, "crustafarian.png");
     if (!existsSync(fallback))
-      throw new Error(`No design file for key "${key}" and no fallback. Only use the 5 Crustafarian designs.`);
+      throw new Error(
+        `No design file for key "${key}" and no fallback. Only use the 5 Crustafarian designs.`,
+      );
     return {
       path: fallback,
       key: TRANSPARENT_DESIGN_KEY,
@@ -178,7 +181,11 @@ async function getCrustafarianProducts(): Promise<
     );
     if (!listRes.ok) break;
     const listData = (await listRes.json()) as {
-      items?: Array<{ id: string; name: string; printifyProductId?: string | null }>;
+      items?: Array<{
+        id: string;
+        name: string;
+        printifyProductId?: string | null;
+      }>;
     };
     const items = listData.items ?? [];
     for (const p of items) {
@@ -188,12 +195,13 @@ async function getCrustafarianProducts(): Promise<
           headers,
         });
         if (getRes.ok) {
-          const full = (await getRes.json()) as { printifyProductId?: string | null };
+          const full = (await getRes.json()) as {
+            printifyProductId?: string | null;
+          };
           pid = full.printifyProductId ?? null;
         }
       }
-      if (pid)
-        out.push({ id: p.id, name: p.name, printifyProductId: pid });
+      if (pid) out.push({ id: p.id, name: p.name, printifyProductId: pid });
     }
     if (items.length < limit) break;
     page++;
@@ -227,14 +235,11 @@ async function uploadImage(
 
   const q = new URLSearchParams({ provider: "printify" });
   if (useTransparentBackground) q.set("makeTransparent", "true");
-  const res = await fetch(
-    `${API_BASE}/api/admin/pod/upload?${q.toString()}`,
-    {
-      method: "POST",
-      headers: { Authorization: `Bearer ${API_KEY}` },
-      body: formData,
-    },
-  );
+  const res = await fetch(`${API_BASE}/api/admin/pod/upload?${q.toString()}`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${API_KEY}` },
+    body: formData,
+  });
   if (!res.ok) {
     const text = await res.text();
     throw new Error(`Upload failed: ${res.status} ${text}`);
@@ -311,9 +316,15 @@ async function patchProduct(
 async function main() {
   console.log("API base:", API_BASE);
   if (CRUSTAFARIAN_TRANSPARENT_IMAGE_ID)
-    console.log("Using pre-uploaded transparent image ID:", CRUSTAFARIAN_TRANSPARENT_IMAGE_ID);
+    console.log(
+      "Using pre-uploaded transparent image ID:",
+      CRUSTAFARIAN_TRANSPARENT_IMAGE_ID,
+    );
 
-  if (!CRUSTAFARIAN_TRANSPARENT_IMAGE_ID && !existsSync(CRUSTAFARIAN_MAIN_IMAGE)) {
+  if (
+    !CRUSTAFARIAN_TRANSPARENT_IMAGE_ID &&
+    !existsSync(CRUSTAFARIAN_MAIN_IMAGE)
+  ) {
     console.error(
       "Main image not found: public/crypto/crustafarianism/crust-logo.png. Or set CRUSTAFARIAN_TRANSPARENT_IMAGE_ID to your Printify image ID (transparent crustafarian image).",
     );
@@ -334,8 +345,12 @@ async function main() {
 
   for (const p of products) {
     const productLabel = productLabelFromName(p.name);
-    const { path: designPath, key: designKey, coverCanvas } = designFileForProduct(productLabel);
-    const designSource =
+    const {
+      path: designPath,
+      key: designKey,
+      coverCanvas,
+    } = designFileForProduct(productLabel);
+    const _designSource =
       designPath === CRUSTAFARIAN_MAIN_IMAGE
         ? "crust-logo.png"
         : designPath.replace(process.cwd(), "");
@@ -372,10 +387,7 @@ async function main() {
       console.log("  Updated design, synced Printify -> store, PATCHed copy.");
     } catch (e) {
       errors++;
-      console.error(
-        "  Error:",
-        e instanceof Error ? e.message : String(e),
-      );
+      console.error("  Error:", e instanceof Error ? e.message : String(e));
     }
 
     await new Promise((r) => setTimeout(r, 600));

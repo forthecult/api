@@ -51,7 +51,8 @@ export function SupportTicketDetailClient() {
         if (!res.ok) throw new Error("Failed to load ticket");
         return res.json();
       })
-      .then((raw: unknown) => { const data = raw as Ticket;
+      .then((raw: unknown) => {
+        const data = raw as Ticket;
         setTicket(data);
       })
       .catch(() => setError("Ticket not found"))
@@ -64,7 +65,7 @@ export function SupportTicketDetailClient() {
 
   React.useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [ticket?.messages]);
+  }, []);
 
   const handleSendMessage = React.useCallback(
     (e: React.FormEvent) => {
@@ -193,9 +194,9 @@ export function SupportTicketDetailClient() {
       <Card>
         <CardHeader
           className={`
-          flex flex-col gap-2
-          sm:flex-row sm:items-start sm:justify-between
-        `}
+            flex flex-col gap-2
+            sm:flex-row sm:items-start sm:justify-between
+          `}
         >
           <div>
             <CardTitle>{ticket.subject}</CardTitle>
@@ -247,9 +248,9 @@ export function SupportTicketDetailClient() {
             </h3>
             <div
               className={`
-              max-h-[400px] space-y-3 overflow-y-auto rounded-md border
-              bg-muted/20 p-3
-            `}
+                max-h-[400px] space-y-3 overflow-y-auto rounded-md border
+                bg-muted/20 p-3
+              `}
             >
               {ticket.messages.map((msg) => (
                 <div

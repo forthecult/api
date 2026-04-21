@@ -10,7 +10,7 @@ import { Input } from "~/ui/primitives/input";
 import { Label } from "~/ui/primitives/label";
 
 const inputClass =
- "flex min-h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 placeholder:text-muted-foreground disabled:opacity-50";
+  "flex min-h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 placeholder:text-muted-foreground disabled:opacity-50";
 
 export function TrackOrderForm() {
   const router = useRouter();

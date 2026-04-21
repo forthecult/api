@@ -1,12 +1,10 @@
-import { createId } from "@paralleldrive/cuid2";
-import { eq } from "drizzle-orm";
 import type Stripe from "stripe";
 
+import { createId } from "@paralleldrive/cuid2";
+import { eq } from "drizzle-orm";
+
 import { db } from "~/db";
-import {
-  stripeCustomerTable,
-  subscriptionInstanceTable,
-} from "~/db/schema";
+import { stripeCustomerTable, subscriptionInstanceTable } from "~/db/schema";
 
 /** Returns true if this session was handled (catalog or membership), false otherwise. */
 export async function handleCatalogStripeCheckoutSession(
@@ -25,12 +23,15 @@ export async function handleCatalogStripeCheckoutSession(
       : (session.subscription as Stripe.Subscription)?.id;
 
   if (!userId || !planId || !offerId || !subscriptionId) {
-    console.error("[subscription-catalog-stripe] checkout.session.completed missing metadata", {
-      offerId,
-      planId,
-      subscriptionId,
-      userId,
-    });
+    console.error(
+      "[subscription-catalog-stripe] checkout.session.completed missing metadata",
+      {
+        offerId,
+        planId,
+        subscriptionId,
+        userId,
+      },
+    );
     return true;
   }
 

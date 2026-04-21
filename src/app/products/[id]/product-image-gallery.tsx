@@ -78,10 +78,9 @@ export function ProductImageGallery({
     failedUrls.has(actualMainSrc) || !actualMainSrc?.trim()
       ? PLACEHOLDER_SRC
       : actualMainSrc;
-  const mainAlt =
-    (imageAlts?.[selectedIndex]?.trim() ||
-      (selectedIndex === 0 && mainImageAlt?.trim()) ||
-      productName) as string;
+  const mainAlt = (imageAlts?.[selectedIndex]?.trim() ||
+    (selectedIndex === 0 && mainImageAlt?.trim()) ||
+    productName) as string;
 
   const handleMainImageError = React.useCallback(() => {
     if (useUnoptimizedUrls.has(actualMainSrc)) {
@@ -136,16 +135,15 @@ export function ProductImageGallery({
               : undefined
           }
           unoptimized={
-            isExternalImageUrl(mainSrc) ||
-            useUnoptimizedUrls.has(actualMainSrc)
+            isExternalImageUrl(mainSrc) || useUnoptimizedUrls.has(actualMainSrc)
           }
         />
         {discountPercentage > 0 && (
           <div
             className={`
-            absolute top-2 left-2 rounded-full bg-red-500 px-2 py-1 text-xs
-            font-bold text-white
-          `}
+              absolute top-2 left-2 rounded-full bg-red-500 px-2 py-1 text-xs
+              font-bold text-white
+            `}
           >
             -{discountPercentage}%
           </div>
@@ -216,6 +214,6 @@ function isExternalImageUrl(src: string): boolean {
 /** Prefer https for external URLs to avoid mixed-content blocking on HTTPS pages. */
 function normalizeImageSrc(src: string): string {
   const s = src?.trim() ?? "";
-  if (s.startsWith("http://")) return "https://" + s.slice(7);
+  if (s.startsWith("http://")) return `https://${s.slice(7)}`;
   return s;
 }

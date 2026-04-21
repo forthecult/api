@@ -1,10 +1,10 @@
 "use client";
 
-import { useSolanaWallet } from "~/app/checkout/crypto/solana-wallet-stub";
 import { Lock, Wallet as WalletIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 
+import { useSolanaWallet } from "~/app/checkout/crypto/solana-wallet-stub";
 import { cn } from "~/lib/cn";
 import { Button } from "~/ui/primitives/button";
 import { Spinner } from "~/ui/primitives/spinner";
@@ -14,10 +14,10 @@ const READY_INSTALLED = "Installed";
 const READY_LOADABLE = "Loadable";
 
 /** minimal wallet shape used here; real provider supplies full Wallet */
-type WalletLike = {
+interface WalletLike {
   adapter: { icon?: string; name?: string };
   readyState?: number | string;
-};
+}
 
 const API_BASE =
   typeof window !== "undefined"
@@ -83,7 +83,7 @@ export function TokenGateGuard({
         const data = (await res.json()) as { data?: TokenGateConfig };
         const gateConfig = data.data ?? (data as unknown as TokenGateConfig);
         if (!cancelled) setConfig(gateConfig);
-      } catch (e) {
+      } catch {
         if (!cancelled) setConfig({ gates: [], tokenGated: false });
       } finally {
         if (!cancelled) setLoading(false);
@@ -255,9 +255,9 @@ export function TokenGateGuard({
       >
         <div
           className={`
-          h-8 w-8 animate-spin rounded-full border-4 border-primary
-          border-t-transparent
-        `}
+            h-8 w-8 animate-spin rounded-full border-4 border-primary
+            border-t-transparent
+          `}
         />
       </div>
     );
@@ -271,9 +271,9 @@ export function TokenGateGuard({
         <div className="flex min-h-[280px] items-center justify-center">
           <div
             className={`
-            h-8 w-8 animate-spin rounded-full border-4 border-primary
-            border-t-transparent
-          `}
+              h-8 w-8 animate-spin rounded-full border-4 border-primary
+              border-t-transparent
+            `}
           />
         </div>
       );
@@ -326,15 +326,14 @@ export function TokenGateGuard({
       )}
     >
       <div
-        className={`
- w-full max-w-md rounded-xl border border-border bg-card p-6 
-      `}
+        className={`w-full max-w-md rounded-xl border border-border bg-card p-6`}
       >
         <div className="mb-6 flex flex-col items-center gap-3 text-center">
           <div
             className={`
-            flex size-14 items-center justify-center rounded-full bg-primary/10
-          `}
+              flex size-14 items-center justify-center rounded-full
+              bg-primary/10
+            `}
           >
             <Lock className="h-7 w-7 text-primary" />
           </div>
@@ -348,9 +347,9 @@ export function TokenGateGuard({
         {error && (
           <div
             className={`
-            mb-4 rounded-lg border border-destructive/30 bg-destructive/10 px-3
-            py-2 text-sm text-destructive
-          `}
+              mb-4 rounded-lg border border-destructive/30 bg-destructive/10
+              px-3 py-2 text-sm text-destructive
+            `}
           >
             {error}
           </div>
@@ -449,9 +448,9 @@ function WalletOption({
       {icon && (
         <div
           className={`
-          flex size-8 shrink-0 items-center justify-center overflow-hidden
-          rounded-md bg-muted/20
-        `}
+            flex size-8 shrink-0 items-center justify-center overflow-hidden
+            rounded-md bg-muted/20
+          `}
         >
           <img
             alt=""
@@ -466,10 +465,10 @@ function WalletOption({
       {isDetected && (
         <span
           className={`
-          rounded-full bg-green-500/15 px-2 py-0.5 text-xs font-medium
-          text-green-700
-          dark:text-green-400
-        `}
+            rounded-full bg-green-500/15 px-2 py-0.5 text-xs font-medium
+            text-green-700
+            dark:text-green-400
+          `}
         >
           Detected
         </span>

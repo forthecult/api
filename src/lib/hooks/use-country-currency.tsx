@@ -654,7 +654,8 @@ export function CountryCurrencyProvider({
     // Fetch geo from API to detect user's country
     fetch("/api/geo")
       .then((res) => res.json())
-      .then((raw: unknown) => { const data = raw as { country?: null | string };
+      .then((raw: unknown) => {
+        const data = raw as { country?: null | string };
         if (data.country && isValidCountryCode(data.country)) {
           const detectedCountry = data.country as CountryCode;
           const detectedCurrency = defaultCurrencyForCountry(detectedCountry);
@@ -780,7 +781,8 @@ export function CountryCurrencyProvider({
       signal: controller.signal,
     })
       .then((res) => res.json())
-      .then((raw: unknown) => { const data = raw as unknown;
+      .then((raw: unknown) => {
+        const data = raw as unknown;
         const d = data as { rates?: Record<string, number> };
         if (d?.rates) {
           setRates(d.rates);

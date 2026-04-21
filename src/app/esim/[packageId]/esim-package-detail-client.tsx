@@ -26,7 +26,6 @@ import { useCurrentUser } from "~/lib/auth-client";
 import {
   hasAnyCryptoEnabled,
   hasAnyStablecoinEnabled,
-  type PaymentVisibility,
   visibleCryptoSubFromVisibility,
   visibleUsdcNetworks,
   visibleUsdtNetworks,
@@ -113,10 +112,10 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
   const [purchasing, setPurchasing] = useState(false);
   const [guestEmail, setGuestEmail] = useState("");
   /** When user selects a payment method with an automatic eSIM discount (e.g. Seeker) or tier discount. */
-  const [discountPreview, setDiscountPreview] = useState<{
+  const [discountPreview, setDiscountPreview] = useState<null | {
     discountCents: number;
     totalAfterDiscountCents: number;
-  } | null>(null);
+  }>(null);
   /** Linked Solana wallet for tier-based discount (from /api/user/membership). */
   const [memberWallet, setMemberWallet] = useState<null | string>(null);
   /** Member tier (1–3) when no wallet linked, from tier history (from /api/user/membership). */
@@ -215,7 +214,7 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
     setPkg(null);
     const maxAttempts = 3;
     const delayMs = (attempt: number) =>
-      attempt === 0 ? 0 : 500 * Math.pow(1.5, attempt - 1);
+      attempt === 0 ? 0 : 500 * 1.5 ** (attempt - 1);
 
     try {
       for (let attempt = 0; attempt < maxAttempts; attempt++) {
@@ -248,7 +247,7 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
     const run = async () => {
       const maxAttempts = 3;
       const delayMs = (attempt: number) =>
-        attempt === 0 ? 0 : 500 * Math.pow(1.5, attempt - 1);
+        attempt === 0 ? 0 : 500 * 1.5 ** (attempt - 1);
 
       for (let attempt = 0; attempt < maxAttempts && !cancelled; attempt++) {
         if (attempt > 0) {
@@ -334,9 +333,17 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
     if (cryptoSub === "troll")
       return { hash: "#solana", method: "solana_pay" as const, token: "troll" };
     if (cryptoSub === "soluna")
-      return { hash: "#solana", method: "solana_pay" as const, token: "soluna" };
+      return {
+        hash: "#solana",
+        method: "solana_pay" as const,
+        token: "soluna",
+      };
     if (cryptoSub === "seeker")
-      return { hash: "#solana", method: "solana_pay" as const, token: "seeker" };
+      return {
+        hash: "#solana",
+        method: "solana_pay" as const,
+        token: "seeker",
+      };
     if (cryptoSub === "cult")
       return { hash: "#solana", method: "solana_pay" as const, token: "cult" };
     if (cryptoSub === "other" && cryptoOtherSub === "ton")
@@ -380,23 +387,27 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
     let cancelled = false;
     fetch("/api/user/membership", { credentials: "include" })
       .then((r) => r.json())
-      .then((raw: unknown) => { const data = raw as { memberTier?: number; wallet?: string } | null;
-          if (cancelled) return;
-          setMemberWallet(data?.wallet ?? null);
-          setMemberTier(
-            typeof data?.memberTier === "number" && data.memberTier >= 1 && data.memberTier <= 3
-              ? data.memberTier
-              : null,
-          );
-        },
-      )
+      .then((raw: unknown) => {
+        const data = raw as null | { memberTier?: number; wallet?: string };
+        if (cancelled) return;
+        setMemberWallet(data?.wallet ?? null);
+        setMemberTier(
+          typeof data?.memberTier === "number" &&
+            data.memberTier >= 1 &&
+            data.memberTier <= 3
+            ? data.memberTier
+            : null,
+        );
+      })
       .catch(() => {
         if (!cancelled) {
           setMemberWallet(null);
           setMemberTier(null);
         }
       });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [user?.id]);
 
   // Fetch automatic discount preview when package and payment method are set (includes tier discount when wallet is present).
@@ -411,7 +422,7 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
     fetch("/api/checkout/coupons/automatic", {
       body: JSON.stringify({
         items: [{ priceCents: subtotalCents, productId, quantity: 1 }],
-        memberTier: memberWallet ? undefined : memberTier ?? undefined,
+        memberTier: memberWallet ? undefined : (memberTier ?? undefined),
         paymentMethodKey,
         productCount: 1,
         productIds: [productId],
@@ -425,26 +436,26 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
       signal: ac.signal,
     })
       .then((res) => res.json())
-      .then((raw: unknown) => { const data = raw as {
+      .then((raw: unknown) => {
+        const data = raw as {
           applied?: boolean;
           discountCents?: number;
           totalAfterDiscountCents?: number;
         };
-          if (
-            data.applied &&
-            typeof data.discountCents === "number" &&
-            data.discountCents > 0 &&
-            typeof data.totalAfterDiscountCents === "number"
-          ) {
-            setDiscountPreview({
-              discountCents: data.discountCents,
-              totalAfterDiscountCents: data.totalAfterDiscountCents,
-            });
-          } else {
-            setDiscountPreview(null);
-          }
-        },
-      )
+        if (
+          data.applied &&
+          typeof data.discountCents === "number" &&
+          data.discountCents > 0 &&
+          typeof data.totalAfterDiscountCents === "number"
+        ) {
+          setDiscountPreview({
+            discountCents: data.discountCents,
+            totalAfterDiscountCents: data.totalAfterDiscountCents,
+          });
+        } else {
+          setDiscountPreview(null);
+        }
+      })
       .catch((err: unknown) => {
         if (!(err instanceof DOMException && err.name === "AbortError"))
           setDiscountPreview(null);
@@ -499,10 +510,10 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
         method: "POST",
       });
       const orderData = (await orderRes.json()) as {
-          data?: { orderId?: string };
-          message?: string;
-          status?: boolean;
-        };
+        data?: { orderId?: string };
+        message?: string;
+        status?: boolean;
+      };
       if (!orderData.status) {
         toast.error(orderData.message ?? "Failed to create order.");
         return;
@@ -563,9 +574,9 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
         method: "POST",
       });
       const cryptoData = (await cryptoRes.json()) as {
-          message?: string;
-          status?: boolean;
-        };
+        message?: string;
+        status?: boolean;
+      };
       if (!cryptoData.status) {
         toast.error(cryptoData.message ?? "Failed to set up crypto payment.");
         return;
@@ -605,10 +616,10 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
     return (
       <div
         className={`
-        container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16
-        sm:px-6
-        lg:px-8
-      `}
+          container mx-auto max-w-7xl px-4 py-16
+          sm:px-6
+          lg:px-8
+        `}
       >
         <div className="flex items-center justify-center gap-2 py-24">
           <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
@@ -624,10 +635,10 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
     return (
       <div
         className={`
-        container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16
-        sm:px-6
-        lg:px-8
-      `}
+          container mx-auto max-w-7xl px-4 py-16
+          sm:px-6
+          lg:px-8
+        `}
       >
         <div className="py-24 text-center">
           <h2 className="text-xl font-semibold">Currently unavailable</h2>
@@ -662,10 +673,10 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
   return (
     <div
       className={`
-      container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8
-      sm:px-6
-      lg:px-8
-    `}
+        container mx-auto max-w-7xl px-4 py-8
+        sm:px-6
+        lg:px-8
+      `}
     >
       {/* Breadcrumb */}
       <Button asChild className="mb-6" size="sm" variant="ghost">
@@ -677,9 +688,9 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
 
       <div
         className={`
-        grid gap-8
-        lg:grid-cols-2
-      `}
+          grid gap-8
+          lg:grid-cols-2
+        `}
       >
         {/* Package Info - Left */}
         <div className="min-w-0 space-y-6">
@@ -851,7 +862,11 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
                   <div className="flex flex-wrap items-baseline gap-2">
                     {discountPreview ? (
                       <>
-                        <span className="text-lg text-muted-foreground line-through">
+                        <span
+                          className={`
+                            text-lg text-muted-foreground line-through
+                          `}
+                        >
                           ${pkg.price}
                         </span>
                         <p className="text-3xl font-bold text-primary">
@@ -860,7 +875,12 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
                             discountPreview.totalAfterDiscountCents / 100
                           ).toFixed(2)}
                         </p>
-                        <span className="rounded bg-primary/10 px-1.5 py-0.5 text-xs font-medium text-primary">
+                        <span
+                          className={`
+                            rounded bg-primary/10 px-1.5 py-0.5 text-xs
+                            font-medium text-primary
+                          `}
+                        >
                           {Math.round(
                             (discountPreview.discountCents /
                               (Number(pkg.price) * 100)) *
@@ -875,17 +895,18 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
                       </p>
                     )}
                   </div>
-                  {currency !== "USD" && (() => {
-                    const amount = discountPreview
-                      ? discountPreview.totalAfterDiscountCents / 100
-                      : Number(pkg.price);
-                    const localAmount = convertUsdToFiat(amount);
-                    return localAmount != null ? (
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        ≈ {formatFiat(localAmount)}
-                      </p>
-                    ) : null;
-                  })()}
+                  {currency !== "USD" &&
+                    (() => {
+                      const amount = discountPreview
+                        ? discountPreview.totalAfterDiscountCents / 100
+                        : Number(pkg.price);
+                      const localAmount = convertUsdToFiat(amount);
+                      return localAmount != null ? (
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          ≈ {formatFiat(localAmount)}
+                        </p>
+                      ) : null;
+                    })()}
                   <p className="mt-1 text-xs text-muted-foreground">
                     $
                     {(
@@ -1050,14 +1071,14 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
                         {cryptoSub === "eth" && (
                           <div
                             className={`
-                            space-y-1 rounded-lg border border-border
-                            bg-muted/30 p-3
-                          `}
+                              space-y-1 rounded-lg border border-border
+                              bg-muted/30 p-3
+                            `}
                           >
                             <p
                               className={`
-                              text-xs font-medium text-muted-foreground
-                            `}
+                                text-xs font-medium text-muted-foreground
+                              `}
                             >
                               Network
                             </p>
@@ -1085,9 +1106,9 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
                         {cryptoSub === "other" && (
                           <div
                             className={`
-                            space-y-1 rounded-lg border border-border
-                            bg-muted/30 p-3
-                          `}
+                              space-y-1 rounded-lg border border-border
+                              bg-muted/30 p-3
+                            `}
                           >
                             <div className="flex flex-wrap gap-2">
                               {OTHER_SUB_OPTIONS.map((opt) => {
@@ -1129,9 +1150,9 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
                   {paymentMethod === "stablecoins" && (
                     <div
                       className={`
-                      mt-2 space-y-2 rounded-lg border border-border bg-muted/30
-                      p-3
-                    `}
+                        mt-2 space-y-2 rounded-lg border border-border
+                        bg-muted/30 p-3
+                      `}
                     >
                       {/* Token: USDC or USDT */}
                       <div className="space-y-1">
@@ -1229,9 +1250,9 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
 
                 <div
                   className={`
-                  space-y-2 rounded-lg bg-muted/50 p-4 text-sm
-                  text-muted-foreground
-                `}
+                    space-y-2 rounded-lg bg-muted/50 p-4 text-sm
+                    text-muted-foreground
+                  `}
                 >
                   <p className="text-base font-semibold text-foreground">
                     Instant Digital Delivery
@@ -1250,8 +1271,8 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
         {/* Refund eligibility — full-width section below both columns */}
         <section
           className={`
-          col-span-full mt-10 rounded-lg border border-muted bg-muted/30 p-6
-        `}
+            col-span-full mt-10 rounded-lg border border-muted bg-muted/30 p-6
+          `}
         >
           <h2 className="mb-2 text-lg font-semibold text-foreground">
             eSIM refund eligibility
@@ -1262,9 +1283,9 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
           </p>
           <ul
             className={`
-            list-outside list-disc space-y-3 pl-5 text-sm break-words
-            text-muted-foreground
-          `}
+              list-outside list-disc space-y-3 pl-5 text-sm break-words
+              text-muted-foreground
+            `}
           >
             <li className="leading-relaxed">
               <span className="font-medium text-foreground">Unused eSIMs:</span>{" "}

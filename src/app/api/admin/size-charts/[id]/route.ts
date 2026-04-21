@@ -8,7 +8,7 @@ import { sizeChartsTable } from "~/db/schema";
 import { getAdminAuth } from "~/lib/admin-api-auth";
 import { apiError } from "~/lib/api-error";
 
-const PROVIDERS = ["printful", "printify", "manual"] as const;
+const _PROVIDERS = ["printful", "printify", "manual"] as const;
 
 /**
  * DELETE /api/admin/size-charts/[id]

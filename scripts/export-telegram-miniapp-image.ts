@@ -4,7 +4,7 @@
  * for Telegram Mini App image (BotFather). Run: bun run scripts/export-telegram-miniapp-image.ts
  */
 import sharp from "sharp";
-import { join } from "path";
+import { join } from "node:path";
 
 const src = join(
   import.meta.dir,

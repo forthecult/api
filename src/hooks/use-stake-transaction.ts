@@ -1,10 +1,13 @@
 "use client";
 
-import { useSolanaConnection, useSolanaWallet } from "~/app/checkout/crypto/solana-wallet-stub";
 import { Transaction } from "@solana/web3.js";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
+import {
+  useSolanaConnection,
+  useSolanaWallet,
+} from "~/app/checkout/crypto/solana-wallet-stub";
 import { base64ToUint8Array } from "~/lib/solana-tx";
 import { OPEN_SOLANA_WALLET_MODAL } from "~/ui/components/auth/auth-wallet-modal-events";
 
@@ -38,7 +41,10 @@ export function useStakeTransaction(options: UseStakeTransactionOptions = {}) {
   const [unstakePending, setUnstakePending] = useState(false);
 
   // track pending stake params so we can auto-stake after wallet connects
-  const pendingStakeRef = useRef<{ amount: string; lockDuration: number } | null>(null);
+  const pendingStakeRef = useRef<null | {
+    amount: string;
+    lockDuration: number;
+  }>(null);
 
   const openConnectModal = useCallback(() => {
     window.dispatchEvent(new CustomEvent(OPEN_SOLANA_WALLET_MODAL));
@@ -78,7 +84,7 @@ export function useStakeTransaction(options: UseStakeTransactionOptions = {}) {
         const txBuf = base64ToUint8Array(data.transaction ?? "");
         const tx = Transaction.from(txBuf);
         const sig = await sendTransaction(tx, connection, SEND_OPTS);
-        toast.success("Stake submitted: " + sig.slice(0, 8) + "…");
+        toast.success(`Stake submitted: ${sig.slice(0, 8)}…`);
 
         // link wallet to account or create account if not logged in
         // if account is created/signed in, refresh to update auth state
@@ -88,7 +94,8 @@ export function useStakeTransaction(options: UseStakeTransactionOptions = {}) {
           method: "POST",
         })
           .then((res) => res.json())
-          .then((raw: unknown) => { const data = raw as { signedIn?: boolean };
+          .then((raw: unknown) => {
+            const data = raw as { signedIn?: boolean };
             if (data.signedIn) {
               // new account created or signed into existing - soft refresh to update auth
               window.dispatchEvent(new CustomEvent("auth-state-changed"));
@@ -164,7 +171,7 @@ export function useStakeTransaction(options: UseStakeTransactionOptions = {}) {
         const txBuf = base64ToUint8Array(data.transaction ?? "");
         const tx = Transaction.from(txBuf);
         const sig = await sendTransaction(tx, connection, SEND_OPTS);
-        toast.success("Unstake submitted: " + sig.slice(0, 8) + "…");
+        toast.success(`Unstake submitted: ${sig.slice(0, 8)}…`);
         options.onUnstakeSuccess?.();
         return true;
       } catch (e) {
@@ -221,7 +228,7 @@ export function useStakeTransaction(options: UseStakeTransactionOptions = {}) {
         const txBuf = base64ToUint8Array(data.transaction ?? "");
         const tx = Transaction.from(txBuf);
         const sig = await sendTransaction(tx, connection, SEND_OPTS);
-        toast.success("Restake submitted: " + sig.slice(0, 8) + "…");
+        toast.success(`Restake submitted: ${sig.slice(0, 8)}…`);
         options.onRestakeSuccess?.();
         return true;
       } catch (e) {

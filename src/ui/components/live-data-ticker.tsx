@@ -31,9 +31,9 @@ export function LiveDataTicker() {
     <>
       <span
         className={`
-        inline-flex items-center gap-2 text-muted-foreground
-        font-[family-name:var(--font-mono-crypto),ui-monospace,monospace]
-      `}
+          inline-flex items-center gap-2 text-muted-foreground
+          font-[family-name:var(--font-mono-crypto),ui-monospace,monospace]
+        `}
       >
         <span className="inline-flex items-center gap-1.5">
           <span aria-hidden className="h-2 w-2 rounded-full bg-[#14F195]" />
@@ -71,9 +71,9 @@ export function LiveDataTicker() {
     >
       <div
         className={`
-        animate-marquee-ticker flex w-max gap-8 whitespace-nowrap
-        hover:[animation-play-state:paused]
-      `}
+          animate-marquee-ticker flex w-max gap-8 whitespace-nowrap
+          hover:[animation-play-state:paused]
+        `}
       >
         <div className="flex gap-8">{tickerContent}</div>
         <div aria-hidden className="flex gap-8">

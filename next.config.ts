@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+
 import createBundleAnalyzer from "@next/bundle-analyzer";
 import path from "node:path";
 

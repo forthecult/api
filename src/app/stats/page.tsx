@@ -26,9 +26,9 @@ export default async function StatsPage() {
         <header className="border-b border-border pb-6">
           <h1
             className={`
-            text-2xl font-bold tracking-tight text-foreground
-            sm:text-3xl
-          `}
+              text-2xl font-bold tracking-tight text-foreground
+              sm:text-3xl
+            `}
           >
             Store statistics
           </h1>

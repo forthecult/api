@@ -1,7 +1,6 @@
 "use client";
 
 import { WalletReadyState } from "@solana/wallet-adapter-base";
-import { useSolanaWallet } from "~/app/checkout/crypto/solana-wallet-stub";
 import { ChevronRight } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -9,8 +8,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useAccount, useConnect, useConnectors, useSignMessage } from "wagmi";
 
 import { SYSTEM_CONFIG } from "~/app";
-import { WALLET_LINKED_EVENT } from "~/ui/components/auth/auth-wallet-modal-events";
+import { useSolanaWallet } from "~/app/checkout/crypto/solana-wallet-stub";
 import { cn } from "~/lib/cn";
+import { WALLET_LINKED_EVENT } from "~/ui/components/auth/auth-wallet-modal-events";
 import { Button } from "~/ui/primitives/button";
 import { Dialog, DialogContent, DialogTitle } from "~/ui/primitives/dialog";
 
@@ -67,10 +67,10 @@ function isMultiChainWallet(name: string): boolean {
 const SUGGESTED_SOLANA_NAMES = ["Phantom", "Solflare"];
 
 /** minimal wallet shape from stub or real adapter (so we don't depend on full Wallet type here) */
-type SolanaWalletOption = {
+interface SolanaWalletOption {
   adapter: { icon?: string; name?: string };
-  readyState?: string | number;
-};
+  readyState?: number | string;
+}
 
 function EthereumOptionButton({
   disabled,
@@ -104,11 +104,11 @@ function EthereumOptionButton({
     >
       <div
         className={`
-        flex size-8 shrink-0 items-center justify-center overflow-hidden
-        rounded-md bg-muted/20
-      `}
+          flex size-8 shrink-0 items-center justify-center overflow-hidden
+          rounded-md bg-muted/20
+        `}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
+        {}
         <img
           alt=""
           className="size-8 object-contain"
@@ -124,10 +124,10 @@ function EthereumOptionButton({
       {isDetected && (
         <span
           className={`
-          rounded-full bg-green-500/15 px-2 py-0.5 text-xs font-medium
-          text-green-700
-          dark:text-green-400
-        `}
+            rounded-full bg-green-500/15 px-2 py-0.5 text-xs font-medium
+            text-green-700
+            dark:text-green-400
+          `}
         >
           Detected
         </span>
@@ -152,29 +152,29 @@ export {
 } from "~/ui/components/auth/auth-wallet-modal-events";
 
 interface AuthWalletModalProps {
+  /** When true, skip SIWE auth and just connect the wallet (for staking flows). */
+  connectOnly?: boolean;
   /** When true, link wallet to current account instead of signing in */
   link?: boolean;
   onOpenChange: (open: boolean) => void;
   open: boolean;
   /** When true, only show Solana wallets (no EVM options). Used for staking flows. */
   solanaOnly?: boolean;
-  /** When true, skip SIWE auth and just connect the wallet (for staking flows). */
-  connectOnly?: boolean;
 }
 
 export function AuthWalletModal({
+  connectOnly = false,
   link = false,
   onOpenChange,
   open,
   solanaOnly = false,
-  connectOnly = false,
 }: AuthWalletModalProps) {
   const router = useRouter();
   const {
     connect,
     connected,
     connecting,
-    disconnect,
+    disconnect: _disconnect,
     publicKey,
     select,
     signMessage,
@@ -190,7 +190,7 @@ export function AuthWalletModal({
   );
   const [error, setError] = useState("");
   const [selectedWallet, setSelectedWallet] =
-    useState<SolanaWalletOption | null>(null);
+    useState<null | SolanaWalletOption>(null);
   const [selectedChain, setSelectedChain] = useState<
     "ethereum" | "solana" | null
   >(null);
@@ -864,7 +864,15 @@ export function AuthWalletModal({
     return () => {
       cancelled = true;
     };
-  }, [open, selectedChain, step, link, onOpenChange, router]);
+  }, [
+    open,
+    selectedChain,
+    step,
+    link,
+    onOpenChange,
+    router,
+    selectedEthereumOption,
+  ]);
 
   useEffect(() => {
     if (!open) {
@@ -921,9 +929,9 @@ export function AuthWalletModal({
           {error && (
             <p
               className={`
-              rounded-md border border-destructive/50 bg-destructive/10 px-3
-              py-2 text-sm text-destructive
-            `}
+                rounded-md border border-destructive/50 bg-destructive/10 px-3
+                py-2 text-sm text-destructive
+              `}
             >
               {error}
             </p>
@@ -955,13 +963,18 @@ export function AuthWalletModal({
                   onClick={() => handleSelectNetwork("solana")}
                   type="button"
                 >
-                  <div className="flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted/20">
+                  <div
+                    className={`
+                      flex size-8 shrink-0 items-center justify-center
+                      overflow-hidden rounded-md bg-muted/20
+                    `}
+                  >
                     <Image
-                      src="/crypto/solana/solanaLogoMark.svg"
                       alt=""
-                      width={32}
-                      height={32}
                       className="object-contain"
+                      height={32}
+                      src="/crypto/solana/solanaLogoMark.svg"
+                      width={32}
                     />
                   </div>
                   <span className="flex-1 font-medium">
@@ -970,9 +983,7 @@ export function AuthWalletModal({
                       : "Solana"}
                   </span>
                   <ChevronRight
-                    className={`
-                    size-4 shrink-0 text-muted-foreground
-                  `}
+                    className={`size-4 shrink-0 text-muted-foreground`}
                   />
                 </button>
                 <button
@@ -991,20 +1002,23 @@ export function AuthWalletModal({
                   onClick={() => handleSelectNetwork("ethereum")}
                   type="button"
                 >
-                  <div className="flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted/20">
+                  <div
+                    className={`
+                      flex size-8 shrink-0 items-center justify-center
+                      overflow-hidden rounded-md bg-muted/20
+                    `}
+                  >
                     <Image
-                      src="/crypto/ethereum/ethereum-logo.svg"
                       alt=""
-                      width={32}
-                      height={32}
                       className="object-contain"
+                      height={32}
+                      src="/crypto/ethereum/ethereum-logo.svg"
+                      width={32}
                     />
                   </div>
                   <span className="flex-1 font-medium">Ethereum (EVM)</span>
                   <ChevronRight
-                    className={`
-                    size-4 shrink-0 text-muted-foreground
-                  `}
+                    className={`size-4 shrink-0 text-muted-foreground`}
                   />
                 </button>
               </div>
@@ -1030,9 +1044,9 @@ export function AuthWalletModal({
             <div className="space-y-4">
               <p
                 className={`
-                text-xs font-medium tracking-wider text-muted-foreground
-                uppercase
-              `}
+                  text-xs font-medium tracking-wider text-muted-foreground
+                  uppercase
+                `}
               >
                 Suggested
               </p>
@@ -1070,9 +1084,9 @@ export function AuthWalletModal({
               </div>
               <p
                 className={`
-                text-xs font-medium tracking-wider text-muted-foreground
-                uppercase
-              `}
+                  text-xs font-medium tracking-wider text-muted-foreground
+                  uppercase
+                `}
               >
                 Others
               </p>
@@ -1205,9 +1219,9 @@ function WalletOption({
       {icon && (
         <div
           className={`
-          flex size-8 shrink-0 items-center justify-center overflow-hidden
-          rounded-md bg-muted/20
-        `}
+            flex size-8 shrink-0 items-center justify-center overflow-hidden
+            rounded-md bg-muted/20
+          `}
         >
           <img
             alt=""
@@ -1218,14 +1232,16 @@ function WalletOption({
           />
         </div>
       )}
-      <span className="flex-1 font-medium">{wallet.adapter.name ?? "Wallet"}</span>
+      <span className="flex-1 font-medium">
+        {wallet.adapter.name ?? "Wallet"}
+      </span>
       {isDetected && (
         <span
           className={`
-          rounded-full bg-green-500/15 px-2 py-0.5 text-xs font-medium
-          text-green-700
-          dark:text-green-400
-        `}
+            rounded-full bg-green-500/15 px-2 py-0.5 text-xs font-medium
+            text-green-700
+            dark:text-green-400
+          `}
         >
           Detected
         </span>

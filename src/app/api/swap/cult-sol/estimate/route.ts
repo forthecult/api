@@ -41,9 +41,6 @@ export async function GET(request: Request) {
     return NextResponse.json({ solAmount: result.solAmount });
   } catch (e) {
     console.error("[swap] cult-sol estimate error:", e);
-    return NextResponse.json(
-      { error: "Failed to estimate" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Failed to estimate" }, { status: 500 });
   }
 }

@@ -51,16 +51,9 @@ const STATUS_CONFIG: Record<
   },
 };
 
-function formatCurrency(cents: number) {
-  return `$${(cents / 100).toFixed(2)}`;
-}
-
-function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString("en-US", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+interface LiveDetail {
+  sim?: { iccid: string; id: string; status: string; total_bundles: number };
+  universal_link?: string;
 }
 
 interface OrderRow {
@@ -80,13 +73,8 @@ interface OrderRow {
   validityDays: number;
 }
 
-interface LiveDetail {
-  sim?: { iccid: string; id: string; status: string; total_bundles: number };
-  universal_link?: string;
-}
-
 export function EsimDetailClient({ esimOrderId }: { esimOrderId: string }) {
-  const [order, setOrder] = useState<OrderRow | null>(null);
+  const [order, setOrder] = useState<null | OrderRow>(null);
   const [liveDetail, setLiveDetail] = useState<LiveDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -103,7 +91,11 @@ export function EsimDetailClient({ esimOrderId }: { esimOrderId: string }) {
         }
         return res.json();
       })
-      .then((raw: unknown) => { const data = raw as { data?: { order: OrderRow; liveDetail: LiveDetail | null }; status: boolean } | null;
+      .then((raw: unknown) => {
+        const data = raw as null | {
+          data?: { liveDetail: LiveDetail | null; order: OrderRow };
+          status: boolean;
+        };
         if (data?.status && data.data) {
           setOrder(data.data.order);
           setLiveDetail(data.data.liveDetail ?? null);
@@ -135,7 +127,9 @@ export function EsimDetailClient({ esimOrderId }: { esimOrderId: string }) {
     return (
       <div className="flex flex-col items-center justify-center gap-2 py-16">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        <span className="text-sm text-muted-foreground">Loading eSIM details…</span>
+        <span className="text-sm text-muted-foreground">
+          Loading eSIM details…
+        </span>
       </div>
     );
   }
@@ -143,7 +137,7 @@ export function EsimDetailClient({ esimOrderId }: { esimOrderId: string }) {
   if (notFound || !order) {
     return (
       <div className="space-y-4">
-        <Button asChild variant="ghost" size="sm">
+        <Button asChild size="sm" variant="ghost">
           <Link href="/dashboard/esim">
             <ArrowLeft className="mr-1 h-4 w-4" />
             Back to My eSIMs
@@ -172,7 +166,7 @@ export function EsimDetailClient({ esimOrderId }: { esimOrderId: string }) {
 
   return (
     <div className="space-y-6">
-      <Button asChild variant="ghost" size="sm">
+      <Button asChild size="sm" variant="ghost">
         <Link href="/dashboard/esim">
           <ArrowLeft className="mr-1 h-4 w-4" />
           Back to My eSIMs
@@ -181,18 +175,32 @@ export function EsimDetailClient({ esimOrderId }: { esimOrderId: string }) {
 
       <Card>
         <CardContent className="p-6">
-          <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
+          <div
+            className={`
+              flex flex-col gap-6
+              sm:flex-row sm:items-start sm:justify-between
+            `}
+          >
             <div className="min-w-0 flex-1 space-y-3">
               <div className="flex flex-wrap items-center gap-2">
                 <h1 className="text-xl font-semibold">{order.packageName}</h1>
                 <span
-                  className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${statusConfig.className}`}
+                  className={`
+                    inline-flex items-center gap-1 rounded-full px-2.5 py-0.5
+                    text-xs font-medium
+                    ${statusConfig.className}
+                  `}
                 >
                   <StatusIcon className="h-3.5 w-3.5" />
                   {statusConfig.label}
                 </span>
               </div>
-              <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+              <div
+                className={`
+                  flex flex-wrap items-center gap-4 text-sm
+                  text-muted-foreground
+                `}
+              >
                 <span className="flex items-center gap-1">
                   <Wifi className="h-4 w-4" />
                   {order.dataQuantity} {order.dataUnit}
@@ -209,7 +217,9 @@ export function EsimDetailClient({ esimOrderId }: { esimOrderId: string }) {
                 )}
                 <Badge variant="outline">{order.packageType}</Badge>
               </div>
-              <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+              <div
+                className={`flex flex-wrap gap-4 text-sm text-muted-foreground`}
+              >
                 <span>Purchased: {formatDate(order.createdAt)}</span>
                 {(order.iccid ?? liveDetail?.sim?.iccid) && (
                   <span className="font-mono">
@@ -279,4 +289,16 @@ export function EsimDetailClient({ esimOrderId }: { esimOrderId: string }) {
       </Card>
     </div>
   );
+}
+
+function formatCurrency(cents: number) {
+  return `$${(cents / 100).toFixed(2)}`;
+}
+
+function formatDate(dateStr: string) {
+  return new Date(dateStr).toLocaleDateString("en-US", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 }

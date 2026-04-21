@@ -38,13 +38,13 @@ export function HeaderGuestDropdown() {
             hover:bg-muted
             dark:text-[#F5F1EB]
           `}
-          size="icon"
-          variant="ghost"
           onMouseEnter={() => {
             if (typeof window !== "undefined") {
               window.dispatchEvent(new CustomEvent(PRELOAD_AUTH_WALLET_MODAL));
             }
           }}
+          size="icon"
+          variant="ghost"
         >
           <UserIcon className="h-5 w-5" />
           <span className="sr-only">Account</span>

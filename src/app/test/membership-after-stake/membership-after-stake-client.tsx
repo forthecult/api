@@ -3,13 +3,11 @@
 import {
   ArrowRight,
   Check,
-  Crown,
   Globe,
   Shield,
   Signal,
   Smartphone,
   Sparkles,
-  Star,
   Wifi,
 } from "lucide-react";
 import Link from "next/link";
@@ -33,7 +31,7 @@ import { Input } from "~/ui/primitives/input";
 
 type PreviewTier = 1 | 2 | 3;
 
-type StakerPackage = {
+interface StakerPackage {
   data_quantity: number;
   data_unit: string;
   has5g?: boolean;
@@ -42,9 +40,12 @@ type StakerPackage = {
   package_type?: string;
   package_validity: number;
   package_validity_unit: string;
-};
+}
 
-const MOCK_STAKE: Record<PreviewTier, { amount: string; timeUntilUnlock: string }> = {
+const MOCK_STAKE: Record<
+  PreviewTier,
+  { amount: string; timeUntilUnlock: string }
+> = {
   1: { amount: "52000", timeUntilUnlock: "12 days until unlock" },
   2: { amount: "18000", timeUntilUnlock: "5 days until unlock" },
   3: { amount: "4000", timeUntilUnlock: "Unlocked" },
@@ -59,7 +60,7 @@ export function MembershipAfterStakeTestClient() {
   const [packages, setPackages] = useState<StakerPackage[]>([]);
   const [loading, setLoading] = useState(true);
   const [claimed, setClaimed] = useState(false);
-  const [claimingId, setClaimingId] = useState<string | null>(null);
+  const [claimingId, setClaimingId] = useState<null | string>(null);
   const [packageType, setPackageType] = useState<
     "DATA-ONLY" | "DATA-VOICE-SMS"
   >("DATA-ONLY");
@@ -71,7 +72,7 @@ export function MembershipAfterStakeTestClient() {
   const [unstakeAmount, setUnstakeAmount] = useState("");
   const [stakeMoreAmount, setStakeMoreAmount] = useState("");
   const [restakeAmount, setRestakeAmount] = useState("");
-  const [restakeDuration, setRestakeDuration] = useState<"30d" | "12m">("30d");
+  const [restakeDuration, setRestakeDuration] = useState<"12m" | "30d">("30d");
 
   const tierData = MEMBERSHIP_TIERS.find((t) => t.id === previewTier);
   const mock = MOCK_STAKE[previewTier];
@@ -79,17 +80,17 @@ export function MembershipAfterStakeTestClient() {
   useEffect(() => {
     fetch("/api/esim/countries")
       .then((r) => r.json())
-      .then((raw: unknown) => { const data = raw as {
+      .then((raw: unknown) => {
+        const data = raw as {
           data?: { id: number; name: string }[];
           status: boolean;
         };
-          if (data.status && Array.isArray(data.data)) {
-            setCountries(
-              data.data.slice().sort((a, b) => a.name.localeCompare(b.name)),
-            );
-          }
-        },
-      )
+        if (data.status && Array.isArray(data.data)) {
+          setCountries(
+            data.data.slice().sort((a, b) => a.name.localeCompare(b.name)),
+          );
+        }
+      })
       .catch(() => setCountries([]))
       .finally(() => setCountriesLoading(false));
   }, []);
@@ -102,7 +103,8 @@ export function MembershipAfterStakeTestClient() {
     if (countryId) params.set("country", countryId);
     fetch(`/api/esim/packages/staker-claim?${params.toString()}`)
       .then((r) => r.json())
-      .then((raw: unknown) => { const data = raw as { data?: StakerPackage[]; status: boolean };
+      .then((raw: unknown) => {
+        const data = raw as { data?: StakerPackage[]; status: boolean };
         if (data.status && Array.isArray(data.data)) {
           setPackages(data.data);
         } else {
@@ -129,31 +131,53 @@ export function MembershipAfterStakeTestClient() {
   return (
     <div
       className={`
-        flex min-h-screen flex-col bg-gradient-to-b from-muted/50
-        via-background to-background
+        flex min-h-screen flex-col bg-gradient-to-b from-muted/50 via-background
+        to-background
       `}
     >
       {/* Test banner + tier selector */}
       <div className="border-b border-amber-500/30 bg-amber-500/10 px-4 py-3">
-        <div className="mx-auto flex max-w-4xl flex-col items-center gap-3 sm:flex-row sm:justify-between">
-          <p className="text-center text-sm text-amber-800 dark:text-amber-200">
+        <div
+          className={`
+            mx-auto flex max-w-4xl flex-col items-center gap-3
+            sm:flex-row sm:justify-between
+          `}
+        >
+          <p
+            className={`
+              text-center text-sm text-amber-800
+              dark:text-amber-200
+            `}
+          >
             <strong>Test preview:</strong> Membership page after staking. Switch
             tier to see Tier 1, Tier 2 (stake more), or Tier 3 (stake more +
             unstake).{" "}
-            <Link href="/membership" className="underline">
+            <Link className="underline" href="/membership">
               Real membership
             </Link>
           </p>
-          <div className="flex gap-1 rounded-lg border border-amber-500/30 bg-amber-500/5 p-1">
+          <div
+            className={`
+              flex gap-1 rounded-lg border border-amber-500/30 bg-amber-500/5
+              p-1
+            `}
+          >
             {([1, 2, 3] as const).map((t) => (
               <button
-                key={t}
                 className={cn(
                   "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
                   previewTier === t
-                    ? "bg-amber-500/20 text-amber-900 dark:text-amber-100"
-                    : "text-amber-800/80 hover:bg-amber-500/10 dark:text-amber-200/80",
+                    ? `
+                      bg-amber-500/20 text-amber-900
+                      dark:text-amber-100
+                    `
+                    : `
+                      text-amber-800/80
+                      hover:bg-amber-500/10
+                      dark:text-amber-200/80
+                    `,
                 )}
+                key={t}
                 onClick={() => setPreviewTier(t)}
                 type="button"
               >
@@ -177,21 +201,30 @@ export function MembershipAfterStakeTestClient() {
         <div
           className={`
             relative z-10 container mx-auto max-w-5xl px-4 py-16 text-center
-            sm:px-6 sm:py-20 lg:px-8
+            sm:px-6 sm:py-20
+            lg:px-8
           `}
         >
           <Badge className="mb-4 gap-1.5 px-3 py-1" variant="secondary">
             <Sparkles className="h-3.5 w-3.5" />
             Membership
           </Badge>
-          <h1 className="font-display text-3xl font-bold tracking-tight text-foreground sm:text-4xl md:text-5xl">
+          <h1
+            className={`
+              font-display text-3xl font-bold tracking-tight text-foreground
+              sm:text-4xl
+              md:text-5xl
+            `}
+          >
             You&apos;re in
           </h1>
           <p className="mx-auto mt-4 max-w-xl text-lg text-muted-foreground">
             You&apos;ve staked and unlocked membership. You&apos;re on{" "}
-            <strong className="text-foreground">{tierData?.name ?? `Tier ${previewTier}`}</strong>
-            {" "}
-            — {tierData?.benefits.esimDetail}. {previewTier === 1 && "Claim your free 30-day eSIM below."}
+            <strong className="text-foreground">
+              {tierData?.name ?? `Tier ${previewTier}`}
+            </strong>{" "}
+            — {tierData?.benefits.esimDetail}.{" "}
+            {previewTier === 1 && "Claim your free 30-day eSIM below."}
           </p>
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
             <Badge className="gap-1.5 px-3 py-1" variant="outline">
@@ -207,7 +240,7 @@ export function MembershipAfterStakeTestClient() {
           </div>
           {previewTier !== 1 && (
             <div className="mt-8">
-              <Button asChild variant="outline" size="sm">
+              <Button asChild size="sm" variant="outline">
                 <Link href="/esim">
                   <Globe className="mr-2 h-4 w-4" />
                   Browse all eSIM plans
@@ -220,26 +253,46 @@ export function MembershipAfterStakeTestClient() {
       </section>
 
       {/* Stake card with "Your stake" — same layout as real membership */}
-      <section className="container mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <section
+        className={`
+          container mx-auto max-w-7xl px-4 py-8
+          sm:px-6
+          lg:px-8
+        `}
+      >
         <div className="mx-auto max-w-2xl">
- <Card className="overflow-hidden rounded-2xl border border-border bg-card ">
+          <Card
+            className={`
+              overflow-hidden rounded-2xl border border-border bg-card
+            `}
+          >
             <div className="border-b bg-muted/30 px-6 py-5">
-              <h2 className="font-display text-xl font-semibold text-foreground md:text-2xl">
+              <h2
+                className={`
+                  font-display text-xl font-semibold text-foreground
+                  md:text-2xl
+                `}
+              >
                 Upgrade Membership
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Stake CULT to upgrade. Enter an amount or use the button to fill the amount needed for the next tier.
+                Stake CULT to upgrade. Enter an amount or use the button to fill
+                the amount needed for the next tier.
               </p>
             </div>
             <div className="space-y-5 p-6">
               {/* Your stake — mock data per tier */}
-              <div className="space-y-3 rounded-xl border border-border bg-muted/20 p-4">
+              <div
+                className={`
+                  space-y-3 rounded-xl border border-border bg-muted/20 p-4
+                `}
+              >
                 <p className="text-sm font-medium text-foreground">
                   Your stake
                 </p>
                 <div className="space-y-1 text-sm">
                   <div className="flex flex-wrap items-baseline gap-2">
-                    <span className="font-semibold tabular-nums text-foreground">
+                    <span className="font-semibold text-foreground tabular-nums">
                       {formatTokens(Number(mock.amount))} CULT
                     </span>
                     <span className="text-muted-foreground">
@@ -253,11 +306,12 @@ export function MembershipAfterStakeTestClient() {
                 {(previewTier === 2 || previewTier === 3) && (
                   <div className="space-y-2 pt-1">
                     <p className="text-xs font-medium text-foreground">
-                      Stake CULT to upgrade. Enter an amount or use the button to fill the amount needed for the next tier.
+                      Stake CULT to upgrade. Enter an amount or use the button
+                      to fill the amount needed for the next tier.
                     </p>
                     <div className="flex flex-wrap gap-2">
                       <Input
-                        className="font-mono max-w-[140px]"
+                        className="max-w-[140px] font-mono"
                         min={0}
                         onChange={(e) => setStakeMoreAmount(e.target.value)}
                         placeholder="Amount"
@@ -267,39 +321,45 @@ export function MembershipAfterStakeTestClient() {
                       />
                       {previewTier === 2 && (
                         <Button
+                          onClick={() =>
+                            setStakeMoreAmount(
+                              String(
+                                Number(MOCK_STAKE[1].amount) -
+                                  Number(MOCK_STAKE[2].amount),
+                              ),
+                            )
+                          }
                           size="sm"
                           type="button"
                           variant="outline"
-                          onClick={() =>
-                            setStakeMoreAmount(
-                              String(Number(MOCK_STAKE[1].amount) - Number(MOCK_STAKE[2].amount)),
-                            )
-                          }
                         >
                           Stake {formatTokens(52000 - 18000)} to reach Tier 1
                         </Button>
                       )}
                       {previewTier === 3 && (
                         <Button
+                          onClick={() =>
+                            setStakeMoreAmount(
+                              String(
+                                Number(MOCK_STAKE[2].amount) -
+                                  Number(MOCK_STAKE[3].amount),
+                              ),
+                            )
+                          }
                           size="sm"
                           type="button"
                           variant="outline"
-                          onClick={() =>
-                            setStakeMoreAmount(
-                              String(Number(MOCK_STAKE[2].amount) - Number(MOCK_STAKE[3].amount)),
-                            )
-                          }
                         >
                           Stake {formatTokens(18000 - 4000)} to reach Tier 2
                         </Button>
                       )}
                       <Button
-                        size="sm"
                         onClick={() =>
                           toast.info(
                             "Test: Use the real membership page with a connected wallet to stake more.",
                           )
                         }
+                        size="sm"
                       >
                         Stake more
                       </Button>
@@ -313,11 +373,12 @@ export function MembershipAfterStakeTestClient() {
                       Restake (lock for another period)
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Your lock has ended. Restake to lock again for 30 days or 12 months.
+                      Your lock has ended. Restake to lock again for 30 days or
+                      12 months.
                     </p>
                     <div className="flex flex-wrap gap-2">
                       <Input
-                        className="font-mono max-w-[140px]"
+                        className="max-w-[140px] font-mono"
                         min={0}
                         onChange={(e) => setRestakeAmount(e.target.value)}
                         placeholder="Amount"
@@ -336,32 +397,37 @@ export function MembershipAfterStakeTestClient() {
                       <div className="flex rounded-md border border-input">
                         <Button
                           className="rounded-r-none border-0"
+                          onClick={() => setRestakeDuration("30d")}
                           size="sm"
                           type="button"
-                          variant={restakeDuration === "30d" ? "secondary" : "ghost"}
-                          onClick={() => setRestakeDuration("30d")}
+                          variant={
+                            restakeDuration === "30d" ? "secondary" : "ghost"
+                          }
                         >
                           30 days
                         </Button>
                         <Button
                           className="rounded-l-none border-0"
+                          onClick={() => setRestakeDuration("12m")}
                           size="sm"
                           type="button"
-                          variant={restakeDuration === "12m" ? "secondary" : "ghost"}
-                          onClick={() => setRestakeDuration("12m")}
+                          variant={
+                            restakeDuration === "12m" ? "secondary" : "ghost"
+                          }
                         >
                           12 months
                         </Button>
                       </div>
                       <Button
-                        size="sm"
                         onClick={() =>
                           toast.info(
                             "Test: Restake is only available on the real membership page with a connected wallet.",
                           )
                         }
+                        size="sm"
                       >
-                        Restake (lock {restakeDuration === "12m" ? "12 months" : "30 days"})
+                        Restake (lock{" "}
+                        {restakeDuration === "12m" ? "12 months" : "30 days"})
                       </Button>
                     </div>
                   </div>
@@ -373,7 +439,7 @@ export function MembershipAfterStakeTestClient() {
                     </p>
                     <div className="flex flex-wrap gap-2">
                       <Input
-                        className="font-mono max-w-[140px]"
+                        className="max-w-[140px] font-mono"
                         min={0}
                         onChange={(e) => setUnstakeAmount(e.target.value)}
                         placeholder="Amount"
@@ -390,13 +456,13 @@ export function MembershipAfterStakeTestClient() {
                         Max
                       </Button>
                       <Button
-                        size="sm"
-                        variant="secondary"
                         onClick={() =>
                           toast.info(
                             "Test: Unstake is only available on the real membership page with a connected wallet.",
                           )
                         }
+                        size="sm"
+                        variant="secondary"
                       >
                         Unstake
                       </Button>
@@ -411,11 +477,28 @@ export function MembershipAfterStakeTestClient() {
 
       {/* Claim Free eSIM — Tier 1 only */}
       {previewTier === 1 && (
-        <section className="container mx-auto max-w-7xl px-4 py-16 sm:px-6 md:py-20 lg:px-8">
+        <section
+          className={`
+            container mx-auto max-w-7xl px-4 py-16
+            sm:px-6
+            md:py-20
+            lg:px-8
+          `}
+        >
           <div className="mx-auto max-w-4xl">
-            <Card className="overflow-hidden border-2 border-primary/30 bg-gradient-to-br from-primary/5 via-background to-primary/5">
+            <Card
+              className={`
+                overflow-hidden border-2 border-primary/30 bg-gradient-to-br
+                from-primary/5 via-background to-primary/5
+              `}
+            >
               <CardHeader className="text-center">
-                <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+                <div
+                  className={`
+                    mx-auto mb-3 flex h-14 w-14 items-center justify-center
+                    rounded-full bg-primary/10
+                  `}
+                >
                   <Smartphone className="h-7 w-7 text-primary" />
                 </div>
                 <CardTitle className="font-display text-2xl">
@@ -438,7 +521,11 @@ export function MembershipAfterStakeTestClient() {
                   </Button>
                 ) : (
                   <>
-                    <div className="flex w-full flex-wrap items-center justify-center gap-4">
+                    <div
+                      className={`
+                        flex w-full flex-wrap items-center justify-center gap-4
+                      `}
+                    >
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="text-sm text-muted-foreground">
                           Plan:
@@ -454,9 +541,7 @@ export function MembershipAfterStakeTestClient() {
                           Data only
                         </Button>
                         <Button
-                          onClick={() =>
-                            setPackageType("DATA-VOICE-SMS")
-                          }
+                          onClick={() => setPackageType("DATA-VOICE-SMS")}
                           size="sm"
                           variant={
                             packageType === "DATA-VOICE-SMS"
@@ -475,11 +560,14 @@ export function MembershipAfterStakeTestClient() {
                         <select
                           aria-label="Choose country for eSIM"
                           className={cn(
-                            "min-w-[180px] rounded-md border border-input bg-background px-3 py-2 text-sm",
+                            `
+                              min-w-[180px] rounded-md border border-input
+                              bg-background px-3 py-2 text-sm
+                            `,
                           )}
                           disabled={countriesLoading}
-                          value={countryId}
                           onChange={(e) => setCountryId(e.target.value)}
+                          value={countryId}
                         >
                           <option value="">Global</option>
                           {countries.map((c) => (
@@ -496,19 +584,26 @@ export function MembershipAfterStakeTestClient() {
                       </p>
                     ) : packages.length > 0 ? (
                       <>
-                        <div className="grid w-full gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        <div
+                          className={`
+                            grid w-full gap-4
+                            sm:grid-cols-2
+                            lg:grid-cols-3
+                          `}
+                        >
                           {packages.map((pkg) => (
                             <Card
+                              className={`
+                                flex flex-col border border-border bg-card
+                              `}
                               key={pkg.id}
-                              className="flex flex-col border border-border bg-card"
                             >
                               <CardHeader className="pb-2">
                                 <CardTitle className="font-display text-lg">
                                   {formatEsimPackageName(pkg.name)}
                                 </CardTitle>
                                 <CardDescription>
-                                  {pkg.data_quantity} {pkg.data_unit} · 30
-                                  days
+                                  {pkg.data_quantity} {pkg.data_unit} · 30 days
                                   {pkg.has5g ? " · 5G" : ""}
                                 </CardDescription>
                               </CardHeader>

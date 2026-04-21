@@ -7,10 +7,7 @@ import {
   productCategoriesTable,
   productsTable,
 } from "~/db/schema";
-import {
-  publicApiCorsPreflight,
-  withPublicApiCors,
-} from "~/lib/cors-public-api";
+import { withPublicApiCors } from "~/lib/cors-public-api";
 
 const SUGGESTIONS_LIMIT = 10;
 const CATEGORIES_LIMIT = 5;

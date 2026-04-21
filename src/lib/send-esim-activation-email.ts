@@ -65,7 +65,7 @@ export async function sendEsimActivationEmail(
         from,
         html,
         subject,
-        text: body + `\n\n${ctaLabel}: ${ctaUrl}`,
+        text: `${body}\n\n${ctaLabel}: ${ctaUrl}`,
         to,
       });
     } catch (err) {

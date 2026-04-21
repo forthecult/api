@@ -106,9 +106,9 @@ export default function AdminSizeChartsPage() {
     <div className="space-y-6">
       <div
         className={`
-        flex flex-col gap-4
-        sm:flex-row sm:items-center sm:justify-between
-      `}
+          flex flex-col gap-4
+          sm:flex-row sm:items-center sm:justify-between
+        `}
       >
         <h2 className="text-2xl font-semibold tracking-tight">Size Charts</h2>
         <div className="flex items-center gap-2">
@@ -158,9 +158,9 @@ export default function AdminSizeChartsPage() {
       <Card>
         <CardHeader
           className={`
-          flex flex-col gap-4
-          sm:flex-row sm:items-center sm:justify-between
-        `}
+            flex flex-col gap-4
+            sm:flex-row sm:items-center sm:justify-between
+          `}
         >
           <CardTitle className="flex items-center gap-2 text-lg">
             <Ruler className="size-5" /> All size charts
@@ -168,9 +168,9 @@ export default function AdminSizeChartsPage() {
           <div className="relative max-w-xs">
             <Search
               className={`
-              absolute top-1/2 left-3 size-4 -translate-y-1/2
-              text-muted-foreground
-            `}
+                absolute top-1/2 left-3 size-4 -translate-y-1/2
+                text-muted-foreground
+              `}
             />
             <input
               aria-label="Filter size charts"
@@ -196,9 +196,9 @@ export default function AdminSizeChartsPage() {
           {loading ? (
             <div
               className={`
-              flex min-h-[200px] items-center justify-center
-              text-muted-foreground
-            `}
+                flex min-h-[200px] items-center justify-center
+                text-muted-foreground
+              `}
             >
               Loading…
             </div>
@@ -239,9 +239,9 @@ export default function AdminSizeChartsPage() {
                     <thead>
                       <tr
                         className={`
-                        border-b bg-muted/50 text-left text-xs font-semibold
-                        tracking-wider text-muted-foreground uppercase
-                      `}
+                          border-b bg-muted/50 text-left text-xs font-semibold
+                          tracking-wider text-muted-foreground uppercase
+                        `}
                       >
                         <th className="p-4 font-medium" scope="col">
                           Provider
@@ -273,9 +273,9 @@ export default function AdminSizeChartsPage() {
                       {filtered.map((row) => (
                         <tr
                           className={`
-                          border-b
-                          last:border-0
-                        `}
+                            border-b
+                            last:border-0
+                          `}
                           key={row.id}
                         >
                           <td className="p-4 capitalize">{row.provider}</td>

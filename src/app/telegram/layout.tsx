@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+
 import Script from "next/script";
 
 import { SEO_CONFIG } from "~/app";
@@ -35,9 +36,9 @@ export default function TelegramLayout({
       <TelegramChrome />
       <div
         className={`
-        min-h-screen bg-[var(--tg-theme-bg-color,#fff)]
-        text-[var(--tg-theme-text-color,#000)]
-      `}
+          min-h-screen bg-[var(--tg-theme-bg-color,#fff)]
+          text-[var(--tg-theme-text-color,#000)]
+        `}
       >
         {children}
       </div>

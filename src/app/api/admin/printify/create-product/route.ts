@@ -86,12 +86,12 @@ export async function POST(request: NextRequest) {
       blueprint_id?: number;
       description?: string;
       image_id?: string;
+      print_areas?: unknown;
       print_provider_id?: number;
       publish?: boolean;
-      print_areas?: unknown;
       tags?: string[];
       title?: string;
-      variants?: Array<{ id: number; is_enabled?: boolean; price: number }>;
+      variants?: { id: number; is_enabled?: boolean; price: number }[];
     };
 
     const {

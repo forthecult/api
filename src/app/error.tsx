@@ -22,7 +22,8 @@ const isChunkLoadError = (err: Error) =>
 const isNetworkError = (err: Error) =>
   err.message === "network error" ||
   err.message === "Failed to fetch" ||
-  (err.name === "TypeError" && /network error|failed to fetch/i.test(err.message));
+  (err.name === "TypeError" &&
+    /network error|failed to fetch/i.test(err.message));
 
 /**
  * Root error boundary for the application.
@@ -50,9 +51,9 @@ export default function RootError({ error, reset }: ErrorPageProps) {
       <div className="flex flex-col items-center gap-6 text-center">
         <div
           className={`
-          flex h-20 w-20 items-center justify-center rounded-full
-          bg-destructive/10
-        `}
+            flex h-20 w-20 items-center justify-center rounded-full
+            bg-destructive/10
+          `}
         >
           <AlertTriangle className="h-10 w-10 text-destructive" />
         </div>
@@ -88,17 +89,17 @@ export default function RootError({ error, reset }: ErrorPageProps) {
 
         <div
           className={`
-          flex flex-col gap-3
-          sm:flex-row
-        `}
+            flex flex-col gap-3
+            sm:flex-row
+          `}
         >
           {isChunk || isNetwork ? (
             <Button
-              variant="default"
               onClick={() => {
                 clearChunkReloadFlag();
                 window.location.reload();
               }}
+              variant="default"
             >
               <RefreshCw className="mr-2 h-4 w-4" />
               Reload page

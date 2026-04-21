@@ -244,7 +244,7 @@ export function SignInPageClient() {
             </p>
           </div>
 
- <Card className="border-none ">
+          <Card className="border-none">
             <CardContent className="pt-2">
               <div className="mb-4 flex gap-2 rounded-lg bg-muted/50 p-1">
                 <button
@@ -255,9 +255,9 @@ export function SignInPageClient() {
                       method === "password"
                         ? "bg-background text-foreground shadow"
                         : `
-                        text-muted-foreground
-                        hover:text-foreground
-                      `
+                          text-muted-foreground
+                          hover:text-foreground
+                        `
                     }
                   `}
                   onClick={() => {
@@ -278,9 +278,9 @@ export function SignInPageClient() {
                       method === "code"
                         ? "bg-background text-foreground shadow"
                         : `
-                        text-muted-foreground
-                        hover:text-foreground
-                      `
+                          text-muted-foreground
+                          hover:text-foreground
+                        `
                     }
                   `}
                   onClick={() => {

@@ -29,9 +29,9 @@ export default function AffiliateProgramPage() {
       {/* Hero */}
       <section
         className={`
-        relative overflow-hidden border-b border-border bg-gradient-to-b
-        from-muted/50 via-muted/20 to-background
-      `}
+          relative overflow-hidden border-b border-border bg-gradient-to-b
+          from-muted/50 via-muted/20 to-background
+        `}
       >
         <div
           className="absolute inset-0 opacity-[0.03]"
@@ -41,41 +41,41 @@ export default function AffiliateProgramPage() {
         />
         <div
           className={`
-          relative container mx-auto max-w-7xl px-4 py-20
-          sm:px-6 sm:py-28
-          lg:px-8
-        `}
+            relative container mx-auto max-w-7xl px-4 py-20
+            sm:px-6 sm:py-28
+            lg:px-8
+          `}
         >
           <p
             className={`
-            text-xs font-semibold tracking-[0.2em] text-primary uppercase
-          `}
+              text-xs font-semibold tracking-[0.2em] text-primary uppercase
+            `}
           >
             Partner with us
           </p>
           <h1
             className={`
-            mt-3 text-3xl font-bold tracking-tight text-foreground
-            sm:text-4xl
-            md:text-5xl
-            lg:text-6xl
-          `}
+              mt-3 text-3xl font-bold tracking-tight text-foreground
+              sm:text-4xl
+              md:text-5xl
+              lg:text-6xl
+            `}
           >
             Share what you believe in.
             <br />
             <span
               className={`
-              bg-gradient-to-r from-primary to-primary/70 bg-clip-text
-              text-transparent
-            `}
+                bg-gradient-to-r from-primary to-primary/70 bg-clip-text
+                text-transparent
+              `}
             >
               Earn with Culture.
             </span>
           </h1>
           <p
             className={`
-            mt-6 max-w-2xl text-lg leading-relaxed text-muted-foreground
-          `}
+              mt-6 max-w-2xl text-lg leading-relaxed text-muted-foreground
+            `}
           >
             We're a lifestyle brand built on decentralization—premium products
             that protect health, privacy, and autonomy. If that's what you stand
@@ -96,97 +96,117 @@ export default function AffiliateProgramPage() {
       {/* How it works — 3 steps */}
       <section
         className={`
-        border-b border-border py-16
-        sm:py-20
-      `}
+          border-b border-border py-16
+          sm:py-20
+        `}
       >
-        <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div
+          className={`
+            container mx-auto max-w-7xl px-4
+            sm:px-6
+            lg:px-8
+          `}
+        >
           <h2
             className={`
-            text-center text-2xl font-semibold tracking-tight text-foreground
-            sm:text-3xl
-          `}
+              text-center text-2xl font-semibold tracking-tight text-foreground
+              sm:text-3xl
+            `}
           >
             How it works
           </h2>
-          <p className="mx-auto mt-3 max-w-2xl text-center text-base text-muted-foreground md:text-lg">
+          <p
+            className={`
+              mx-auto mt-3 max-w-2xl text-center text-base text-muted-foreground
+              md:text-lg
+            `}
+          >
             Simple, transparent, built for creators and publishers who care what
             they promote.
           </p>
           <div
             className={`
-            mt-12 grid gap-6
-            sm:grid-cols-3
-          `}
+              mt-12 grid gap-6
+              sm:grid-cols-3
+            `}
           >
             <div
               className={`
-              group rounded-2xl border border-border bg-card/50 p-6 text-center
- 
- 
-            `}
+                group rounded-2xl border border-border bg-card/50 p-6
+                text-center
+              `}
             >
               <span
                 className={`
-                inline-flex h-12 w-12 items-center justify-center rounded-full
-                bg-primary/10 text-base font-bold text-primary ring-2
-                ring-primary/20
-              `}
+                  inline-flex h-12 w-12 items-center justify-center rounded-full
+                  bg-primary/10 text-base font-bold text-primary ring-2
+                  ring-primary/20
+                `}
               >
                 1
               </span>
               <h3 className="mt-4 text-lg font-semibold text-foreground">
                 Apply
               </h3>
-              <p className="mt-2 text-base leading-relaxed text-muted-foreground">
+              <p
+                className={`
+                  mt-2 text-base leading-relaxed text-muted-foreground
+                `}
+              >
                 Create an account, apply from your dashboard. We review
                 applications and approve partners who align with our values.
               </p>
             </div>
             <div
               className={`
-              group rounded-2xl border border-border bg-card/50 p-6 text-center
- 
- 
-            `}
+                group rounded-2xl border border-border bg-card/50 p-6
+                text-center
+              `}
             >
               <span
                 className={`
-                inline-flex h-12 w-12 items-center justify-center rounded-full
-                bg-primary/10 text-base font-bold text-primary ring-2
-                ring-primary/20
-              `}
+                  inline-flex h-12 w-12 items-center justify-center rounded-full
+                  bg-primary/10 text-base font-bold text-primary ring-2
+                  ring-primary/20
+                `}
               >
                 2
               </span>
               <h3 className="mt-4 text-lg font-semibold text-foreground">
                 Share
               </h3>
-              <p className="mt-2 text-base leading-relaxed text-muted-foreground">
+              <p
+                className={`
+                  mt-2 text-base leading-relaxed text-muted-foreground
+                `}
+              >
                 Use your unique referral link. Share it anywhere—social, blog,
                 newsletter. When someone clicks, we remember them for 90 days.
               </p>
             </div>
             <div
               className={`
-              group rounded-2xl border border-border bg-card/50 p-6 text-center
- 
- 
-            `}
+                group rounded-2xl border border-border bg-card/50 p-6
+                text-center
+              `}
             >
               <span
                 className={`
-                inline-flex h-12 w-12 items-center justify-center rounded-full
-                bg-primary/10 text-base font-bold text-primary ring-2
-                ring-primary/20
-              `}
+                  inline-flex h-12 w-12 items-center justify-center rounded-full
+                  bg-primary/10 text-base font-bold text-primary ring-2
+                  ring-primary/20
+                `}
               >
                 3
               </span>
               <h3 className="mt-4 text-lg font-semibold text-foreground">
                 Earn
               </h3>
-              <p className="mt-2 text-base leading-relaxed text-muted-foreground">
+              <p
+                className={`
+                  mt-2 text-base leading-relaxed text-muted-foreground
+                `}
+              >
                 When they buy, you earn a commission. Configurable per partner.
                 Payouts in Bitcoin, stablecoins, CULT, or PayPal when you
                 &apos;re ready.
@@ -199,23 +219,29 @@ export default function AffiliateProgramPage() {
       {/* Why Culture — ethos */}
       <section
         className={`
-        border-b border-border bg-muted/20 py-16
-        sm:py-20
-      `}
+          border-b border-border bg-muted/20 py-16
+          sm:py-20
+        `}
       >
-        <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div
+          className={`
+            container mx-auto max-w-7xl px-4
+            sm:px-6
+            lg:px-8
+          `}
+        >
           <p
             className={`
-            text-xs font-semibold tracking-[0.2em] text-primary uppercase
-          `}
+              text-xs font-semibold tracking-[0.2em] text-primary uppercase
+            `}
           >
             What you&apos;re promoting
           </p>
           <h2
             className={`
-            mt-1 text-2xl font-semibold tracking-tight text-foreground
-            sm:text-3xl
-          `}
+              mt-1 text-2xl font-semibold tracking-tight text-foreground
+              sm:text-3xl
+            `}
           >
             Not just another store. A brand that stands for something.
           </h2>
@@ -256,74 +282,88 @@ export default function AffiliateProgramPage() {
       {/* Program details */}
       <section
         className={`
-        border-b border-border py-16
-        sm:py-20
-      `}
+          border-b border-border py-16
+          sm:py-20
+        `}
       >
-        <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div
+          className={`
+            container mx-auto max-w-7xl px-4
+            sm:px-6
+            lg:px-8
+          `}
+        >
           <h2
             className={`
-            text-2xl font-semibold tracking-tight text-foreground
-            sm:text-3xl
-          `}
+              text-2xl font-semibold tracking-tight text-foreground
+              sm:text-3xl
+            `}
           >
             Program details
           </h2>
           <div
             className={`
-            mt-8 grid gap-6
-            sm:grid-cols-2
-          `}
+              mt-8 grid gap-6
+              sm:grid-cols-2
+            `}
           >
             <div
-              className={`
-              rounded-xl border border-border bg-card/50 px-5 py-5
-            `}
+              className={`rounded-xl border border-border bg-card/50 px-5 py-5`}
             >
               <h3 className="text-lg font-semibold text-foreground">
                 Cookie & attribution
               </h3>
-              <p className="mt-2 text-base leading-relaxed text-muted-foreground">
+              <p
+                className={`
+                  mt-2 text-base leading-relaxed text-muted-foreground
+                `}
+              >
                 90-day cookie. If someone clicks your link and buys within 90
                 days, you get the commission. One referral can lead to multiple
                 orders in that window.
               </p>
             </div>
             <div
-              className={`
- rounded-2xl border border-border bg-card/50 px-5 py-5 
-            `}
+              className={`rounded-2xl border border-border bg-card/50 px-5 py-5`}
             >
               <h3 className="font-semibold text-foreground">Payouts</h3>
-              <p className="mt-2 text-base leading-relaxed text-muted-foreground">
+              <p
+                className={`
+                  mt-2 text-base leading-relaxed text-muted-foreground
+                `}
+              >
                 Bitcoin, stablecoins (e.g. USDT), or PayPal. We process payouts
                 manually at first; higher-volume partners can discuss frequency.
                 You're promoting a crypto-native brand—we pay like one.
               </p>
             </div>
             <div
-              className={`
- rounded-2xl border border-border bg-card/50 px-5 py-5 
-            `}
+              className={`rounded-2xl border border-border bg-card/50 px-5 py-5`}
             >
               <h3 className="text-lg font-semibold text-foreground">
                 Commission
               </h3>
-              <p className="mt-2 text-base leading-relaxed text-muted-foreground">
+              <p
+                className={`
+                  mt-2 text-base leading-relaxed text-muted-foreground
+                `}
+              >
                 Percentage or fixed amount per sale, set when you're approved.
                 Optional customer discount per affiliate so you can offer your
                 audience something extra.
               </p>
             </div>
             <div
-              className={`
- rounded-2xl border border-border bg-card/50 px-5 py-5 
-            `}
+              className={`rounded-2xl border border-border bg-card/50 px-5 py-5`}
             >
               <h3 className="text-lg font-semibold text-foreground">
                 Who can join
               </h3>
-              <p className="mt-2 text-base leading-relaxed text-muted-foreground">
+              <p
+                className={`
+                  mt-2 text-base leading-relaxed text-muted-foreground
+                `}
+              >
                 Anyone can apply. We approve based on fit—audience, values, how
                 you plan to promote. No minimum follower count. Blog, YouTube,
                 X, Telegram, newsletter—if you share Culture with your people,
@@ -336,28 +376,34 @@ export default function AffiliateProgramPage() {
 
       {/* Quick facts */}
       <section className="border-b border-border bg-muted/20 py-12">
-        <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div
+          className={`
+            container mx-auto max-w-7xl px-4
+            sm:px-6
+            lg:px-8
+          `}
+        >
           <h2 className="text-center text-lg font-semibold text-foreground">
             Quick facts
           </h2>
           <dl
             className={`
-            mt-8 grid gap-4
-            sm:grid-cols-2
-            lg:grid-cols-4
-          `}
+              mt-8 grid gap-4
+              sm:grid-cols-2
+              lg:grid-cols-4
+            `}
           >
             <div
               className={`
-              rounded-xl border border-border bg-background px-4 py-3
- text-center 
-            `}
+                rounded-xl border border-border bg-background px-4 py-3
+                text-center
+              `}
             >
               <dt
                 className={`
-                text-xs font-medium tracking-wider text-muted-foreground
-                uppercase
-              `}
+                  text-xs font-medium tracking-wider text-muted-foreground
+                  uppercase
+                `}
               >
                 Cookie
               </dt>
@@ -365,15 +411,15 @@ export default function AffiliateProgramPage() {
             </div>
             <div
               className={`
-              rounded-xl border border-border bg-background px-4 py-3
- text-center 
-            `}
+                rounded-xl border border-border bg-background px-4 py-3
+                text-center
+              `}
             >
               <dt
                 className={`
-                text-xs font-medium tracking-wider text-muted-foreground
-                uppercase
-              `}
+                  text-xs font-medium tracking-wider text-muted-foreground
+                  uppercase
+                `}
               >
                 Payout options
               </dt>
@@ -383,15 +429,15 @@ export default function AffiliateProgramPage() {
             </div>
             <div
               className={`
-              rounded-xl border border-border bg-background px-4 py-3
- text-center 
-            `}
+                rounded-xl border border-border bg-background px-4 py-3
+                text-center
+              `}
             >
               <dt
                 className={`
-                text-xs font-medium tracking-wider text-muted-foreground
-                uppercase
-              `}
+                  text-xs font-medium tracking-wider text-muted-foreground
+                  uppercase
+                `}
               >
                 Sign up
               </dt>
@@ -399,15 +445,15 @@ export default function AffiliateProgramPage() {
             </div>
             <div
               className={`
-              rounded-xl border border-border bg-background px-4 py-3
- text-center 
-            `}
+                rounded-xl border border-border bg-background px-4 py-3
+                text-center
+              `}
             >
               <dt
                 className={`
-                text-xs font-medium tracking-wider text-muted-foreground
-                uppercase
-              `}
+                  text-xs font-medium tracking-wider text-muted-foreground
+                  uppercase
+                `}
               >
                 Where to promote
               </dt>
@@ -422,57 +468,110 @@ export default function AffiliateProgramPage() {
       {/* FAQ */}
       <section
         className={`
-        py-16
-        sm:py-20
-      `}
+          py-16
+          sm:py-20
+        `}
       >
-        <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div
+          className={`
+            container mx-auto max-w-7xl px-4
+            sm:px-6
+            lg:px-8
+          `}
+        >
           <div className="mx-auto w-full max-w-3xl">
-            <h2 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+            <h2
+              className={`
+                text-2xl font-semibold tracking-tight text-foreground
+                sm:text-3xl
+              `}
+            >
               Frequently asked questions
             </h2>
             <ul className="mt-8 space-y-8">
               <li>
-                <h3 className="text-lg font-semibold text-foreground md:text-xl">
+                <h3
+                  className={`
+                    text-lg font-semibold text-foreground
+                    md:text-xl
+                  `}
+                >
                   What is the Culture affiliate program?
                 </h3>
-                <p className="mt-2 text-base leading-relaxed text-muted-foreground md:text-lg">
+                <p
+                  className={`
+                    mt-2 text-base leading-relaxed text-muted-foreground
+                    md:text-lg
+                  `}
+                >
                   A free partnership where you earn commission by promoting
-                  Culture. You get a unique link, share it, and when someone buys
-                  through that link (within 90 days), you get paid. You also get a
-                  dashboard to track clicks, conversions, and earnings.
+                  Culture. You get a unique link, share it, and when someone
+                  buys through that link (within 90 days), you get paid. You
+                  also get a dashboard to track clicks, conversions, and
+                  earnings.
                 </p>
               </li>
               <li>
-                <h3 className="text-lg font-semibold text-foreground md:text-xl">
+                <h3
+                  className={`
+                    text-lg font-semibold text-foreground
+                    md:text-xl
+                  `}
+                >
                   How do I get paid?
                 </h3>
-                <p className="mt-2 text-base leading-relaxed text-muted-foreground md:text-lg">
-                  We support Bitcoin, stablecoins (e.g. USDT on ERC-20 or TRC-20),
-                  CULT, and PayPal. You choose your preferred method when you
-                  apply or in your affiliate dashboard. Payouts are processed
-                  manually; minimum thresholds may apply.
+                <p
+                  className={`
+                    mt-2 text-base leading-relaxed text-muted-foreground
+                    md:text-lg
+                  `}
+                >
+                  We support Bitcoin, stablecoins (e.g. USDT on ERC-20 or
+                  TRC-20), CULT, and PayPal. You choose your preferred method
+                  when you apply or in your affiliate dashboard. Payouts are
+                  processed manually; minimum thresholds may apply.
                 </p>
               </li>
               <li>
-                <h3 className="text-lg font-semibold text-foreground md:text-xl">
+                <h3
+                  className={`
+                    text-lg font-semibold text-foreground
+                    md:text-xl
+                  `}
+                >
                   Do I need a big audience?
                 </h3>
-                <p className="mt-2 text-base leading-relaxed text-muted-foreground md:text-lg">
-                  No. We care about fit—whether you run a blog, a YouTube channel,
-                  a Telegram group, or a newsletter. If your audience cares about
-                  quality, privacy, or crypto, you're a good candidate. Apply and
-                  tell us how you'd promote Culture.
+                <p
+                  className={`
+                    mt-2 text-base leading-relaxed text-muted-foreground
+                    md:text-lg
+                  `}
+                >
+                  No. We care about fit—whether you run a blog, a YouTube
+                  channel, a Telegram group, or a newsletter. If your audience
+                  cares about quality, privacy, or crypto, you're a good
+                  candidate. Apply and tell us how you'd promote Culture.
                 </p>
               </li>
               <li>
-                <h3 className="text-lg font-semibold text-foreground md:text-xl">
+                <h3
+                  className={`
+                    text-lg font-semibold text-foreground
+                    md:text-xl
+                  `}
+                >
                   Can I offer my audience a discount?
                 </h3>
-                <p className="mt-2 text-base leading-relaxed text-muted-foreground md:text-lg">
+                <p
+                  className={`
+                    mt-2 text-base leading-relaxed text-muted-foreground
+                    md:text-lg
+                  `}
+                >
                   Optional. When you're approved, we can configure a customer
-                  discount for your link (percent or fixed amount). Your audience
-                  gets a benefit; you still earn commission on the sale.
+                  discount for your link (percent or fixed amount). Your
+                  audience gets a benefit; you still earn commission on the
+                  sale.
                 </p>
               </li>
             </ul>
@@ -483,20 +582,32 @@ export default function AffiliateProgramPage() {
       {/* CTA */}
       <section
         className={`
-        border-t border-border bg-primary/5 py-16
-        sm:py-20
-      `}
+          border-t border-border bg-primary/5 py-16
+          sm:py-20
+        `}
       >
-        <div className="container mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
+        <div
+          className={`
+            container mx-auto max-w-7xl px-4 text-center
+            sm:px-6
+            lg:px-8
+          `}
+        >
           <h2
             className={`
-            text-2xl font-semibold tracking-tight text-foreground
-            sm:text-3xl
-          `}
+              text-2xl font-semibold tracking-tight text-foreground
+              sm:text-3xl
+            `}
           >
             Ready to partner?
           </h2>
-          <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-muted-foreground md:text-lg">
+          <p
+            className={`
+              mx-auto mt-4 max-w-2xl text-base leading-relaxed
+              text-muted-foreground
+              md:text-lg
+            `}
+          >
             Apply from your dashboard. If you don't have an account yet, sign up
             first—then go to Affiliate and submit your application.
           </p>

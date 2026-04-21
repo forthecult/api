@@ -6,15 +6,15 @@
  * Returns { transaction: string } (base64 serialized transaction for client to sign and send).
  */
 
-import { Connection, PublicKey } from "@solana/web3.js";
 import { getAccount } from "@solana/spl-token";
+import { Connection, PublicKey } from "@solana/web3.js";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import {
   getStakingProgramId,
-  getVaultAuthorityPda,
   getVaultAta,
+  getVaultAuthorityPda,
   isValidLockDuration,
   LOCK_12_MONTHS,
   LOCK_30_DAYS,
@@ -22,7 +22,10 @@ import {
 } from "~/lib/cult-staking";
 import { buildStakeTransaction } from "~/lib/cult-staking-instructions";
 import { getSolanaRpcUrlServer } from "~/lib/solana-pay";
-import { getActiveToken, TOKEN_2022_PROGRAM_ID_BASE58 } from "~/lib/token-config";
+import {
+  getActiveToken,
+  TOKEN_2022_PROGRAM_ID_BASE58,
+} from "~/lib/token-config";
 
 const bodySchema = z.object({
   amount: z.string().min(1),

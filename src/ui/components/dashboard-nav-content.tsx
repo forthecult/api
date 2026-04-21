@@ -3,7 +3,6 @@
 import {
   Headphones,
   Heart,
-  Sparkles,
   Link2,
   LogOut,
   MapPin,
@@ -11,6 +10,7 @@ import {
   Settings,
   Shield,
   Smartphone,
+  Sparkles,
   UserIcon,
 } from "lucide-react";
 import Link from "next/link";
@@ -40,20 +40,13 @@ const defaultCounts: Counts = {
 
 export const DASHBOARD_COUNTS_INVALIDATE = "dashboard:counts-invalidate";
 
-function fetchCounts(): Promise<Counts> {
-  return fetch("/api/dashboard/counts", { credentials: "include" })
-    .then((res) => (res.ok ? res.json() : Promise.resolve(defaultCounts)))
-    .then((raw: unknown) => raw as Counts)
-    .catch(() => defaultCounts);
-}
-
 /** Shared nav links + logout for sidebar (desktop) and sheet (mobile). */
 export function DashboardNavContent({
   onLinkClick,
   variant = "sidebar",
 }: {
   onLinkClick?: () => void;
-  variant?: "sidebar" | "sheet";
+  variant?: "sheet" | "sidebar";
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -99,8 +92,8 @@ export function DashboardNavContent({
           text-sm font-medium transition-colors
         `
         : `
-          flex items-center justify-between gap-2 rounded-md px-3 py-2.5
-          text-sm font-medium transition-colors
+          flex items-center justify-between gap-2 rounded-md px-3 py-2.5 text-sm
+          font-medium transition-colors
         `,
       isActive(href)
         ? "border-l-4 border-primary bg-primary/5 text-primary"
@@ -109,7 +102,10 @@ export function DashboardNavContent({
             border-l-4 border-transparent text-muted-foreground
             hover:bg-muted/50 hover:text-foreground
           `
-          : "text-muted-foreground hover:bg-muted/50 hover:text-foreground",
+          : `
+            text-muted-foreground
+            hover:bg-muted/50 hover:text-foreground
+          `,
       variant === "sheet" && "border-l-0",
     );
 
@@ -128,7 +124,10 @@ export function DashboardNavContent({
         <div>
           <h2
             className={cn(
-              "mb-2 px-3 text-xs font-semibold tracking-wider text-muted-foreground uppercase",
+              `
+                mb-2 px-3 text-xs font-semibold tracking-wider
+                text-muted-foreground uppercase
+              `,
             )}
           >
             Dashboard
@@ -197,7 +196,10 @@ export function DashboardNavContent({
         <div>
           <h2
             className={cn(
-              "mb-2 px-3 text-xs font-semibold tracking-wider text-muted-foreground uppercase",
+              `
+                mb-2 px-3 text-xs font-semibold tracking-wider
+                text-muted-foreground uppercase
+              `,
             )}
           >
             Account Settings
@@ -255,4 +257,11 @@ export function DashboardNavContent({
       </div>
     </>
   );
+}
+
+function fetchCounts(): Promise<Counts> {
+  return fetch("/api/dashboard/counts", { credentials: "include" })
+    .then((res) => (res.ok ? res.json() : Promise.resolve(defaultCounts)))
+    .then((raw: unknown) => raw as Counts)
+    .catch(() => defaultCounts);
 }

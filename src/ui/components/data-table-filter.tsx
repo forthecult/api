@@ -221,8 +221,7 @@ export function ActiveFiltersMobileContainer({
   );
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function DataTableFilter<TData, TValue>({
+export function DataTableFilter<TData, _TValue>({
   table,
 }: {
   table: Table<TData>;
@@ -721,9 +720,7 @@ export function FilterValueDateController<TData, TValue>({
   function changeDateRange(value: DateRange | undefined) {
     const start = value?.from;
     const end =
-      start && value && value.to && !isEqual(start, value.to)
-        ? value.to
-        : undefined;
+      start && value?.to && !isEqual(start, value.to) ? value.to : undefined;
 
     setDate({ from: start, to: end });
 
@@ -1812,7 +1809,7 @@ function renderActiveFilter<TData, T extends ColumnDataType>(
     <div
       className={`
         flex h-7 items-center rounded-2xl border border-border bg-background
- text-xs 
+        text-xs
       `}
       key={`filter-${filter.id}`}
     >

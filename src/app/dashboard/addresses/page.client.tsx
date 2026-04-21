@@ -256,16 +256,16 @@ export function AddressesPageClient({ addresses }: AddressesPageClientProps) {
                           className={`
                             absolute top-full right-0 left-0 z-50 mt-1 max-h-60
                             overflow-auto rounded-md border border-border
- bg-background 
+                            bg-background
                           `}
                           role="listbox"
                         >
                           {loqate.loading && loqate.suggestions.length === 0 ? (
                             <div
                               className={`
-                              flex items-center gap-2 px-3 py-2 text-sm
-                              text-muted-foreground
-                            `}
+                                flex items-center gap-2 px-3 py-2 text-sm
+                                text-muted-foreground
+                              `}
                             >
                               <Loader2
                                 aria-hidden
@@ -377,7 +377,7 @@ export function AddressesPageClient({ addresses }: AddressesPageClientProps) {
                     <select
                       className={`
                         flex h-9 w-full rounded-md border border-input
- bg-transparent px-3 py-1 text-sm 
+                        bg-transparent px-3 py-1 text-sm
                         transition-[color,box-shadow] outline-none
                         focus-visible:ring-2 focus-visible:ring-ring
                         disabled:cursor-not-allowed disabled:opacity-50
@@ -419,9 +419,7 @@ export function AddressesPageClient({ addresses }: AddressesPageClientProps) {
       {addresses.length === 0 ? (
         <Card>
           <CardContent
-            className={`
-            flex flex-col items-center justify-center py-12
-          `}
+            className={`flex flex-col items-center justify-center py-12`}
           >
             <p className="text-muted-foreground">No saved addresses yet.</p>
             <Button className="mt-4" onClick={openAdd} variant="outline">
@@ -437,15 +435,13 @@ export function AddressesPageClient({ addresses }: AddressesPageClientProps) {
               <Card>
                 <CardHeader
                   className={`
-                  flex flex-row items-start justify-between space-y-0 pb-2
-                `}
+                    flex flex-row items-start justify-between space-y-0 pb-2
+                  `}
                 >
                   <div>
                     {addr.label && (
                       <span
-                        className={`
-                        text-sm font-medium text-muted-foreground
-                      `}
+                        className={`text-sm font-medium text-muted-foreground`}
                       >
                         {addr.label}
                       </span>
@@ -453,9 +449,9 @@ export function AddressesPageClient({ addresses }: AddressesPageClientProps) {
                     {addr.isDefault && (
                       <span
                         className={`
-                        ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-xs
-                        font-medium text-primary
-                      `}
+                          ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-xs
+                          font-medium text-primary
+                        `}
                       >
                         Default
                       </span>
@@ -596,7 +592,7 @@ export function AddressesPageClient({ addresses }: AddressesPageClientProps) {
                   <select
                     className={`
                       flex h-9 w-full rounded-md border border-input
- bg-transparent px-3 py-1 text-sm 
+                      bg-transparent px-3 py-1 text-sm
                       transition-[color,box-shadow] outline-none
                       focus-visible:ring-2 focus-visible:ring-ring
                       disabled:cursor-not-allowed disabled:opacity-50

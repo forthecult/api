@@ -130,11 +130,10 @@ export async function GET(
             }
           : undefined,
       status,
-      statusUrl:
-        `${process.env.NEXT_PUBLIC_AGENT_APP_URL || process.env.NEXT_PUBLIC_APP_URL || "https://forthecult.store"}`.replace(
-          /\/$/,
-          "",
-        ) + `/api/orders/${order.id}/status`,
+      statusUrl: `${`${process.env.NEXT_PUBLIC_AGENT_APP_URL || process.env.NEXT_PUBLIC_APP_URL || "https://forthecult.store"}`.replace(
+        /\/$/,
+        "",
+      )}/api/orders/${order.id}/status`,
       totals: {
         shippingUsd,
         subtotalUsd: subtotalCents / 100,

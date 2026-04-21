@@ -10,9 +10,9 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
 import {
+  stripeCustomerTable,
   subscriptionInstanceTable,
   subscriptionOfferTable,
-  stripeCustomerTable,
 } from "~/db/schema";
 import { auth } from "~/lib/auth";
 import { MEMBERSHIP_OFFER_SLUG } from "~/lib/membership-subscription-catalog";

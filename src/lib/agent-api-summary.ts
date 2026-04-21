@@ -3,10 +3,7 @@
  * Used by GET /api/agent/summary and the for-agents page script.
  */
 
-import {
-  getAgentBaseUrl,
-  sanitizeBaseUrlForPublicApi,
-} from "~/lib/app-url";
+import { getAgentBaseUrl, sanitizeBaseUrlForPublicApi } from "~/lib/app-url";
 
 export interface AgentApiEndpoint {
   description: string;
@@ -29,12 +26,8 @@ export interface AgentApiSummary {
  * @param baseUrl Optional base (e.g. current request origin). When omitted, uses getAgentBaseUrl() or ai.forthecult.store.
  */
 export function getAgentApiLinks(baseUrl?: string): AgentApiEndpoint[] {
-  const raw =
-    baseUrl ?? (getAgentBaseUrl() || "https://ai.forthecult.store");
-  const base = sanitizeBaseUrlForPublicApi(
-    raw,
-    "https://ai.forthecult.store",
-  );
+  const raw = baseUrl ?? (getAgentBaseUrl() || "https://ai.forthecult.store");
+  const base = sanitizeBaseUrlForPublicApi(raw, "https://ai.forthecult.store");
   return buildApiLinks(base);
 }
 
@@ -44,12 +37,8 @@ export function getAgentApiLinks(baseUrl?: string): AgentApiEndpoint[] {
  * @param baseUrl Optional base (e.g. current request origin). When omitted, uses getAgentBaseUrl() or ai.forthecult.store.
  */
 export function getAgentApiSummary(baseUrl?: string): AgentApiSummary {
-  const raw =
-    baseUrl ?? (getAgentBaseUrl() || "https://ai.forthecult.store");
-  const base = sanitizeBaseUrlForPublicApi(
-    raw,
-    "https://ai.forthecult.store",
-  );
+  const raw = baseUrl ?? (getAgentBaseUrl() || "https://ai.forthecult.store");
+  const base = sanitizeBaseUrlForPublicApi(raw, "https://ai.forthecult.store");
   const links = buildApiLinks(base);
   return {
     description:
@@ -119,7 +108,7 @@ function buildApiLinks(base: string): AgentApiEndpoint[] {
     },
     {
       description:
-      "Moltbook-hosted instructions for bots: how to get and send an identity token.",
+        "Moltbook-hosted instructions for bots: how to get and send an identity token.",
       href: `https://moltbook.com/auth.md?app=ForTheCult&endpoint=${encodeURIComponent(`${base}/api/agent/me`)}`,
       method: null,
       title: "Auth instructions",

@@ -29,7 +29,7 @@ interface SizeChart {
 
 export default function AdminSizeChartsEditPage() {
   const params = useParams();
-  const router = useRouter();
+  const _router = useRouter();
   const id = typeof params.id === "string" ? params.id : "";
   const [chart, setChart] = useState<null | SizeChart>(null);
   const [loading, setLoading] = useState(true);
@@ -142,9 +142,9 @@ export default function AdminSizeChartsEditPage() {
         {error && (
           <p
             className={`
-            rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2
-            text-sm text-destructive
-          `}
+              rounded-md border border-destructive/50 bg-destructive/10 px-3
+              py-2 text-sm text-destructive
+            `}
           >
             {error}
           </p>
@@ -152,10 +152,10 @@ export default function AdminSizeChartsEditPage() {
         {success && (
           <p
             className={`
-            rounded-md border border-green-500/50 bg-green-500/10 px-3 py-2
-            text-sm text-green-700
-            dark:text-green-400
-          `}
+              rounded-md border border-green-500/50 bg-green-500/10 px-3 py-2
+              text-sm text-green-700
+              dark:text-green-400
+            `}
           >
             Size chart saved successfully.
           </p>
@@ -175,14 +175,14 @@ export default function AdminSizeChartsEditPage() {
           <CardContent className="space-y-4">
             <div
               className={`
-              grid gap-4
-              sm:grid-cols-3
-            `}
+                grid gap-4
+                sm:grid-cols-3
+              `}
             >
               <div>
                 <label className={labelClass}>Provider</label>
                 <input
-                  className={inputClass + "opacity-60"}
+                  className={`${inputClass}opacity-60`}
                   disabled
                   type="text"
                   value={chart.provider}
@@ -191,7 +191,7 @@ export default function AdminSizeChartsEditPage() {
               <div>
                 <label className={labelClass}>Brand</label>
                 <input
-                  className={inputClass + "opacity-60"}
+                  className={`${inputClass}opacity-60`}
                   disabled
                   type="text"
                   value={chart.brand}
@@ -200,7 +200,7 @@ export default function AdminSizeChartsEditPage() {
               <div>
                 <label className={labelClass}>Model</label>
                 <input
-                  className={inputClass + "opacity-60"}
+                  className={`${inputClass}opacity-60`}
                   disabled
                   type="text"
                   value={chart.model}

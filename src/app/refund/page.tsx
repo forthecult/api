@@ -22,9 +22,9 @@ export default function RefundPage() {
       <header className="mb-10 border-b border-border pb-8">
         <h1
           className={`
-          text-3xl font-bold tracking-tight text-foreground
-          sm:text-4xl
-        `}
+            text-3xl font-bold tracking-tight text-foreground
+            sm:text-4xl
+          `}
         >
           Request a refund
         </h1>
@@ -39,18 +39,18 @@ export default function RefundPage() {
       <div className="space-y-10">
         <section
           className={`
-          rounded-lg border border-border bg-card/50 px-5 py-5
-          sm:px-6
-        `}
+            rounded-lg border border-border bg-card/50 px-5 py-5
+            sm:px-6
+          `}
         >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             How refunds work
           </h2>
           <ul
             className={`
-            mt-3 list-inside list-disc space-y-2 leading-relaxed
-            text-muted-foreground
-          `}
+              mt-3 list-inside list-disc space-y-2 leading-relaxed
+              text-muted-foreground
+            `}
           >
             <li>
               <strong className="font-medium text-foreground">

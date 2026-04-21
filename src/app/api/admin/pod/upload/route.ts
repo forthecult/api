@@ -8,7 +8,7 @@ import {
   makeBackgroundTransparent,
   validateForPrint,
 } from "@/lib/pod/image-processor";
-import { uploadToPrintful, uploadToPrintify } from "@/lib/pod/upload";
+import { uploadToPrintify } from "@/lib/pod/upload";
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 

@@ -3,47 +3,59 @@
 import { ChevronDown } from "lucide-react";
 import * as React from "react";
 
-import { cn } from "~/lib/cn";
 import {
+  type DeviceCategoryContent,
   ESIM_DEVICE_CATEGORIES,
   ESIM_DEVICE_CATEGORY_LABELS,
-  type DeviceCategoryContent,
 } from "~/app/esim/esim-device-compatibility-data";
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-} from "~/ui/primitives/dialog";
+import { cn } from "~/lib/cn";
+import { Dialog, DialogContent, DialogTitle } from "~/ui/primitives/dialog";
 
 const IMPORTANT_NOTE =
   "Important: your phone or device must also be carrier-unlocked to use eSIM.";
 
+export interface EsimDeviceCompatibilityModalProps {
+  onOpenChange: (open: boolean) => void;
+  open: boolean;
+}
+
 function CategoryAccordionItem({
   categoryId,
-  label,
   content,
   defaultOpen = false,
+  label,
 }: {
   categoryId: string;
-  label: string;
   content: DeviceCategoryContent;
   defaultOpen?: boolean;
+  label: string;
 }) {
   const [open, setOpen] = React.useState(defaultOpen);
   return (
-    <div className="border-b border-border last:border-b-0">
+    <div
+      className={`
+        border-b border-border
+        last:border-b-0
+      `}
+    >
       <button
         aria-expanded={open}
         className={cn(
           "flex w-full items-center justify-between py-4 text-left font-medium",
-          "text-[#14532d] dark:text-emerald-400",
+          `
+            text-[#14532d]
+            dark:text-emerald-400
+          `,
         )}
         onClick={() => setOpen((o) => !o)}
         type="button"
       >
         <span>{label}</span>
         <ChevronDown
-          className={cn("h-4 w-4 shrink-0 transition-transform", open && "rotate-180")}
+          className={cn(
+            "h-4 w-4 shrink-0 transition-transform",
+            open && `rotate-180`,
+          )}
         />
       </button>
       {open && (
@@ -68,11 +80,6 @@ function CategoryAccordionItem({
   );
 }
 
-export interface EsimDeviceCompatibilityModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}
-
 const CATEGORY_ORDER = [
   "apple",
   "samsung",
@@ -86,18 +93,24 @@ const CATEGORY_ORDER = [
 ] as const;
 
 export function EsimDeviceCompatibilityModal({
-  open,
   onOpenChange,
+  open,
 }: EsimDeviceCompatibilityModalProps) {
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog onOpenChange={onOpenChange} open={open}>
       <DialogContent
-        className="max-h-[85vh] max-w-2xl overflow-y-auto sm:max-w-2xl"
+        className={`
+          max-h-[85vh] max-w-2xl overflow-y-auto
+          sm:max-w-2xl
+        `}
       >
         <DialogTitle
           className={cn(
             "pr-10 text-xl font-semibold",
-            "text-[#14532d] dark:text-emerald-400",
+            `
+              text-[#14532d]
+              dark:text-emerald-400
+            `,
           )}
         >
           eSIM Compatible Devices
@@ -109,10 +122,10 @@ export function EsimDeviceCompatibilityModal({
             if (!content || !label) return null;
             return (
               <CategoryAccordionItem
-                key={id}
                 categoryId={id}
                 content={content}
                 defaultOpen={index === 0}
+                key={id}
                 label={label}
               />
             );

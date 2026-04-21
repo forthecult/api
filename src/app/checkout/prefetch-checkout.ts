@@ -12,6 +12,12 @@ let ethPayPrefetched = false;
 let btcPayPrefetched = false;
 let tonPayPrefetched = false;
 
+export function prefetchBtcPayClient(): void {
+  if (btcPayPrefetched || typeof window === "undefined") return;
+  btcPayPrefetched = true;
+  void import("~/app/checkout/btcpay/BtcPayClient");
+}
+
 export function prefetchCheckout(): void {
   if (checkoutPrefetched || typeof window === "undefined") return;
   checkoutPrefetched = true;
@@ -36,32 +42,28 @@ export function prefetchEthPayClient(): void {
   void import("~/app/checkout/eth/EthPayClient");
 }
 
-export function prefetchBtcPayClient(): void {
-  if (btcPayPrefetched || typeof window === "undefined") return;
-  btcPayPrefetched = true;
-  void import("~/app/checkout/btcpay/BtcPayClient");
+/** Prefetch the payment client that will be used for /checkout/[invoiceId]. */
+export function prefetchPaymentClient(
+  type: "btcpay" | "eth" | "solana" | "ton",
+): void {
+  switch (type) {
+    case "btcpay":
+      prefetchBtcPayClient();
+      break;
+    case "eth":
+      prefetchEthPayClient();
+      break;
+    case "solana":
+      prefetchCryptoPayClient();
+      break;
+    case "ton":
+      prefetchTonPayClient();
+      break;
+  }
 }
 
 export function prefetchTonPayClient(): void {
   if (tonPayPrefetched || typeof window === "undefined") return;
   tonPayPrefetched = true;
   void import("~/app/checkout/ton/TonPayClient");
-}
-
-/** Prefetch the payment client that will be used for /checkout/[invoiceId]. */
-export function prefetchPaymentClient(type: "solana" | "eth" | "btcpay" | "ton"): void {
-  switch (type) {
-    case "solana":
-      prefetchCryptoPayClient();
-      break;
-    case "eth":
-      prefetchEthPayClient();
-      break;
-    case "btcpay":
-      prefetchBtcPayClient();
-      break;
-    case "ton":
-      prefetchTonPayClient();
-      break;
-  }
 }

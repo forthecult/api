@@ -1,7 +1,7 @@
 "use client";
 
 import { Star } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { cn } from "~/lib/cn";
 
@@ -65,10 +65,10 @@ export function ProductReviewsCarousel({
     >
       <div
         className={`
-        w-full max-w-7xl px-4
-        sm:px-6
-        lg:px-8
-      `}
+          w-full max-w-7xl px-4
+          sm:px-6
+          lg:px-8
+        `}
       >
         <h2
           className="mb-2 text-left text-2xl font-bold text-foreground"
@@ -77,8 +77,7 @@ export function ProductReviewsCarousel({
           What customers are saying
         </h2>
         <p className="mb-6 text-muted-foreground">
-          Reviews from the community
-          lifestyle
+          Reviews from the community lifestyle
         </p>
       </div>
 
@@ -86,30 +85,31 @@ export function ProductReviewsCarousel({
         <div className="flex h-40 items-center justify-center">
           <div
             className={`
-            h-8 w-8 animate-spin rounded-full border-4 border-primary
-            border-t-transparent
-          `}
+              h-8 w-8 animate-spin rounded-full border-4 border-primary
+              border-t-transparent
+            `}
           />
         </div>
       ) : (
         <div
           className={`
-          marquee-edge-fade relative flex w-full flex-col items-center justify-center
-          overflow-hidden
-        `}
+            marquee-edge-fade relative flex w-full flex-col items-center
+            justify-center overflow-hidden
+          `}
         >
           <div
             className={`
-            group flex flex-row overflow-hidden p-2
-            [gap:var(--gap)]
-            [--gap:1rem]
-          `}
+              group flex flex-row overflow-hidden p-2
+              [gap:var(--gap)]
+              [--gap:1rem]
+            `}
           >
             <div
               className={`
-              animate-marquee-testimonials flex shrink-0 flex-row justify-around
-              [gap:var(--gap)]
-            `}
+                animate-marquee-testimonials flex shrink-0 flex-row
+                justify-around
+                [gap:var(--gap)]
+              `}
             >
               {/* Duplicate reviews 2x for seamless marquee loop */}
               {[...Array(2)].map((_, setIndex) =>
@@ -162,9 +162,9 @@ function ReviewCard({
       {review.productName && (
         <p
           className={`
-          mb-3 text-xs font-medium tracking-wide text-muted-foreground/70
-          uppercase
-        `}
+            mb-3 text-xs font-medium tracking-wide text-muted-foreground/70
+            uppercase
+          `}
         >
           {review.productName}
         </p>
@@ -202,9 +202,9 @@ function ReviewCard({
       {/* Review text */}
       <p
         className={`
-        sm:text-md
-        mt-4 text-sm text-muted-foreground
-      `}
+          sm:text-md
+          mt-4 text-sm text-muted-foreground
+        `}
       >
         {review.comment}
       </p>

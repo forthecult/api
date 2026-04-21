@@ -6,11 +6,6 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
 
-import type {
-  ProductOptionDefinition,
-  ProductVariantOption,
-} from "~/app/products/[id]/types";
-
 import { SEO_CONFIG } from "~/app";
 import { LongFormProductPage } from "~/app/[slug]/long-form-product-page";
 import { EstimatedDeliveryTimeline } from "~/app/products/[id]/estimated-delivery-timeline";
@@ -18,6 +13,7 @@ import { ProductDetailAccordion } from "~/app/products/[id]/product-detail-accor
 import { ProductImageGallery } from "~/app/products/[id]/product-image-gallery";
 import { ProductReviewsCarousel } from "~/app/products/[id]/product-reviews-carousel";
 import { ProductShare } from "~/app/products/[id]/product-share";
+import { ProductShippingEstimateProvider } from "~/app/products/[id]/product-shipping-estimate-context";
 import { ProductVariantImageProvider } from "~/app/products/[id]/product-variant-image-context";
 import { ProductVariantSection } from "~/app/products/[id]/product-variant-section";
 import { RelatedProductsSection } from "~/app/products/[id]/related-products-section";
@@ -202,10 +198,11 @@ export async function generateMetadata({
       ? pageTitle
       : `${pageTitle} | ${SEO_CONFIG.name}`;
     const canonicalUrl = `${siteUrl}/${canonicalSlug}`;
-    const defaultOgPath = "/lookbook/culture-brand-lifestyle-premium-apparel.jpg";
+    const defaultOgPath =
+      "/lookbook/culture-brand-lifestyle-premium-apparel.jpg";
     const imageUrl = productGate.tokenGated
       ? `${siteUrl}${defaultOgPath}`
-      : product.image && product.image.startsWith("http")
+      : product.image?.startsWith("http")
         ? product.image
         : product.image
           ? `${siteUrl}${product.image.startsWith("/") ? "" : "/"}${product.image}`
@@ -214,30 +211,32 @@ export async function generateMetadata({
       alternates: {
         canonical: canonicalUrl,
       },
-      robots: noindexForAgent
-        ? { follow: true, index: false }
-        : { follow: true, index: true },
       description: metaDesc,
       openGraph: {
         description: metaDesc,
-        title: ogTitle,
-        type: "website",
-        url: canonicalUrl,
         images: [
           {
-            alt: productGate.tokenGated ? SEO_CONFIG.name : (product.mainImageAlt ?? product.name),
+            alt: productGate.tokenGated
+              ? SEO_CONFIG.name
+              : (product.mainImageAlt ?? product.name),
             height: 630,
             url: imageUrl,
             width: 1200,
           },
         ],
+        title: ogTitle,
+        type: "website",
+        url: canonicalUrl,
       },
+      robots: noindexForAgent
+        ? { follow: true, index: false }
+        : { follow: true, index: true },
       title: pageTitle,
       twitter: {
         card: "summary_large_image",
         description: metaDesc,
-        title: ogTitle,
         images: [imageUrl],
+        title: ogTitle,
       },
     };
   }
@@ -248,32 +247,32 @@ export async function generateMetadata({
     category?.metaDescription?.slice(0, 160) ??
     `Browse ${categoryName} at ${SEO_CONFIG.name}.`;
 
-  const defaultOgImagePath = "/lookbook/culture-brand-lifestyle-premium-apparel.jpg";
-  const categoryGate = category ? await getCategoryTokenGates(category.id) : { tokenGated: false };
+  const defaultOgImagePath =
+    "/lookbook/culture-brand-lifestyle-premium-apparel.jpg";
+  const categoryGate = category
+    ? await getCategoryTokenGates(category.id)
+    : { tokenGated: false };
   let categoryImageUrl: string;
   if (categoryGate.tokenGated) {
     categoryImageUrl = `${siteUrl}${defaultOgImagePath}`;
   } else {
     let url: string | undefined;
     if (category?.imageUrl) url = category.imageUrl;
-    else if (category) url = (await getCategoryProductImage(category.id)) ?? undefined;
+    else if (category)
+      url = (await getCategoryProductImage(category.id)) ?? undefined;
     if (!url) url = defaultOgImagePath;
-    categoryImageUrl = url.startsWith("http") ? url : `${siteUrl}${url.startsWith("/") ? "" : "/"}${url}`;
+    categoryImageUrl = url.startsWith("http")
+      ? url
+      : `${siteUrl}${url.startsWith("/") ? "" : "/"}${url}`;
   }
 
   return {
     alternates: {
       canonical: `${siteUrl}/${slug}`,
     },
-    robots: noindexForAgent
-      ? { follow: true, index: false }
-      : { follow: true, index: true },
     description,
     openGraph: {
       description,
-      title,
-      type: "website",
-      url: `${siteUrl}/${slug}`,
       images: [
         {
           alt: categoryGate.tokenGated ? SEO_CONFIG.name : categoryName,
@@ -282,13 +281,19 @@ export async function generateMetadata({
           width: 1200,
         },
       ],
+      title,
+      type: "website",
+      url: `${siteUrl}/${slug}`,
     },
+    robots: noindexForAgent
+      ? { follow: true, index: false }
+      : { follow: true, index: true },
     title,
     twitter: {
       card: "summary_large_image",
       description,
-      title,
       images: [categoryImageUrl],
+      title,
     },
   };
 }
@@ -408,9 +413,9 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
           <main className="flex-1 py-10">
             <div
               className={`
-              container mx-auto px-4
-              md:px-6
-            `}
+                container mx-auto px-4
+                md:px-6
+              `}
             >
               <Breadcrumbs items={breadcrumbTrail} />
               <Link href="/products">
@@ -425,9 +430,9 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
               <ProductVariantImageProvider>
                 <div
                   className={`
-                  grid grid-cols-1 gap-8
-                  md:grid-cols-2
-                `}
+                    grid grid-cols-1 gap-8
+                    md:grid-cols-2
+                  `}
                 >
                   <ProductImageGallery
                     discountPercentage={discountPercentage}
@@ -436,145 +441,151 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
                     mainImageAlt={product.mainImageAlt}
                     productName={product.name}
                   />
-                  <div className="flex flex-col">
-                    <div className="mb-6">
-                      <h1 className="text-3xl font-bold">{product.name}</h1>
-                      {product.rating > 0 && (
-                        <div className="mt-2 flex items-center gap-2">
-                          <div
-                            aria-label={`Rating ${product.rating} out of 5`}
-                            className="flex items-center"
-                          >
-                            {range(5).map((i) => (
-                              <Star
-                                className={`
-                                  h-5 w-5
-                                  ${
-                                    i < Math.floor(product.rating)
-                                      ? "fill-primary text-primary"
-                                      : i < product.rating
-                                        ? "fill-primary/50 text-primary"
-                                        : "text-muted-foreground"
-                                  }
-                                `}
-                                key={`star-${i}`}
-                              />
-                            ))}
+                  <ProductShippingEstimateProvider
+                    availableCountryCodes={product.availableCountryCodes}
+                    productId={product.id}
+                  >
+                    <div className="flex flex-col">
+                      <div className="mb-6">
+                        <h1 className="text-3xl font-bold">{product.name}</h1>
+                        {product.rating > 0 && (
+                          <div className="mt-2 flex items-center gap-2">
+                            <div
+                              aria-label={`Rating ${product.rating} out of 5`}
+                              className="flex items-center"
+                            >
+                              {range(5).map((i) => (
+                                <Star
+                                  className={`
+                                    h-5 w-5
+                                    ${
+                                      i < Math.floor(product.rating)
+                                        ? "fill-primary text-primary"
+                                        : i < product.rating
+                                          ? "fill-primary/50 text-primary"
+                                          : "text-muted-foreground"
+                                    }
+                                  `}
+                                  key={`star-${i}`}
+                                />
+                              ))}
+                            </div>
+                            <span className="text-sm text-muted-foreground">
+                              ({product.rating.toFixed(1)})
+                            </span>
                           </div>
-                          <span className="text-sm text-muted-foreground">
-                            ({product.rating.toFixed(1)})
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="mb-2">
-                      <p className="text-lg font-medium text-muted-foreground">
-                        {product.category}
-                      </p>
-                    </div>
-                    {(() => {
-                      const b = product.brand?.trim();
-                      const m = product.model?.trim();
-                      const isProviderBrand =
-                        b?.toLowerCase() === "printful" ||
-                        b?.toLowerCase() === "printify" ||
-                        b?.toLowerCase() === "generic brand";
-                      if (!b && !m) return null;
-                      if (isProviderBrand) return null;
-                      return (
-                        <div
-                          className={`
-                          mb-4 flex flex-wrap items-center gap-x-4 gap-y-1
-                          text-sm text-muted-foreground
-                        `}
-                        >
-                          {b && (
-                            <span>
-                              <span className="font-medium text-foreground">
-                                Brand:
-                              </span>{" "}
-                              {b}
-                            </span>
-                          )}
-                          {m && (
-                            <span>
-                              <span className="font-medium text-foreground">
-                                Model:
-                              </span>{" "}
-                              {m}
-                            </span>
-                          )}
-                        </div>
-                      );
-                    })()}
-                    {/* Features only at top; description is in accordion below */}
-                    {product.features.length > 0 && (
-                      <ul className="mb-6 space-y-2 text-muted-foreground">
-                        {product.features.map((feature) => (
-                          <li
-                            className="flex items-start"
-                            key={`feature-${product.id}-${slugify(feature)}`}
-                          >
-                            <span
-                              className={`
-                              mt-1 mr-2 h-2 w-2 shrink-0 rounded-full bg-primary
+                        )}
+                      </div>
+                      <div className="mb-2">
+                        <p className="text-lg font-medium text-muted-foreground">
+                          {product.category}
+                        </p>
+                      </div>
+                      {(() => {
+                        const b = product.brand?.trim();
+                        const m = product.model?.trim();
+                        const isProviderBrand =
+                          b?.toLowerCase() === "printful" ||
+                          b?.toLowerCase() === "printify" ||
+                          b?.toLowerCase() === "generic brand";
+                        if (!b && !m) return null;
+                        if (isProviderBrand) return null;
+                        return (
+                          <div
+                            className={`
+                              mb-4 flex flex-wrap items-center gap-x-4 gap-y-1
+                              text-sm text-muted-foreground
                             `}
-                            />
-                            <span>{feature}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                    <ProductVariantSection
-                      handlingDaysMax={product.handlingDaysMax}
-                      handlingDaysMin={product.handlingDaysMin}
-                      hasVariants={product.hasVariants ?? false}
-                      optionDefinitions={product.optionDefinitions ?? []}
-                      product={{
-                        availableCountryCodes: product.availableCountryCodes,
-                        category: product.category,
-                        continueSellingWhenOutOfStock:
-                          product.continueSellingWhenOutOfStock,
-                        id: product.id,
-                        image: product.image,
-                        inStock: product.inStock,
-                        name: product.name,
-                        originalPrice: product.originalPrice,
-                        price: product.price,
-                        ...(product.slug && { slug: product.slug }),
-                      }}
-                      variants={product.variants ?? []}
-                    />
-                    <EstimatedDeliveryTimeline
-                      className="mb-6"
-                      handlingDaysMax={product.handlingDaysMax}
-                      handlingDaysMin={product.handlingDaysMin}
-                      transitDaysMax={product.transitDaysMax}
-                      transitDaysMin={product.transitDaysMin}
-                    />
-                    <ProductDetailAccordion
-                      category={product.category}
-                      description={sanitizeProductDescription(
-                        product.description,
+                          >
+                            {b && (
+                              <span>
+                                <span className="font-medium text-foreground">
+                                  Brand:
+                                </span>{" "}
+                                {b}
+                              </span>
+                            )}
+                            {m && (
+                              <span>
+                                <span className="font-medium text-foreground">
+                                  Model:
+                                </span>{" "}
+                                {m}
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })()}
+                      {/* Features only at top; description is in accordion below */}
+                      {product.features.length > 0 && (
+                        <ul className="mb-6 space-y-2 text-muted-foreground">
+                          {product.features.map((feature) => (
+                            <li
+                              className="flex items-start"
+                              key={`feature-${product.id}-${slugify(feature)}`}
+                            >
+                              <span
+                                className={`
+                                  mt-1 mr-2 h-2 w-2 shrink-0 rounded-full
+                                  bg-primary
+                                `}
+                              />
+                              <span>{feature}</span>
+                            </li>
+                          ))}
+                        </ul>
                       )}
-                      descriptionIsHtml
-                      sizeChart={product.sizeChart ?? undefined}
-                    />
-                    <ProductShare
-                      className="mt-6"
-                      title={product.name}
-                      url={`${siteUrl}/${canonicalSlug}`}
-                    />
-                  </div>
+                      <ProductVariantSection
+                        handlingDaysMax={product.handlingDaysMax}
+                        handlingDaysMin={product.handlingDaysMin}
+                        hasVariants={product.hasVariants ?? false}
+                        optionDefinitions={product.optionDefinitions ?? []}
+                        product={{
+                          availableCountryCodes: product.availableCountryCodes,
+                          category: product.category,
+                          continueSellingWhenOutOfStock:
+                            product.continueSellingWhenOutOfStock,
+                          id: product.id,
+                          image: product.image,
+                          inStock: product.inStock,
+                          name: product.name,
+                          originalPrice: product.originalPrice,
+                          price: product.price,
+                          ...(product.slug && { slug: product.slug }),
+                        }}
+                        variants={product.variants ?? []}
+                      />
+                      <EstimatedDeliveryTimeline
+                        className="mb-6"
+                        handlingDaysMax={product.handlingDaysMax}
+                        handlingDaysMin={product.handlingDaysMin}
+                        transitDaysMax={product.transitDaysMax}
+                        transitDaysMin={product.transitDaysMin}
+                      />
+                      <ProductDetailAccordion
+                        category={product.category}
+                        description={sanitizeProductDescription(
+                          product.description,
+                        )}
+                        descriptionIsHtml
+                        sizeChart={product.sizeChart ?? undefined}
+                      />
+                      <ProductShare
+                        className="mt-6"
+                        title={product.name}
+                        url={`${siteUrl}/${canonicalSlug}`}
+                      />
+                    </div>
+                  </ProductShippingEstimateProvider>
                 </div>
               </ProductVariantImageProvider>
               <Separator className="my-8" />
               {Object.keys(product.specs).length > 0 && (
                 <div
                   className={`
-                  grid grid-cols-1 gap-8
-                  md:grid-cols-2
-                `}
+                    grid grid-cols-1 gap-8
+                    md:grid-cols-2
+                  `}
                 >
                   {Object.keys(product.specs).length > 0 && (
                     <section>

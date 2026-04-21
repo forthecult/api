@@ -2,12 +2,10 @@
 
 import { ChevronDown, CircleHelp, Eye, EyeOff, Loader2 } from "lucide-react";
 import {
-  forwardRef,
   useCallback,
   useEffect,
   useImperativeHandle,
   useLayoutEffect,
-  useRef,
   useState,
 } from "react";
 
@@ -15,7 +13,6 @@ import type { MappedShippingAddress } from "~/lib/loqate";
 
 import { useLoqateAutocomplete } from "~/hooks/use-loqate-autocomplete";
 import { signIn } from "~/lib/auth-client";
-import { preloadStripe } from "../stripe-preload";
 import { cn } from "~/lib/cn";
 import { isShippingExcluded } from "~/lib/shipping-restrictions";
 import { FiatPrice } from "~/ui/components/FiatPrice";
@@ -42,12 +39,12 @@ import {
   type CheckoutFormState,
   COUNTRIES_REQUIRING_STATE,
   COUNTRIES_WITHOUT_POSTAL,
-  defaultForm,
   getPersistedShippingForm,
   persistShippingForm,
   selectInputClass,
   US_STATE_OPTIONS,
 } from "../checkout-shared";
+import { preloadStripe } from "../stripe-preload";
 
 const SHIPPING_CALCULATE_TIMEOUT_MS = 15_000;
 
@@ -283,7 +280,7 @@ function validateShippingForm(
 
 export const ShippingAddressForm = function ShippingAddressForm({
   appliedCoupon,
-  authPending,
+  authPending: _authPending,
   countryOptions,
   emailOnly = false,
   isLoggedIn,
@@ -293,8 +290,8 @@ export const ShippingAddressForm = function ShippingAddressForm({
   selectedCountry,
   subtotal,
   user,
-  userReceiveMarketing,
-  userReceiveSmsMarketing,
+  userReceiveMarketing: _userReceiveMarketing,
+  userReceiveSmsMarketing: _userReceiveSmsMarketing,
   validationErrors,
 }: ShippingAddressFormProps & {
   ref?: React.RefObject<null | ShippingAddressFormRef>;
@@ -302,8 +299,8 @@ export const ShippingAddressForm = function ShippingAddressForm({
   const [form, setForm] = useState<CheckoutFormState>(() =>
     getPersistedShippingForm(),
   );
-  const [emailNews, setEmailNews] = useState(true);
-  const [textNews, setTextNews] = useState(false);
+  const [emailNews, _setEmailNews] = useState(true);
+  const [textNews, _setTextNews] = useState(false);
   const [showCompany, setShowCompany] = useState(() =>
     Boolean(getPersistedShippingForm().company?.trim()),
   );
@@ -498,7 +495,8 @@ export const ShippingAddressForm = function ShippingAddressForm({
     let cancelled = false;
     fetch("/api/user/addresses", { credentials: "include" })
       .then((res) => (res.ok ? res.json() : { addresses: [] }))
-      .then((raw: unknown) => { const data = raw as { addresses?: SavedAddress[] };
+      .then((raw: unknown) => {
+        const data = raw as { addresses?: SavedAddress[] };
         if (!cancelled && Array.isArray(data.addresses)) {
           setSavedAddresses(data.addresses);
         }
@@ -565,7 +563,8 @@ export const ShippingAddressForm = function ShippingAddressForm({
       .then((res) =>
         res.ok ? res.json() : Promise.reject(new Error("Failed to calculate")),
       )
-      .then((raw: unknown) => { const data = raw as {
+      .then((raw: unknown) => {
+        const data = raw as {
           canShipToCountry?: boolean;
           customsDutiesNote?: null | string;
           freeShipping?: boolean;
@@ -575,23 +574,22 @@ export const ShippingAddressForm = function ShippingAddressForm({
           taxCents?: number;
           taxNote?: null | string;
         };
-          if (!cancelled) {
-            updateShipping({
-              canShipToCountry: data.canShipToCountry !== false,
-              customsDutiesNote: data.customsDutiesNote ?? null,
-              shippingCents:
-                typeof data.shippingCents === "number" ? data.shippingCents : 0,
-              shippingFree: Boolean(data.freeShipping),
-              shippingLabel: data.label ?? null,
-              shippingLoading: false,
-              shippingSpeed:
-                data.shippingSpeed === "express" ? "express" : "standard",
-              taxCents: typeof data.taxCents === "number" ? data.taxCents : 0,
-              taxNote: data.taxNote ?? null,
-            });
-          }
-        },
-      )
+        if (!cancelled) {
+          updateShipping({
+            canShipToCountry: data.canShipToCountry !== false,
+            customsDutiesNote: data.customsDutiesNote ?? null,
+            shippingCents:
+              typeof data.shippingCents === "number" ? data.shippingCents : 0,
+            shippingFree: Boolean(data.freeShipping),
+            shippingLabel: data.label ?? null,
+            shippingLoading: false,
+            shippingSpeed:
+              data.shippingSpeed === "express" ? "express" : "standard",
+            taxCents: typeof data.taxCents === "number" ? data.taxCents : 0,
+            taxNote: data.taxNote ?? null,
+          });
+        }
+      })
       .catch(() => {
         if (!cancelled) updateShipping(EMPTY_SHIPPING);
       })
@@ -663,9 +661,7 @@ export const ShippingAddressForm = function ShippingAddressForm({
       {/* Contact */}
       <Card className="shadow-none">
         <CardHeader
-          className={`
-          flex flex-row items-center justify-between space-y-0 pb-2
-        `}
+          className={`flex flex-row items-center justify-between space-y-0 pb-2`}
         >
           <CardTitle>Contact</CardTitle>
           {!isLoggedIn && <CheckoutSignInDialog />}
@@ -719,9 +715,9 @@ export const ShippingAddressForm = function ShippingAddressForm({
             </CardHeader>
             <CardContent
               className={`
-              grid gap-4
-              sm:grid-cols-2
-            `}
+                grid gap-4
+                sm:grid-cols-2
+              `}
             >
               {savedAddresses.length > 0 && (
                 <div className="sm:col-span-2">
@@ -772,12 +768,8 @@ export const ShippingAddressForm = function ShippingAddressForm({
                       `}
                       onOpenAutoFocus={(e) => e.preventDefault()}
                     >
-                      <ul
-                        aria-label="Use a saved address"
-                        className="py-1"
-                        role="listbox"
-                      >
-                        <li role="option">
+                      <ul aria-label="Use a saved address" className="py-1">
+                        <li>
                           <button
                             className={cn(
                               `
@@ -796,7 +788,7 @@ export const ShippingAddressForm = function ShippingAddressForm({
                           </button>
                         </li>
                         {savedAddresses.map((addr) => (
-                          <li key={addr.id} role="option">
+                          <li key={addr.id}>
                             <button
                               className={cn(
                                 `
@@ -838,8 +830,8 @@ export const ShippingAddressForm = function ShippingAddressForm({
                       !canShipToCountry) &&
                       "border-destructive",
                   )}
-                  onFocus={() => preloadStripe()}
                   onChange={(e) => update("country", e.target.value)}
+                  onFocus={() => preloadStripe()}
                   value={form.country}
                 >
                   {countryOptions.map((opt) => (
@@ -981,7 +973,7 @@ export const ShippingAddressForm = function ShippingAddressForm({
                       className={`
                         absolute top-full right-0 left-0 z-50 mt-1 max-h-60
                         overflow-auto rounded-md border border-border
- bg-background 
+                        bg-background
                       `}
                       role="listbox"
                     >
@@ -989,9 +981,9 @@ export const ShippingAddressForm = function ShippingAddressForm({
                       shippingLoqate.suggestions.length === 0 ? (
                         <div
                           className={`
-                          flex items-center gap-2 px-3 py-2 text-sm
-                          text-muted-foreground
-                        `}
+                            flex items-center gap-2 px-3 py-2 text-sm
+                            text-muted-foreground
+                          `}
                         >
                           <Loader2
                             aria-hidden
@@ -1042,9 +1034,9 @@ export const ShippingAddressForm = function ShippingAddressForm({
               </div>
               <div
                 className={`
-                grid gap-4
-                sm:col-span-2 sm:grid-cols-3
-              `}
+                  grid gap-4
+                  sm:col-span-2 sm:grid-cols-3
+                `}
               >
                 <div>
                   <Input
@@ -1133,9 +1125,9 @@ export const ShippingAddressForm = function ShippingAddressForm({
               </div>
               <div
                 className={`
-                flex items-center gap-2
-                sm:col-span-2
-              `}
+                  flex items-center gap-2
+                  sm:col-span-2
+                `}
               >
                 <Input
                   aria-label={
@@ -1169,7 +1161,7 @@ export const ShippingAddressForm = function ShippingAddressForm({
                     align="end"
                     className={`
                       max-w-56 border-0 bg-neutral-900 px-3 py-2 text-sm
- text-white 
+                      text-white
                       dark:bg-neutral-100 dark:text-neutral-900
                     `}
                     side="top"
@@ -1181,9 +1173,7 @@ export const ShippingAddressForm = function ShippingAddressForm({
               {showSaveAddressCheckbox && (
                 <div className="sm:col-span-2">
                   <label
-                    className={`
-                    flex cursor-pointer items-center gap-2 text-sm
-                  `}
+                    className={`flex cursor-pointer items-center gap-2 text-sm`}
                   >
                     <Checkbox
                       checked={saveAddressForNextTime}
@@ -1207,9 +1197,9 @@ export const ShippingAddressForm = function ShippingAddressForm({
             <CardContent className="space-y-3">
               <div
                 className={`
-                flex items-center justify-between rounded-md border
-                border-border p-3
-              `}
+                  flex items-center justify-between rounded-md border
+                  border-border p-3
+                `}
               >
                 <div className="flex flex-col gap-0.5">
                   <span className="text-sm font-medium">
@@ -1234,9 +1224,9 @@ export const ShippingAddressForm = function ShippingAddressForm({
                   ) : shippingFree ? (
                     <span
                       className={`
-                      font-medium text-green-600
-                      dark:text-green-400
-                    `}
+                        font-medium text-green-600
+                        dark:text-green-400
+                      `}
                     >
                       Free
                     </span>

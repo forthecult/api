@@ -8,7 +8,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "~/ui/card";
 
 const API_BASE = getMainAppUrl();
 
-type Plan = {
+interface Offer {
+  id: string;
+  name: string;
+  plans: Plan[];
+  published: boolean;
+  slug: string;
+}
+
+interface Plan {
   displayName: null | string;
   id: string;
   intervalCount: number;
@@ -17,18 +25,10 @@ type Plan = {
   payPaypal: boolean;
   payStripe: boolean;
   priceCents: number;
-};
-
-type Offer = {
-  id: string;
-  name: string;
-  plans: Plan[];
-  published: boolean;
-  slug: string;
-};
+}
 
 export default function AdminSubscriptionOffersPage() {
-  const [data, setData] = useState<{ offers: Offer[] } | null>(null);
+  const [data, setData] = useState<null | { offers: Offer[] }>(null);
   const [error, setError] = useState<null | string>(null);
   const [loading, setLoading] = useState(true);
 
@@ -58,13 +58,19 @@ export default function AdminSubscriptionOffersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <div
+        className={`
+        flex flex-col gap-2
+        sm:flex-row sm:items-center sm:justify-between
+      `}
+      >
         <div>
           <h2 className="text-2xl font-semibold tracking-tight">
             Subscription catalog
           </h2>
           <p className="text-sm text-muted-foreground">
-            Reusable offers (weekly / monthly / annual) with Stripe, PayPal, or manual crypto renewal. Create via{" "}
+            Reusable offers (weekly / monthly / annual) with Stripe, PayPal, or
+            manual crypto renewal. Create via{" "}
             <code className="rounded bg-muted px-1 py-0.5 text-xs">
               POST {API_BASE}/api/admin/subscription-offers
             </code>
@@ -76,8 +82,13 @@ export default function AdminSubscriptionOffersPage() {
         </Button>
       </div>
 
-{error ? (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
+      {error ? (
+        <div
+          className={`
+          rounded-lg border border-red-200 bg-red-50 p-4 text-red-800
+          dark:border-red-900 dark:bg-red-950/40 dark:text-red-200
+        `}
+        >
           {error}
         </div>
       ) : null}
@@ -91,12 +102,19 @@ export default function AdminSubscriptionOffersPage() {
             <p className="text-muted-foreground">Loading…</p>
           ) : data?.offers.length === 0 ? (
             <p className="text-muted-foreground">
-              No offers yet. Create one with the admin API (slug, name, plans with interval, priceCents, payment flags).
+              No offers yet. Create one with the admin API (slug, name, plans
+              with interval, priceCents, payment flags).
             </p>
           ) : (
             <ul className="space-y-6">
               {data?.offers.map((o) => (
-                <li className="border-b border-border pb-6 last:border-0" key={o.id}>
+                <li
+                  className={`
+                  border-b border-border pb-6
+                  last:border-0
+                `}
+                  key={o.id}
+                >
                   <div className="font-medium">
                     {o.name}{" "}
                     <span className="text-muted-foreground">({o.slug})</span>
@@ -107,9 +125,10 @@ export default function AdminSubscriptionOffersPage() {
                   <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
                     {o.plans.map((p) => (
                       <li key={p.id}>
-                        {p.displayName ?? p.intervalUnit}{" "}
-                        — {(p.priceCents / 100).toFixed(2)} USD · Stripe{" "}
-                        {p.payStripe ? "on" : "off"} · PayPal {p.payPaypal ? "on" : "off"} · Crypto{" "}
+                        {p.displayName ?? p.intervalUnit} —{" "}
+                        {(p.priceCents / 100).toFixed(2)} USD · Stripe{" "}
+                        {p.payStripe ? "on" : "off"} · PayPal{" "}
+                        {p.payPaypal ? "on" : "off"} · Crypto{" "}
                         {p.payCryptoManual ? "on" : "off"}
                       </li>
                     ))}

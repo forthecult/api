@@ -35,6 +35,15 @@ const validateSchema = {
       }))
       .filter((item) => item.productId.length > 0);
   },
+  /** Optional tier (1–3) when wallet is not sent; e.g. from tier history after user unlinked wallet. */
+  memberTier: (v: unknown) =>
+    typeof v === "number" &&
+    Number.isFinite(v) &&
+    v >= 1 &&
+    v <= 3 &&
+    Math.round(v) === v
+      ? Math.round(v)
+      : undefined,
   paymentMethodKey: (v: unknown) =>
     typeof v === "string" && v.trim().length > 0 ? v.trim() : undefined,
   productCount: (v: unknown) =>
@@ -49,15 +58,6 @@ const validateSchema = {
     typeof v === "number" && Number.isFinite(v) && v >= 0 ? Math.round(v) : 0,
   subtotalCents: (v: unknown) =>
     typeof v === "number" && Number.isFinite(v) && v >= 0 ? Math.round(v) : 0,
-  /** Optional tier (1–3) when wallet is not sent; e.g. from tier history after user unlinked wallet. */
-  memberTier: (v: unknown) =>
-    typeof v === "number" &&
-    Number.isFinite(v) &&
-    v >= 1 &&
-    v <= 3 &&
-    Math.round(v) === v
-      ? Math.round(v)
-      : undefined,
   walletMessage: (v: unknown) =>
     typeof v === "string" && v.trim().length > 0 ? v.trim() : undefined,
   walletSignature: (v: unknown) =>
@@ -91,7 +91,9 @@ export async function POST(request: NextRequest) {
         : undefined;
     const memberTierParam = validateSchema.memberTier(body?.memberTier);
     const walletMessage = validateSchema.walletMessage(body?.walletMessage);
-    const walletSignature = validateSchema.walletSignature(body?.walletSignature);
+    const walletSignature = validateSchema.walletSignature(
+      body?.walletSignature,
+    );
     const walletSignatureBase58 = validateSchema.walletSignatureBase58(
       body?.walletSignatureBase58,
     );
@@ -110,8 +112,8 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(
           {
             applied: false,
-            error: verification.error,
             code: "WALLET_VERIFICATION_REQUIRED",
+            error: verification.error,
           },
           { status: 400 },
         );
@@ -122,9 +124,9 @@ export async function POST(request: NextRequest) {
     const resolvedProductIds =
       productIds.length > 0
         ? productIds
-        : (items.length > 0
-            ? items.map((i) => i.productId).filter(Boolean)
-            : []);
+        : items.length > 0
+          ? items.map((i) => i.productId).filter(Boolean)
+          : [];
 
     const input: AutomaticCouponInput = {
       items: items.length > 0 ? items : undefined,
@@ -147,7 +149,7 @@ export async function POST(request: NextRequest) {
       scope: string;
     }[] = [];
     let tierDiscountTotalCents = 0;
-    let resolvedTier: number | null = null;
+    let resolvedTier: null | number = null;
     if (wallet) {
       resolvedTier = await getMemberTierForWallet(wallet);
     } else if (memberTierParam != null) {
@@ -177,8 +179,7 @@ export async function POST(request: NextRequest) {
 
     // apply the best single discount: tier overrides automatic when tier gives a lower total
     const useTierOnly =
-      tierDiscountTotalCents > 0 &&
-      totalWithTierOnly <= totalWithAutomaticOnly;
+      tierDiscountTotalCents > 0 && totalWithTierOnly <= totalWithAutomaticOnly;
 
     if (!result && tierDiscountTotalCents === 0) {
       return NextResponse.json({ applied: false });

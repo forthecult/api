@@ -143,9 +143,9 @@ export function SupportTicketsPageClient() {
     <div className="space-y-6">
       <div
         className={`
-        flex flex-col gap-4
-        sm:flex-row sm:items-center sm:justify-between
-      `}
+          flex flex-col gap-4
+          sm:flex-row sm:items-center sm:justify-between
+        `}
       >
         <div className="flex items-center gap-2">
           <Headphones className="h-7 w-7" />
@@ -280,9 +280,9 @@ export function SupportTicketsPageClient() {
           {loading ? (
             <div
               className={`
-              flex min-h-[120px] items-center justify-center
-              text-muted-foreground
-            `}
+                flex min-h-[120px] items-center justify-center
+                text-muted-foreground
+              `}
             >
               <Loader2 aria-hidden className="h-6 w-6 animate-spin" />
             </div>

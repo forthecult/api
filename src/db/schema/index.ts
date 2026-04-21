@@ -4,15 +4,15 @@ export * from "./addresses/types";
 
 export * from "./admin-membership-grant/tables";
 
-export * from "./ai-chat/relations";
-export * from "./ai-chat/tables";
-
 export * from "./affiliates/relations";
 export * from "./affiliates/tables";
 
 export * from "./affiliates/types";
 export * from "./agent-preferences/tables";
+
 export * from "./agent-preferences/types";
+export * from "./ai-chat/relations";
+export * from "./ai-chat/tables";
 
 export * from "./blog/relations";
 export * from "./blog/tables";
@@ -46,31 +46,31 @@ export * from "./member-tier-discount/relations";
 export * from "./member-tier-discount/tables";
 export * from "./member-tier-discount/types";
 export * from "./membership-tier-history/tables";
-export * from "./subscription-catalog/tables";
 export * from "./notifications/relations";
-
 export * from "./notifications/tables";
+
 export * from "./notifications/types";
 export * from "./orders/relations";
-
 export * from "./orders/tables";
+
 export * from "./orders/types";
 export * from "./payments/relations";
-
 export * from "./payments/tables";
+
 export * from "./payments/types";
 export * from "./reviews/relations";
-
 export * from "./reviews/tables";
+
 export * from "./reviews/types";
 export * from "./shipping/tables";
-
 export * from "./shipping/types";
+
 export * from "./size-charts/relations";
 export * from "./size-charts/tables";
-
 export * from "./size-charts/types";
+
 export * from "./solana-wallet-stake-claimed/tables";
+export * from "./subscription-catalog/tables";
 export * from "./support-chat/relations";
 
 export * from "./support-chat/tables";

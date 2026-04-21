@@ -26,8 +26,6 @@ import {
   getRpcUrl,
   getTokenAddress,
   TOKEN_DECIMALS,
-  USDC_ADDRESSES,
-  USDT_ADDRESSES,
 } from "~/lib/contracts/evm-payment";
 
 // Chain configurations for viem (typed as Chain to allow different block explorer names)
@@ -274,7 +272,7 @@ async function getBalance(
 function isPaymentSufficient(
   balance: bigint,
   expectedAmount: bigint,
-  token: "ETH" | "USDC" | "USDT",
+  _token: "ETH" | "USDC" | "USDT",
 ): boolean {
   // Allow 0.1% tolerance for rounding/gas
   const tolerance = expectedAmount / 1000n;

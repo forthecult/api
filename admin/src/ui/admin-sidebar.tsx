@@ -13,7 +13,6 @@ import {
   KeyRound,
   LayoutDashboard,
   Mail,
-  MessageSquare,
   Package,
   RefreshCw,
   Settings,
@@ -213,9 +212,9 @@ export function AdminSidebar() {
       {/* Logo + collapse */}
       <div
         className={`
-        flex h-14 shrink-0 items-center justify-between border-b border-white/10
-        px-3
-      `}
+          flex h-14 shrink-0 items-center justify-between border-b
+          border-white/10 px-3
+        `}
       >
         {!collapsed && (
           <Link className="font-semibold tracking-tight" href="/dashboard">
@@ -243,8 +242,8 @@ export function AdminSidebar() {
       {!collapsed && (
         <div
           className={`
-          px-3 py-2 text-xs font-medium tracking-wider text-white/50 uppercase
-        `}
+            px-3 py-2 text-xs font-medium tracking-wider text-white/50 uppercase
+          `}
         >
           Admin
         </div>
@@ -329,8 +328,8 @@ export function AdminSidebar() {
                 {!collapsed && hasChildren && shouldExpand && (
                   <ul
                     className={`
-                    mt-0.5 ml-4 space-y-0.5 border-l border-white/10 pl-3
-                  `}
+                      mt-0.5 ml-4 space-y-0.5 border-l border-white/10 pl-3
+                    `}
                   >
                     {section.children!.map((item) => {
                       const itemActive = pathMatches(item.href, pathname);
@@ -400,7 +399,7 @@ export function BrowseWebsiteLink() {
 
 function pathMatches(href: string, pathname: string): boolean {
   if (href === pathname) return true;
-  if (href !== "/" && pathname.startsWith(href + "/")) return true;
+  if (href !== "/" && pathname.startsWith(`${href}/`)) return true;
   return false;
 }
 

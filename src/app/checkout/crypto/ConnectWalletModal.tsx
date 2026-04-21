@@ -1,16 +1,14 @@
 "use client";
 
-import type { Wallet } from "@solana/wallet-adapter-react";
-
 import { useConnectWallet, useWallets } from "@mysten/dapp-kit";
 import { WalletReadyState } from "@solana/wallet-adapter-base";
+
 import { useSolanaWallet } from "~/app/checkout/crypto/solana-wallet-stub";
 
-/** minimal wallet shape from useSolanaWallet (stub or real); real provider gives full Wallet */
-type WalletListItem = {
-  adapter: { icon?: string; name?: string };
-  readyState?: number | string;
-};
+interface ConnectWalletModalProps {
+  onOpenChange: (open: boolean) => void;
+  open: boolean;
+}
 import { ChevronRight } from "lucide-react";
 import Image from "next/image";
 import { useParams, useSearchParams } from "next/navigation";
@@ -28,9 +26,10 @@ import {
 } from "./chain-wallets";
 import { openIntentRef } from "./open-wallet-modal";
 
-interface ConnectWalletModalProps {
-  onOpenChange: (open: boolean) => void;
-  open: boolean;
+/** minimal wallet shape from useSolanaWallet (stub or real); real provider gives full Wallet */
+interface WalletListItem {
+  adapter: { icon?: string; name?: string };
+  readyState?: number | string;
 }
 
 function getTokenFromUrl(): string {
@@ -46,8 +45,7 @@ function isSuggestedWallet(
 ): boolean {
   const name = wallet.adapter.name;
   if (!name) return false;
-  if (chain === "solana")
-    return name === "Phantom" || name === "Solflare";
+  if (chain === "solana") return name === "Phantom" || name === "Solflare";
   return SUGGESTED_NAMES.includes(name);
 }
 
@@ -104,10 +102,10 @@ function WalletOption({
       {isDetected && (
         <span
           className={`
-          flex items-center gap-1.5 rounded-full bg-green-500/15 px-2 py-0.5
-          text-xs font-medium text-green-700
-          dark:text-green-400
-        `}
+            flex items-center gap-1.5 rounded-full bg-green-500/15 px-2 py-0.5
+            text-xs font-medium text-green-700
+            dark:text-green-400
+          `}
         >
           <span className="size-1.5 shrink-0 rounded-full bg-green-500" />
           Detected
@@ -135,16 +133,17 @@ export function ConnectWalletModal({
   open,
 }: ConnectWalletModalProps) {
   const params = useParams();
-  const searchParams = useSearchParams();
+  const _searchParams = useSearchParams();
   const isMobile = useIsMobile();
-  const invoiceId = (params?.invoiceId as string) ?? "";
+  const _invoiceId = (params?.invoiceId as string) ?? "";
   const [token, setToken] = useState("solana");
   const [step, setStep] = useState<"network" | "requesting" | "wallet">(
     "wallet",
   );
-  const [selectedWallet, setSelectedWallet] =
-    useState<null | WalletListItem>(null);
-  const [connectingToNetwork, setConnectingToNetwork] = useState<
+  const [selectedWallet, setSelectedWallet] = useState<null | WalletListItem>(
+    null,
+  );
+  const [_connectingToNetwork, setConnectingToNetwork] = useState<
     "solana" | "sui" | null
   >(null);
   const isMetaMaskDetected = useIsMetaMaskDetected();
@@ -281,7 +280,10 @@ export function ConnectWalletModal({
               `Connection is taking a while. Open the ${timeoutName} extension to approve, or use Back to try again.`,
             );
             // Solana-only wallets (e.g. MWA) never showed the network step; go back to wallet list
-            if (wallet.adapter.name && SOLANA_ONLY_WALLETS.includes(wallet.adapter.name)) {
+            if (
+              wallet.adapter.name &&
+              SOLANA_ONLY_WALLETS.includes(wallet.adapter.name)
+            ) {
               setStep("wallet");
               setSelectedWallet(null);
             } else {
@@ -301,7 +303,10 @@ export function ConnectWalletModal({
               : `Connection failed. Open the ${catchName} extension and try again, or use another wallet.`,
           );
           // Solana-only wallets (e.g. MWA) never showed the network step; go back to wallet list
-          if (wallet.adapter.name && SOLANA_ONLY_WALLETS.includes(wallet.adapter.name)) {
+          if (
+            wallet.adapter.name &&
+            SOLANA_ONLY_WALLETS.includes(wallet.adapter.name)
+          ) {
             setStep("wallet");
             setSelectedWallet(null);
           } else {
@@ -347,8 +352,7 @@ export function ConnectWalletModal({
     if (step === "requesting") {
       // Solana-only wallets (e.g. MWA) skip network step, so Back goes to wallet list
       const goToNetwork =
-        selectedWallet &&
-        selectedWallet.adapter.name &&
+        selectedWallet?.adapter.name &&
         !SOLANA_ONLY_WALLETS.includes(selectedWallet.adapter.name);
       setStep(goToNetwork ? "network" : "wallet");
       if (!goToNetwork) setSelectedWallet(null);
@@ -374,9 +378,7 @@ export function ConnectWalletModal({
         `}
       >
         <div
-          className={`
-          flex items-center gap-2 border-b border-border px-5 py-4
-        `}
+          className={`flex items-center gap-2 border-b border-border px-5 py-4`}
         >
           {(step === "network" || step === "requesting") && (
             <button
@@ -403,124 +405,117 @@ export function ConnectWalletModal({
           {connectError && (
             <p
               className={`
-              rounded-md border border-destructive/50 bg-destructive/10 px-3
-              py-2 text-sm text-destructive
-            `}
+                rounded-md border border-destructive/50 bg-destructive/10 px-3
+                py-2 text-sm text-destructive
+              `}
             >
               {connectError}
             </p>
           )}
 
-          {step === "wallet" && (
-            <>
-              {walletsToShow.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  No wallets available for this payment method. Install a
-                  supported wallet like Phantom.
-                </p>
-              ) : (
-                <>
-                  {suggested.length > 0 && (
-                    <div>
-                      <p
-                        className={`
+          {step === "wallet" &&
+            (walletsToShow.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                No wallets available for this payment method. Install a
+                supported wallet like Phantom.
+              </p>
+            ) : (
+              <>
+                {suggested.length > 0 && (
+                  <div>
+                    <p
+                      className={`
                         mb-2 text-xs font-medium tracking-wider
                         text-muted-foreground uppercase
                       `}
+                    >
+                      Suggested
+                    </p>
+                    <div className="flex flex-col gap-2">
+                      {suggested.map((wallet) => (
+                        <WalletOption
+                          disabled={isConnecting}
+                          isDetected={
+                            wallet.readyState === WalletReadyState.Installed
+                          }
+                          key={wallet.adapter.name}
+                          onClick={() => handleSelectWallet(wallet)}
+                          wallet={wallet}
+                        />
+                      ))}
+                      <button
+                        className={cn(
+                          `
+                            flex w-full items-center gap-3 rounded-lg border
+                            border-border bg-card px-4 py-3
+                          `,
+                          `
+                            text-left transition-colors
+                            hover:bg-muted/50
+                          `,
+                        )}
+                        onClick={() => onOpenChange(false)}
+                        type="button"
                       >
-                        Suggested
-                      </p>
-                      <div className="flex flex-col gap-2">
-                        {suggested.map((wallet) => (
-                          <WalletOption
-                            disabled={isConnecting}
-                            isDetected={
-                              wallet.readyState === WalletReadyState.Installed
-                            }
-                            key={wallet.adapter.name}
-                            onClick={() => handleSelectWallet(wallet)}
-                            wallet={wallet}
-                          />
-                        ))}
-                        <button
-                          className={cn(
-                            `
-                              flex w-full items-center gap-3 rounded-lg border
-                              border-border bg-card px-4 py-3
-                            `,
-                            `
-                              text-left transition-colors
-                              hover:bg-muted/50
-                            `,
-                          )}
-                          onClick={() => onOpenChange(false)}
-                          type="button"
-                        >
-                          <img
-                            alt=""
+                        <img
+                          alt=""
+                          className={`size-8 shrink-0 rounded-md object-contain`}
+                          height={32}
+                          src={METAMASK_LOGO}
+                          width={32}
+                        />
+                        <span className="flex-1 font-medium">MetaMask</span>
+                        {isMetaMaskDetected && (
+                          <span
                             className={`
-                              size-8 shrink-0 rounded-md object-contain
-                            `}
-                            height={32}
-                            src={METAMASK_LOGO}
-                            width={32}
-                          />
-                          <span className="flex-1 font-medium">MetaMask</span>
-                          {isMetaMaskDetected && (
-                            <span
-                              className={`
                               flex items-center gap-1.5 rounded-full
                               bg-green-500/15 px-2 py-0.5 text-xs font-medium
                               text-green-700
                               dark:text-green-400
                             `}
-                            >
-                              <span
-                                className={`
+                          >
+                            <span
+                              className={`
                                 size-1.5 shrink-0 rounded-full bg-green-500
                               `}
-                              />
-                              Detected
-                            </span>
-                          )}
-                          <ChevronRight
-                            className={`
-                            size-4 shrink-0 text-muted-foreground
-                          `}
-                          />
-                        </button>
-                      </div>
+                            />
+                            Detected
+                          </span>
+                        )}
+                        <ChevronRight
+                          className={`size-4 shrink-0 text-muted-foreground`}
+                        />
+                      </button>
                     </div>
-                  )}
-                  {others.length > 0 && (
-                    <div>
-                      <p
-                        className={`
+                  </div>
+                )}
+                {others.length > 0 && (
+                  <div>
+                    <p
+                      className={`
                         mb-2 text-xs font-medium tracking-wider
                         text-muted-foreground uppercase
                       `}
-                      >
-                        Others
-                      </p>
-                      <div className="flex flex-col gap-2">
-                        {others.map((wallet) => (
-                          <WalletOption
-                            disabled={isConnecting}
-                            isDetected={
-                              wallet.readyState === WalletReadyState.Installed
-                            }
-                            key={wallet.adapter.name}
-                            onClick={() => handleSelectWallet(wallet)}
-                            wallet={wallet}
-                          />
-                        ))}
-                      </div>
+                    >
+                      Others
+                    </p>
+                    <div className="flex flex-col gap-2">
+                      {others.map((wallet) => (
+                        <WalletOption
+                          disabled={isConnecting}
+                          isDetected={
+                            wallet.readyState === WalletReadyState.Installed
+                          }
+                          key={wallet.adapter.name}
+                          onClick={() => handleSelectWallet(wallet)}
+                          wallet={wallet}
+                        />
+                      ))}
                     </div>
-                  )}
-                </>
-              )}
-            </>
-          )}
+                  </div>
+                )}
+              </>
+            ))}
 
           {step === "requesting" && selectedWallet && (
             <div className="flex flex-col items-center py-8 text-center">
@@ -560,9 +555,9 @@ export function ConnectWalletModal({
             <div>
               <p
                 className={`
-                mb-3 text-xs font-medium tracking-wider text-muted-foreground
-                uppercase
-              `}
+                  mb-3 text-xs font-medium tracking-wider text-muted-foreground
+                  uppercase
+                `}
               >
                 Network
               </p>
@@ -599,9 +594,7 @@ export function ConnectWalletModal({
                           {network.name}
                         </span>
                         <ChevronRight
-                          className={`
-                          size-4 shrink-0 text-muted-foreground
-                        `}
+                          className={`size-4 shrink-0 text-muted-foreground`}
                         />
                       </button>
                     </div>
@@ -632,9 +625,7 @@ export function ConnectWalletModal({
                       />
                       <span className="flex-1 font-medium">{network.name}</span>
                       <ChevronRight
-                        className={`
-                        size-4 shrink-0 text-muted-foreground
-                      `}
+                        className={`size-4 shrink-0 text-muted-foreground`}
                       />
                     </button>
                   ),

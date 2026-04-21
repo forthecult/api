@@ -13,7 +13,11 @@ import {
 import { userTable } from "../users/tables";
 
 /** backup destination preference; chat bodies stay client-side unless user opts into encrypted cloud blob */
-export const AI_BACKUP_MODE_VALUES = ["none", "local_only", "cloud_encrypted"] as const;
+export const AI_BACKUP_MODE_VALUES = [
+  "none",
+  "local_only",
+  "cloud_encrypted",
+] as const;
 export type AiBackupMode = (typeof AI_BACKUP_MODE_VALUES)[number];
 
 /** scope for RAG chunks */
@@ -33,7 +37,9 @@ export const aiAgentTable = pgTable(
     createdAt: timestamp("created_at").defaultNow().notNull(),
     id: text("id").primaryKey(),
     jsonSettings: jsonb("json_settings").$type<Record<string, unknown>>(),
-    localCacheEncrypted: boolean("local_cache_encrypted").notNull().default(false),
+    localCacheEncrypted: boolean("local_cache_encrypted")
+      .notNull()
+      .default(false),
     name: text("name"),
     updatedAt: timestamp("updated_at")
       .defaultNow()
@@ -159,14 +165,12 @@ export const aiChatConversationTable = pgTable(
   ],
 );
 
-
 export const AI_MESSAGING_PROVIDER_VALUES = [
   "telegram",
   "discord",
   "slack",
 ] as const;
-export type AiMessagingProvider =
-  (typeof AI_MESSAGING_PROVIDER_VALUES)[number];
+export type AiMessagingProvider = (typeof AI_MESSAGING_PROVIDER_VALUES)[number];
 
 /** Per-user connection to external chat surfaces (Telegram bot, Discord app, Slack app). */
 export const aiMessagingChannelTable = pgTable(
@@ -206,7 +210,6 @@ export const aiMessagingChannelTable = pgTable(
   ],
 );
 
-
 /** Maps Slack/Discord user ids to FTC accounts for a given bot connection row. */
 export const aiMessagingUserLinkTable = pgTable(
   "ai_messaging_user_link",
@@ -238,4 +241,3 @@ export const slackEventProcessedTable = pgTable("slack_event_processed", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   eventId: text("event_id").primaryKey(),
 });
-

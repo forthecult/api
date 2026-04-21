@@ -27,6 +27,8 @@ export const createOrderSchema = z.object({
     .email("Invalid email address")
     .transform((e) => e.trim().toLowerCase()),
   emailMarketingConsent: z.boolean().optional(),
+  // When wallet is not sent (e.g. user unlinked), tier 1–3 from tier history so tier discounts still apply.
+  memberTier: z.number().int().min(1).max(3).optional(),
   orderItems: z
     .array(orderItemSchema)
     .min(1, "At least one order item is required"),
@@ -75,8 +77,6 @@ export const createOrderSchema = z.object({
   // Signature of walletMessage (base64 or base58). Required when wallet is sent and not linked.
   walletSignature: z.string().trim().max(500).optional(),
   walletSignatureBase58: z.string().trim().max(500).optional(),
-  // When wallet is not sent (e.g. user unlinked), tier 1–3 from tier history so tier discounts still apply.
-  memberTier: z.number().int().min(1).max(3).optional(),
 });
 
 export type CreateOrderInput = z.infer<typeof createOrderSchema>;
@@ -164,6 +164,28 @@ export const shippingCalculateSchema = z.object({
 });
 
 export type ShippingCalculateInput = z.infer<typeof shippingCalculateSchema>;
+
+export const productShippingEstimateSchema = z.object({
+  address1: z.string().max(500).optional(),
+  city: z.string().max(100).optional(),
+  countryCode: z
+    .string()
+    .min(1, "Country code is required")
+    .max(100)
+    .transform((c) => normalizeCountryCode(c))
+    .refine((c) => c.length >= 2 && c.length <= 3, {
+      message: "Country code must be 2–3 characters or a valid country name",
+    }),
+  postalCode: z.string().max(30).optional(),
+  productId: z.string().min(1, "Product ID is required"),
+  productVariantId: z.string().min(1).optional(),
+  quantity: z.number().int().min(1).max(99).default(1),
+  stateCode: z.string().max(30).optional(),
+});
+
+export type ProductShippingEstimatePayload = z.infer<
+  typeof productShippingEstimateSchema
+>;
 
 // --- Address Schema (for shipping/billing) ---
 export const addressSchema = z.object({

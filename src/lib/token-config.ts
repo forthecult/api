@@ -45,8 +45,7 @@ const SOLUNA: TokenDef = {
 };
 
 /** CULT Token-2022 mint (Solana). CA: 6jCCBeaJD63L62c496VrV4HVPLJF5N3WyTWRwPappump */
-export const CULT_MINT_MAINNET =
-  "6jCCBeaJD63L62c496VrV4HVPLJF5N3WyTWRwPappump";
+export const CULT_MINT_MAINNET = "6jCCBeaJD63L62c496VrV4HVPLJF5N3WyTWRwPappump";
 
 /**
  * CULT mint for swap (SOL↔CULT). Always 6jCCBeaJD63L62c496VrV4HVPLJF5N3WyTWRwPappump.
@@ -104,12 +103,12 @@ export function getActiveTokenMint(): string {
   return getActiveToken().mint;
 }
 
-/** Shorthand: active token symbol. */
-export function getActiveTokenSymbol(): string {
-  return getActiveToken().symbol;
-}
-
 /** Shorthand: active token program (base58). Undefined = legacy SPL Token. */
 export function getActiveTokenProgramBase58(): string | undefined {
   return getActiveToken().tokenProgram;
+}
+
+/** Shorthand: active token symbol. */
+export function getActiveTokenSymbol(): string {
+  return getActiveToken().symbol;
 }

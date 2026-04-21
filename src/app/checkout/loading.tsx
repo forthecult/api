@@ -2,7 +2,13 @@ export default function CheckoutLoading() {
   return (
     <div className="flex min-h-screen flex-col">
       <main className="flex-1 py-10">
-        <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div
+          className={`
+            container mx-auto max-w-7xl px-4
+            sm:px-6
+            lg:px-8
+          `}
+        >
           <div className="mb-8 h-8 w-32 animate-pulse rounded bg-muted" />
           <div className="space-y-6">
             {/* Order summary skeleton */}

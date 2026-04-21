@@ -167,9 +167,9 @@ export default function AdminBrandsCreatePage() {
       {error && (
         <div
           className={`
-          rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800
-          dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
-        `}
+            rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800
+            dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
+          `}
         >
           {error}
         </div>
@@ -183,9 +183,9 @@ export default function AdminBrandsCreatePage() {
           <CardContent className="space-y-6">
             <div
               className={`
-              grid gap-6
-              sm:grid-cols-2
-            `}
+                grid gap-6
+                sm:grid-cols-2
+              `}
             >
               <div className="space-y-2">
                 <label className={labelClass} htmlFor="name">

@@ -13,7 +13,9 @@ import { addBillingPeriod } from "./subscription-period";
 /**
  * After a crypto order is marked paid, attach or extend catalog subscription access.
  */
-export async function fulfillSubscriptionCryptoOrder(orderId: string): Promise<void> {
+export async function fulfillSubscriptionCryptoOrder(
+  orderId: string,
+): Promise<void> {
   const [order] = await db
     .select({
       id: ordersTable.id,
@@ -72,7 +74,11 @@ export async function fulfillSubscriptionCryptoOrder(orderId: string): Promise<v
     return;
   }
 
-  const periodEnd = addBillingPeriod(now, plan.intervalUnit, plan.intervalCount);
+  const periodEnd = addBillingPeriod(
+    now,
+    plan.intervalUnit,
+    plan.intervalCount,
+  );
 
   await db.insert(subscriptionInstanceTable).values({
     billingProvider: "crypto_manual",

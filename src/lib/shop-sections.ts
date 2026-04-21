@@ -27,7 +27,7 @@ export const SHOP_SECTION_SLUG_ORDER: string[] = [
  * Order categories for display (e.g. mobile nav) by this flow.
  * Categories not in the list are appended at the end.
  */
-export function orderCategoriesBySection<T extends { slug?: string | null }>(
+export function orderCategoriesBySection<T extends { slug?: null | string }>(
   categories: T[],
 ): T[] {
   const bySlug = new Map<string, T>();

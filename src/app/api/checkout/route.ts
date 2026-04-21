@@ -1,18 +1,24 @@
-import BigNumber from "bignumber.js";
 import { createId } from "@paralleldrive/cuid2";
+import { Connection, PublicKey } from "@solana/web3.js";
+import BigNumber from "bignumber.js";
 import { eq, inArray } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
 import { orderItemsTable, ordersTable, productsTable } from "~/db/schema";
 import { subscriptionPlanTable } from "~/db/schema/subscription-catalog/tables";
+import {
+  getAmazonProducts,
+  isAmazonProductApiConfigured,
+} from "~/lib/amazon-product-api";
 import { auth } from "~/lib/auth";
-import { getAmazonProducts, isAmazonProductApiConfigured } from "~/lib/amazon-product-api";
+import { getCoinGeckoSimplePrice } from "~/lib/coingecko";
 import {
   publicApiCorsPreflight,
   withPublicApiCors,
 } from "~/lib/cors-public-api";
 import { getOptionalMoltbookAgentFromRequest } from "~/lib/moltbook-auth";
+import { getPumpTokenPriceInSol } from "~/lib/pump-price";
 import {
   checkRateLimit,
   getClientIp,
@@ -20,9 +26,6 @@ import {
   RATE_LIMITS,
   rateLimitResponse,
 } from "~/lib/rate-limit";
-import { Connection, PublicKey } from "@solana/web3.js";
-import { getCoinGeckoSimplePrice } from "~/lib/coingecko";
-import { getPumpTokenPriceInSol } from "~/lib/pump-price";
 import { deriveDepositAddress } from "~/lib/solana-deposit";
 import {
   CULT_MINT_MAINNET,
@@ -39,13 +42,8 @@ const SOL_USD_FALLBACK = 200;
 
 const PAYMENT_WINDOW_MS = 60 * 60 * 1000;
 
-type CheckoutItem =
-  | { productId: string; quantity: number }
-  | { asin: string; quantity: number };
-
 interface CheckoutBody {
   email: string;
-  subscriptionPlanId?: string;
   items: CheckoutItem[];
   payment: { chain: string; token: string; tokenMint?: null | string };
   shipping?: {
@@ -58,18 +56,23 @@ interface CheckoutBody {
     stateCode?: string;
     zip?: string;
   };
+  subscriptionPlanId?: string;
 }
 
-type OrderItemRow = {
-  name: string;
-  priceCents: number;
-  quantity: number;
-  productId: string | null;
-  source: "store" | "amazon";
+type CheckoutItem =
+  | { asin: string; quantity: number }
+  | { productId: string; quantity: number };
+
+interface OrderItemRow {
   amazonAsin?: string;
   amazonProductUrl?: string;
   imageUrl?: string;
-};
+  name: string;
+  priceCents: number;
+  productId: null | string;
+  quantity: number;
+  source: "amazon" | "store";
+}
 
 /**
  * Agent-friendly checkout: create order and return Solana Pay payment details.
@@ -143,7 +146,11 @@ export async function POST(request: NextRequest) {
         : payment.token === "CULT"
           ? "CULT"
           : payment.token;
-    if (paymentToken !== "USDC" && paymentToken !== "SOL" && paymentToken !== "CULT") {
+    if (
+      paymentToken !== "USDC" &&
+      paymentToken !== "SOL" &&
+      paymentToken !== "CULT"
+    ) {
       return withPublicApiCors(
         NextResponse.json(
           {
@@ -207,24 +214,40 @@ export async function POST(request: NextRequest) {
 
     for (const item of storeItems) {
       const product = productMap.get(item.productId);
-      if (!product || !product.published) continue;
+      if (!product?.published) continue;
       orderItems.push({
         name: product.name,
         priceCents: product.priceCents,
-        quantity: item.quantity,
         productId: product.id,
+        quantity: item.quantity,
         source: "store",
       });
     }
 
-    let amazonProductMap = new Map<string, { name: string; price: { usd: number }; productUrl: string; imageUrl?: string }>();
+    let amazonProductMap = new Map<
+      string,
+      {
+        imageUrl?: string;
+        name: string;
+        price: { usd: number };
+        productUrl: string;
+      }
+    >();
     if (amazonItems.length > 0 && isAmazonProductApiConfigured()) {
-      const asins = [...new Set(amazonItems.map((i) => i.asin.trim()))].slice(0, 10);
+      const asins = [...new Set(amazonItems.map((i) => i.asin.trim()))].slice(
+        0,
+        10,
+      );
       const amazonProducts = await getAmazonProducts(asins);
       amazonProductMap = new Map(
         amazonProducts.map((p) => [
           p.asin,
-          { name: p.name, price: p.price, productUrl: p.productUrl, imageUrl: p.imageUrl },
+          {
+            imageUrl: p.imageUrl,
+            name: p.name,
+            price: p.price,
+            productUrl: p.productUrl,
+          },
         ]),
       );
       for (const item of amazonItems) {
@@ -232,14 +255,14 @@ export async function POST(request: NextRequest) {
         if (!p) continue;
         const priceCents = Math.round(p.price.usd * 100);
         orderItems.push({
-          name: p.name,
-          priceCents,
-          quantity: item.quantity,
-          productId: null,
-          source: "amazon",
           amazonAsin: item.asin.trim(),
           amazonProductUrl: p.productUrl,
           imageUrl: p.imageUrl,
+          name: p.name,
+          priceCents,
+          productId: null,
+          quantity: item.quantity,
+          source: "amazon",
         });
       }
     }
@@ -265,8 +288,7 @@ export async function POST(request: NextRequest) {
         .where(eq(subscriptionPlanTable.id, subscriptionPlanId))
         .limit(1);
       if (
-        !subPlan ||
-        !subPlan.published ||
+        !subPlan?.published ||
         !subPlan.payCryptoManual ||
         !subPlan.cryptoProductId
       ) {
@@ -308,7 +330,8 @@ export async function POST(request: NextRequest) {
           {
             error: {
               code: "INVALID_REQUEST",
-              message: "No valid products in items (check productId/asin and quantity)",
+              message:
+                "No valid products in items (check productId/asin and quantity)",
             },
           },
           { status: 400 },
@@ -372,7 +395,9 @@ export async function POST(request: NextRequest) {
       totalCents,
       updatedAt: now,
       ...(subscriptionPlanId && { subscriptionPlanId }),
-      ...(subscriptionSession?.user?.id && { userId: subscriptionSession.user.id }),
+      ...(subscriptionSession?.user?.id && {
+        userId: subscriptionSession.user.id,
+      }),
       ...(moltbookAgent?.id && { moltbookAgentId: moltbookAgent.id }),
       ...(shipping?.name && { shippingName: shipping.name }),
       ...(shipping?.address1 && { shippingAddress1: shipping.address1 }),
@@ -403,7 +428,7 @@ export async function POST(request: NextRequest) {
       })),
     );
 
-    const label = getSolanaPayLabel();
+    const _label = getSolanaPayLabel();
     const message = "Thank you for your order.";
 
     let amountBaseUnits: string;
@@ -449,7 +474,8 @@ export async function POST(request: NextRequest) {
     const params = new URLSearchParams();
     params.set("amount", amountBaseUnits);
     if (paymentToken === "USDC") params.set("spl-token", USDC_MINT_MAINNET);
-    else if (paymentToken === "CULT") params.set("spl-token", CULT_MINT_MAINNET);
+    else if (paymentToken === "CULT")
+      params.set("spl-token", CULT_MINT_MAINNET);
     params.set("label", `Order ${orderId}`);
     params.set("message", message);
     const solanaPayUrl = `solana:${depositAddress}?${params.toString()}`;

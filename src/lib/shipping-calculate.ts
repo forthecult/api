@@ -43,8 +43,8 @@ import {
   calculatePrintifyOrderShipping,
   calculatePrintifyShipping as fetchPrintifyShippingRates,
   getPrintifyIfConfigured,
-  type PrintifyShippingRateResult,
 } from "~/lib/printify";
+import { calculatePrintifyShippingOptions } from "~/lib/printify-orders";
 import { isShippingExcluded } from "~/lib/shipping-restrictions";
 import { userMeetsTokenHolderCondition } from "~/lib/token-holder-balance";
 
@@ -275,7 +275,7 @@ type ExtendedShippingInput = ShippingCalculateInput & {
  * Check if products can ship to the given country based on product availability settings.
  * Returns list of product IDs that cannot ship to the country.
  */
-async function checkCountryAvailability(
+export async function checkCountryAvailability(
   productIds: string[],
   countryCode: string,
 ): Promise<{
@@ -376,6 +376,29 @@ const US_STATE_NAME_TO_CODE: Record<string, string> = {
   wyoming: "WY",
 };
 
+export interface ProductShippingEstimateInput {
+  address1?: string;
+  city?: string;
+  countryCode: string;
+  productId: string;
+  productVariantId?: string;
+  quantity: number;
+  stateCode?: string;
+  zip?: string;
+}
+
+/**
+ * Main shipping calculation function.
+ * Handles admin shipping options, Printful, and Printify shipping rates.
+ * Also checks country-based availability restrictions.
+ */
+export interface ProductShippingEstimateOption {
+  deliveryHint: null | string;
+  label: string;
+  shippingCents: number;
+  shippingSpeed: "express" | "standard";
+}
+
 /** Public API response: same shape without vendor-named fields. */
 export function getPublicShippingResponse(result: ShippingResult) {
   return {
@@ -388,6 +411,571 @@ export function getPublicShippingResponse(result: ShippingResult) {
     taxCents: result.taxCents,
     taxNote: result.taxNote,
     unavailableProducts: result.unavailableProducts,
+  };
+}
+
+export async function listPrintfulProductShippingEstimateLines(
+  input: ExtendedShippingInput,
+  printfulItems: { catalogVariantId: number; quantity: number }[],
+): Promise<ProductShippingEstimateOption[]> {
+  const data = await fetchPrintfulShippingRateOptions(input, printfulItems);
+  const out: ProductShippingEstimateOption[] = [];
+  for (const r of data) {
+    const cents = Math.round(Number.parseFloat(r.rate) * 100);
+    if (Number.isNaN(cents) || cents < 0) continue;
+    const isExpress =
+      /\b(express|overnight|rush|2-?day|priority)\b/i.test(
+        r.shipping_method_name,
+      ) || r.shipping !== "STANDARD";
+    out.push({
+      deliveryHint: formatDeliveryDaysHint(
+        r.min_delivery_days,
+        r.max_delivery_days,
+      ),
+      label: normalizeThirdPartyShippingLabel(r.shipping_method_name, {
+        isExpress,
+      }),
+      shippingCents: cents,
+      shippingSpeed: isExpress ? "express" : "standard",
+    });
+  }
+  return dedupeShippingEstimateOptions(out);
+}
+
+/** Normalize cart items: cart line id is often "productId__variantId"; if productId looks like that, split so lookups succeed. */
+export function normalizeShippingItems(
+  items: {
+    productId: string;
+    productVariantId?: string;
+    quantity: number;
+  }[],
+): { productId: string; productVariantId?: string; quantity: number }[] {
+  return items.map((i) => {
+    const pid = i.productId?.trim();
+    if (!pid) return i;
+    const sep = pid.indexOf("__");
+    if (sep === -1) return i;
+    const productId = pid.slice(0, sep);
+    const variantId = pid.slice(sep + 2);
+    return {
+      productId,
+      productVariantId: i.productVariantId?.trim() || variantId || undefined,
+      quantity: i.quantity,
+    };
+  });
+}
+
+/**
+ * Public product-page shipping: all estimate lines for one product line (internal + fulfillment APIs).
+ * Labels are storefront-safe (no third-party vendor names).
+ */
+export async function runProductShippingOptionsEstimate(
+  raw: ProductShippingEstimateInput,
+): Promise<{
+  canShipToCountry: boolean;
+  fulfillmentError: null | string;
+  options: ProductShippingEstimateOption[];
+  unavailableProducts: string[];
+}> {
+  const empty = {
+    canShipToCountry: true,
+    fulfillmentError: null as null | string,
+    options: [] as ProductShippingEstimateOption[],
+    unavailableProducts: [] as string[],
+  };
+
+  const countryCode = raw.countryCode.trim().toUpperCase();
+  if (countryCode.length < 2) {
+    return empty;
+  }
+
+  if (isShippingExcluded(countryCode)) {
+    return {
+      ...empty,
+      canShipToCountry: false,
+      unavailableProducts: [raw.productId],
+    };
+  }
+
+  const items = normalizeShippingItems([
+    {
+      productId: raw.productId,
+      productVariantId: raw.productVariantId,
+      quantity: raw.quantity,
+    },
+  ]);
+  const productIds = [raw.productId];
+  const variantIds = items
+    .map((i) => i.productVariantId)
+    .filter((id): id is string => id != null && id.length > 0);
+  const productIdsWithoutVariant = items.some((i) => !i.productVariantId)
+    ? [raw.productId]
+    : [];
+
+  const { unavailableProducts } = await checkCountryAvailability(
+    productIds,
+    countryCode,
+  );
+  if (unavailableProducts.length > 0) {
+    return { ...empty, canShipToCountry: false, unavailableProducts };
+  }
+
+  interface ProductInfo {
+    brand: null | string;
+    externalId: null | string;
+    id: string;
+    priceCents: number;
+    printifyPrintProviderId: null | number;
+    printifyProductId: null | string;
+    source: string;
+    weightGrams: null | number;
+  }
+  let products: ProductInfo[] = [];
+  let variants: {
+    externalId: null | string;
+    id: string;
+    priceCents: number;
+    productId: string;
+  }[] = [];
+  let allOptions: (typeof shippingOptionsTable.$inferSelect)[] = [];
+  let brandNameToId = new Map<string, string>();
+  let printifyDefaultVariantByProductId = new Map<string, string>();
+  let firstVariantExternalIdByProductId = new Map<string, string>();
+
+  try {
+    const [
+      productsResult,
+      variantsResult,
+      defaultVariantsForPrintifyResult,
+      firstVariantPerProductResult,
+      optionsResult,
+      brandsResult,
+    ] = await Promise.all([
+      db
+        .select({
+          brand: productsTable.brand,
+          externalId: productsTable.externalId,
+          id: productsTable.id,
+          priceCents: productsTable.priceCents,
+          printifyPrintProviderId: productsTable.printifyPrintProviderId,
+          printifyProductId: productsTable.printifyProductId,
+          source: productsTable.source,
+          weightGrams: productsTable.weightGrams,
+        })
+        .from(productsTable)
+        .where(eq(productsTable.id, raw.productId)),
+      variantIds.length > 0
+        ? db
+            .select({
+              externalId: productVariantsTable.externalId,
+              id: productVariantsTable.id,
+              priceCents: productVariantsTable.priceCents,
+              productId: productVariantsTable.productId,
+            })
+            .from(productVariantsTable)
+            .where(inArray(productVariantsTable.id, variantIds))
+        : Promise.resolve([]),
+      productIdsWithoutVariant.length > 0
+        ? db
+            .select({
+              externalId: productVariantsTable.externalId,
+              productId: productVariantsTable.productId,
+            })
+            .from(productVariantsTable)
+            .where(
+              inArray(productVariantsTable.productId, productIdsWithoutVariant),
+            )
+            .orderBy(
+              asc(productVariantsTable.productId),
+              asc(productVariantsTable.id),
+            )
+        : Promise.resolve([]),
+      db
+        .select({
+          externalId: productVariantsTable.externalId,
+          productId: productVariantsTable.productId,
+        })
+        .from(productVariantsTable)
+        .where(
+          and(
+            inArray(productVariantsTable.productId, productIds),
+            isNotNull(productVariantsTable.externalId),
+          ),
+        )
+        .orderBy(
+          asc(productVariantsTable.productId),
+          asc(productVariantsTable.id),
+        ),
+      db
+        .select()
+        .from(shippingOptionsTable)
+        .orderBy(asc(shippingOptionsTable.priority)),
+      db.select({ id: brandTable.id, name: brandTable.name }).from(brandTable),
+    ]);
+    products = productsResult;
+    variants = variantsResult;
+    printifyDefaultVariantByProductId = new Map<string, string>();
+    if (defaultVariantsForPrintifyResult.length > 0) {
+      for (const row of defaultVariantsForPrintifyResult) {
+        if (
+          row.productId &&
+          row.externalId &&
+          !printifyDefaultVariantByProductId.has(row.productId)
+        ) {
+          printifyDefaultVariantByProductId.set(row.productId, row.externalId);
+        }
+      }
+    }
+    firstVariantExternalIdByProductId = new Map<string, string>();
+    if (firstVariantPerProductResult.length > 0) {
+      for (const row of firstVariantPerProductResult) {
+        if (
+          row.productId &&
+          row.externalId &&
+          !firstVariantExternalIdByProductId.has(row.productId)
+        ) {
+          firstVariantExternalIdByProductId.set(row.productId, row.externalId);
+        }
+      }
+    }
+    allOptions = optionsResult;
+    brandNameToId = new Map<string, string>(
+      (brandsResult as { id: string; name: null | string }[])
+        .filter((b) => (b.name ?? "").trim().length > 0)
+        .map((b) => [(b.name ?? "").trim().toLowerCase(), b.id]),
+    );
+  } catch (dbErr) {
+    console.warn("Product shipping estimate: DB read failed", dbErr);
+    return { ...empty, fulfillmentError: "Could not load shipping options." };
+  }
+
+  const product = products[0];
+  if (!product) {
+    return { ...empty, fulfillmentError: "Product not found." };
+  }
+
+  const printfulItems: { catalogVariantId: number; quantity: number }[] = [];
+  const printifyItems: {
+    blueprintId: number;
+    printProviderId: number;
+    quantity: number;
+    variantId: number;
+  }[] = [];
+  const printifyOrderShippingItems: {
+    printifyProductId: string;
+    printifyVariantId: number;
+    quantity: number;
+  }[] = [];
+
+  const variantById = new Map(variants.map((v) => [v.id, v]));
+  const variantExternalIdMap = new Map(
+    variants.map((v) => [v.id, v.externalId]),
+  );
+
+  const item = items[0]!;
+  const qty = item.quantity;
+  const weight = (product.weightGrams ?? 0) * qty;
+  let itemPriceCents = product.priceCents;
+  if (item.productVariantId) {
+    const variant = variantById.get(item.productVariantId);
+    if (variant) {
+      itemPriceCents = variant.priceCents;
+    }
+  }
+  const itemValueCents = itemPriceCents * qty;
+  const extendedInput: ExtendedShippingInput = {
+    address1: raw.address1,
+    city: raw.city,
+    countryCode,
+    items: items.map((i) => ({
+      productId: i.productId,
+      productVariantId: i.productVariantId,
+      quantity: i.quantity,
+    })),
+    orderValueCents: itemValueCents,
+    stateCode: raw.stateCode,
+    zip: raw.zip,
+  };
+  const brandId = product.brand?.trim()
+    ? (brandNameToId.get(product.brand.trim().toLowerCase()) ?? null)
+    : null;
+
+  let manualQuantity = 0;
+  let _manualWeightGrams = 0;
+  let _manualValueCents = 0;
+  const perBrandManual = new Map<
+    null | string,
+    { qty: number; valueCents: number; weightGrams: number }
+  >();
+  function addToBrandBucket(
+    bid: null | string,
+    valueCents: number,
+    q: number,
+    w: number,
+  ) {
+    const cur = perBrandManual.get(bid) ?? {
+      qty: 0,
+      valueCents: 0,
+      weightGrams: 0,
+    };
+    perBrandManual.set(bid, {
+      qty: cur.qty + q,
+      valueCents: cur.valueCents + valueCents,
+      weightGrams: cur.weightGrams + w,
+    });
+  }
+
+  if (product.source === "printful") {
+    let catalogVariantId: null | number = null;
+    if (item.productVariantId) {
+      const variantExternalId = variantExternalIdMap.get(item.productVariantId);
+      if (variantExternalId) {
+        catalogVariantId = Number.parseInt(String(variantExternalId), 10);
+      }
+    }
+    if (
+      (!catalogVariantId || Number.isNaN(catalogVariantId)) &&
+      item.productId
+    ) {
+      const firstVariantExternalId =
+        printifyDefaultVariantByProductId.get(item.productId) ??
+        firstVariantExternalIdByProductId.get(item.productId);
+      if (firstVariantExternalId != null) {
+        const parsed = Number.parseInt(String(firstVariantExternalId), 10);
+        if (!Number.isNaN(parsed)) catalogVariantId = parsed;
+      }
+    }
+    if (catalogVariantId && !Number.isNaN(catalogVariantId)) {
+      printfulItems.push({ catalogVariantId, quantity: qty });
+    } else {
+      manualQuantity += qty;
+      _manualWeightGrams += weight;
+      _manualValueCents += itemValueCents;
+      addToBrandBucket(brandId, itemValueCents, qty, weight);
+    }
+  } else if (product.source === "printify") {
+    const blueprintId =
+      product.externalId != null
+        ? Number.parseInt(String(product.externalId), 10)
+        : NaN;
+    const printProviderId = product.printifyPrintProviderId ?? NaN;
+    const hasBlueprintAndProvider =
+      !Number.isNaN(blueprintId) &&
+      !Number.isNaN(printProviderId) &&
+      printProviderId > 0;
+
+    let variantId: null | number = null;
+    if (item.productVariantId != null) {
+      const variantExternalId = variantExternalIdMap.get(item.productVariantId);
+      variantId =
+        variantExternalId != null
+          ? Number.parseInt(String(variantExternalId), 10)
+          : null;
+      if (variantId !== null && Number.isNaN(variantId)) variantId = null;
+    } else {
+      const defaultExternalId = printifyDefaultVariantByProductId.get(
+        item.productId,
+      );
+      if (defaultExternalId != null) {
+        const parsed = Number.parseInt(String(defaultExternalId), 10);
+        if (!Number.isNaN(parsed)) variantId = parsed;
+      }
+    }
+
+    if (hasBlueprintAndProvider && variantId != null) {
+      printifyItems.push({
+        blueprintId,
+        printProviderId,
+        quantity: qty,
+        variantId,
+      });
+      const printifyProductId = product.printifyProductId;
+      if (printifyProductId) {
+        printifyOrderShippingItems.push({
+          printifyProductId,
+          printifyVariantId: variantId,
+          quantity: qty,
+        });
+      }
+    } else {
+      manualQuantity += qty;
+      _manualWeightGrams += weight;
+      _manualValueCents += itemValueCents;
+      addToBrandBucket(brandId, itemValueCents, qty, weight);
+    }
+  } else {
+    manualQuantity += qty;
+    _manualWeightGrams += weight;
+    _manualValueCents += itemValueCents;
+    addToBrandBucket(brandId, itemValueCents, qty, weight);
+  }
+
+  const combined: ProductShippingEstimateOption[] = [];
+
+  if (printfulItems.length > 0) {
+    const lines = await listPrintfulProductShippingEstimateLines(
+      extendedInput,
+      printfulItems,
+    );
+    combined.push(...lines);
+  }
+
+  if (printifyOrderShippingItems.length > 0) {
+    const printifyOrderResult = await calculatePrintifyShippingOptions(
+      printifyOrderShippingItems,
+      {
+        city: raw.city?.trim() || undefined,
+        country: countryCode,
+        region: raw.stateCode?.trim() || undefined,
+        zip: raw.zip?.trim() || undefined,
+      },
+    );
+    if (printifyOrderResult.options.length > 0) {
+      for (const o of printifyOrderResult.options) {
+        const label = o.label.replace(/^printify\s+/i, "").trim();
+        const safeLabel =
+          label.toLowerCase().includes("printify") ||
+          label.toLowerCase().includes("2-5 days")
+            ? "Express delivery (about 2–5 business days)"
+            : label;
+        combined.push({
+          deliveryHint: null,
+          label: safeLabel,
+          shippingCents: o.costCents,
+          shippingSpeed:
+            o.method === "express" ||
+            o.method === "priority" ||
+            o.method === "printify_express"
+              ? "express"
+              : "standard",
+        });
+      }
+    } else if (printifyItems.length > 0) {
+      try {
+        if (getPrintifyIfConfigured()) {
+          const catalog = await fetchPrintifyShippingRates(
+            printifyItems,
+            countryCode,
+          );
+          if (catalog.shippingCents >= 0 && catalog.canShipToCountry) {
+            combined.push({
+              deliveryHint: null,
+              label: "Standard",
+              shippingCents: catalog.shippingCents,
+              shippingSpeed: "standard",
+            });
+          }
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+  } else if (printifyItems.length > 0) {
+    try {
+      if (getPrintifyIfConfigured()) {
+        const catalog = await fetchPrintifyShippingRates(
+          printifyItems,
+          countryCode,
+        );
+        if (catalog.shippingCents >= 0 && catalog.canShipToCountry) {
+          combined.push({
+            deliveryHint: null,
+            label: "Standard",
+            shippingCents: catalog.shippingCents,
+            shippingSpeed: "standard",
+          });
+        } else if (!catalog.canShipToCountry) {
+          return {
+            ...empty,
+            canShipToCountry: false,
+            unavailableProducts: [],
+          };
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
+  const hasPODItems = printfulItems.length > 0 || printifyItems.length > 0;
+  if (manualQuantity > 0 || !hasPODItems) {
+    for (const [bid, stats] of perBrandManual) {
+      const applicable = allOptions
+        .filter(
+          (o) =>
+            (o.brandId === bid || o.brandId === null) &&
+            (o.countryCode == null ||
+              o.countryCode === "" ||
+              o.countryCode === countryCode),
+        )
+        .sort((a, b) => {
+          const aBrand = a.brandId != null ? 1 : 0;
+          const bBrand = b.brandId != null ? 1 : 0;
+          if (bBrand !== aBrand) return bBrand - aBrand;
+          return (a.priority ?? 0) - (b.priority ?? 0);
+        });
+
+      for (const opt of applicable) {
+        if (
+          !matches(
+            opt as ShippingOptionRow,
+            stats.valueCents,
+            stats.qty,
+            stats.weightGrams,
+          )
+        ) {
+          continue;
+        }
+        const isExpress =
+          (opt as { speed?: null | string }).speed === "express";
+        const displayLabel =
+          opt.brandId != null
+            ? isExpress
+              ? "Express shipping"
+              : "Standard shipping"
+            : opt.name;
+        let cents = 0;
+        if (opt.type === "free") {
+          cents = 0;
+        } else if (opt.type === "flat" && opt.amountCents != null) {
+          cents = opt.amountCents;
+        } else if (opt.type === "per_item" && opt.amountCents != null) {
+          cents = opt.amountCents * stats.qty;
+        } else if (
+          opt.type === "flat_plus_per_item" &&
+          opt.amountCents != null
+        ) {
+          cents =
+            opt.amountCents +
+            (opt.additionalItemCents ?? 0) * Math.max(0, stats.qty - 1);
+        } else {
+          continue;
+        }
+        combined.push({
+          deliveryHint: null,
+          label: displayLabel,
+          shippingCents: cents,
+          shippingSpeed: isExpress ? "express" : "standard",
+        });
+      }
+    }
+  }
+
+  const options = dedupeShippingEstimateOptions(combined);
+  let fulfillmentError: null | string = null;
+  if (
+    options.length === 0 &&
+    (product.source === "printful" || product.source === "printify")
+  ) {
+    fulfillmentError =
+      "We could not get a live quote for this address. Try a full street address at checkout, or pick state/province if required.";
+  }
+
+  return {
+    canShipToCountry: true,
+    fulfillmentError,
+    options,
+    unavailableProducts: [],
   };
 }
 
@@ -482,11 +1070,11 @@ export async function runShippingCalculate(
     ),
   ];
 
-  let totalQuantity = 0;
-  let totalWeightGrams = 0;
+  let _totalQuantity = 0;
+  let _totalWeightGrams = 0;
   let manualQuantity = 0;
-  let manualWeightGrams = 0;
-  let manualValueCents = 0;
+  let _manualWeightGrams = 0;
+  let _manualValueCents = 0;
   /** Per-brand totals for manual items (brandId -> valueCents, qty, weight) so we sum shipping per brand. */
   const perBrandManual = new Map<
     null | string,
@@ -722,8 +1310,8 @@ export async function runShippingCalculate(
       ? (brandNameToId.get(product.brand.trim().toLowerCase()) ?? null)
       : null;
 
-    totalQuantity += qty;
-    totalWeightGrams += weight;
+    _totalQuantity += qty;
+    _totalWeightGrams += weight;
 
     if (product.source === "printful") {
       // Get catalog_variant_id for Printful shipping (required for rate calculation).
@@ -739,17 +1327,20 @@ export async function runShippingCalculate(
         }
       }
       // When cart has no variant or variant has no externalId, use first variant for this product so we still get a rate
-      if ((!catalogVariantId || isNaN(catalogVariantId)) && item.productId) {
+      if (
+        (!catalogVariantId || Number.isNaN(catalogVariantId)) &&
+        item.productId
+      ) {
         const firstVariantExternalId =
           printifyDefaultVariantByProductId.get(item.productId) ??
           firstVariantExternalIdByProductId.get(item.productId);
         if (firstVariantExternalId != null) {
           const parsed = Number.parseInt(String(firstVariantExternalId), 10);
-          if (!isNaN(parsed)) catalogVariantId = parsed;
+          if (!Number.isNaN(parsed)) catalogVariantId = parsed;
         }
       }
 
-      if (catalogVariantId && !isNaN(catalogVariantId)) {
+      if (catalogVariantId && !Number.isNaN(catalogVariantId)) {
         printfulItems.push({
           catalogVariantId,
           quantity: qty,
@@ -758,8 +1349,8 @@ export async function runShippingCalculate(
         // Fallback: treat as manual for shipping purposes (re-sync product from Printful to backfill variant externalId)
         printfulMissingCatalogVariantIds.add(item.productId);
         manualQuantity += qty;
-        manualWeightGrams += weight;
-        manualValueCents += itemValueCents;
+        _manualWeightGrams += weight;
+        _manualValueCents += itemValueCents;
         addToBrandBucket(brandId, itemValueCents, qty, weight);
       }
     } else if (product.source === "printify") {
@@ -770,7 +1361,9 @@ export async function runShippingCalculate(
           : NaN;
       const printProviderId = product.printifyPrintProviderId ?? NaN;
       const hasBlueprintAndProvider =
-        !isNaN(blueprintId) && !isNaN(printProviderId) && printProviderId > 0;
+        !Number.isNaN(blueprintId) &&
+        !Number.isNaN(printProviderId) &&
+        printProviderId > 0;
 
       let variantId: null | number = null;
       if (item.productVariantId != null) {
@@ -781,7 +1374,7 @@ export async function runShippingCalculate(
           variantExternalId != null
             ? Number.parseInt(String(variantExternalId), 10)
             : null;
-        if (variantId !== null && isNaN(variantId)) variantId = null;
+        if (variantId !== null && Number.isNaN(variantId)) variantId = null;
       } else {
         // Single-variant or simple product: use first variant for this product
         const defaultExternalId = printifyDefaultVariantByProductId.get(
@@ -789,7 +1382,7 @@ export async function runShippingCalculate(
         );
         if (defaultExternalId != null) {
           const parsed = Number.parseInt(String(defaultExternalId), 10);
-          if (!isNaN(parsed)) variantId = parsed;
+          if (!Number.isNaN(parsed)) variantId = parsed;
         }
       }
 
@@ -813,15 +1406,15 @@ export async function runShippingCalculate(
         }
       } else {
         manualQuantity += qty;
-        manualWeightGrams += weight;
-        manualValueCents += itemValueCents;
+        _manualWeightGrams += weight;
+        _manualValueCents += itemValueCents;
         addToBrandBucket(brandId, itemValueCents, qty, weight);
       }
     } else {
       // Manual or other source
       manualQuantity += qty;
-      manualWeightGrams += weight;
-      manualValueCents += itemValueCents;
+      _manualWeightGrams += weight;
+      _manualValueCents += itemValueCents;
       addToBrandBucket(brandId, itemValueCents, qty, weight);
     }
   }
@@ -1077,8 +1670,42 @@ async function calculatePrintfulShipping(
   input: ExtendedShippingInput,
   printfulItems: { catalogVariantId: number; quantity: number }[],
 ): Promise<{ rate: null | PrintfulShippingRateOption; shippingCents: number }> {
-  if (printfulItems.length === 0) {
+  const data = await fetchPrintfulShippingRateOptions(input, printfulItems);
+  if (data.length === 0) {
     return { rate: null, shippingCents: 0 };
+  }
+
+  const standardRate = data.find((r) => r.shipping === "STANDARD");
+  const selectedRate = standardRate || data[0];
+  const rateCents = Math.round(Number.parseFloat(selectedRate.rate) * 100);
+
+  return {
+    rate: selectedRate,
+    shippingCents: rateCents,
+  };
+}
+
+function dedupeShippingEstimateOptions(
+  rows: ProductShippingEstimateOption[],
+): ProductShippingEstimateOption[] {
+  const seen = new Set<string>();
+  const next: ProductShippingEstimateOption[] = [];
+  for (const r of rows) {
+    const k = `${r.label}\u0000${r.shippingCents}`;
+    if (seen.has(k)) continue;
+    seen.add(k);
+    next.push(r);
+  }
+  next.sort((a, b) => a.shippingCents - b.shippingCents);
+  return next;
+}
+
+async function fetchPrintfulShippingRateOptions(
+  input: ExtendedShippingInput,
+  printfulItems: { catalogVariantId: number; quantity: number }[],
+): Promise<PrintfulShippingRateOption[]> {
+  if (printfulItems.length === 0) {
+    return [];
   }
 
   const pf = getPrintfulIfConfigured();
@@ -1086,7 +1713,7 @@ async function calculatePrintfulShipping(
     console.warn(
       "[Printful shipping] PRINTFUL_API_TOKEN is not set; cannot calculate Printful shipping.",
     );
-    return { rate: null, shippingCents: 0 };
+    return [];
   }
 
   const storeIdRaw = process.env.PRINTFUL_STORE_ID?.trim();
@@ -1109,10 +1736,9 @@ async function calculatePrintfulShipping(
       input.countryCode,
       input.stateCode,
     );
-    // US, CA, AU require state_code for Printful; do not call the API until we have it (avoids 400 Bad Request).
     const needsState = /^(US|CA|AU)$/i.test(input.countryCode);
     if (needsState && !stateCode?.trim()) {
-      return { rate: null, shippingCents: 0 };
+      return [];
     }
 
     const address1 = (input.address1 ?? "").trim() || undefined;
@@ -1121,7 +1747,6 @@ async function calculatePrintfulShipping(
       ...(stateCode && { state_code: stateCode }),
       ...(input.city?.trim() && { city: input.city.trim() }),
       ...(input.zip?.trim() && { zip: input.zip.trim() }),
-      // Printful needs address1 for accurate rates; omit or use placeholder only when missing
       address1: address1 || "TBD",
     };
 
@@ -1143,54 +1768,35 @@ async function calculatePrintfulShipping(
           stateCode: stateCode ?? input.stateCode,
         },
       );
-      return { rate: null, shippingCents: 0 };
+      return [];
     }
 
-    // Get STANDARD rate (cheapest/default), or first available
-    const standardRate = response.data.find((r) => r.shipping === "STANDARD");
-    const selectedRate = standardRate || response.data[0];
-
-    const rateCents = Math.round(Number.parseFloat(selectedRate.rate) * 100);
-
-    return {
-      rate: selectedRate,
-      shippingCents: rateCents,
-    };
+    return response.data;
   } catch (error) {
     console.error(
       "[Printful shipping] Failed to fetch rates:",
       error instanceof Error ? error.message : error,
     );
-    return { rate: null, shippingCents: 0 };
+    return [];
   }
 }
 
-/**
- * Main shipping calculation function.
- * Handles admin shipping options, Printful, and Printify shipping rates.
- * Also checks country-based availability restrictions.
- */
-/** Normalize cart items: cart line id is often "productId__variantId"; if productId looks like that, split so lookups succeed. */
-function normalizeShippingItems(
-  items: {
-    productId: string;
-    productVariantId?: string;
-    quantity: number;
-  }[],
-): { productId: string; productVariantId?: string; quantity: number }[] {
-  return items.map((i) => {
-    const pid = i.productId?.trim();
-    if (!pid) return i;
-    const sep = pid.indexOf("__");
-    if (sep === -1) return i;
-    const productId = pid.slice(0, sep);
-    const variantId = pid.slice(sep + 2);
-    return {
-      productId,
-      productVariantId: i.productVariantId?.trim() || variantId || undefined,
-      quantity: i.quantity,
-    };
-  });
+function formatDeliveryDaysHint(
+  minDays?: number,
+  maxDays?: number,
+): null | string {
+  const lo = typeof minDays === "number" ? minDays : null;
+  const hi = typeof maxDays === "number" ? maxDays : null;
+  if (lo == null && hi == null) return null;
+  if (lo != null && hi != null && lo === hi) {
+    return `about ${lo} business day${lo === 1 ? "" : "s"}`;
+  }
+  if (lo != null && hi != null) {
+    return `about ${lo}–${hi} business days`;
+  }
+  if (lo != null) return `about ${lo}+ business days`;
+  if (hi != null) return `up to ${hi} business days`;
+  return null;
 }
 
 function normalizeStateCodeForPrintful(

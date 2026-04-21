@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
 import type { ComponentType, ReactNode } from "react";
+
+import React, { useCallback, useEffect, useRef, useState } from "react";
 
 import {
   OPEN_AUTH_WALLET_MODAL,
@@ -29,10 +30,10 @@ export { useWagmiReady };
 const ProviderShell = React.memo(function ProviderShell({
   children,
   providerRef,
-  version,
+  version: _version,
 }: {
   children: ReactNode;
-  providerRef: React.RefObject<ProviderComponent | null>;
+  providerRef: React.RefObject<null | ProviderComponent>;
   version: number;
 }) {
   const Provider = providerRef.current;
@@ -50,7 +51,7 @@ const ProviderShell = React.memo(function ProviderShell({
  * Uses a stable shell component so children don't re-mount when Wagmi loads.
  */
 export function LazyWagmiProvider({ children }: { children: ReactNode }) {
-  const providerRef = useRef<ProviderComponent | null>(null);
+  const providerRef = useRef<null | ProviderComponent>(null);
   const [isReady, setIsReady] = useState(false);
   const [version, setVersion] = useState(0);
   const loadingRef = useRef(false);

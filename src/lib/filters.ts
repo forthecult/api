@@ -228,7 +228,7 @@ export function defineMeta<
 ): ColumnMeta<TData, TVal>;
 // implementation
 export function defineMeta<TData extends RowData, TType extends ColumnDataType>(
-  accessor: AccessorFn<TData, unknown> | DeepKeys<TData>,
+  _accessor: AccessorFn<TData, unknown> | DeepKeys<TData>,
   meta: Omit<ColumnMeta<TData, any>, "type"> & { type: TType },
 ): ColumnMeta<TData, any> {
   // the implementation signature needs to be compatible with the overloads.
@@ -667,7 +667,7 @@ export function applyNumberFilter<TData>(
   inputData: number,
   filterValue: FilterModel<"number", TData>,
 ) {
-  if (!filterValue || !filterValue.values || filterValue.values.length === 0) {
+  if (!filterValue?.values || filterValue.values.length === 0) {
     return true;
   }
 

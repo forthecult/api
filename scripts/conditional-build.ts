@@ -3,7 +3,7 @@
  * Otherwise run the real Next.js build.
  * Lets the same repo deploy both the main app (full build) and cron-only services (deps only).
  */
-import { spawnSync } from "child_process";
+import { spawnSync } from "node:child_process";
 
 if (
   process.env.SKIP_NEXT_BUILD === "true" ||

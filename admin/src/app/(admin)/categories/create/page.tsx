@@ -38,7 +38,7 @@ export default function AdminCategoriesCreatePage() {
   const [description, setDescription] = useState("");
   const [seoOptimized, setSeoOptimized] = useState(false);
   const [imageUrl, setImageUrl] = useState("");
-  const [level, setLevel] = useState(1);
+  const [level, _setLevel] = useState(1);
   const [featured, setFeatured] = useState(false);
   const [visible, setVisible] = useState(true);
   const [tokenGated, setTokenGated] = useState(false);
@@ -146,9 +146,9 @@ export default function AdminCategoriesCreatePage() {
       {error && (
         <div
           className={`
-          rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800
-          dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
-        `}
+            rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800
+            dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
+          `}
         >
           {error}
         </div>
@@ -162,9 +162,9 @@ export default function AdminCategoriesCreatePage() {
           <CardContent className="space-y-6">
             <div
               className={`
-              grid gap-6
-              sm:grid-cols-2
-            `}
+                grid gap-6
+                sm:grid-cols-2
+              `}
             >
               <div className="space-y-2">
                 <label className={labelClass} htmlFor="name">
@@ -216,11 +216,11 @@ export default function AdminCategoriesCreatePage() {
               {imageUrl && (
                 <div
                   className={`
-                  relative mt-2 size-20 overflow-hidden rounded-md border
-                  bg-muted
-                `}
+                    relative mt-2 size-20 overflow-hidden rounded-md border
+                    bg-muted
+                  `}
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  {}
                   <img
                     alt=""
                     className="size-full object-cover"

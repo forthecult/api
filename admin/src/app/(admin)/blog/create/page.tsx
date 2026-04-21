@@ -16,18 +16,6 @@ const inputClass =
   "w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";
 const labelClass = "mb-1.5 block text-sm font-medium";
 
-function tagsFromInput(value: string): string[] {
-  return value
-    .split(/[\n,]+/)
-    .map((t) => t.trim())
-    .filter(Boolean);
-}
-
-function formatDateTimeLocal(d: Date): string {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
 export default function AdminBlogCreatePage() {
   const router = useRouter();
   const [error, setError] = useState<null | string>(null);
@@ -76,7 +64,8 @@ export default function AdminBlogCreatePage() {
         setError("Title is required.");
         return;
       }
-      const slugVal = slug.trim() || title.trim().toLowerCase().replace(/\s+/g, "-");
+      const slugVal =
+        slug.trim() || title.trim().toLowerCase().replace(/\s+/g, "-");
       if (!slugVal) {
         setError("Slug is required.");
         return;
@@ -104,14 +93,14 @@ export default function AdminBlogCreatePage() {
           method: "POST",
         });
         if (!res.ok) {
-          const body = (await res.json().catch(() => ({}))) as { error?: string };
+          const body = (await res.json().catch(() => ({}))) as {
+            error?: string;
+          };
           throw new Error(body.error ?? "Failed to create post");
         }
         router.push("/blog");
       } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Failed to create post",
-        );
+        setError(err instanceof Error ? err.message : "Failed to create post");
       } finally {
         setSaving(false);
       }
@@ -134,11 +123,12 @@ export default function AdminBlogCreatePage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <h2 className="text-2xl font-semibold tracking-tight">
-          New blog post
-        </h2>
+        <h2 className="text-2xl font-semibold tracking-tight">New blog post</h2>
         <Link
-          className="text-sm font-medium text-muted-foreground hover:text-foreground"
+          className={`
+            text-sm font-medium text-muted-foreground
+            hover:text-foreground
+          `}
           href="/blog"
         >
           ← Back to list
@@ -148,9 +138,9 @@ export default function AdminBlogCreatePage() {
       {error && (
         <div
           className={`
-          rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800
-          dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
-        `}
+            rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800
+            dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
+          `}
         >
           {error}
         </div>
@@ -162,7 +152,12 @@ export default function AdminBlogCreatePage() {
             <CardTitle>Post details</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="grid gap-6 sm:grid-cols-2">
+            <div
+              className={`
+              grid gap-6
+              sm:grid-cols-2
+            `}
+            >
               <div className="space-y-2">
                 <label className={labelClass} htmlFor="title">
                   Title
@@ -256,8 +251,13 @@ export default function AdminBlogCreatePage() {
                 </Button>
               </div>
               {coverImageUrl && (
-                <div className="relative mt-2 size-32 overflow-hidden rounded-md border bg-muted">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                <div
+                  className={`
+                  relative mt-2 size-32 overflow-hidden rounded-md border
+                  bg-muted
+                `}
+                >
+                  {}
                   <img
                     alt=""
                     className="size-full object-cover"
@@ -359,7 +359,8 @@ export default function AdminBlogCreatePage() {
                   `
                     inline-flex items-center justify-center rounded-md border
                     border-input bg-background px-4 py-2 text-sm font-medium
-                    transition-colors hover:bg-muted hover:text-muted-foreground
+                    transition-colors
+                    hover:bg-muted hover:text-muted-foreground
                   `,
                 )}
                 href="/blog"
@@ -372,4 +373,16 @@ export default function AdminBlogCreatePage() {
       </form>
     </div>
   );
+}
+
+function formatDateTimeLocal(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function tagsFromInput(value: string): string[] {
+  return value
+    .split(/[\n,]+/)
+    .map((t) => t.trim())
+    .filter(Boolean);
 }

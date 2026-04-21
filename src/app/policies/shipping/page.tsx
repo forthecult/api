@@ -21,9 +21,9 @@ export default function ShippingPolicyPage() {
       <header className="mb-12 border-b border-border pb-10">
         <h1
           className={`
-          text-3xl font-bold tracking-tight text-foreground
-          sm:text-4xl
-        `}
+            text-3xl font-bold tracking-tight text-foreground
+            sm:text-4xl
+          `}
         >
           Shipping policy
         </h1>
@@ -39,9 +39,9 @@ export default function ShippingPolicyPage() {
       <div className="space-y-10">
         <section
           className={`
-          rounded-lg border border-border bg-card/50 px-5 py-5
-          sm:px-6
-        `}
+            rounded-lg border border-border bg-card/50 px-5 py-5
+            sm:px-6
+          `}
         >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Processing and delivery times
@@ -57,9 +57,9 @@ export default function ShippingPolicyPage() {
 
         <section
           className={`
-          rounded-lg border border-border bg-card/50 px-5 py-5
-          sm:px-6
-        `}
+            rounded-lg border border-border bg-card/50 px-5 py-5
+            sm:px-6
+          `}
         >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Shipping costs and free shipping
@@ -74,9 +74,9 @@ export default function ShippingPolicyPage() {
 
         <section
           className={`
-          rounded-lg border border-border bg-card/50 px-5 py-5
-          sm:px-6
-        `}
+            rounded-lg border border-border bg-card/50 px-5 py-5
+            sm:px-6
+          `}
         >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Where we ship
@@ -92,9 +92,9 @@ export default function ShippingPolicyPage() {
 
         <section
           className={`
-          rounded-lg border border-border bg-card/50 px-5 py-5
-          sm:px-6
-        `}
+            rounded-lg border border-border bg-card/50 px-5 py-5
+            sm:px-6
+          `}
         >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Tracking
@@ -107,9 +107,9 @@ export default function ShippingPolicyPage() {
 
         <section
           className={`
-          rounded-lg border border-border bg-card/50 px-5 py-5
-          sm:px-6
-        `}
+            rounded-lg border border-border bg-card/50 px-5 py-5
+            sm:px-6
+          `}
         >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Returns and refunds
@@ -132,9 +132,9 @@ export default function ShippingPolicyPage() {
 
         <section
           className={`
-          rounded-lg border border-border bg-card/50 px-5 py-5
-          sm:px-6
-        `}
+            rounded-lg border border-border bg-card/50 px-5 py-5
+            sm:px-6
+          `}
         >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Questions

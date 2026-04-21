@@ -21,9 +21,9 @@ export default function PrivacyPolicyPage() {
       <header className="mb-12 border-b border-border pb-10">
         <h1
           className={`
-          text-3xl font-bold tracking-tight text-foreground
-          sm:text-4xl
-        `}
+            text-3xl font-bold tracking-tight text-foreground
+            sm:text-4xl
+          `}
         >
           Privacy policy
         </h1>
@@ -39,9 +39,9 @@ export default function PrivacyPolicyPage() {
       <div className="space-y-10">
         <section
           className={`
-          rounded-lg border border-border bg-card/50 px-5 py-5
-          sm:px-6
-        `}
+            rounded-lg border border-border bg-card/50 px-5 py-5
+            sm:px-6
+          `}
         >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Our commitment to you
@@ -57,9 +57,9 @@ export default function PrivacyPolicyPage() {
 
         <section
           className={`
-          rounded-lg border border-border bg-card/50 px-5 py-5
-          sm:px-6
-        `}
+            rounded-lg border border-border bg-card/50 px-5 py-5
+            sm:px-6
+          `}
         >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Information we collect
@@ -67,7 +67,7 @@ export default function PrivacyPolicyPage() {
           <p className="mt-3 leading-relaxed text-muted-foreground">
             We collect only what we need to provide and improve our services:
           </p>
-          <ul className="mt-3 space-y-4 text-muted-foreground" role="list">
+          <ul className="mt-3 space-y-4 text-muted-foreground">
             <li className="flex gap-2 leading-relaxed">
               <span
                 aria-hidden
@@ -119,9 +119,9 @@ export default function PrivacyPolicyPage() {
 
         <section
           className={`
-          rounded-lg border border-border bg-card/50 px-5 py-5
-          sm:px-6
-        `}
+            rounded-lg border border-border bg-card/50 px-5 py-5
+            sm:px-6
+          `}
         >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             How we use your information
@@ -137,9 +137,9 @@ export default function PrivacyPolicyPage() {
 
         <section
           className={`
-          rounded-lg border border-border bg-card/50 px-5 py-5
-          sm:px-6
-        `}
+            rounded-lg border border-border bg-card/50 px-5 py-5
+            sm:px-6
+          `}
         >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Cookies and similar technologies
@@ -169,9 +169,9 @@ export default function PrivacyPolicyPage() {
 
         <section
           className={`
-          rounded-lg border border-border bg-card/50 px-5 py-5
-          sm:px-6
-        `}
+            rounded-lg border border-border bg-card/50 px-5 py-5
+            sm:px-6
+          `}
         >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Sharing and disclosure
@@ -187,9 +187,9 @@ export default function PrivacyPolicyPage() {
 
         <section
           className={`
-          rounded-lg border border-border bg-card/50 px-5 py-5
-          sm:px-6
-        `}
+            rounded-lg border border-border bg-card/50 px-5 py-5
+            sm:px-6
+          `}
         >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Your rights and choices
@@ -208,9 +208,9 @@ export default function PrivacyPolicyPage() {
 
         <section
           className={`
-          rounded-lg border border-border bg-card/50 px-5 py-5
-          sm:px-6
-        `}
+            rounded-lg border border-border bg-card/50 px-5 py-5
+            sm:px-6
+          `}
         >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Security and retention
@@ -225,9 +225,9 @@ export default function PrivacyPolicyPage() {
 
         <section
           className={`
-          rounded-lg border border-border bg-card/50 px-5 py-5
-          sm:px-6
-        `}
+            rounded-lg border border-border bg-card/50 px-5 py-5
+            sm:px-6
+          `}
         >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Children, international use, and changes
@@ -245,9 +245,9 @@ export default function PrivacyPolicyPage() {
 
         <section
           className={`
-          rounded-lg border border-border bg-card/50 px-5 py-5
-          sm:px-6
-        `}
+            rounded-lg border border-border bg-card/50 px-5 py-5
+            sm:px-6
+          `}
         >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Contact us

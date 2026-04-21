@@ -59,17 +59,17 @@ export default async function SitemapPage() {
   return (
     <div
       className={`
-      container mx-auto max-w-7xl px-4 py-12
-      sm:px-6 sm:py-16
-      lg:px-8
-    `}
+        container mx-auto max-w-7xl px-4 py-12
+        sm:px-6 sm:py-16
+        lg:px-8
+      `}
     >
       <header className="mb-10 border-b border-border pb-8">
         <h1
           className={`
-          text-3xl font-bold tracking-tight text-foreground
-          sm:text-4xl
-        `}
+            text-3xl font-bold tracking-tight text-foreground
+            sm:text-4xl
+          `}
         >
           Sitemap
         </h1>
@@ -95,9 +95,7 @@ export default async function SitemapPage() {
             Main pages
           </h2>
           <ul
-            className={`
-            list-inside list-disc space-y-1.5 text-muted-foreground
-          `}
+            className={`list-inside list-disc space-y-1.5 text-muted-foreground`}
           >
             {STATIC_LINKS.map(({ href, label }) => (
               <li key={href}>
@@ -122,8 +120,8 @@ export default async function SitemapPage() {
             </h2>
             <ul
               className={`
-              list-inside list-disc space-y-1.5 text-muted-foreground
-            `}
+                list-inside list-disc space-y-1.5 text-muted-foreground
+              `}
             >
               {categoryLinks.map(({ href, label }) => (
                 <li key={href}>
@@ -147,9 +145,7 @@ export default async function SitemapPage() {
             Policies &amp; legal
           </h2>
           <ul
-            className={`
-            list-inside list-disc space-y-1.5 text-muted-foreground
-          `}
+            className={`list-inside list-disc space-y-1.5 text-muted-foreground`}
           >
             {POLICY_LINKS.map(({ href, label }) => (
               <li key={href}>
@@ -168,9 +164,7 @@ export default async function SitemapPage() {
         </section>
 
         <section
-          className={`
-          rounded-lg border border-border bg-muted/30 px-4 py-3
-        `}
+          className={`rounded-lg border border-border bg-muted/30 px-4 py-3`}
         >
           <p className="text-sm text-muted-foreground">
             <strong className="text-foreground">XML sitemap:</strong>{" "}

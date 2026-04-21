@@ -1,5 +1,3 @@
-import { SEO_CONFIG } from "~/app";
-
 import type { Notification } from "./notification-center";
 
 export const mockNotifications: Notification[] = [

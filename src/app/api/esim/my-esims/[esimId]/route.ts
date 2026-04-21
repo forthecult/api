@@ -4,8 +4,8 @@ import { NextResponse } from "next/server";
 import { db } from "~/db";
 import { esimOrdersTable } from "~/db/schema";
 import { getCurrentUser } from "~/lib/auth";
-import { trySyncProcessingEsimOrder } from "~/lib/esim-fulfillment";
 import { getEsimDetail, getMyEsims } from "~/lib/esim-api";
+import { trySyncProcessingEsimOrder } from "~/lib/esim-fulfillment";
 
 /**
  * GET /api/esim/my-esims/[esimId]

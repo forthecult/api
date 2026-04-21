@@ -37,7 +37,7 @@ interface SizeTable {
 /* ------------------------------------------------------------------ */
 
 /** Get the display value for a cell */
-function cellDisplay(v: MeasurementValue | undefined): string {
+function _cellDisplay(v: MeasurementValue | undefined): string {
   if (!v) return "";
   if (isRange(v))
     return v.min_value && v.max_value
@@ -222,9 +222,9 @@ export function SizeChartDataEditor({
           {tables.length === 0 ? (
             <div
               className={`
-              rounded-lg border border-dashed border-border p-6 text-center
-              text-sm text-muted-foreground
-            `}
+                rounded-lg border border-dashed border-border p-6 text-center
+                text-sm text-muted-foreground
+              `}
             >
               No size data yet.
             </div>
@@ -368,7 +368,7 @@ function SingleTableEditor({
   onRemove,
   onUpdate,
   table,
-  tableIndex,
+  tableIndex: _tableIndex,
 }: {
   canRemove: boolean;
   onRemove: () => void;
@@ -579,9 +579,9 @@ function SingleTableEditor({
             <tr className="border-b">
               <th
                 className={`
-                min-w-[140px] px-2 py-1.5 text-left font-medium
-                text-muted-foreground
-              `}
+                  min-w-[140px] px-2 py-1.5 text-left font-medium
+                  text-muted-foreground
+                `}
               >
                 Measurement
               </th>
@@ -640,9 +640,9 @@ function SingleTableEditor({
             {measurements.map((m, mIdx) => (
               <tr
                 className={`
-                border-b
-                last:border-0
-              `}
+                  border-b
+                  last:border-0
+                `}
                 key={mIdx}
               >
                 <td className="px-2 py-1">

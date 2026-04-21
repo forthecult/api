@@ -19,8 +19,8 @@ export default function CheckoutCancelledPage() {
   return (
     <div
       className={`
-      container flex min-h-[60vh] flex-col items-center justify-center py-16
-    `}
+        container flex min-h-[60vh] flex-col items-center justify-center py-16
+      `}
     >
       <Card className="w-full max-w-md">
         <CardHeader>

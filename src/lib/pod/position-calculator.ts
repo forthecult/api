@@ -25,8 +25,8 @@ export function calculatePosition(
   const maxScale = options?.maxScale ?? 1;
   const areaW = printSpec.width;
   const areaH = printSpec.height;
-  const imageAspect = imageWidth / imageHeight;
-  const areaAspect = areaW / areaH;
+  const _imageAspect = imageWidth / imageHeight;
+  const _areaAspect = areaW / areaH;
 
   let width: number;
   let height: number;
@@ -103,7 +103,6 @@ export function calculatePosition(
       scale = s;
       break;
     }
-    case "custom":
     default: {
       const scaleW = areaW / imageWidth;
       const scaleH = areaH / imageHeight;

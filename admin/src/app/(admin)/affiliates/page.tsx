@@ -109,9 +109,9 @@ export default function AdminAffiliatesPage() {
     return (
       <div
         className={`
-        rounded-lg border border-red-200 bg-red-50 p-4 text-red-800
-        dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
-      `}
+          rounded-lg border border-red-200 bg-red-50 p-4 text-red-800
+          dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
+        `}
       >
         {error}
         <Button
@@ -135,17 +135,17 @@ export default function AdminAffiliatesPage() {
       <Card>
         <CardHeader
           className={`
-          flex flex-col gap-4
-          sm:flex-row sm:items-center sm:justify-between
-        `}
+            flex flex-col gap-4
+            sm:flex-row sm:items-center sm:justify-between
+          `}
         >
           <CardTitle className="sr-only">Affiliate list</CardTitle>
           <div className="relative max-w-md flex-1">
             <Search
               className={`
-              absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2
-              text-muted-foreground
-            `}
+                absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2
+                text-muted-foreground
+              `}
             />
             <input
               aria-label="Search affiliates"
@@ -207,9 +207,9 @@ export default function AdminAffiliatesPage() {
           {loading ? (
             <div
               className={`
-              flex min-h-[200px] items-center justify-center
-              text-muted-foreground
-            `}
+                flex min-h-[200px] items-center justify-center
+                text-muted-foreground
+              `}
             >
               Loading…
             </div>
@@ -220,10 +220,10 @@ export default function AdminAffiliatesPage() {
                   <thead>
                     <tr
                       className={`
-                      border-b border-border bg-muted/50 text-left text-xs
-                      font-semibold tracking-wider text-muted-foreground
-                      uppercase
-                    `}
+                        border-b border-border bg-muted/50 text-left text-xs
+                        font-semibold tracking-wider text-muted-foreground
+                        uppercase
+                      `}
                     >
                       <th className="p-4 font-medium whitespace-nowrap">
                         Code
@@ -236,22 +236,22 @@ export default function AdminAffiliatesPage() {
                       </th>
                       <th
                         className={`
-                        p-4 text-right font-medium whitespace-nowrap
-                      `}
+                          p-4 text-right font-medium whitespace-nowrap
+                        `}
                       >
                         Conversions
                       </th>
                       <th
                         className={`
-                        p-4 text-right font-medium whitespace-nowrap
-                      `}
+                          p-4 text-right font-medium whitespace-nowrap
+                        `}
                       >
                         Earned
                       </th>
                       <th
                         className={`
-                        p-4 text-right font-medium whitespace-nowrap
-                      `}
+                          p-4 text-right font-medium whitespace-nowrap
+                        `}
                       >
                         Paid
                       </th>
@@ -260,8 +260,8 @@ export default function AdminAffiliatesPage() {
                       </th>
                       <th
                         className={`
-                        p-4 text-right font-medium whitespace-nowrap
-                      `}
+                          p-4 text-right font-medium whitespace-nowrap
+                        `}
                       >
                         Action
                       </th>
@@ -288,8 +288,8 @@ export default function AdminAffiliatesPage() {
                         >
                           <td
                             className={`
-                            p-4 font-mono font-medium whitespace-nowrap
-                          `}
+                              p-4 font-mono font-medium whitespace-nowrap
+                            `}
                           >
                             {row.code}
                           </td>
@@ -320,9 +320,9 @@ export default function AdminAffiliatesPage() {
                                 {row.userEmail && row.userName && (
                                   <span
                                     className={`
-                                    block text-xs font-normal
-                                    text-muted-foreground
-                                  `}
+                                      block text-xs font-normal
+                                      text-muted-foreground
+                                    `}
                                   >
                                     {row.userEmail}
                                   </span>
@@ -336,8 +336,8 @@ export default function AdminAffiliatesPage() {
                                 {row.userEmail && row.userName && (
                                   <span
                                     className={`
-                                    block text-xs text-muted-foreground
-                                  `}
+                                      block text-xs text-muted-foreground
+                                    `}
                                   >
                                     {row.userEmail}
                                   </span>
@@ -347,29 +347,29 @@ export default function AdminAffiliatesPage() {
                           </td>
                           <td
                             className={`
-                            p-4 text-right whitespace-nowrap tabular-nums
-                          `}
+                              p-4 text-right whitespace-nowrap tabular-nums
+                            `}
                           >
                             {row.conversionCount}
                           </td>
                           <td
                             className={`
-                            p-4 text-right whitespace-nowrap tabular-nums
-                          `}
+                              p-4 text-right whitespace-nowrap tabular-nums
+                            `}
                           >
                             {formatCents(row.totalEarnedCents)}
                           </td>
                           <td
                             className={`
-                            p-4 text-right whitespace-nowrap tabular-nums
-                          `}
+                              p-4 text-right whitespace-nowrap tabular-nums
+                            `}
                           >
                             {formatCents(row.totalPaidCents)}
                           </td>
                           <td
                             className={`
-                            p-4 whitespace-nowrap text-muted-foreground
-                          `}
+                              p-4 whitespace-nowrap text-muted-foreground
+                            `}
                           >
                             {formatDate(row.createdAt)}
                           </td>

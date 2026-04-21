@@ -19,24 +19,28 @@ import { userTable } from "../users/tables";
 export const membershipTierHistoryTable = pgTable(
   "membership_tier_history",
   {
-    /** Calendar date for this snapshot (UTC). One row per wallet per day. */
-    snapshotDate: date("snapshot_date").notNull(),
-    /** Solana wallet address. */
-    wallet: text("wallet").notNull(),
-    /** User ID when this wallet was linked (from user_wallet). Enables query by customer. */
-    userId: text("user_id").references(() => userTable.id, { onDelete: "set null" }),
-
-    /** Tier 1–3 or null if no stake / below tier 3. */
-    tier: integer("tier"),
-    /** Staked token amount (raw, with decimals). */
-    stakedAmountRaw: bigint("staked_amount_raw", { mode: "number" }).notNull().default(0),
+    createdAt: timestamp("created_at").notNull(),
     /** Lock duration in seconds (2592000 | 31536000) or null. */
     lockDurationSeconds: bigint("lock_duration_seconds", { mode: "number" }),
     /** Unix timestamp when lock expires. */
     lockedUntilTs: bigint("locked_until_ts", { mode: "number" }),
 
-    createdAt: timestamp("created_at").notNull(),
+    /** Calendar date for this snapshot (UTC). One row per wallet per day. */
+    snapshotDate: date("snapshot_date").notNull(),
+    /** Staked token amount (raw, with decimals). */
+    stakedAmountRaw: bigint("staked_amount_raw", { mode: "number" })
+      .notNull()
+      .default(0),
+    /** Tier 1–3 or null if no stake / below tier 3. */
+    tier: integer("tier"),
     updatedAt: timestamp("updated_at").notNull(),
+
+    /** User ID when this wallet was linked (from user_wallet). Enables query by customer. */
+    userId: text("user_id").references(() => userTable.id, {
+      onDelete: "set null",
+    }),
+    /** Solana wallet address. */
+    wallet: text("wallet").notNull(),
   },
   (t) => [
     primaryKey({

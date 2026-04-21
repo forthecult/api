@@ -103,8 +103,8 @@ export function TrackOrderDetailClient({
     return (
       <div
         className={`
-        flex flex-col items-center justify-center py-16 text-muted-foreground
-      `}
+          flex flex-col items-center justify-center py-16 text-muted-foreground
+        `}
       >
         <p>Loading order…</p>
       </div>
@@ -134,9 +134,9 @@ export function TrackOrderDetailClient({
     <div className="space-y-6">
       <div
         className={`
-        flex flex-col gap-4
-        sm:flex-row sm:items-center sm:justify-between
-      `}
+          flex flex-col gap-4
+          sm:flex-row sm:items-center sm:justify-between
+        `}
       >
         <h1 className="text-2xl font-semibold tracking-tight">
           Order{" "}
@@ -151,9 +151,7 @@ export function TrackOrderDetailClient({
 
       <Card>
         <CardHeader
-          className={`
-          flex flex-row items-center justify-between space-y-0 pb-2
-        `}
+          className={`flex flex-row items-center justify-between space-y-0 pb-2`}
         >
           <span className="text-sm font-medium text-muted-foreground">
             Status
@@ -316,9 +314,9 @@ export function TrackOrderDetailClient({
         Need help?{" "}
         <Link
           className={`
-          underline
-          hover:text-foreground
-        `}
+            underline
+            hover:text-foreground
+          `}
           href="/contact"
         >
           Contact us

@@ -12,46 +12,15 @@
 
 import { type NextRequest, NextResponse } from "next/server";
 
-import { getAdminAuth } from "~/lib/admin-api-auth";
 import type { PrintifyProduct } from "~/lib/printify";
+
+import { getAdminAuth } from "~/lib/admin-api-auth";
 import {
   fetchPrintifyProduct,
   getPrintifyIfConfigured,
   publishPrintifyProduct,
   updatePrintifyProduct,
 } from "~/lib/printify";
-
-/** Find option index and value id for Black if present (Background color, Color, Base colors, etc.). */
-function findBlackOption(
-  product: PrintifyProduct,
-): { optionIndex: number; blackValueId: number } | null {
-  for (let i = 0; i < (product.options?.length ?? 0); i++) {
-    const opt = product.options![i];
-    if (!opt?.values) continue;
-    for (const v of opt.values) {
-      const t = String(v.title).trim().toLowerCase();
-      if (t === "black" || t.startsWith("black "))
-        return { optionIndex: i, blackValueId: v.id };
-    }
-  }
-  return null;
-}
-
-/** Build variants payload: enable only variants that have the Black option value. */
-function variantsWithBlackOnly(product: PrintifyProduct): {
-  id: number;
-  is_enabled: boolean;
-  price: number;
-}[] | null {
-  const black = findBlackOption(product);
-  if (!black) return null;
-  const { optionIndex, blackValueId } = black;
-  return product.variants.map((v) => ({
-    id: v.id,
-    price: v.price,
-    is_enabled: v.options?.[optionIndex] === blackValueId,
-  }));
-}
 
 export async function POST(
   request: NextRequest,
@@ -79,9 +48,9 @@ export async function POST(
   }
 
   let body: {
-    imageId?: string;
     coverCanvas?: boolean;
     enableBlackBackgroundOnly?: boolean;
+    imageId?: string;
   };
   try {
     body = (await request.json()) as typeof body;
@@ -152,4 +121,38 @@ export async function POST(
     const message = err instanceof Error ? err.message : String(err);
     return NextResponse.json({ error: message }, { status: 500 });
   }
+}
+
+/** Find option index and value id for Black if present (Background color, Color, Base colors, etc.). */
+function findBlackOption(
+  product: PrintifyProduct,
+): null | { blackValueId: number; optionIndex: number } {
+  for (let i = 0; i < (product.options?.length ?? 0); i++) {
+    const opt = product.options![i];
+    if (!opt?.values) continue;
+    for (const v of opt.values) {
+      const t = String(v.title).trim().toLowerCase();
+      if (t === "black" || t.startsWith("black "))
+        return { blackValueId: v.id, optionIndex: i };
+    }
+  }
+  return null;
+}
+
+/** Build variants payload: enable only variants that have the Black option value. */
+function variantsWithBlackOnly(product: PrintifyProduct):
+  | null
+  | {
+      id: number;
+      is_enabled: boolean;
+      price: number;
+    }[] {
+  const black = findBlackOption(product);
+  if (!black) return null;
+  const { blackValueId, optionIndex } = black;
+  return product.variants.map((v) => ({
+    id: v.id,
+    is_enabled: v.options?.[optionIndex] === blackValueId,
+    price: v.price,
+  }));
 }

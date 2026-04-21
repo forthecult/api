@@ -146,7 +146,7 @@ const GalleryMedia: React.FC<GalleryMediaProps> = React.memo(
                 <Button
                   aria-label="Close preview"
                   className={`
- bg-white/80 text-gray-800 backdrop-blur-sm
+                    bg-white/80 text-gray-800 backdrop-blur-sm
                     hover:bg-white
                   `}
                   onClick={(e) => {
@@ -230,7 +230,7 @@ const GalleryMedia: React.FC<GalleryMediaProps> = React.memo(
               <Button
                 aria-label="Close preview"
                 className={`
- bg-white/80 text-gray-800 backdrop-blur-sm
+                  bg-white/80 text-gray-800 backdrop-blur-sm
                   hover:bg-white
                 `}
                 onClick={(e) => {
@@ -369,7 +369,7 @@ const GalleryMediaModal: React.FC<GalleryMediaModalProps> = ({
               aria-label="Previous media"
               className={`
                 absolute top-1/2 left-2 z-20 -translate-y-1/2 rounded-full
- bg-white/80 p-2 text-gray-800 backdrop-blur-sm
+                bg-white/80 p-2 text-gray-800 backdrop-blur-sm
                 hover:bg-white/90
               `}
               onClick={() => navigateToMediaItem("prev")}
@@ -383,7 +383,7 @@ const GalleryMediaModal: React.FC<GalleryMediaModalProps> = ({
               aria-label="Next media"
               className={`
                 absolute top-1/2 right-2 z-20 -translate-y-1/2 rounded-full
- bg-white/80 p-2 text-gray-800 backdrop-blur-sm
+                bg-white/80 p-2 text-gray-800 backdrop-blur-sm
                 hover:bg-white/90
               `}
               onClick={() => navigateToMediaItem("next")}
@@ -407,7 +407,7 @@ const GalleryMediaModal: React.FC<GalleryMediaModalProps> = ({
                 }}
                 className={`
                   relative aspect-[16/9] h-auto max-h-[70vh] w-full max-w-[95%]
- overflow-hidden rounded-lg 
+                  overflow-hidden rounded-lg
                   sm:max-w-[85%]
                   md:max-w-3xl
                 `}
@@ -463,7 +463,7 @@ const GalleryMediaModal: React.FC<GalleryMediaModalProps> = ({
           aria-label="Close gallery view"
           className={`
             absolute top-2 right-2 z-20 rounded-full bg-white/80 p-2
- text-gray-800 backdrop-blur-sm
+            text-gray-800 backdrop-blur-sm
             hover:bg-white/90
             sm:top-2.5 sm:right-2.5
             md:top-3 md:right-3
@@ -480,7 +480,7 @@ const GalleryMediaModal: React.FC<GalleryMediaModalProps> = ({
         <div
           className={`
             relative rounded-xl border border-blue-400/30 bg-sky-400/20 px-3
- py-2 backdrop-blur-xl
+            py-2 backdrop-blur-xl
           `}
         >
           <div className="flex items-center -space-x-2">
@@ -499,7 +499,7 @@ const GalleryMediaModal: React.FC<GalleryMediaModalProps> = ({
                   md:h-10 md:w-10
                   ${
                     selectedItem.id === item.id
- ? " ring-2 ring-white/70"
+                      ? "ring-2 ring-white/70"
                       : "hover:ring-2 hover:ring-white/30"
                   }
                 `}

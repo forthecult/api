@@ -42,9 +42,7 @@ export async function tryCompleteLinkByCode(options: {
   externalUserId: string;
   messagingChannelId: string;
   provider: "discord" | "slack";
-}): Promise<
-  { error: string; ok: false } | { ftcUserId: string; ok: true }
-> {
+}): Promise<{ error: string; ok: false } | { ftcUserId: string; ok: true }> {
   const code = options.code.trim().toLowerCase();
   if (!code) return { error: "empty", ok: false };
 

@@ -1,13 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  type Address,
-  formatEther,
-  formatUnits,
-  parseEther,
-  parseUnits,
-} from "viem";
+import { type Address, formatEther, formatUnits, parseEther } from "viem";
 import {
   useAccount,
   useChainId,
@@ -245,7 +239,7 @@ export function useEthPay({
           startPolling(hash);
           return false;
         }
-      } catch (err) {
+      } catch (_err) {
         // If confirm fails, start polling
         startPolling(hash);
         return false;
@@ -271,7 +265,7 @@ export function useEthPay({
         });
         try {
           await switchChainAsync({ chainId: order.chainId });
-        } catch (err) {
+        } catch (_err) {
           setPaymentStatus({
             error: "Failed to switch network",
             status: "error",

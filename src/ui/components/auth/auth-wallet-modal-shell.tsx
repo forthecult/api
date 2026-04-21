@@ -4,12 +4,8 @@ import { Loader2 } from "lucide-react";
 
 import { useSolanaReady } from "~/app/checkout/crypto/lazy-solana-wallet-provider";
 import { useWagmiReady } from "~/lib/lazy-wagmi-provider";
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-} from "~/ui/primitives/dialog";
 import { AuthWalletModal } from "~/ui/components/auth/auth-wallet-modal";
+import { Dialog, DialogContent, DialogTitle } from "~/ui/primitives/dialog";
 
 /**
  * Shell for AuthWalletModal, loaded via dynamic import.
@@ -41,9 +37,14 @@ export function AuthWalletModalShell({
   if (!isReady) {
     return (
       <Dialog onOpenChange={onOpenChange} open={open}>
-        <DialogContent className="flex min-h-[200px] items-center justify-center">
+        <DialogContent
+          className={`flex min-h-[200px] items-center justify-center`}
+        >
           <DialogTitle className="sr-only">Connect wallet</DialogTitle>
-          <Loader2 aria-hidden className="h-8 w-8 animate-spin text-muted-foreground" />
+          <Loader2
+            aria-hidden
+            className={`h-8 w-8 animate-spin text-muted-foreground`}
+          />
         </DialogContent>
       </Dialog>
     );

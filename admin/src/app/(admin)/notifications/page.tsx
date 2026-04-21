@@ -115,9 +115,9 @@ function TemplateCard({ template }: { template: Template }) {
         <div className="mb-1.5 flex items-center gap-2">
           <span
             className={`
-            inline-flex items-center rounded-md bg-primary/10 px-2 py-0.5
-            text-xs font-medium text-primary
-          `}
+              inline-flex items-center rounded-md bg-primary/10 px-2 py-0.5
+              text-xs font-medium text-primary
+            `}
           >
             Notifications
           </span>
@@ -135,10 +135,10 @@ function TemplateCard({ template }: { template: Template }) {
           <div className="mb-1.5 flex items-center gap-2">
             <span
               className={`
-              inline-flex items-center rounded-md bg-blue-500/10 px-2 py-0.5
-              text-xs font-medium text-blue-600
-              dark:text-blue-400
-            `}
+                inline-flex items-center rounded-md bg-blue-500/10 px-2 py-0.5
+                text-xs font-medium text-blue-600
+                dark:text-blue-400
+              `}
             >
               Email
             </span>
@@ -157,8 +157,8 @@ function TemplateCard({ template }: { template: Template }) {
           {template.emailBody != null && (
             <p
               className={`
-              mt-2 text-sm whitespace-pre-wrap text-muted-foreground
-            `}
+                mt-2 text-sm whitespace-pre-wrap text-muted-foreground
+              `}
             >
               {template.emailBody}
             </p>

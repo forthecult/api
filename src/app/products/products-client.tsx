@@ -272,8 +272,7 @@ export function ProductsClient({
     setProducts(initialProducts);
     setTotalPages(initialTotalPages);
     setTotal(initialTotal);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- only re-sync when page in URL changes
-  }, [initialPage]);
+  }, [initialPage, initialTotal, initialTotalPages, initialProducts]);
 
   // When search query changes (user typed), go to page 1 and refetch
   const prevSearchRef = React.useRef(initialSearch);
@@ -302,7 +301,7 @@ export function ProductsClient({
       router.push(`${path}?page=1`, { scroll: false });
       fetchProducts(1, categorySlug, sort, "", searchQuery);
     },
-    [router, fetchProducts, sort],
+    [router, fetchProducts, sort, searchQuery],
   );
 
   const handleSortChange = React.useCallback(
@@ -318,7 +317,14 @@ export function ProductsClient({
         searchQuery,
       );
     },
-    [router, selectedCategory, selectedSubcategory, fetchProducts, buildPath],
+    [
+      router,
+      selectedCategory,
+      selectedSubcategory,
+      fetchProducts,
+      buildPath,
+      searchQuery,
+    ],
   );
 
   const handleSubcategoryChange = React.useCallback(
@@ -330,7 +336,7 @@ export function ProductsClient({
       });
       fetchProducts(1, selectedCategory, sort, subSlug, searchQuery);
     },
-    [router, selectedCategory, sort, fetchProducts, buildPath],
+    [router, selectedCategory, sort, fetchProducts, buildPath, searchQuery],
   );
 
   const handleLoadMore = React.useCallback(() => {
@@ -449,23 +455,23 @@ export function ProductsClient({
     <div className="flex min-h-screen flex-col">
       <main
         className={`
-        flex-1 py-6
-        sm:py-10
-      `}
+          flex-1 py-6
+          sm:py-10
+        `}
       >
         <div
           className={`
-          mx-auto w-full max-w-7xl px-4
-          sm:px-6
-          lg:px-8
-        `}
+            mx-auto w-full max-w-7xl px-4
+            sm:px-6
+            lg:px-8
+          `}
         >
           {/* Breadcrumbs */}
           <nav aria-label="Breadcrumb" className="mb-4">
             <ol
               className={`
-              flex flex-wrap items-center gap-1 text-sm text-muted-foreground
-            `}
+                flex flex-wrap items-center gap-1 text-sm text-muted-foreground
+              `}
             >
               {breadcrumbItems.map((item, i) => {
                 const isLast = i === breadcrumbItems.length - 1;
@@ -505,17 +511,17 @@ export function ProductsClient({
           <header className="mb-6">
             <h1
               className={`
-              text-2xl font-bold tracking-tight
-              md:text-3xl
-            `}
+                text-2xl font-bold tracking-tight
+                md:text-3xl
+              `}
             >
               {title}
             </h1>
             {(categoryDescriptionFull?.trim() || description) && (
               <p
                 className={`
-                mt-1 max-w-2xl text-sm leading-relaxed text-muted-foreground
-              `}
+                  mt-1 max-w-2xl text-sm leading-relaxed text-muted-foreground
+                `}
               >
                 {categoryDescriptionFull?.trim() || description}
               </p>
@@ -525,18 +531,18 @@ export function ProductsClient({
           {/* Sticky controls bar: sort + search + active filter count */}
           <div
             className={`
-            sticky top-0 z-20 -mx-4 mb-4 border-b border-transparent
-            bg-background/95 px-4 py-2 backdrop-blur-md
-            sm:-mx-6 sm:px-6
-            lg:-mx-8 lg:px-8
-            [&:not(:first-child)]:border-border/50
-          `}
+              sticky top-0 z-20 -mx-4 mb-4 border-b border-transparent
+              bg-background/95 px-4 py-2 backdrop-blur-md
+              sm:-mx-6 sm:px-6
+              lg:-mx-8 lg:px-8
+              [&:not(:first-child)]:border-border/50
+            `}
           >
             <div
               className={`
-              flex flex-col gap-3
-              sm:flex-row sm:items-center sm:justify-between
-            `}
+                flex flex-col gap-3
+                sm:flex-row sm:items-center sm:justify-between
+              `}
             >
               <div className="flex items-center gap-2">
                 <SlidersHorizontal
@@ -603,9 +609,9 @@ export function ProductsClient({
               </div>
               <div
                 className={`
-                relative w-full
-                sm:w-64
-              `}
+                  relative w-full
+                  sm:w-64
+                `}
               >
                 <Search
                   aria-hidden
@@ -641,9 +647,9 @@ export function ProductsClient({
                 {cat.image?.trim() ? (
                   <span
                     className={`
-                    relative size-6 shrink-0 overflow-hidden rounded-full
-                    bg-white
-                  `}
+                      relative size-6 shrink-0 overflow-hidden rounded-full
+                      bg-white
+                    `}
                   >
                     <Image
                       alt=""
@@ -698,13 +704,13 @@ export function ProductsClient({
             ) : (
               <>
                 <div
-                  ref={productGridRef}
                   className={`
-                  grid grid-cols-1 gap-6
-                  sm:grid-cols-2
-                  md:grid-cols-3
-                  lg:grid-cols-4
-                `}
+                    grid grid-cols-1 gap-6
+                    sm:grid-cols-2
+                    md:grid-cols-3
+                    lg:grid-cols-4
+                  `}
+                  ref={productGridRef}
                 >
                   {products.map((product, index) => (
                     <ProductCard
@@ -725,9 +731,9 @@ export function ProductsClient({
                   <div className="py-16 text-center">
                     <div
                       className={`
-                      mx-auto mb-4 flex h-16 w-16 items-center justify-center
-                      rounded-full bg-muted
-                    `}
+                        mx-auto mb-4 flex h-16 w-16 items-center justify-center
+                        rounded-full bg-muted
+                      `}
                     >
                       <Search className="h-7 w-7 text-muted-foreground" />
                     </div>
@@ -769,8 +775,8 @@ export function ProductsClient({
                   <div className="mt-10 flex flex-col items-center gap-3">
                     <div
                       className={`
-                      flex flex-wrap items-center justify-center gap-3
-                    `}
+                        flex flex-wrap items-center justify-center gap-3
+                      `}
                     >
                       {page > 1 && (
                         <Button
@@ -794,9 +800,9 @@ export function ProductsClient({
                           {loadingMore ? (
                             <div
                               className={`
-                              h-4 w-4 animate-spin rounded-full border-2
-                              border-primary border-t-transparent
-                            `}
+                                h-4 w-4 animate-spin rounded-full border-2
+                                border-primary border-t-transparent
+                              `}
                             />
                           ) : null}
                           {loadingMore ? "Loading…" : "Load More Products"}
@@ -818,8 +824,8 @@ export function ProductsClient({
                   products.length >= total && (
                     <p
                       className={`
-                      mt-8 text-center text-sm text-muted-foreground
-                    `}
+                        mt-8 text-center text-sm text-muted-foreground
+                      `}
                     >
                       Showing all {total} products
                     </p>

@@ -1,11 +1,10 @@
+import { createId } from "@paralleldrive/cuid2";
 import { asc, eq } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 
-import { createId } from "@paralleldrive/cuid2";
-
-import { adminAuthFailureResponse, getAdminAuth } from "~/lib/admin-api-auth";
 import { db } from "~/db";
 import { aiAdminPromptTable } from "~/db/schema/ai-chat/tables";
+import { adminAuthFailureResponse, getAdminAuth } from "~/lib/admin-api-auth";
 
 export async function GET(request: NextRequest) {
   const authResult = await getAdminAuth(request);
@@ -41,11 +40,11 @@ export async function POST(request: NextRequest) {
   const now = new Date();
   await db.insert(aiAdminPromptTable).values({
     content: body.content.trim(),
+    createdAt: now,
     enabled: body.enabled ?? true,
     id,
     key: body.key.trim(),
     sortOrder: body.sortOrder ?? 0,
-    createdAt: now,
     updatedAt: now,
   });
   const row = await db

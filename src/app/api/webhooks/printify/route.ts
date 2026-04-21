@@ -44,7 +44,7 @@ interface PrintifyWebhookPayload {
  * Always returns 200 so Printify's URL validation (code 9004) succeeds when they
  * GET this URL during registration.
  */
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   console.info("[Printify webhook] GET received (validation check)");
   return NextResponse.json({
     service: "printify-webhook",

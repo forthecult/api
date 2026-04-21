@@ -1,14 +1,11 @@
 "use client";
 
-import { useSolanaConnection, useSolanaWallet } from "~/app/checkout/crypto/solana-wallet-stub";
 import {
   ArrowRight,
-  ArrowUpDown,
   CalendarDays,
   Check,
   ChevronDown,
   CreditCard,
-  Crown,
   ExternalLink,
   Globe,
   Minus,
@@ -23,24 +20,31 @@ import {
   Users,
   Wallet,
   Wifi,
-  Zap,
 } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
-import { useStakeTransaction } from "~/hooks/use-stake-transaction";
-import { listUserAccounts, refetchSession, useCurrentUser } from "~/lib/auth-client";
-import { cn } from "~/lib/cn";
 import {
-  PRELOAD_AUTH_WALLET_MODAL,
-  PRELOAD_SOLANA_WALLET,
-} from "~/ui/components/auth/auth-wallet-modal-events";
+  useSolanaConnection,
+  useSolanaWallet,
+} from "~/app/checkout/crypto/solana-wallet-stub";
+import { useStakeTransaction } from "~/hooks/use-stake-transaction";
+import {
+  listUserAccounts,
+  refetchSession,
+  useCurrentUser,
+} from "~/lib/auth-client";
+import { cn } from "~/lib/cn";
 import { LOCK_12_MONTHS, LOCK_30_DAYS } from "~/lib/cult-staking";
 import { formatEsimPackageName } from "~/lib/esim-format";
-import { formatMarketCap, formatTokens, formatTokensPrecise, formatUsd } from "~/lib/format";
+import {
+  formatMarketCap,
+  formatTokens,
+  formatTokensPrecise,
+  formatUsd,
+} from "~/lib/format";
 import { MEMBERSHIP_HOW_IT_WORKS } from "~/lib/membership-copy";
 import {
   MEMBERSHIP_BENEFIT_ROWS,
@@ -49,6 +53,10 @@ import {
   SUBSCRIPTION_ANNUAL_DISCOUNT,
   SUBSCRIPTION_PRICES,
 } from "~/lib/membership-tiers";
+import {
+  PRELOAD_AUTH_WALLET_MODAL,
+  PRELOAD_SOLANA_WALLET,
+} from "~/ui/components/auth/auth-wallet-modal-events";
 import { CultSwapBlock } from "~/ui/components/cult-swap-block";
 import { Badge } from "~/ui/primitives/badge";
 import { Button } from "~/ui/primitives/button";
@@ -59,7 +67,6 @@ import {
   CardHeader,
   CardTitle,
 } from "~/ui/primitives/card";
-import { Input } from "~/ui/primitives/input";
 import {
   Table,
   TableBody,
@@ -129,8 +136,8 @@ export function MembershipClient() {
       url.searchParams.delete("subscription");
       window.history.replaceState({}, "", url.toString());
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams.get]);
   const [selectedTier, setSelectedTier] = useState<number>(initialTier);
   const [stakeDuration, setStakeDuration] = useState<"12m" | "30d">("30d");
 
@@ -139,7 +146,9 @@ export function MembershipClient() {
   const [claimAlreadyClaimed, setClaimAlreadyClaimed] = useState(false);
   const [claimTier, setClaimTier] = useState<null | number>(null);
   /** "monthly" for 12-month membership (one per month), "staking_period" for 30-day (one per period). */
-  const [claimPeriod, setClaimPeriod] = useState<"monthly" | "staking_period">("staking_period");
+  const [claimPeriod, setClaimPeriod] = useState<"monthly" | "staking_period">(
+    "staking_period",
+  );
   const [claimPending, setClaimPending] = useState(false);
   const [claimSuccess, setClaimSuccess] = useState(false);
   const [stakerClaimPackages, setStakerClaimPackages] = useState<
@@ -161,36 +170,50 @@ export function MembershipClient() {
   >("DATA-ONLY");
   const [stakerClaimCountryId, setStakerClaimCountryId] = useState<string>("");
   const [stakerClaimRegionId, setStakerClaimRegionId] = useState<string>("");
-  const [esimCountries, setEsimCountries] = useState<{ id: number; name: string }[]>([]);
+  const [esimCountries, setEsimCountries] = useState<
+    { id: number; name: string }[]
+  >([]);
   const [esimCountriesLoading, setEsimCountriesLoading] = useState(false);
-  const [esimRegions, setEsimRegions] = useState<{ id: number; name: string }[]>([]);
+  const [esimRegions, setEsimRegions] = useState<
+    { id: number; name: string }[]
+  >([]);
   const [esimRegionsLoading, setEsimRegionsLoading] = useState(false);
 
   // Current stake (for "Your stake" + unstake)
   const [stakedBalanceDisplay, setStakedBalanceDisplay] = useState<string>("0");
   const [stakedBalanceRaw, setStakedBalanceRaw] = useState<string>("0");
-  const [memberTierFromApi, setMemberTierFromApi] = useState<null | number>(null);
+  const [memberTierFromApi, setMemberTierFromApi] = useState<null | number>(
+    null,
+  );
   /** Tier from /api/user/membership (admin grant or tier history when no wallet / no stake). */
-  const [userMembershipTier, setUserMembershipTier] = useState<null | number>(null);
+  const [userMembershipTier, setUserMembershipTier] = useState<null | number>(
+    null,
+  );
   /** Expiry of admin grant (ISO string) for "X days left" when no stake. */
-  const [membershipExpiresAt, setMembershipExpiresAt] = useState<null | string>(null);
+  const [membershipExpiresAt, setMembershipExpiresAt] = useState<null | string>(
+    null,
+  );
   /** "30d" | "1y" when tier is from admin grant; used to disable matching staking duration. */
-  const [membershipDuration, setMembershipDuration] = useState<null | "30d" | "1y">(null);
+  const [membershipDuration, setMembershipDuration] = useState<
+    "1y" | "30d" | null
+  >(null);
   /** True after first /api/user/membership response (avoids flash of unstaked UI for admin-granted users). */
   const [userMembershipFetched, setUserMembershipFetched] = useState(false);
-  const [stakedLock, setStakedLock] = useState<{
+  const [stakedLock, setStakedLock] = useState<null | {
     durationLabel: string;
     isLocked: boolean;
     lockTier?: number;
     secondsRemaining?: number;
-    unlocksAt: string | null;
     stakedAt: string;
-  } | null>(null);
-  const [stakedBalanceLoading, setStakedBalanceLoading] = useState(false);
-  const [restakeDuration, setRestakeDuration] = useState<"30d" | "12m">("30d");
+    unlocksAt: null | string;
+  }>(null);
+  const [_stakedBalanceLoading, setStakedBalanceLoading] = useState(false);
+  const [restakeDuration, setRestakeDuration] = useState<"12m" | "30d">("30d");
 
   // subscription state
-  const [subInterval, setSubInterval] = useState<"annual" | "monthly">("monthly");
+  const [subInterval, setSubInterval] = useState<"annual" | "monthly">(
+    "monthly",
+  );
   const [paymentProvider, setPaymentProvider] = useState<"paypal" | "stripe">(
     "stripe",
   );
@@ -212,7 +235,7 @@ export function MembershipClient() {
   const [pricingLoading, setPricingLoading] = useState(true);
 
   const {
-    openConnectModal,
+    openConnectModal: _openConnectModal,
     restake,
     restakePending,
     stake,
@@ -222,12 +245,15 @@ export function MembershipClient() {
     wallet: connectedWallet,
   } = useStakeTransaction();
   const { user } = useCurrentUser();
-  const { connection } = useSolanaConnection();
-  const { publicKey, sendTransaction } = useSolanaWallet();
-  
+  const { connection: _connection } = useSolanaConnection();
+  const { publicKey: _publicKey, sendTransaction: _sendTransaction } =
+    useSolanaWallet();
+
   // linked Solana wallet from user's account (for when wallet adapter isn't connected)
-  const [linkedSolanaWallet, setLinkedSolanaWallet] = useState<string | null>(null);
-  
+  const [linkedSolanaWallet, setLinkedSolanaWallet] = useState<null | string>(
+    null,
+  );
+
   // effective wallet: prefer connected wallet, fall back to linked wallet
   const wallet = connectedWallet ?? linkedSolanaWallet;
 
@@ -243,13 +269,15 @@ export function MembershipClient() {
         if (cancelled || res.error) return;
         const solana = (res.data ?? []).find(
           (a: { providerId?: string }) => a.providerId === "solana",
-        ) as { accountId: string } | undefined;
+        ) as undefined | { accountId: string };
         if (!cancelled) setLinkedSolanaWallet(solana?.accountId ?? null);
       })
       .catch(() => {
         if (!cancelled) setLinkedSolanaWallet(null);
       });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [user?.id]);
 
   // preload wallet providers on mount so they're ready when user clicks stake
@@ -264,7 +292,8 @@ export function MembershipClient() {
       refetchSession().catch(() => {});
     };
     window.addEventListener("auth-state-changed", handleAuthChange);
-    return () => window.removeEventListener("auth-state-changed", handleAuthChange);
+    return () =>
+      window.removeEventListener("auth-state-changed", handleAuthChange);
   }, []);
 
   // persist selected tier to URL so it survives component remounts
@@ -277,7 +306,6 @@ export function MembershipClient() {
     }
     window.history.replaceState({}, "", url.toString());
   }, [selectedTier]);
-
 
   /** Current tier from staked balance (1 = best, 3 = entry). Null if no stake or below tier 3. */
   const currentTierFromStake = useMemo(() => {
@@ -292,14 +320,15 @@ export function MembershipClient() {
   }, [stakedBalanceDisplay, pricingData?.pricing?.tiers]);
 
   /** Tier to show in UI: stake-based first, then staked-balance API, then /api/user/membership (admin grant / tier history). */
-  const displayTier = currentTierFromStake ?? memberTierFromApi ?? userMembershipTier;
+  const displayTier =
+    currentTierFromStake ?? memberTierFromApi ?? userMembershipTier;
 
   // when user has a current tier, show that tier's benefits (so "Your benefits" matches their membership)
   useEffect(() => {
     if (displayTier != null && selectedTier > displayTier) {
       setSelectedTier(displayTier);
     }
-  }, [displayTier]);
+  }, [displayTier, selectedTier]);
 
   // auto-select appropriate tier when upgrading: only tiers above current (use displayTier so API tier applies before pricing loads)
   useEffect(() => {
@@ -310,7 +339,6 @@ export function MembershipClient() {
       }
     }
   }, [displayTier, stakedBalanceRaw, selectedTier]);
-
 
   useEffect(() => {
     if (!wallet) {
@@ -333,8 +361,8 @@ export function MembershipClient() {
             isLocked: boolean;
             lockTier?: number;
             secondsRemaining?: number;
-            unlocksAt: string | null;
             stakedAt: string;
+            unlocksAt: null | string;
           };
           memberTier?: null | number;
           stakedBalance?: string;
@@ -401,27 +429,28 @@ export function MembershipClient() {
     fetch("/api/user/membership", { credentials: "include" })
       .then((r) => r.json())
       .then((raw: unknown) => {
-        const data = raw as {
+        const data = raw as null | {
+          membershipDuration?: "1y" | "30d";
+          membershipExpiresAt?: null | string;
           memberTier?: number;
-          membershipDuration?: "30d" | "1y";
-          membershipExpiresAt?: string | null;
-        } | null;
+        };
         if (cancelled) return;
         const t = data?.memberTier;
-          setUserMembershipTier(
-            typeof t === "number" && t >= 1 && t <= 3 ? t : null,
-          );
-          setMembershipExpiresAt(
-            typeof data?.membershipExpiresAt === "string"
-              ? data.membershipExpiresAt
-              : null,
-          );
-          setMembershipDuration(
-            data?.membershipDuration === "1y" || data?.membershipDuration === "30d"
-              ? data.membershipDuration
-              : null,
-          );
-          setUserMembershipFetched(true);
+        setUserMembershipTier(
+          typeof t === "number" && t >= 1 && t <= 3 ? t : null,
+        );
+        setMembershipExpiresAt(
+          typeof data?.membershipExpiresAt === "string"
+            ? data.membershipExpiresAt
+            : null,
+        );
+        setMembershipDuration(
+          data?.membershipDuration === "1y" ||
+            data?.membershipDuration === "30d"
+            ? data.membershipDuration
+            : null,
+        );
+        setUserMembershipFetched(true);
       })
       .catch(() => {
         if (!cancelled) {
@@ -431,7 +460,9 @@ export function MembershipClient() {
           setUserMembershipFetched(true);
         }
       });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [user?.id]);
 
   // Fetch claim status when wallet is connected
@@ -505,19 +536,28 @@ export function MembershipClient() {
 
   const handleStake = useCallback(async () => {
     // when upgrading, stake only the additional amount needed
-    const isUpgrading = currentTierFromStake != null && Number(stakedBalanceRaw) > 0;
+    const isUpgrading =
+      currentTierFromStake != null && Number(stakedBalanceRaw) > 0;
     const currentStakedAmount = Number(stakedBalanceDisplay);
-    const amountToStake = isUpgrading 
-      ? Math.max(0, stakeAmount - currentStakedAmount) 
+    const amountToStake = isUpgrading
+      ? Math.max(0, stakeAmount - currentStakedAmount)
       : stakeAmount;
-    
+
     if (amountToStake <= 0) {
       return;
     }
-    
+
     const ok = await stake(amountToStake.toString(), lockDuration);
     if (ok) refreshStakedBalance();
-  }, [stake, stakeAmount, lockDuration, refreshStakedBalance, currentTierFromStake, stakedBalanceRaw, stakedBalanceDisplay]);
+  }, [
+    stake,
+    stakeAmount,
+    lockDuration,
+    refreshStakedBalance,
+    currentTierFromStake,
+    stakedBalanceRaw,
+    stakedBalanceDisplay,
+  ]);
 
   const handleUnstake = useCallback(async () => {
     const lockTier = stakedLock?.lockTier ?? 0;
@@ -534,18 +574,15 @@ export function MembershipClient() {
     if (ok) refreshStakedBalance();
   }, [restake, stakedLock, restakeLockDuration, refreshStakedBalance]);
 
-  const formatTimeUntilUnlock = useCallback(
-    (sec: number): string => {
-      if (sec <= 0) return "Unlocked";
-      const days = Math.floor(sec / 86400);
-      const hours = Math.floor((sec % 86400) / 3600);
-      if (days > 0) return `${days} day${days === 1 ? "" : "s"} until unlock`;
-      if (hours > 0) return `${hours} hour${hours === 1 ? "" : "s"} until unlock`;
-      const mins = Math.max(1, Math.floor(sec / 60));
-      return `${mins} minute${mins === 1 ? "" : "s"} until unlock`;
-    },
-    [],
-  );
+  const formatTimeUntilUnlock = useCallback((sec: number): string => {
+    if (sec <= 0) return "Unlocked";
+    const days = Math.floor(sec / 86400);
+    const hours = Math.floor((sec % 86400) / 3600);
+    if (days > 0) return `${days} day${days === 1 ? "" : "s"} until unlock`;
+    if (hours > 0) return `${hours} hour${hours === 1 ? "" : "s"} until unlock`;
+    const mins = Math.max(1, Math.floor(sec / 60));
+    return `${mins} minute${mins === 1 ? "" : "s"} until unlock`;
+  }, []);
 
   // fetch current subscription status for logged-in users
   useEffect(() => {
@@ -573,40 +610,45 @@ export function MembershipClient() {
       .finally(() => setSubFetched(true));
   }, [user?.id]);
 
-  const handleSubscribe = useCallback(async (tierId: number) => {
-    if (!user) {
-      window.dispatchEvent(new Event(PRELOAD_AUTH_WALLET_MODAL));
-      toast.error("Sign in to subscribe");
-      return;
-    }
-    setSubPending(true);
-    try {
-      const res = await fetch("/api/subscribe/membership", {
-        body: JSON.stringify({
-          interval: subInterval,
-          provider: paymentProvider,
-          tierId,
-        }),
-        headers: { "Content-Type": "application/json" },
-        method: "POST",
-      });
-      const data = (await res.json()) as { error?: string; url?: string };
-      if (!res.ok || !data.url) {
-        toast.error(data.error ?? "Failed to start checkout");
+  const handleSubscribe = useCallback(
+    async (tierId: number) => {
+      if (!user) {
+        window.dispatchEvent(new Event(PRELOAD_AUTH_WALLET_MODAL));
+        toast.error("Sign in to subscribe");
         return;
       }
-      window.location.href = data.url;
-    } catch {
-      toast.error("Network error — please try again");
-    } finally {
-      setSubPending(false);
-    }
-  }, [paymentProvider, subInterval, user]);
+      setSubPending(true);
+      try {
+        const res = await fetch("/api/subscribe/membership", {
+          body: JSON.stringify({
+            interval: subInterval,
+            provider: paymentProvider,
+            tierId,
+          }),
+          headers: { "Content-Type": "application/json" },
+          method: "POST",
+        });
+        const data = (await res.json()) as { error?: string; url?: string };
+        if (!res.ok || !data.url) {
+          toast.error(data.error ?? "Failed to start checkout");
+          return;
+        }
+        window.location.href = data.url;
+      } catch {
+        toast.error("Network error — please try again");
+      } finally {
+        setSubPending(false);
+      }
+    },
+    [paymentProvider, subInterval, user],
+  );
 
   const handleManageSubscription = useCallback(async () => {
     setSubPending(true);
     try {
-      const res = await fetch("/api/subscription/membership/portal", { method: "POST" });
+      const res = await fetch("/api/subscription/membership/portal", {
+        method: "POST",
+      });
       const data = (await res.json()) as {
         error?: string;
         provider?: string;
@@ -627,15 +669,18 @@ export function MembershipClient() {
     }
   }, []);
 
-  const formatMembershipTimeLeft = useCallback((expiresAtIso: string): string => {
-    const end = new Date(expiresAtIso).getTime();
-    const now = Date.now();
-    const ms = Math.max(0, end - now);
-    const days = Math.floor(ms / (24 * 60 * 60 * 1000));
-    if (days < 60) return `${days} day${days === 1 ? "" : "s"} left`;
-    const months = Math.floor(days / 30);
-    return `${months} month${months === 1 ? "" : "s"} left`;
-  }, []);
+  const formatMembershipTimeLeft = useCallback(
+    (expiresAtIso: string): string => {
+      const end = new Date(expiresAtIso).getTime();
+      const now = Date.now();
+      const ms = Math.max(0, end - now);
+      const days = Math.floor(ms / (24 * 60 * 60 * 1000));
+      if (days < 60) return `${days} day${days === 1 ? "" : "s"} left`;
+      const months = Math.floor(days / 30);
+      return `${months} month${months === 1 ? "" : "s"} left`;
+    },
+    [],
+  );
 
   // Default staking duration when user has admin grant: hide matching option so they don't re-stake same period
   useEffect(() => {
@@ -652,7 +697,7 @@ export function MembershipClient() {
       fetch("/api/esim/countries")
         .then((r) => r.json())
         .then((raw: unknown) => {
-        const data = raw as {
+          const data = raw as {
             data?: { id: number; name: string }[];
             status: boolean;
           };
@@ -666,7 +711,7 @@ export function MembershipClient() {
       fetch("/api/esim/continents")
         .then((r) => r.json())
         .then((raw: unknown) => {
-        const data = raw as {
+          const data = raw as {
             data?: { id: number; name: string }[];
             status: boolean;
           };
@@ -677,11 +722,10 @@ export function MembershipClient() {
           }
         })
         .catch(() => setEsimRegions([])),
-    ])
-      .finally(() => {
-        setEsimCountriesLoading(false);
-        setEsimRegionsLoading(false);
-      });
+    ]).finally(() => {
+      setEsimCountriesLoading(false);
+      setEsimRegionsLoading(false);
+    });
   }, [claimEligible, claimAlreadyClaimed]);
 
   // Fetch 30-day eSIM packages (under $25) when eligible to claim
@@ -767,9 +811,9 @@ export function MembershipClient() {
   return (
     <div
       className={`
-      flex min-h-screen flex-col bg-gradient-to-b from-muted/50 via-background
-      to-background
-    `}
+        flex min-h-screen flex-col bg-gradient-to-b from-muted/50 via-background
+        to-background
+      `}
     >
       {/* ----------------------------------------------------------------- */}
       {/* Hero */}
@@ -787,10 +831,10 @@ export function MembershipClient() {
 
         <div
           className={`
-          relative z-10 container mx-auto max-w-7xl px-4 py-20 text-center sm:px-6 lg:px-8
-          sm:px-6 sm:py-28
-          lg:px-8 lg:py-36
-        `}
+            relative z-10 container mx-auto max-w-7xl px-4 py-20 text-center
+            sm:px-6 sm:py-28
+            lg:px-8 lg:py-36
+          `}
         >
           <Badge className="mb-6 gap-1.5 px-3 py-1" variant="secondary">
             <Sparkles className="h-3.5 w-3.5" />
@@ -799,19 +843,19 @@ export function MembershipClient() {
 
           <h1
             className={`
-            font-display text-4xl leading-tight font-bold tracking-tight
-            text-foreground
-            sm:text-5xl
-            md:text-6xl
-            lg:text-7xl
-          `}
+              font-display text-4xl leading-tight font-bold tracking-tight
+              text-foreground
+              sm:text-5xl
+              md:text-6xl
+              lg:text-7xl
+            `}
           >
             Join the{" "}
             <span
               className={`
-              bg-gradient-to-r from-primary to-primary/70 bg-clip-text
-              text-transparent
-            `}
+                bg-gradient-to-r from-primary to-primary/70 bg-clip-text
+                text-transparent
+              `}
             >
               Cult
             </span>
@@ -819,9 +863,9 @@ export function MembershipClient() {
 
           <p
             className={`
-            mx-auto mt-6 max-w-2xl text-lg text-muted-foreground
-            sm:text-xl
-          `}
+              mx-auto mt-6 max-w-2xl text-lg text-muted-foreground
+              sm:text-xl
+            `}
           >
             Stake {tokenSymbol} or subscribe with a credit card to unlock
             exclusive membership benefits. Free eSIM cards, free shipping,
@@ -832,9 +876,9 @@ export function MembershipClient() {
           {!HIDE_TOKEN_PRICE_AND_MC && pricingData && (
             <div
               className={`
-              mx-auto mt-6 flex flex-wrap items-center justify-center gap-x-6
-              gap-y-2 text-sm text-muted-foreground
-            `}
+                mx-auto mt-6 flex flex-wrap items-center justify-center gap-x-6
+                gap-y-2 text-sm text-muted-foreground
+              `}
             >
               <span>
                 <span className="font-medium text-foreground">
@@ -844,9 +888,9 @@ export function MembershipClient() {
               </span>
               <span
                 className={`
-                hidden text-border
-                sm:inline
-              `}
+                  hidden text-border
+                  sm:inline
+                `}
               >
                 |
               </span>
@@ -855,9 +899,7 @@ export function MembershipClient() {
           )}
 
           <div
-            className={`
-            mt-10 flex flex-wrap items-center justify-center gap-4
-          `}
+            className={`mt-10 flex flex-wrap items-center justify-center gap-4`}
           >
             <Button className="gap-2" onClick={scrollToTiers} size="lg">
               View Tiers
@@ -865,7 +907,11 @@ export function MembershipClient() {
             </Button>
             <Button
               className="gap-2"
-              onClick={() => document.getElementById('subscribe')?.scrollIntoView({ behavior: 'smooth' })}
+              onClick={() =>
+                document
+                  .getElementById("subscribe")
+                  ?.scrollIntoView({ behavior: "smooth" })
+              }
               size="lg"
               variant="outline"
             >
@@ -878,466 +924,622 @@ export function MembershipClient() {
 
       <div
         className={`
-        container mx-auto max-w-7xl px-4
-        sm:px-6
-        lg:px-8
-      `}
+          container mx-auto max-w-7xl px-4
+          sm:px-6
+          lg:px-8
+        `}
       >
         {/* --------------------------------------------------------------- */}
         {/* Stake & Join — below the fold, left card + right benefits */}
         {/* --------------------------------------------------------------- */}
         <section
           className={`
-          scroll-mt-20 py-16
-          md:py-20
-        `}
+            scroll-mt-20 py-16
+            md:py-20
+          `}
           id="stake-cta"
         >
           <div
             className={`
-            flex flex-col gap-8
-            md:flex-row md:gap-10
-          `}
+              flex flex-col gap-8
+              md:flex-row md:gap-10
+            `}
           >
             {/* Left: Stake card + Swap section */}
             <div
               className={`
-              flex w-full flex-col gap-6
-              md:w-1/2 md:shrink-0
-            `}
+                flex w-full flex-col gap-6
+                md:w-1/2 md:shrink-0
+              `}
             >
-            <div
-              className={`
-              overflow-hidden rounded-2xl border border-border bg-card
- 
-            `}
-            >
-              <div className="border-b bg-muted/30 px-6 py-5">
-                {/* Current membership badge - show when user has a tier (from stake or admin/tier history). Avoid showing badge until membership fetched when logged in to prevent jump. */}
-                {displayTier != null && !(user?.id && !userMembershipFetched) && (
-                  <div className="mb-4 space-y-3 rounded-xl border border-primary/20 bg-primary/5 p-3">
-                    <div className="flex items-center gap-3">
-                      {(() => {
-                        const tierData = MEMBERSHIP_TIERS.find((t) => t.id === displayTier);
-                        const TierIcon = tierData?.icon ?? Shield;
-                        const hasStake = wallet && Number(stakedBalanceRaw) > 0;
-                        return (
-                          <>
-                            <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-xl", tierData?.accentBg ?? "bg-muted")}>
-                              <TierIcon className={cn("h-5 w-5", tierData?.accent ?? "text-foreground")} />
-                            </div>
-                            <div className="flex-1">
-                              <p className="font-semibold text-foreground">
-                                Your tier: {tierData?.name ?? `Tier ${displayTier}`}
-                              </p>
-                              <p className="text-sm text-muted-foreground">
-                                {hasStake
-                                  ? `${stakedLock?.durationLabel ?? "30 days"} · ${formatTokensPrecise(Number(stakedBalanceDisplay))} ${tokenSymbol} staked${stakedLock?.isLocked && stakedLock.secondsRemaining != null && stakedLock.secondsRemaining > 0 ? ` · ${formatTimeUntilUnlock(stakedLock.secondsRemaining)}` : stakedLock && !stakedLock.isLocked ? " · Unlocked" : ""}`
-                                  : membershipExpiresAt
-                                    ? `${formatMembershipTimeLeft(membershipExpiresAt)}. Staking is optional—only if you want to lock your tier on-chain.`
-                                    : "Staking is optional—only if you want to lock your tier on-chain."}
-                              </p>
-                            </div>
-                          </>
-                        );
-                      })()}
-                    </div>
-                    {/* Restake / Unstake when lock has ended */}
-                    {wallet && Number(stakedBalanceRaw) > 0 && stakedLock && !stakedLock.isLocked && (
-                      <div className="flex flex-wrap items-center gap-2 border-t border-primary/20 pt-3">
-                        <div className="flex gap-1">
-                          <Button
-                            disabled={STAKING_SIGNUP_DISABLED}
-                            onClick={() => setRestakeDuration("30d")}
-                            size="sm"
-                            type="button"
-                            variant={restakeDuration === "30d" ? "default" : "outline"}
-                          >
-                            30 days
-                          </Button>
-                          <Button
-                            disabled={STAKING_SIGNUP_DISABLED}
-                            onClick={() => setRestakeDuration("12m")}
-                            size="sm"
-                            type="button"
-                            variant={restakeDuration === "12m" ? "default" : "outline"}
-                          >
-                            12 months
-                          </Button>
-                        </div>
-                        <Button
-                          disabled={STAKING_SIGNUP_DISABLED || restakePending}
-                          onClick={handleRestake}
-                          size="sm"
-                        >
-                          {restakePending ? "Sending…" : "Restake"}
-                        </Button>
-                        <Button
-                          disabled={unstakePending}
-                          onClick={handleUnstake}
-                          size="sm"
-                          variant="secondary"
-                        >
-                          {unstakePending ? "Sending…" : `Unstake ${formatTokensPrecise(Number(stakedBalanceDisplay))} ${tokenSymbol}`}
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                )}
-                <h2
-                  className={`
-                  font-display text-xl font-semibold text-foreground
-                  md:text-2xl
+              <div
+                className={`
+                  overflow-hidden rounded-2xl border border-border bg-card
                 `}
-                >
-                  {wallet && Number(stakedBalanceRaw) > 0
-                    ? "Upgrade Membership"
-                    : displayTier != null && !(user?.id && !userMembershipFetched)
-                      ? "Your membership"
-                      : `Stake ${tokenSymbol} & Join`}
-                </h2>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {user?.id && !userMembershipFetched
-                    ? "Loading membership…"
-                    : wallet && Number(stakedBalanceRaw) > 0 && displayTier != null
-                      ? "Stake more CULT to upgrade your tier."
-                      : displayTier != null && Number(stakedBalanceRaw) === 0
-                        ? "You're already a member. Staking is optional—only if you want to lock your tier on-chain."
-                        : displayTier != null
-                          ? "You're already a member. Stake more to upgrade your tier."
-                          : wallet
-                            ? "Select your tier and duration, then stake."
-                            : "Select your tier and duration, then connect your wallet to stake."}
-                </p>
-              </div>
-
-              <div className="space-y-5 p-6">
-                {STAKING_SIGNUP_DISABLED && (
-                  <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-center text-sm font-medium text-foreground">
-                    Membership signup will be available shortly.
-                  </div>
-                )}
-                {/* When wallet connected but no stake (or no wallet): message depends on whether they already have a tier. Wait for membership fetch when logged in to avoid flash. */}
-                {wallet && Number(stakedBalanceRaw) === 0 && displayTier == null && !(user?.id && !userMembershipFetched) && (
-                  <p className="text-sm text-muted-foreground">
-                    You have no staked balance. Stake below to join.
-                  </p>
-                )}
-                {!wallet && displayTier != null && (
-                  <p className="text-sm text-muted-foreground">
-                    You're a {MEMBERSHIP_TIERS.find((t) => t.id === displayTier)?.name ?? `Tier ${displayTier}`} member. Connect your wallet only if you want to stake and lock your tier on-chain (optional).
-                  </p>
-                )}
-
-                {/* Inline tier selector — when user has a tier, only show that tier (lock in) and higher (upgrade). No BASE/PRIME signup when already APEX. */}
-                {(() => {
-                  const availableTiers = MEMBERSHIP_TIERS.filter((tier) => {
-                    if (displayTier == null) return true;
-                    return tier.id <= displayTier;
-                  });
-
-                  if (availableTiers.length === 0) return null;
-
-                  return (
-                    <div>
-                      <p className="mb-2 text-sm font-medium text-foreground">
-                        {displayTier != null && Number(stakedBalanceRaw) > 0
-                          ? "Upgrade to"
-                          : displayTier != null
-                            ? "Optional: stake to lock in on-chain"
-                            : "Tier"}
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        {availableTiers.map((tier) => {
-                          const Icon = tier.icon;
-                          const isSelected = selectedTier === tier.id;
-                          return (
-                            <button
-                              className={cn(
-                                `
-                                  flex items-center gap-1.5 rounded-lg border-2 px-3
-                                  py-2 text-sm font-medium transition-all
-                                `,
-                                isSelected
-                                  ? "border-primary bg-primary/10 text-primary"
-                                  : `
-                                    border-border bg-background
-                                    text-muted-foreground
-                                    hover:border-muted-foreground/40
-                                    hover:text-foreground
-                                  `,
-                              )}
-                              key={tier.id}
-                              onClick={() => setSelectedTier(tier.id)}
-                              type="button"
-                            >
-                              <Icon className="h-4 w-4" />
-                              {tier.name}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })()}
-
-                {/* When already at selected tier (e.g. BASE with BASE selected), hide stake form — no option to "stake again" */}
-                {(() => {
-                  const isUpgrading = currentTierFromStake != null && Number(stakedBalanceRaw) > 0;
-                  const alreadyAtSelectedTier = isUpgrading && selectedTier >= currentTierFromStake;
-                  if (alreadyAtSelectedTier) {
-                    return (
-                      <div className="rounded-xl border border-border/50 bg-muted/20 px-4 py-3 text-center text-sm text-muted-foreground">
-                        You're at {MEMBERSHIP_TIERS.find((t) => t.id === currentTierFromStake)?.name ?? `Tier ${currentTierFromStake}`}. Choose a higher tier above to upgrade.
-                      </div>
-                    );
-                  }
-                  return null;
-                })()}
-
-                {/* Duration - always show both options when upgrading (hidden when already at selected tier) */}
-                {!(currentTierFromStake != null && Number(stakedBalanceRaw) > 0 && selectedTier >= currentTierFromStake) && (() => {
-                  const hasLockedStake = stakedLock?.isLocked && Number(stakedBalanceRaw) > 0;
-                  const currentLockTier = stakedLock?.lockTier; // 0 = 30 days, 1 = 12 months
-                  const isUpgrading = currentTierFromStake != null && Number(stakedBalanceRaw) > 0;
-                  
-                  // if user has a locked 12-month stake, they're at max duration - hide selector
-                  if (hasLockedStake && currentLockTier === 1) {
-                    return (
-                      <div className="rounded-xl border border-border/50 bg-muted/20 px-4 py-3">
-                        <p className="text-sm text-muted-foreground">
-                          You have an active 12-month membership. Additional stakes will also be locked for 12 months.
-                        </p>
-                      </div>
-                    );
-                  }
-
-                  const show30Days = membershipDuration !== "30d";
-                  const show12Months = membershipDuration !== "1y";
-                  
-                  return (
-                    <div>
-                      <p className="mb-2 text-sm font-medium text-foreground">
-                        Staking Duration
-                      </p>
-                      {hasLockedStake && currentLockTier === 0 && isUpgrading && (
-                        <p className="mb-2 text-xs text-muted-foreground">
-                          New tokens will be added to a separate stake position.
-                        </p>
-                      )}
-                      <div className={cn("grid gap-2", show30Days && show12Months ? "grid-cols-2" : "grid-cols-1")}>
-                        {show30Days && (
-                          <button
-                            className={cn(
-                              `
-                                rounded-lg border-2 px-3 py-2.5 text-left text-sm
-                                transition-all
-                              `,
-                              stakeDuration === "30d"
-                                ? "border-primary bg-primary/5"
-                                : `
-                                  border-border
-                                  hover:border-muted-foreground/30
-                                `,
-                            )}
-                            onClick={() => setStakeDuration("30d")}
-                            type="button"
-                          >
-                            <span className="font-semibold">30 Days</span>
-                            <span className="block text-sm text-muted-foreground">
-                              Minimum period
-                            </span>
-                          </button>
-                        )}
-                        {show12Months && (
-                          <button
-                            className={cn(
-                              `
-                                relative rounded-lg border-2 px-3 py-2.5 text-left
-                                text-sm transition-all
-                              `,
-                              stakeDuration === "12m"
-                                ? "border-primary bg-primary/5"
-                                : `
-                                  border-border
-                                  hover:border-muted-foreground/30
-                                `,
-                            )}
-                            onClick={() => setStakeDuration("12m")}
-                            type="button"
-                          >
-                            <Badge
-                              className={`
-                              absolute -top-1.5 right-1.5 bg-chart-1 text-[10px]
-                              text-white
-                            `}
-                            >
-                              Best Value
-                            </Badge>
-                            <span className="font-semibold">12 Months</span>
-                            <span className="block text-sm text-muted-foreground">
-                              eSIM benefits for 14 months
-                            </span>
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })()}
-
-                {/* Summary - show different info based on whether upgrading or joining (hidden when already at selected tier) */}
-                {!(currentTierFromStake != null && Number(stakedBalanceRaw) > 0 && selectedTier >= currentTierFromStake) && (() => {
-                  const isUpgrading = currentTierFromStake != null && Number(stakedBalanceRaw) > 0;
-                  const currentStakedAmount = Number(stakedBalanceDisplay);
-                  const additionalNeeded = isUpgrading 
-                    ? Math.max(0, stakeAmount - currentStakedAmount) 
-                    : stakeAmount;
-                  
-                  return (
-                    <div className="space-y-2 rounded-xl bg-muted/30 p-4">
-                      {isUpgrading ? (
-                        <>
-                          <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">
-                              {MEMBERSHIP_TIERS.find((t) => t.id === selectedTier)?.name} requires
-                            </span>
-                            <span className="font-medium tabular-nums">
-                              {formatTokensPrecise(stakeAmount)} {tokenSymbol}
-                            </span>
-                          </div>
-                          <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">
-                              You already have
-                            </span>
-                            <span className="font-medium tabular-nums">
-                              {formatTokensPrecise(currentStakedAmount)} {tokenSymbol}
-                            </span>
-                          </div>
-                          <div className="flex justify-between text-sm border-t pt-2">
-                            <span className="text-foreground font-medium">
-                              Additional tokens needed
-                            </span>
-                            <span className="font-semibold tabular-nums text-foreground">
-                              {formatTokensPrecise(additionalNeeded)} {tokenSymbol}
-                            </span>
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">
-                              Tokens to Stake
-                            </span>
-                            <span className="font-semibold tabular-nums">
-                              {formatTokensPrecise(stakeAmount)} {tokenSymbol}
-                            </span>
-                          </div>
-                          <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">Lock Duration</span>
-                            <span className="font-medium">
-                              {stakeDuration === "30d" ? "30 days" : "12 months"}
-                            </span>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  );
-                })()}
-
-                {/* Upsell to next tier - only show if not already upgrading to max tier (hidden when already at selected tier) */}
-                {!(currentTierFromStake != null && Number(stakedBalanceRaw) > 0 && selectedTier >= currentTierFromStake) && selectedTier > 1 && !(currentTierFromStake != null && selectedTier <= currentTierFromStake) &&
-                  (() => {
-                    const nextTierPrice = tierPriceMap[selectedTier - 1];
-                    const extraUsd = nextTierPrice
-                      ? nextTierPrice.costUsd -
-                        (selectedTierPrice?.costUsd ?? 0)
-                      : 0;
-                    const extraTokens = nextTierPrice
-                      ? nextTierPrice.tokensNeeded - stakeAmount
-                      : 0;
-                    return (
+              >
+                <div className="border-b bg-muted/30 px-6 py-5">
+                  {/* Current membership badge - show when user has a tier (from stake or admin/tier history). Avoid showing badge until membership fetched when logged in to prevent jump. */}
+                  {displayTier != null &&
+                    !(user?.id && !userMembershipFetched) && (
                       <div
                         className={`
-                        flex items-start gap-2 rounded-lg border
-                        border-primary/20 bg-primary/5 p-3
-                      `}
-                      >
-                        <TrendingUp
-                          className={`
-                          mt-0.5 h-4 w-4 shrink-0 text-primary
+                          mb-4 space-y-3 rounded-xl border border-primary/20
+                          bg-primary/5 p-3
                         `}
-                        />
-                        <p className="text-sm font-medium text-foreground">
-                          {extraUsd > 0
-                            ? `Stake ${formatUsd(extraUsd)} (≈${formatTokensPrecise(extraTokens)} ${tokenSymbol}) more for `
-                            : "Upgrade to "}
-                          {
-                            MEMBERSHIP_TIERS.find(
-                              (t) => t.id === selectedTier - 1,
-                            )?.name
-                          }
-                          {" — "}
-                          {
-                            MEMBERSHIP_TIERS.find(
-                              (t) => t.id === selectedTier - 1,
-                            )?.benefits.esimDetail
-                          }
-                          {" and "}
-                          {MEMBERSHIP_TIERS.find(
-                            (t) => t.id === selectedTier - 1,
-                          )?.benefits.shippingDetail.toLowerCase()}
-                          .
+                      >
+                        <div className="flex items-center gap-3">
+                          {(() => {
+                            const tierData = MEMBERSHIP_TIERS.find(
+                              (t) => t.id === displayTier,
+                            );
+                            const TierIcon = tierData?.icon ?? Shield;
+                            const hasStake =
+                              wallet && Number(stakedBalanceRaw) > 0;
+                            return (
+                              <>
+                                <div
+                                  className={cn(
+                                    `
+                                      flex h-10 w-10 shrink-0 items-center
+                                      justify-center rounded-xl
+                                    `,
+                                    tierData?.accentBg ?? `bg-muted`,
+                                  )}
+                                >
+                                  <TierIcon
+                                    className={cn(
+                                      "h-5 w-5",
+                                      tierData?.accent ?? `text-foreground`,
+                                    )}
+                                  />
+                                </div>
+                                <div className="flex-1">
+                                  <p className="font-semibold text-foreground">
+                                    Your tier:{" "}
+                                    {tierData?.name ?? `Tier ${displayTier}`}
+                                  </p>
+                                  <p className="text-sm text-muted-foreground">
+                                    {hasStake
+                                      ? `${stakedLock?.durationLabel ?? "30 days"} · ${formatTokensPrecise(Number(stakedBalanceDisplay))} ${tokenSymbol} staked${stakedLock?.isLocked && stakedLock.secondsRemaining != null && stakedLock.secondsRemaining > 0 ? ` · ${formatTimeUntilUnlock(stakedLock.secondsRemaining)}` : stakedLock && !stakedLock.isLocked ? " · Unlocked" : ""}`
+                                      : membershipExpiresAt
+                                        ? `${formatMembershipTimeLeft(membershipExpiresAt)}. Staking is optional—only if you want to lock your tier on-chain.`
+                                        : "Staking is optional—only if you want to lock your tier on-chain."}
+                                  </p>
+                                </div>
+                              </>
+                            );
+                          })()}
+                        </div>
+                        {/* Restake / Unstake when lock has ended */}
+                        {wallet &&
+                          Number(stakedBalanceRaw) > 0 &&
+                          stakedLock &&
+                          !stakedLock.isLocked && (
+                            <div
+                              className={`
+                                flex flex-wrap items-center gap-2 border-t
+                                border-primary/20 pt-3
+                              `}
+                            >
+                              <div className="flex gap-1">
+                                <Button
+                                  disabled={STAKING_SIGNUP_DISABLED}
+                                  onClick={() => setRestakeDuration("30d")}
+                                  size="sm"
+                                  type="button"
+                                  variant={
+                                    restakeDuration === "30d"
+                                      ? "default"
+                                      : "outline"
+                                  }
+                                >
+                                  30 days
+                                </Button>
+                                <Button
+                                  disabled={STAKING_SIGNUP_DISABLED}
+                                  onClick={() => setRestakeDuration("12m")}
+                                  size="sm"
+                                  type="button"
+                                  variant={
+                                    restakeDuration === "12m"
+                                      ? "default"
+                                      : "outline"
+                                  }
+                                >
+                                  12 months
+                                </Button>
+                              </div>
+                              <Button
+                                disabled={
+                                  STAKING_SIGNUP_DISABLED || restakePending
+                                }
+                                onClick={handleRestake}
+                                size="sm"
+                              >
+                                {restakePending ? "Sending…" : "Restake"}
+                              </Button>
+                              <Button
+                                disabled={unstakePending}
+                                onClick={handleUnstake}
+                                size="sm"
+                                variant="secondary"
+                              >
+                                {unstakePending
+                                  ? "Sending…"
+                                  : `Unstake ${formatTokensPrecise(Number(stakedBalanceDisplay))} ${tokenSymbol}`}
+                              </Button>
+                            </div>
+                          )}
+                      </div>
+                    )}
+                  <h2
+                    className={`
+                      font-display text-xl font-semibold text-foreground
+                      md:text-2xl
+                    `}
+                  >
+                    {wallet && Number(stakedBalanceRaw) > 0
+                      ? "Upgrade Membership"
+                      : displayTier != null &&
+                          !(user?.id && !userMembershipFetched)
+                        ? "Your membership"
+                        : `Stake ${tokenSymbol} & Join`}
+                  </h2>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {user?.id && !userMembershipFetched
+                      ? "Loading membership…"
+                      : wallet &&
+                          Number(stakedBalanceRaw) > 0 &&
+                          displayTier != null
+                        ? "Stake more CULT to upgrade your tier."
+                        : displayTier != null && Number(stakedBalanceRaw) === 0
+                          ? "You're already a member. Staking is optional—only if you want to lock your tier on-chain."
+                          : displayTier != null
+                            ? "You're already a member. Stake more to upgrade your tier."
+                            : wallet
+                              ? "Select your tier and duration, then stake."
+                              : "Select your tier and duration, then connect your wallet to stake."}
+                  </p>
+                </div>
+
+                <div className="space-y-5 p-6">
+                  {STAKING_SIGNUP_DISABLED && (
+                    <div
+                      className={`
+                        rounded-xl border border-amber-500/40 bg-amber-500/10
+                        px-4 py-3 text-center text-sm font-medium
+                        text-foreground
+                      `}
+                    >
+                      Membership signup will be available shortly.
+                    </div>
+                  )}
+                  {/* When wallet connected but no stake (or no wallet): message depends on whether they already have a tier. Wait for membership fetch when logged in to avoid flash. */}
+                  {wallet &&
+                    Number(stakedBalanceRaw) === 0 &&
+                    displayTier == null &&
+                    !(user?.id && !userMembershipFetched) && (
+                      <p className="text-sm text-muted-foreground">
+                        You have no staked balance. Stake below to join.
+                      </p>
+                    )}
+                  {!wallet && displayTier != null && (
+                    <p className="text-sm text-muted-foreground">
+                      You're a{" "}
+                      {MEMBERSHIP_TIERS.find((t) => t.id === displayTier)
+                        ?.name ?? `Tier ${displayTier}`}{" "}
+                      member. Connect your wallet only if you want to stake and
+                      lock your tier on-chain (optional).
+                    </p>
+                  )}
+
+                  {/* Inline tier selector — when user has a tier, only show that tier (lock in) and higher (upgrade). No BASE/PRIME signup when already APEX. */}
+                  {(() => {
+                    const availableTiers = MEMBERSHIP_TIERS.filter((tier) => {
+                      if (displayTier == null) return true;
+                      return tier.id <= displayTier;
+                    });
+
+                    if (availableTiers.length === 0) return null;
+
+                    return (
+                      <div>
+                        <p className="mb-2 text-sm font-medium text-foreground">
+                          {displayTier != null && Number(stakedBalanceRaw) > 0
+                            ? "Upgrade to"
+                            : displayTier != null
+                              ? "Optional: stake to lock in on-chain"
+                              : "Tier"}
                         </p>
+                        <div className="flex flex-wrap gap-2">
+                          {availableTiers.map((tier) => {
+                            const Icon = tier.icon;
+                            const isSelected = selectedTier === tier.id;
+                            return (
+                              <button
+                                className={cn(
+                                  `
+                                    flex items-center gap-1.5 rounded-lg
+                                    border-2 px-3 py-2 text-sm font-medium
+                                    transition-all
+                                  `,
+                                  isSelected
+                                    ? `
+                                      border-primary bg-primary/10 text-primary
+                                    `
+                                    : `
+                                      border-border bg-background
+                                      text-muted-foreground
+                                      hover:border-muted-foreground/40
+                                      hover:text-foreground
+                                    `,
+                                )}
+                                key={tier.id}
+                                onClick={() => setSelectedTier(tier.id)}
+                                type="button"
+                              >
+                                <Icon className="h-4 w-4" />
+                                {tier.name}
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
                     );
                   })()}
 
-                {/* Main action button - hidden when already at selected tier (no "stake again" option) */}
-                {!(currentTierFromStake != null && Number(stakedBalanceRaw) > 0 && selectedTier >= currentTierFromStake) && (() => {
-                  const isUpgrading = currentTierFromStake != null && Number(stakedBalanceRaw) > 0;
-                  const currentStakedAmount = Number(stakedBalanceDisplay);
-                  const additionalNeeded = isUpgrading 
-                    ? Math.max(0, stakeAmount - currentStakedAmount) 
-                    : stakeAmount;
-                  
-                  return (
-                    <Button
-                      className="w-full gap-2 text-base"
-                      disabled={STAKING_AVAILABLE_NEXT_HOUR || STAKING_SIGNUP_DISABLED || stakePending || additionalNeeded <= 0}
-                      onClick={handleStake}
-                      size="lg"
-                    >
-                      <Wallet className="h-5 w-5" />
-                      {STAKING_AVAILABLE_NEXT_HOUR
-                        ? "Staking will be available soon"
-                        : STAKING_SIGNUP_DISABLED
-                        ? "Membership signup will be available shortly"
-                        : stakePending
-                          ? "Preparing transaction…"
-                          : additionalNeeded <= 0
-                          ? "No additional stake needed"
-                          : wallet
-                            ? isUpgrading 
-                              ? `Stake ${formatTokensPrecise(additionalNeeded)} ${tokenSymbol} to upgrade`
-                              : `Stake ${formatTokensPrecise(stakeAmount)} ${tokenSymbol}`
-                            : "Connect Wallet & Stake"}
-                    </Button>
-                  );
-                })()}
-                <p className="text-center text-sm text-muted-foreground">
-                  Your tokens remain yours. They are locked in a smart contract
-                  and returned to your wallet when you unstake.
-                </p>
+                  {/* When already at selected tier (e.g. BASE with BASE selected), hide stake form — no option to "stake again" */}
+                  {(() => {
+                    const isUpgrading =
+                      currentTierFromStake != null &&
+                      Number(stakedBalanceRaw) > 0;
+                    const alreadyAtSelectedTier =
+                      isUpgrading && selectedTier >= currentTierFromStake;
+                    if (alreadyAtSelectedTier) {
+                      return (
+                        <div
+                          className={`
+                            rounded-xl border border-border/50 bg-muted/20 px-4
+                            py-3 text-center text-sm text-muted-foreground
+                          `}
+                        >
+                          You're at{" "}
+                          {MEMBERSHIP_TIERS.find(
+                            (t) => t.id === currentTierFromStake,
+                          )?.name ?? `Tier ${currentTierFromStake}`}
+                          . Choose a higher tier above to upgrade.
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
+
+                  {/* Duration - always show both options when upgrading (hidden when already at selected tier) */}
+                  {!(
+                    currentTierFromStake != null &&
+                    Number(stakedBalanceRaw) > 0 &&
+                    selectedTier >= currentTierFromStake
+                  ) &&
+                    (() => {
+                      const hasLockedStake =
+                        stakedLock?.isLocked && Number(stakedBalanceRaw) > 0;
+                      const currentLockTier = stakedLock?.lockTier; // 0 = 30 days, 1 = 12 months
+                      const isUpgrading =
+                        currentTierFromStake != null &&
+                        Number(stakedBalanceRaw) > 0;
+
+                      // if user has a locked 12-month stake, they're at max duration - hide selector
+                      if (hasLockedStake && currentLockTier === 1) {
+                        return (
+                          <div
+                            className={`
+                              rounded-xl border border-border/50 bg-muted/20
+                              px-4 py-3
+                            `}
+                          >
+                            <p className="text-sm text-muted-foreground">
+                              You have an active 12-month membership. Additional
+                              stakes will also be locked for 12 months.
+                            </p>
+                          </div>
+                        );
+                      }
+
+                      const show30Days = membershipDuration !== "30d";
+                      const show12Months = membershipDuration !== "1y";
+
+                      return (
+                        <div>
+                          <p
+                            className={`
+                              mb-2 text-sm font-medium text-foreground
+                            `}
+                          >
+                            Staking Duration
+                          </p>
+                          {hasLockedStake &&
+                            currentLockTier === 0 &&
+                            isUpgrading && (
+                              <p className="mb-2 text-xs text-muted-foreground">
+                                New tokens will be added to a separate stake
+                                position.
+                              </p>
+                            )}
+                          <div
+                            className={cn(
+                              "grid gap-2",
+                              show30Days && show12Months
+                                ? `grid-cols-2`
+                                : `grid-cols-1`,
+                            )}
+                          >
+                            {show30Days && (
+                              <button
+                                className={cn(
+                                  `
+                                    rounded-lg border-2 px-3 py-2.5 text-left
+                                    text-sm transition-all
+                                  `,
+                                  stakeDuration === "30d"
+                                    ? "border-primary bg-primary/5"
+                                    : `
+                                      border-border
+                                      hover:border-muted-foreground/30
+                                    `,
+                                )}
+                                onClick={() => setStakeDuration("30d")}
+                                type="button"
+                              >
+                                <span className="font-semibold">30 Days</span>
+                                <span
+                                  className={`
+                                    block text-sm text-muted-foreground
+                                  `}
+                                >
+                                  Minimum period
+                                </span>
+                              </button>
+                            )}
+                            {show12Months && (
+                              <button
+                                className={cn(
+                                  `
+                                    relative rounded-lg border-2 px-3 py-2.5
+                                    text-left text-sm transition-all
+                                  `,
+                                  stakeDuration === "12m"
+                                    ? "border-primary bg-primary/5"
+                                    : `
+                                      border-border
+                                      hover:border-muted-foreground/30
+                                    `,
+                                )}
+                                onClick={() => setStakeDuration("12m")}
+                                type="button"
+                              >
+                                <Badge
+                                  className={`
+                                    absolute -top-1.5 right-1.5 bg-chart-1
+                                    text-[10px] text-white
+                                  `}
+                                >
+                                  Best Value
+                                </Badge>
+                                <span className="font-semibold">12 Months</span>
+                                <span
+                                  className={`
+                                    block text-sm text-muted-foreground
+                                  `}
+                                >
+                                  eSIM benefits for 14 months
+                                </span>
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                  {/* Summary - show different info based on whether upgrading or joining (hidden when already at selected tier) */}
+                  {!(
+                    currentTierFromStake != null &&
+                    Number(stakedBalanceRaw) > 0 &&
+                    selectedTier >= currentTierFromStake
+                  ) &&
+                    (() => {
+                      const isUpgrading =
+                        currentTierFromStake != null &&
+                        Number(stakedBalanceRaw) > 0;
+                      const currentStakedAmount = Number(stakedBalanceDisplay);
+                      const additionalNeeded = isUpgrading
+                        ? Math.max(0, stakeAmount - currentStakedAmount)
+                        : stakeAmount;
+
+                      return (
+                        <div className="space-y-2 rounded-xl bg-muted/30 p-4">
+                          {isUpgrading ? (
+                            <>
+                              <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">
+                                  {
+                                    MEMBERSHIP_TIERS.find(
+                                      (t) => t.id === selectedTier,
+                                    )?.name
+                                  }{" "}
+                                  requires
+                                </span>
+                                <span className="font-medium tabular-nums">
+                                  {formatTokensPrecise(stakeAmount)}{" "}
+                                  {tokenSymbol}
+                                </span>
+                              </div>
+                              <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">
+                                  You already have
+                                </span>
+                                <span className="font-medium tabular-nums">
+                                  {formatTokensPrecise(currentStakedAmount)}{" "}
+                                  {tokenSymbol}
+                                </span>
+                              </div>
+                              <div
+                                className={`
+                                  flex justify-between border-t pt-2 text-sm
+                                `}
+                              >
+                                <span className="font-medium text-foreground">
+                                  Additional tokens needed
+                                </span>
+                                <span
+                                  className={`
+                                    font-semibold text-foreground tabular-nums
+                                  `}
+                                >
+                                  {formatTokensPrecise(additionalNeeded)}{" "}
+                                  {tokenSymbol}
+                                </span>
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">
+                                  Tokens to Stake
+                                </span>
+                                <span className="font-semibold tabular-nums">
+                                  {formatTokensPrecise(stakeAmount)}{" "}
+                                  {tokenSymbol}
+                                </span>
+                              </div>
+                              <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">
+                                  Lock Duration
+                                </span>
+                                <span className="font-medium">
+                                  {stakeDuration === "30d"
+                                    ? "30 days"
+                                    : "12 months"}
+                                </span>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      );
+                    })()}
+
+                  {/* Upsell to next tier - only show if not already upgrading to max tier (hidden when already at selected tier) */}
+                  {!(
+                    currentTierFromStake != null &&
+                    Number(stakedBalanceRaw) > 0 &&
+                    selectedTier >= currentTierFromStake
+                  ) &&
+                    selectedTier > 1 &&
+                    !(
+                      currentTierFromStake != null &&
+                      selectedTier <= currentTierFromStake
+                    ) &&
+                    (() => {
+                      const nextTierPrice = tierPriceMap[selectedTier - 1];
+                      const extraUsd = nextTierPrice
+                        ? nextTierPrice.costUsd -
+                          (selectedTierPrice?.costUsd ?? 0)
+                        : 0;
+                      const extraTokens = nextTierPrice
+                        ? nextTierPrice.tokensNeeded - stakeAmount
+                        : 0;
+                      return (
+                        <div
+                          className={`
+                            flex items-start gap-2 rounded-lg border
+                            border-primary/20 bg-primary/5 p-3
+                          `}
+                        >
+                          <TrendingUp
+                            className={`mt-0.5 h-4 w-4 shrink-0 text-primary`}
+                          />
+                          <p className="text-sm font-medium text-foreground">
+                            {extraUsd > 0
+                              ? `Stake ${formatUsd(extraUsd)} (≈${formatTokensPrecise(extraTokens)} ${tokenSymbol}) more for `
+                              : "Upgrade to "}
+                            {
+                              MEMBERSHIP_TIERS.find(
+                                (t) => t.id === selectedTier - 1,
+                              )?.name
+                            }
+                            {" — "}
+                            {
+                              MEMBERSHIP_TIERS.find(
+                                (t) => t.id === selectedTier - 1,
+                              )?.benefits.esimDetail
+                            }
+                            {" and "}
+                            {MEMBERSHIP_TIERS.find(
+                              (t) => t.id === selectedTier - 1,
+                            )?.benefits.shippingDetail.toLowerCase()}
+                            .
+                          </p>
+                        </div>
+                      );
+                    })()}
+
+                  {/* Main action button - hidden when already at selected tier (no "stake again" option) */}
+                  {!(
+                    currentTierFromStake != null &&
+                    Number(stakedBalanceRaw) > 0 &&
+                    selectedTier >= currentTierFromStake
+                  ) &&
+                    (() => {
+                      const isUpgrading =
+                        currentTierFromStake != null &&
+                        Number(stakedBalanceRaw) > 0;
+                      const currentStakedAmount = Number(stakedBalanceDisplay);
+                      const additionalNeeded = isUpgrading
+                        ? Math.max(0, stakeAmount - currentStakedAmount)
+                        : stakeAmount;
+
+                      return (
+                        <Button
+                          className="w-full gap-2 text-base"
+                          disabled={
+                            STAKING_AVAILABLE_NEXT_HOUR ||
+                            STAKING_SIGNUP_DISABLED ||
+                            stakePending ||
+                            additionalNeeded <= 0
+                          }
+                          onClick={handleStake}
+                          size="lg"
+                        >
+                          <Wallet className="h-5 w-5" />
+                          {STAKING_AVAILABLE_NEXT_HOUR
+                            ? "Staking will be available soon"
+                            : STAKING_SIGNUP_DISABLED
+                              ? "Membership signup will be available shortly"
+                              : stakePending
+                                ? "Preparing transaction…"
+                                : additionalNeeded <= 0
+                                  ? "No additional stake needed"
+                                  : wallet
+                                    ? isUpgrading
+                                      ? `Stake ${formatTokensPrecise(additionalNeeded)} ${tokenSymbol} to upgrade`
+                                      : `Stake ${formatTokensPrecise(stakeAmount)} ${tokenSymbol}`
+                                    : "Connect Wallet & Stake"}
+                        </Button>
+                      );
+                    })()}
+                  <p className="text-center text-sm text-muted-foreground">
+                    Your tokens remain yours. They are locked in a smart
+                    contract and returned to your wallet when you unstake.
+                  </p>
+                </div>
               </div>
-            </div>
             </div>
 
             {/* Right: Benefits for selected tier */}
             <div className="flex min-w-0 flex-1 flex-col">
               <h3
                 className={`
-                font-display mb-4 text-lg font-semibold text-foreground
-              `}
+                  font-display mb-4 text-lg font-semibold text-foreground
+                `}
               >
                 Your benefits
               </h3>
@@ -1354,16 +1556,16 @@ export function MembershipClient() {
                 {/* eSIM graphic */}
                 <div
                   className={`
-                  mb-5 flex items-center justify-center rounded-xl border
-                  border-border/60 bg-muted/30 py-6
-                `}
+                    mb-5 flex items-center justify-center rounded-xl border
+                    border-border/60 bg-muted/30 py-6
+                  `}
                 >
                   <div className="flex flex-col items-center gap-2">
                     <div
                       className={`
-                      flex h-16 w-16 items-center justify-center rounded-2xl
-                      bg-primary/10
-                    `}
+                        flex h-16 w-16 items-center justify-center rounded-2xl
+                        bg-primary/10
+                      `}
                     >
                       <Globe className="h-8 w-8 text-primary" />
                     </div>
@@ -1405,7 +1607,11 @@ export function MembershipClient() {
                         <>
                           {" "}
                           <button
-                            className="font-medium text-primary underline underline-offset-2 hover:no-underline"
+                            className={`
+                              font-medium text-primary underline
+                              underline-offset-2
+                              hover:no-underline
+                            `}
                             onClick={() =>
                               document
                                 .getElementById("claim-free-esim")
@@ -1457,29 +1663,34 @@ export function MembershipClient() {
         {/* --------------------------------------------------------------- */}
         <section
           className={`
-          py-16
-          md:py-20
-        `}
+            py-16
+            md:py-20
+          `}
         >
           <div className="mx-auto w-full max-w-3xl text-center">
             <h2
               className={`
-              font-display text-2xl font-semibold text-foreground
-              md:text-3xl
-            `}
+                font-display text-2xl font-semibold text-foreground
+                md:text-3xl
+              `}
             >
               How It Works
             </h2>
-            <p className="mt-3 text-base text-muted-foreground md:text-lg">
+            <p
+              className={`
+                mt-3 text-base text-muted-foreground
+                md:text-lg
+              `}
+            >
               Three simple steps to unlock your membership benefits.
             </p>
           </div>
 
           <div
             className={`
-            mx-auto mt-12 grid w-full max-w-7xl gap-8
-            md:grid-cols-3
-          `}
+              mx-auto mt-12 grid w-full max-w-7xl gap-8
+              md:grid-cols-3
+            `}
           >
             {[
               {
@@ -1510,16 +1721,20 @@ export function MembershipClient() {
                 </span>
                 <div
                   className={`
-                  mb-4 flex h-14 w-14 items-center justify-center rounded-2xl
-                  bg-primary/10
-                `}
+                    mb-4 flex h-14 w-14 items-center justify-center rounded-2xl
+                    bg-primary/10
+                  `}
                 >
                   <Icon className="h-7 w-7 text-primary" />
                 </div>
                 <h3 className="text-lg font-semibold text-foreground">
                   {title}
                 </h3>
-                <p className="mt-2 text-base leading-relaxed text-muted-foreground">
+                <p
+                  className={`
+                    mt-2 text-base leading-relaxed text-muted-foreground
+                  `}
+                >
                   {desc}
                 </p>
               </div>
@@ -1532,32 +1747,47 @@ export function MembershipClient() {
         {/* --------------------------------------------------------------- */}
         <section
           className={`
-          py-16
-          md:py-20
-        `}
+            py-16
+            md:py-20
+          `}
         >
           <div
             className={`
-            mx-auto w-full max-w-4xl overflow-hidden rounded-2xl border
- border-border bg-card p-8 
-            md:p-10
-          `}
+              mx-auto w-full max-w-4xl overflow-hidden rounded-2xl border
+              border-border bg-card p-8
+              md:p-10
+            `}
           >
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+            <div
+              className={`
+                flex h-12 w-12 items-center justify-center rounded-xl
+                bg-primary/10
+              `}
+            >
               <Users className="h-6 w-6 text-primary" />
             </div>
             <h2
               className={`
-              mt-4 font-display text-2xl font-semibold text-foreground
-              md:text-3xl
-            `}
+                font-display mt-4 text-2xl font-semibold text-foreground
+                md:text-3xl
+              `}
             >
               {MEMBERSHIP_HOW_IT_WORKS.heading}
             </h2>
-            <p className="mt-2 text-base text-muted-foreground md:text-lg">
+            <p
+              className={`
+                mt-2 text-base text-muted-foreground
+                md:text-lg
+              `}
+            >
               {MEMBERSHIP_HOW_IT_WORKS.subheading}
             </p>
-            <p className="mt-4 text-base leading-relaxed text-muted-foreground md:text-lg">
+            <p
+              className={`
+                mt-4 text-base leading-relaxed text-muted-foreground
+                md:text-lg
+              `}
+            >
               {MEMBERSHIP_HOW_IT_WORKS.body}
             </p>
           </div>
@@ -1568,25 +1798,34 @@ export function MembershipClient() {
         {/* --------------------------------------------------------------- */}
         <section
           className={`
-          py-16
-          md:py-20
-        `}
+            py-16
+            md:py-20
+          `}
         >
           <div className="mx-auto w-full max-w-7xl">
             <h2
               className={`
-              font-display text-center text-2xl font-semibold text-foreground
-              md:text-3xl
-            `}
+                font-display text-center text-2xl font-semibold text-foreground
+                md:text-3xl
+              `}
             >
               Staking Requirement
             </h2>
-            <p className="mx-auto mt-3 max-w-2xl text-center text-base text-muted-foreground md:text-lg">
-              Membership stakes are tied to how many members have already joined.
-              The table below shows the USD value to stake for each tier.
+            <p
+              className={`
+                mx-auto mt-3 max-w-2xl text-center text-base
+                text-muted-foreground
+                md:text-lg
+              `}
+            >
+              Membership stakes are tied to how many members have already
+              joined. The table below shows the USD value to stake for each
+              tier.
             </p>
 
-            <div className="mt-10 overflow-x-auto rounded-xl border border-border">
+            <div
+              className={`mt-10 overflow-x-auto rounded-xl border border-border`}
+            >
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -1614,7 +1853,9 @@ export function MembershipClient() {
                     </TableCell>
                   </TableRow>
                   <TableRow>
-                    <TableCell className="font-medium">101–250 stakers</TableCell>
+                    <TableCell className="font-medium">
+                      101–250 stakers
+                    </TableCell>
                     <TableCell className="text-center tabular-nums">
                       $50
                     </TableCell>
@@ -1626,7 +1867,9 @@ export function MembershipClient() {
                     </TableCell>
                   </TableRow>
                   <TableRow>
-                    <TableCell className="font-medium">251–750 stakers</TableCell>
+                    <TableCell className="font-medium">
+                      251–750 stakers
+                    </TableCell>
                     <TableCell className="text-center tabular-nums">
                       $100
                     </TableCell>
@@ -1653,7 +1896,12 @@ export function MembershipClient() {
               </Table>
             </div>
 
-            <p className="mx-auto mt-6 max-w-2xl text-center text-base leading-relaxed text-muted-foreground">
+            <p
+              className={`
+                mx-auto mt-6 max-w-2xl text-center text-base leading-relaxed
+                text-muted-foreground
+              `}
+            >
               We structure it this way to reward early members who share our
               vision and choose to support us from the start. They commit more
               tokens and lock them for their chosen period, so they get access
@@ -1668,18 +1916,18 @@ export function MembershipClient() {
         {/* --------------------------------------------------------------- */}
         <section
           className={`
-          scroll-mt-20 py-16
-          md:py-20
-        `}
+            scroll-mt-20 py-16
+            md:py-20
+          `}
           id="tiers"
         >
           <div className="mx-auto w-full max-w-7xl">
             <div className="text-center">
               <h2
                 className={`
-                font-display text-2xl font-semibold text-foreground
-                md:text-3xl
-              `}
+                  font-display text-2xl font-semibold text-foreground
+                  md:text-3xl
+                `}
               >
                 Choose Your Tier
               </h2>
@@ -1687,179 +1935,183 @@ export function MembershipClient() {
 
             <div
               className={`
-              mt-12 grid gap-6
-              sm:grid-cols-2
-              lg:grid-cols-3
-            `}
+                mt-12 grid gap-6
+                sm:grid-cols-2
+                lg:grid-cols-3
+              `}
             >
-            {MEMBERSHIP_TIERS.map((tier) => {
-              const Icon = tier.icon;
-              const isSelected = selectedTier === tier.id;
-              const tierPrice = tierPriceMap[tier.id];
+              {MEMBERSHIP_TIERS.map((tier) => {
+                const Icon = tier.icon;
+                const isSelected = selectedTier === tier.id;
+                const tierPrice = tierPriceMap[tier.id];
 
-              return (
-                <Card
-                  aria-label={`Select ${tier.name}`}
-                  aria-pressed={isSelected}
-                  className={cn(
-                    `
-                      relative cursor-pointer transition-all duration-200
- 
-                    `,
-                    isSelected
-                      ? `
- ring-2 ring-primary
-                        ${tier.accentBorder}
-                      `
-                      : `
-                        border-border
-                        hover:-translate-y-1
-                      `,
-                    tier.popular && "lg:scale-[1.02]",
-                  )}
-                  key={tier.id}
-                  onClick={() => setSelectedTier(tier.id)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      setSelectedTier(tier.id);
-                    }
-                  }}
-                  role="button"
-                  tabIndex={0}
-                >
-                  {tier.popular && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                      <Badge
-                        className={`
-                        gap-1 bg-primary px-3 py-0.5 text-primary-foreground
-                      `}
-                      >
-                        <Sparkles className="h-3 w-3" />
-                        Most Popular
-                      </Badge>
-                    </div>
-                  )}
-
-                  <CardHeader className="pb-3">
-                    <div
-                      className={cn(
+                return (
+                  <Card
+                    aria-label={`Select ${tier.name}`}
+                    aria-pressed={isSelected}
+                    className={cn(
+                      `relative cursor-pointer transition-all duration-200`,
+                      isSelected
+                        ? `
+                          ring-2 ring-primary
+                          ${tier.accentBorder}
                         `
-                          mb-2 flex h-12 w-12 items-center justify-center
-                          rounded-xl
+                        : `
+                          border-border
+                          hover:-translate-y-1
                         `,
-                        tier.accentBg,
-                      )}
-                    >
-                      <Icon className={cn("h-6 w-6", tier.accent)} />
-                    </div>
-                    <CardTitle className="text-xl">{tier.name}</CardTitle>
-                    <CardDescription>{tier.tagline}</CardDescription>
-                  </CardHeader>
-
-                  <CardContent className="space-y-4">
-                    {/* Staking requirement */}
-                    <div>
-                      {pricingLoading ? (
-                        <div className="h-8 w-24 animate-pulse rounded bg-muted" />
-                      ) : tierPrice ? (
-                        <>
-                          <p
-                            className={`
-                            text-2xl font-bold text-foreground tabular-nums
-                          `}
-                          >
-                            {formatUsd(tierPrice.costUsd)}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            ≈ {formatTokens(tierPrice.tokensNeeded)}{" "}
-                            {tokenSymbol} to stake
-                          </p>
-                        </>
-                      ) : (
-                        <p className="text-sm text-muted-foreground">
-                          Price unavailable
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Key benefits */}
-                    <div className="space-y-2.5 border-t pt-4">
-                      <div className="flex items-start gap-2">
-                        <Smartphone
-                          className={cn("mt-0.5 h-4 w-4 shrink-0", tier.accent)}
-                        />
-                        <span className="text-sm text-foreground">
-                          {tier.benefits.esim}
-                          <span className="text-muted-foreground">
-                            {tier.benefits.esim.toLowerCase().includes("esim")
-                              ? " cards"
-                              : " eSIM cards"}
-                          </span>
-                        </span>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <Truck
-                          className={cn("mt-0.5 h-4 w-4 shrink-0", tier.accent)}
-                        />
-                        <span className="text-sm text-foreground">
-                          {tier.benefits.shipping}
-                          <span className="text-muted-foreground">
-                            {" "}
-                            shipping
-                          </span>
-                        </span>
-                      </div>
-                      {tier.benefits.extras
-                        .filter(
-                          (e) =>
-                            e !== "Community access" &&
-                            e !== "Governance voting",
-                        )
-                        .map((extra) => (
-                          <div className="flex items-start gap-2" key={extra}>
-                            <Check
-                              className={cn(
-                                "mt-0.5 h-4 w-4 shrink-0",
-                                tier.accent,
-                              )}
-                            />
-                            <span className="text-sm text-muted-foreground">
-                              {extra}
-                            </span>
-                          </div>
-                        ))}
-                    </div>
-
-                    {/* Select CTA */}
-                    <Button
-                      className="w-full"
-                      onClick={(e) => {
-                        e.stopPropagation();
+                      tier.popular && "lg:scale-[1.02]",
+                    )}
+                    key={tier.id}
+                    onClick={() => setSelectedTier(tier.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
                         setSelectedTier(tier.id);
-                        scrollToCTA();
-                      }}
-                      variant={isSelected ? "default" : "outline"}
-                    >
-                      {isSelected ? "Selected" : "Select"}
-                    </Button>
-                  </CardContent>
-                </Card>
-              );
-            })}
+                      }
+                    }}
+                    role="button"
+                    tabIndex={0}
+                  >
+                    {tier.popular && (
+                      <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                        <Badge
+                          className={`
+                            gap-1 bg-primary px-3 py-0.5 text-primary-foreground
+                          `}
+                        >
+                          <Sparkles className="h-3 w-3" />
+                          Most Popular
+                        </Badge>
+                      </div>
+                    )}
+
+                    <CardHeader className="pb-3">
+                      <div
+                        className={cn(
+                          `
+                            mb-2 flex h-12 w-12 items-center justify-center
+                            rounded-xl
+                          `,
+                          tier.accentBg,
+                        )}
+                      >
+                        <Icon className={cn("h-6 w-6", tier.accent)} />
+                      </div>
+                      <CardTitle className="text-xl">{tier.name}</CardTitle>
+                      <CardDescription>{tier.tagline}</CardDescription>
+                    </CardHeader>
+
+                    <CardContent className="space-y-4">
+                      {/* Staking requirement */}
+                      <div>
+                        {pricingLoading ? (
+                          <div
+                            className={`h-8 w-24 animate-pulse rounded bg-muted`}
+                          />
+                        ) : tierPrice ? (
+                          <>
+                            <p
+                              className={`
+                                text-2xl font-bold text-foreground tabular-nums
+                              `}
+                            >
+                              {formatUsd(tierPrice.costUsd)}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              ≈ {formatTokens(tierPrice.tokensNeeded)}{" "}
+                              {tokenSymbol} to stake
+                            </p>
+                          </>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">
+                            Price unavailable
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Key benefits */}
+                      <div className="space-y-2.5 border-t pt-4">
+                        <div className="flex items-start gap-2">
+                          <Smartphone
+                            className={cn(
+                              "mt-0.5 h-4 w-4 shrink-0",
+                              tier.accent,
+                            )}
+                          />
+                          <span className="text-sm text-foreground">
+                            {tier.benefits.esim}
+                            <span className="text-muted-foreground">
+                              {tier.benefits.esim.toLowerCase().includes("esim")
+                                ? " cards"
+                                : " eSIM cards"}
+                            </span>
+                          </span>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <Truck
+                            className={cn(
+                              "mt-0.5 h-4 w-4 shrink-0",
+                              tier.accent,
+                            )}
+                          />
+                          <span className="text-sm text-foreground">
+                            {tier.benefits.shipping}
+                            <span className="text-muted-foreground">
+                              {" "}
+                              shipping
+                            </span>
+                          </span>
+                        </div>
+                        {tier.benefits.extras
+                          .filter(
+                            (e) =>
+                              e !== "Community access" &&
+                              e !== "Governance voting",
+                          )
+                          .map((extra) => (
+                            <div className="flex items-start gap-2" key={extra}>
+                              <Check
+                                className={cn(
+                                  "mt-0.5 h-4 w-4 shrink-0",
+                                  tier.accent,
+                                )}
+                              />
+                              <span className="text-sm text-muted-foreground">
+                                {extra}
+                              </span>
+                            </div>
+                          ))}
+                      </div>
+
+                      {/* Select CTA */}
+                      <Button
+                        className="w-full"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedTier(tier.id);
+                          scrollToCTA();
+                        }}
+                        variant={isSelected ? "default" : "outline"}
+                      >
+                        {isSelected ? "Selected" : "Select"}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           </div>
         </section>
-
 
         {/* --------------------------------------------------------------- */}
         {/* Monthly Subscription — alternative to staking */}
         {/* --------------------------------------------------------------- */}
         <section
           className={`
-          py-16
-          md:py-20
-        `}
+            py-16
+            md:py-20
+          `}
           id="subscribe"
         >
           <div className="mx-auto w-full max-w-3xl text-center">
@@ -1869,25 +2121,40 @@ export function MembershipClient() {
             </Badge>
             <h2
               className={`
-              font-display text-2xl font-semibold text-foreground
-              md:text-3xl
-            `}
+                font-display text-2xl font-semibold text-foreground
+                md:text-3xl
+              `}
             >
               Subscribe with a credit card
             </h2>
-            <p className="mt-3 text-base text-muted-foreground md:text-lg">
+            <p
+              className={`
+                mt-3 text-base text-muted-foreground
+                md:text-lg
+              `}
+            >
               Pay a flat monthly or annual fee—no wallet, no tokens needed.
               Cancel anytime.
             </p>
 
             {/* Billing interval toggle */}
-            <div className="mt-8 inline-flex rounded-xl border border-border bg-muted/40 p-1">
+            <div
+              className={`
+                mt-8 inline-flex rounded-xl border border-border bg-muted/40 p-1
+              `}
+            >
               <button
                 className={cn(
-                  "flex items-center gap-1.5 rounded-lg px-5 py-2 text-sm font-medium transition-all",
+                  `
+                    flex items-center gap-1.5 rounded-lg px-5 py-2 text-sm
+                    font-medium transition-all
+                  `,
                   subInterval === "monthly"
- ? "bg-background text-foreground "
-                    : "text-muted-foreground hover:text-foreground",
+                    ? "bg-background text-foreground"
+                    : `
+                      text-muted-foreground
+                      hover:text-foreground
+                    `,
                 )}
                 onClick={() => setSubInterval("monthly")}
                 type="button"
@@ -1896,30 +2163,49 @@ export function MembershipClient() {
               </button>
               <button
                 className={cn(
-                  "flex items-center gap-1.5 rounded-lg px-5 py-2 text-sm font-medium transition-all",
+                  `
+                    flex items-center gap-1.5 rounded-lg px-5 py-2 text-sm
+                    font-medium transition-all
+                  `,
                   subInterval === "annual"
- ? "bg-background text-foreground "
-                    : "text-muted-foreground hover:text-foreground",
+                    ? "bg-background text-foreground"
+                    : `
+                      text-muted-foreground
+                      hover:text-foreground
+                    `,
                 )}
                 onClick={() => setSubInterval("annual")}
                 type="button"
               >
                 <CalendarDays className="h-3.5 w-3.5" />
                 Annual
-                <span className="rounded-full bg-green-500/15 px-1.5 py-0.5 text-xs font-semibold text-green-600 dark:text-green-400">
+                <span
+                  className={`
+                    rounded-full bg-green-500/15 px-1.5 py-0.5 text-xs
+                    font-semibold text-green-600
+                    dark:text-green-400
+                  `}
+                >
                   Save {Math.round(SUBSCRIPTION_ANNUAL_DISCOUNT * 100)}%
                 </span>
               </button>
             </div>
             <div className="mx-auto mt-6 max-w-md space-y-2 text-center">
               <p className="text-sm text-muted-foreground">Payment method</p>
-              <div className="inline-flex rounded-xl border border-border bg-muted/40 p-1">
+              <div
+                className={`
+                  inline-flex rounded-xl border border-border bg-muted/40 p-1
+                `}
+              >
                 <button
                   className={cn(
                     "rounded-lg px-5 py-2 text-sm font-medium transition-all",
                     paymentProvider === "stripe"
- ? "bg-background text-foreground "
-                      : "text-muted-foreground hover:text-foreground",
+                      ? "bg-background text-foreground"
+                      : `
+                        text-muted-foreground
+                        hover:text-foreground
+                      `,
                   )}
                   onClick={() => setPaymentProvider("stripe")}
                   type="button"
@@ -1930,8 +2216,11 @@ export function MembershipClient() {
                   className={cn(
                     "rounded-lg px-5 py-2 text-sm font-medium transition-all",
                     paymentProvider === "paypal"
- ? "bg-background text-foreground "
-                      : "text-muted-foreground hover:text-foreground",
+                      ? "bg-background text-foreground"
+                      : `
+                        text-muted-foreground
+                        hover:text-foreground
+                      `,
                   )}
                   onClick={() => setPaymentProvider("paypal")}
                   type="button"
@@ -1945,7 +2234,12 @@ export function MembershipClient() {
           {/* Subscription cards */}
           {activeSubscription && subFetched ? (
             /* active subscription banner */
-            <div className="mx-auto mt-10 max-w-lg rounded-2xl border border-primary/30 bg-primary/5 p-6 text-center">
+            <div
+              className={`
+                mx-auto mt-10 max-w-lg rounded-2xl border border-primary/30
+                bg-primary/5 p-6 text-center
+              `}
+            >
               <Badge className="mb-3 gap-1.5" variant="default">
                 <Check className="h-3.5 w-3.5" />
                 Active Subscription
@@ -1953,7 +2247,9 @@ export function MembershipClient() {
               <p className="text-sm text-muted-foreground">
                 You have an active{" "}
                 <span className="font-semibold text-foreground">
-                  {MEMBERSHIP_TIERS.find((t) => t.id === activeSubscription.tier)?.name ?? `Tier ${activeSubscription.tier}`}
+                  {MEMBERSHIP_TIERS.find(
+                    (t) => t.id === activeSubscription.tier,
+                  )?.name ?? `Tier ${activeSubscription.tier}`}
                 </span>{" "}
                 {activeSubscription.interval} membership.{" "}
                 {activeSubscription.cancelAtPeriodEnd
@@ -1973,13 +2269,15 @@ export function MembershipClient() {
           ) : (
             <div
               className={`
-              mx-auto mt-10 grid w-full max-w-7xl gap-6
-              sm:grid-cols-2
-              lg:grid-cols-3
-            `}
+                mx-auto mt-10 grid w-full max-w-7xl gap-6
+                sm:grid-cols-2
+                lg:grid-cols-3
+              `}
             >
               {SUBSCRIPTION_PRICES.map((sp) => {
-                const tierData = MEMBERSHIP_TIERS.find((t) => t.id === sp.tierId)!;
+                const tierData = MEMBERSHIP_TIERS.find(
+                  (t) => t.id === sp.tierId,
+                )!;
                 const Icon = tierData.icon;
                 const displayPrice =
                   subInterval === "annual" ? sp.annualUsd : sp.monthlyUsd;
@@ -1991,9 +2289,13 @@ export function MembershipClient() {
                 return (
                   <Card
                     className={cn(
- "relative flex flex-col overflow-hidden transition-all ",
+                      "relative flex flex-col overflow-hidden transition-all",
                       isPopular
-                        ? `border-2 ${tierData.accentBorder} ${tierData.accentBg}`
+                        ? `
+                          border-2
+                          ${tierData.accentBorder}
+                          ${tierData.accentBg}
+                        `
                         : "border-border",
                     )}
                     key={sp.tierId}
@@ -2009,7 +2311,10 @@ export function MembershipClient() {
                     <CardHeader className="pb-4">
                       <div
                         className={cn(
-                          "mb-3 flex h-10 w-10 items-center justify-center rounded-xl",
+                          `
+                            mb-3 flex h-10 w-10 items-center justify-center
+                            rounded-xl
+                          `,
                           tierData.accentBg,
                         )}
                       >
@@ -2047,7 +2352,10 @@ export function MembershipClient() {
                           ...tierData.benefits.extras.slice(0, 3),
                         ].map((item) => (
                           <li
-                            className="flex items-start gap-2 text-sm text-muted-foreground"
+                            className={`
+                              flex items-start gap-2 text-sm
+                              text-muted-foreground
+                            `}
                             key={item}
                           >
                             <Check
@@ -2069,7 +2377,9 @@ export function MembershipClient() {
                         variant={isPopular ? "default" : "outline"}
                       >
                         <CreditCard className="h-4 w-4" />
-                        {subPending ? "Redirecting…" : `Subscribe — $${displayPrice}/${subInterval === "annual" ? "yr" : "mo"}`}
+                        {subPending
+                          ? "Redirecting…"
+                          : `Subscribe — $${displayPrice}/${subInterval === "annual" ? "yr" : "mo"}`}
                       </Button>
                     </CardContent>
                   </Card>
@@ -2078,8 +2388,14 @@ export function MembershipClient() {
             </div>
           )}
 
-          <p className="mt-8 text-center text-sm leading-relaxed text-muted-foreground md:text-base">
-            Pay with card (Stripe) or PayPal—same membership benefits. Cancel or change plan from your billing settings.
+          <p
+            className={`
+              mt-8 text-center text-sm leading-relaxed text-muted-foreground
+              md:text-base
+            `}
+          >
+            Pay with card (Stripe) or PayPal—same membership benefits. Cancel or
+            change plan from your billing settings.
           </p>
         </section>
 
@@ -2088,30 +2404,40 @@ export function MembershipClient() {
         {/* --------------------------------------------------------------- */}
         <section
           className={`
-          py-16
-          md:py-20
-        `}
+            py-16
+            md:py-20
+          `}
         >
           <div
             className={`
-            mx-auto w-full max-w-4xl overflow-hidden rounded-2xl border-2
-            border-primary/20 bg-gradient-to-br from-primary/5 via-card
-            to-primary/5 p-8
-            md:p-10
-          `}
+              mx-auto w-full max-w-4xl overflow-hidden rounded-2xl border-2
+              border-primary/20 bg-gradient-to-br from-primary/5 via-card
+              to-primary/5 p-8
+              md:p-10
+            `}
           >
-            <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+            <div
+              className={`
+                mb-6 flex h-12 w-12 items-center justify-center rounded-xl
+                bg-primary/10
+              `}
+            >
               <Sparkles className="h-6 w-6 text-primary" />
             </div>
             <h2
               className={`
-              font-display text-2xl font-semibold text-foreground
-              md:text-3xl
-            `}
+                font-display text-2xl font-semibold text-foreground
+                md:text-3xl
+              `}
             >
               Lifetime Membership NFT
             </h2>
-            <p className="mt-3 text-base leading-relaxed text-muted-foreground md:text-lg">
+            <p
+              className={`
+                mt-3 text-base leading-relaxed text-muted-foreground
+                md:text-lg
+              `}
+            >
               Early stakers can mint a Lifetime Membership NFT—a permanent pass
               to full membership benefits, including a free data plan for life
               while you hold it.
@@ -2122,7 +2448,11 @@ export function MembershipClient() {
                 <h3 className="text-lg font-semibold text-foreground">
                   Path 1: First 11 stakers (30-day lock)
                 </h3>
-                <p className="mt-2 text-base leading-relaxed text-muted-foreground">
+                <p
+                  className={`
+                    mt-2 text-base leading-relaxed text-muted-foreground
+                  `}
+                >
                   The first 11 members who stake for 30 days are eligible to
                   mint a Lifetime Membership NFT. While you hold the NFT, you
                   keep full membership—including a free eSIM data plan for life.
@@ -2132,7 +2462,11 @@ export function MembershipClient() {
                 <h3 className="text-lg font-semibold text-foreground">
                   Path 2: First 100 stakers (12-month lock)
                 </h3>
-                <p className="mt-2 text-base leading-relaxed text-muted-foreground">
+                <p
+                  className={`
+                    mt-2 text-base leading-relaxed text-muted-foreground
+                  `}
+                >
                   The first 100 members who stake for 12 months are eligible to
                   mint a Lifetime Membership NFT. This NFT is transferrable and
                   resellable—you can sell or gift it, and the new holder gets
@@ -2163,25 +2497,35 @@ export function MembershipClient() {
         {/* --------------------------------------------------------------- */}
         <section
           className={`
-          py-16
-          md:py-20
-        `}
+            py-16
+            md:py-20
+          `}
         >
           <div className="mx-auto w-full max-w-3xl text-center">
             <h2
               className={`
-              font-display text-2xl font-semibold text-foreground
-              md:text-3xl
-            `}
+                font-display text-2xl font-semibold text-foreground
+                md:text-3xl
+              `}
             >
               Compare Benefits
             </h2>
-            <p className="mt-3 text-base text-muted-foreground md:text-lg">
+            <p
+              className={`
+                mt-3 text-base text-muted-foreground
+                md:text-lg
+              `}
+            >
               A detailed look at what each tier unlocks.
             </p>
           </div>
 
-          <div className="mx-auto mt-10 w-full max-w-7xl overflow-x-auto rounded-xl border border-border">
+          <div
+            className={`
+              mx-auto mt-10 w-full max-w-7xl overflow-x-auto rounded-xl border
+              border-border
+            `}
+          >
             <Table>
               <TableHeader>
                 <TableRow>
@@ -2231,8 +2575,8 @@ export function MembershipClient() {
                             <div>{formatUsd(tp.costUsd)}</div>
                             <div
                               className={`
-                              text-sm font-normal text-muted-foreground
-                            `}
+                                text-sm font-normal text-muted-foreground
+                              `}
                             >
                               ≈ {formatTokens(tp.tokensNeeded)} {tokenSymbol}
                             </div>
@@ -2270,8 +2614,8 @@ export function MembershipClient() {
                             ) : val === false ? (
                               <Minus
                                 className={`
-                                mx-auto h-5 w-5 text-muted-foreground/40
-                              `}
+                                  mx-auto h-5 w-5 text-muted-foreground/40
+                                `}
                               />
                             ) : (
                               <span className="text-sm font-medium">{val}</span>
@@ -2292,28 +2636,28 @@ export function MembershipClient() {
         {/* --------------------------------------------------------------- */}
         <section
           className={`
-          py-16
-          md:py-20
-        `}
+            py-16
+            md:py-20
+          `}
         >
           <div
             className={`
-            overflow-hidden rounded-2xl border border-border bg-gradient-to-br
-            from-card via-card to-muted/30
-          `}
+              overflow-hidden rounded-2xl border border-border bg-gradient-to-br
+              from-card via-card to-muted/30
+            `}
           >
             <div
               className={`
-              grid gap-0
-              md:grid-cols-2
-            `}
+                grid gap-0
+                md:grid-cols-2
+              `}
             >
               {/* Left: content */}
               <div
                 className={`
-                flex flex-col justify-center p-8
-                md:p-12
-              `}
+                  flex flex-col justify-center p-8
+                  md:p-12
+                `}
               >
                 <Badge className="mb-4 w-fit gap-1.5" variant="secondary">
                   <Globe className="h-3.5 w-3.5" />
@@ -2321,16 +2665,17 @@ export function MembershipClient() {
                 </Badge>
                 <h2
                   className={`
-                  font-display text-2xl font-semibold text-foreground
-                  md:text-3xl
-                `}
+                    font-display text-2xl font-semibold text-foreground
+                    md:text-3xl
+                  `}
                 >
                   Stay connected everywhere
                 </h2>
                 <p className="mt-4 text-muted-foreground">
                   Every membership tier includes eSIM benefits. From 15% off at
-                  BASE to first eSIM free and 30% off more at APEX—stay connected in
-                  200+ countries without hunting for local SIM cards.
+                  BASE to first eSIM free and 30% off more at APEX—stay
+                  connected in 200+ countries without hunting for local SIM
+                  cards.
                 </p>
                 <ul className="mt-6 space-y-3">
                   {[
@@ -2360,9 +2705,9 @@ export function MembershipClient() {
               {/* Right: visual grid */}
               <div
                 className={`
-                flex items-center justify-center bg-muted/20 p-8
-                md:p-12
-              `}
+                  flex items-center justify-center bg-muted/20 p-8
+                  md:p-12
+                `}
               >
                 <div className="grid w-full max-w-xs grid-cols-2 gap-4">
                   {MEMBERSHIP_TIERS.map((tier) => {
@@ -2404,40 +2749,46 @@ export function MembershipClient() {
         {/* --------------------------------------------------------------- */}
         <section
           className={`
-          py-16
-          md:py-20
-        `}
+            py-16
+            md:py-20
+          `}
         >
           <div
             className={`
-            mx-auto w-full max-w-4xl overflow-hidden rounded-2xl border-2
-            border-primary/20 bg-gradient-to-r from-primary/5 via-primary/10
-            to-primary/5
-          `}
+              mx-auto w-full max-w-4xl overflow-hidden rounded-2xl border-2
+              border-primary/20 bg-gradient-to-r from-primary/5 via-primary/10
+              to-primary/5
+            `}
           >
             <div
               className={`
-              p-8 text-center
-              md:p-12
-            `}
+                p-8 text-center
+                md:p-12
+              `}
             >
               <div
                 className={`
-                mx-auto mb-6 flex h-16 w-16 items-center justify-center
-                rounded-full bg-primary/10
-              `}
+                  mx-auto mb-6 flex h-16 w-16 items-center justify-center
+                  rounded-full bg-primary/10
+                `}
               >
                 <Timer className="h-8 w-8 text-primary" />
               </div>
               <h2
                 className={`
-                font-display text-2xl font-semibold text-foreground
-                md:text-3xl
-              `}
+                  font-display text-2xl font-semibold text-foreground
+                  md:text-3xl
+                `}
               >
                 Stake 12 Months, Get eSIM Benefits for 14 Months
               </h2>
-              <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-muted-foreground md:text-lg">
+              <p
+                className={`
+                  mx-auto mt-4 max-w-2xl text-base leading-relaxed
+                  text-muted-foreground
+                  md:text-lg
+                `}
+              >
                 Commit to a 12-month stake and we&apos;ll extend your eSIM
                 benefits to 14 months—that&apos;s 2 extra months completely
                 free. Your membership benefits, shipping discounts, and
@@ -2446,16 +2797,16 @@ export function MembershipClient() {
 
               <div
                 className={`
-                mx-auto mt-10 grid max-w-lg gap-6
-                sm:grid-cols-2
-              `}
+                  mx-auto mt-10 grid max-w-lg gap-6
+                  sm:grid-cols-2
+                `}
               >
                 <div
                   aria-pressed={stakeDuration === "30d"}
                   className={cn(
                     "cursor-pointer rounded-xl border-2 p-6 transition-all",
                     stakeDuration === "30d"
- ? "border-primary bg-card "
+                      ? "border-primary bg-card"
                       : `
                         border-border bg-card/50
                         hover:border-border/80
@@ -2487,7 +2838,7 @@ export function MembershipClient() {
                       transition-all
                     `,
                     stakeDuration === "12m"
- ? "border-primary bg-card "
+                      ? "border-primary bg-card"
                       : `
                         border-border bg-card/50
                         hover:border-border/80
@@ -2527,20 +2878,25 @@ export function MembershipClient() {
         {/* --------------------------------------------------------------- */}
         <section
           className={`
-          py-16
-          md:py-20
-        `}
+            py-16
+            md:py-20
+          `}
         >
           <div className="mx-auto w-full max-w-3xl text-center">
             <h2
               className={`
-              font-display text-2xl font-semibold text-foreground
-              md:text-3xl
-            `}
+                font-display text-2xl font-semibold text-foreground
+                md:text-3xl
+              `}
             >
               Dynamic Staking Requirements
             </h2>
-            <p className="mt-3 text-base text-muted-foreground md:text-lg">
+            <p
+              className={`
+                mt-3 text-base text-muted-foreground
+                md:text-lg
+              `}
+            >
               Staking thresholds adjust automatically based on two factors,
               keeping membership fair and accessible.
             </p>
@@ -2548,24 +2904,26 @@ export function MembershipClient() {
 
           <div
             className={`
-            mx-auto mt-12 grid w-full max-w-5xl gap-8
-            md:grid-cols-2
-          `}
+              mx-auto mt-12 grid w-full max-w-5xl gap-8
+              md:grid-cols-2
+            `}
           >
             <Card className="border-border">
               <CardHeader>
                 <div
                   className={`
-                  mb-2 flex h-10 w-10 items-center justify-center rounded-lg
-                  bg-primary/10
-                `}
+                    mb-2 flex h-10 w-10 items-center justify-center rounded-lg
+                    bg-primary/10
+                  `}
                 >
                   <TrendingUp className="h-5 w-5 text-primary" />
                 </div>
                 <CardTitle className="text-lg">Token Price</CardTitle>
               </CardHeader>
               <CardContent>
-                <CardDescription className="text-base leading-relaxed text-muted-foreground">
+                <CardDescription
+                  className={`text-base leading-relaxed text-muted-foreground`}
+                >
                   As the {tokenSymbol} token price (market cap) increases, the
                   number of tokens required to stake decreases proportionally—so
                   the dollar value of membership stays reasonable.
@@ -2576,16 +2934,18 @@ export function MembershipClient() {
               <CardHeader>
                 <div
                   className={`
-                  mb-2 flex h-10 w-10 items-center justify-center rounded-lg
-                  bg-primary/10
-                `}
+                    mb-2 flex h-10 w-10 items-center justify-center rounded-lg
+                    bg-primary/10
+                  `}
                 >
                   <Users className="h-5 w-5 text-primary" />
                 </div>
                 <CardTitle className="text-lg">Staker Count</CardTitle>
               </CardHeader>
               <CardContent>
-                <CardDescription className="text-base leading-relaxed text-muted-foreground">
+                <CardDescription
+                  className={`text-base leading-relaxed text-muted-foreground`}
+                >
                   Similar to a bonding curve, the more people already staked at
                   a tier, the slightly higher the threshold becomes. Early
                   members benefit from lower requirements.
@@ -2598,27 +2958,28 @@ export function MembershipClient() {
         {/* --------------------------------------------------------------- */}
         {/* Claim Free eSIM (APEX) — show when eligible/claimed or when user is APEX (so admin-granted members see it) */}
         {/* --------------------------------------------------------------- */}
-        {(displayTier === 1 && user?.id) || (wallet && (claimEligible || claimAlreadyClaimed)) ? (
+        {(displayTier === 1 && user?.id) ||
+        (wallet && (claimEligible || claimAlreadyClaimed)) ? (
           <section
             className={`
-            py-16
-            md:py-20
-          `}
+              py-16
+              md:py-20
+            `}
             id="claim-free-esim"
           >
             <div className="mx-auto w-full max-w-4xl">
               <Card
                 className={`
-                overflow-hidden border-2 border-primary/30 bg-gradient-to-br
-                from-primary/5 via-background to-primary/5
-              `}
+                  overflow-hidden border-2 border-primary/30 bg-gradient-to-br
+                  from-primary/5 via-background to-primary/5
+                `}
               >
                 <CardHeader className="text-center">
                   <div
                     className={`
-                    mx-auto mb-3 flex h-14 w-14 items-center justify-center
-                    rounded-full bg-primary/10
-                  `}
+                      mx-auto mb-3 flex h-14 w-14 items-center justify-center
+                      rounded-full bg-primary/10
+                    `}
                   >
                     <Smartphone className="h-7 w-7 text-primary" />
                   </div>
@@ -2668,13 +3029,20 @@ export function MembershipClient() {
                     </Button>
                   ) : (
                     <>
-                      <div className="flex w-full flex-wrap items-center justify-center gap-4">
+                      <div
+                        className={`
+                          flex w-full flex-wrap items-center justify-center
+                          gap-4
+                        `}
+                      >
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="text-sm text-muted-foreground">
                             Plan:
                           </span>
                           <Button
-                            onClick={() => setStakerClaimPackageType("DATA-ONLY")}
+                            onClick={() =>
+                              setStakerClaimPackageType("DATA-ONLY")
+                            }
                             size="sm"
                             variant={
                               stakerClaimPackageType === "DATA-ONLY"
@@ -2707,14 +3075,17 @@ export function MembershipClient() {
                           <select
                             aria-label="Choose region for eSIM"
                             className={cn(
-                              "min-w-[180px] rounded-md border border-input bg-background px-3 py-2 text-sm",
+                              `
+                                min-w-[180px] rounded-md border border-input
+                                bg-background px-3 py-2 text-sm
+                              `,
                             )}
                             disabled={esimRegionsLoading}
-                            value={stakerClaimRegionId}
                             onChange={(e) => {
                               setStakerClaimRegionId(e.target.value);
                               if (e.target.value) setStakerClaimCountryId("");
                             }}
+                            value={stakerClaimRegionId}
                           >
                             <option value="">All regions</option>
                             {esimRegions.map((r) => (
@@ -2731,14 +3102,17 @@ export function MembershipClient() {
                           <select
                             aria-label="Choose country for eSIM"
                             className={cn(
-                              "min-w-[180px] rounded-md border border-input bg-background px-3 py-2 text-sm",
+                              `
+                                min-w-[180px] rounded-md border border-input
+                                bg-background px-3 py-2 text-sm
+                              `,
                             )}
                             disabled={esimCountriesLoading}
-                            value={stakerClaimCountryId}
                             onChange={(e) => {
                               setStakerClaimCountryId(e.target.value);
                               if (e.target.value) setStakerClaimRegionId("");
                             }}
+                            value={stakerClaimCountryId}
                           >
                             <option value="">Global</option>
                             {esimCountries.map((c) => (
@@ -2755,11 +3129,19 @@ export function MembershipClient() {
                         </p>
                       ) : stakerClaimPackages.length > 0 ? (
                         <>
-                          <div className="grid w-full gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                          <div
+                            className={`
+                              grid w-full gap-4
+                              sm:grid-cols-2
+                              lg:grid-cols-3
+                            `}
+                          >
                             {stakerClaimPackages.map((pkg) => (
                               <Card
+                                className={`
+                                  flex flex-col border border-border bg-card
+                                `}
                                 key={pkg.id}
-                                className="flex flex-col border border-border bg-card"
                               >
                                 <CardHeader className="pb-2">
                                   <CardTitle className="font-display text-lg">
@@ -2785,7 +3167,11 @@ export function MembershipClient() {
                               </Card>
                             ))}
                           </div>
-                          <p className="text-center text-sm text-muted-foreground">
+                          <p
+                            className={`
+                              text-center text-sm text-muted-foreground
+                            `}
+                          >
                             {claimPeriod === "monthly"
                               ? "One claim per month. After claiming, you can activate your eSIM in your dashboard."
                               : "One claim per staking period. After claiming, you can activate your eSIM in your dashboard."}
@@ -2805,16 +3191,16 @@ export function MembershipClient() {
         {/* --------------------------------------------------------------- */}
         <section
           className={`
-          py-16
-          md:py-20
-        `}
+            py-16
+            md:py-20
+          `}
         >
           <div className="mx-auto w-full max-w-3xl">
             <h2
               className={`
-              font-display text-center text-2xl font-semibold text-foreground
-              md:text-3xl
-            `}
+                font-display text-center text-2xl font-semibold text-foreground
+                md:text-3xl
+              `}
             >
               Frequently Asked Questions
             </h2>
@@ -2831,23 +3217,29 @@ export function MembershipClient() {
                 >
                   <summary
                     className={`
-                    flex cursor-pointer list-none items-center justify-between
-                    gap-2 px-6 py-5 text-base font-medium text-foreground
-                    transition-colors
-                    hover:text-primary
-                    md:text-lg
-                    [&::-webkit-details-marker]:hidden
-                  `}
+                      flex cursor-pointer list-none items-center justify-between
+                      gap-2 px-6 py-5 text-base font-medium text-foreground
+                      transition-colors
+                      hover:text-primary
+                      md:text-lg
+                      [&::-webkit-details-marker]:hidden
+                    `}
                   >
                     <span>{q}</span>
                     <ChevronDown
                       className={`
-                      h-5 w-5 shrink-0 text-muted-foreground
-                      transition-transform
-                    `}
+                        h-5 w-5 shrink-0 text-muted-foreground
+                        transition-transform
+                      `}
                     />
                   </summary>
-                  <p className="px-6 pr-12 pb-5 text-base leading-relaxed text-muted-foreground md:text-lg">
+                  <p
+                    className={`
+                      px-6 pr-12 pb-5 text-base leading-relaxed
+                      text-muted-foreground
+                      md:text-lg
+                    `}
+                  >
                     {a}
                   </p>
                 </details>
@@ -2861,19 +3253,25 @@ export function MembershipClient() {
         {/* --------------------------------------------------------------- */}
         <section
           className={`
-          py-16 text-center
-          md:py-20
-        `}
+            py-16 text-center
+            md:py-20
+          `}
         >
           <h2
             className={`
-            font-display text-2xl font-semibold text-foreground
-            md:text-3xl
-          `}
+              font-display text-2xl font-semibold text-foreground
+              md:text-3xl
+            `}
           >
             Ready to Join?
           </h2>
-          <p className="mx-auto mt-3 max-w-2xl text-base leading-relaxed text-muted-foreground md:text-lg">
+          <p
+            className={`
+              mx-auto mt-3 max-w-2xl text-base leading-relaxed
+              text-muted-foreground
+              md:text-lg
+            `}
+          >
             Stake {tokenSymbol} or subscribe with a credit card to start
             enjoying exclusive membership benefits today.
           </p>
@@ -2884,7 +3282,11 @@ export function MembershipClient() {
             </Button>
             <Button
               className="gap-2"
-              onClick={() => document.getElementById('subscribe')?.scrollIntoView({ behavior: 'smooth' })}
+              onClick={() =>
+                document
+                  .getElementById("subscribe")
+                  ?.scrollIntoView({ behavior: "smooth" })
+              }
               size="lg"
               variant="outline"
             >

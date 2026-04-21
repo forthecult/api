@@ -21,12 +21,13 @@ export async function GET(request: Request) {
 
   const token = getActiveToken();
 
-  const tokenPrograms = token.tokenProgram === "token-2022"
-    ? [
-        new PublicKey("TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"),
-        new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),
-      ] as const
-    : [new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA")];
+  const tokenPrograms =
+    token.tokenProgram === "token-2022"
+      ? ([
+          new PublicKey("TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"),
+          new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),
+        ] as const)
+      : [new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA")];
 
   try {
     const connection = new Connection(getSolanaRpcUrlServer());
@@ -58,9 +59,7 @@ export async function GET(request: Request) {
           decimals: token.decimals,
           tokenSymbol: token.symbol,
         });
-      } catch {
-        continue;
-      }
+      } catch {}
     }
     return NextResponse.json({
       balance: "0",

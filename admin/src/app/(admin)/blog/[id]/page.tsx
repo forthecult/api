@@ -16,25 +16,6 @@ const inputClass =
   "w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";
 const labelClass = "mb-1.5 block text-sm font-medium";
 
-function tagsToInput(tags: string[]): string {
-  return Array.isArray(tags) ? tags.join(", ") : "";
-}
-
-function tagsFromInput(value: string): string[] {
-  return value
-    .split(/[\n,]+/)
-    .map((t) => t.trim())
-    .filter(Boolean);
-}
-
-function formatDateTimeLocal(s: null | string): string {
-  if (!s) return "";
-  const d = new Date(s);
-  if (Number.isNaN(d.getTime())) return "";
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
 interface BlogPost {
   authorDisplayName: null | string;
   authorId: null | string;
@@ -105,9 +86,7 @@ export default function AdminBlogEditPage() {
       setTagsInput(tagsToInput(data.tags ?? []));
       setPublishedAtInput(formatDateTimeLocal(data.publishedAt));
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to load post",
-      );
+      setError(err instanceof Error ? err.message : "Failed to load post");
     } finally {
       setLoading(false);
     }
@@ -168,7 +147,9 @@ export default function AdminBlogEditPage() {
           method: "PATCH",
         });
         if (!res.ok) {
-          const body = (await res.json().catch(() => ({}))) as { error?: string };
+          const body = (await res.json().catch(() => ({}))) as {
+            error?: string;
+          };
           throw new Error(body.error ?? "Failed to save");
         }
         const updated = (await res.json()) as BlogPost;
@@ -197,7 +178,8 @@ export default function AdminBlogEditPage() {
 
   const handleDelete = useCallback(async () => {
     if (!id || !post) return;
-    if (!window.confirm(`Delete "${post.title}"? This cannot be undone.`)) return;
+    if (!window.confirm(`Delete "${post.title}"? This cannot be undone.`))
+      return;
     setDeleting(true);
     try {
       const res = await fetch(`${API_BASE}/api/admin/blog/${id}`, {
@@ -218,7 +200,11 @@ export default function AdminBlogEditPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-[200px] items-center justify-center text-muted-foreground">
+      <div
+        className={`
+        flex min-h-[200px] items-center justify-center text-muted-foreground
+      `}
+      >
         Loading…
       </div>
     );
@@ -228,16 +214,19 @@ export default function AdminBlogEditPage() {
     return (
       <div className="space-y-4">
         <Link
-          className="text-sm font-medium text-muted-foreground hover:text-foreground"
+          className={`
+            text-sm font-medium text-muted-foreground
+            hover:text-foreground
+          `}
           href="/blog"
         >
           ← Back to list
         </Link>
         <div
           className={`
-          rounded-lg border border-red-200 bg-red-50 p-4 text-red-800
-          dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
-        `}
+            rounded-lg border border-red-200 bg-red-50 p-4 text-red-800
+            dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
+          `}
         >
           {error ?? "Invalid post"}
         </div>
@@ -253,23 +242,29 @@ export default function AdminBlogEditPage() {
     <div className="space-y-6">
       <div
         className={`
-        flex flex-col gap-4
-        sm:flex-row sm:items-center sm:justify-between
-      `}
+          flex flex-col gap-4
+          sm:flex-row sm:items-center sm:justify-between
+        `}
       >
         <div className="flex flex-wrap items-center gap-4">
           <h2 className="text-2xl font-semibold tracking-tight">
             Edit blog post
           </h2>
           <Link
-            className="text-sm font-medium text-muted-foreground hover:text-foreground"
+            className={`
+              text-sm font-medium text-muted-foreground
+              hover:text-foreground
+            `}
             href="/blog"
           >
             ← Back to list
           </Link>
           {viewUrl ? (
             <a
-              className="text-sm font-medium text-primary hover:underline"
+              className={`
+                text-sm font-medium text-primary
+                hover:underline
+              `}
               href={viewUrl}
               rel="noopener noreferrer"
               target="_blank"
@@ -294,9 +289,9 @@ export default function AdminBlogEditPage() {
       {error && (
         <div
           className={`
-          rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800
-          dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
-        `}
+            rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800
+            dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
+          `}
         >
           {error}
         </div>
@@ -308,7 +303,12 @@ export default function AdminBlogEditPage() {
             <CardTitle>Post details</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="grid gap-6 sm:grid-cols-2">
+            <div
+              className={`
+              grid gap-6
+              sm:grid-cols-2
+            `}
+            >
               <div className="space-y-2">
                 <label className={labelClass} htmlFor="title">
                   Title
@@ -397,8 +397,13 @@ export default function AdminBlogEditPage() {
                 </Button>
               </div>
               {coverImageUrl && (
-                <div className="relative mt-2 size-32 overflow-hidden rounded-md border bg-muted">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                <div
+                  className={`
+                  relative mt-2 size-32 overflow-hidden rounded-md border
+                  bg-muted
+                `}
+                >
+                  {}
                   <img
                     alt=""
                     className="size-full object-cover"
@@ -494,7 +499,8 @@ export default function AdminBlogEditPage() {
                   `
                     inline-flex items-center justify-center rounded-md border
                     border-input bg-background px-4 py-2 text-sm font-medium
-                    transition-colors hover:bg-muted hover:text-muted-foreground
+                    transition-colors
+                    hover:bg-muted hover:text-muted-foreground
                   `,
                 )}
                 href="/blog"
@@ -507,4 +513,23 @@ export default function AdminBlogEditPage() {
       </form>
     </div>
   );
+}
+
+function formatDateTimeLocal(s: null | string): string {
+  if (!s) return "";
+  const d = new Date(s);
+  if (Number.isNaN(d.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function tagsFromInput(value: string): string[] {
+  return value
+    .split(/[\n,]+/)
+    .map((t) => t.trim())
+    .filter(Boolean);
+}
+
+function tagsToInput(tags: string[]): string {
+  return Array.isArray(tags) ? tags.join(", ") : "";
 }

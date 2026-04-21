@@ -75,7 +75,7 @@ export async function GET() {
         .map((r) => [String(r.brand).trim(), r.count]),
     );
 
-    const byName = new Map(
+    const _byName = new Map(
       curatedBrands.map((b) => [b.name.trim().toLowerCase(), b]),
     );
 

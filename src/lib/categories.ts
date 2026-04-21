@@ -417,49 +417,12 @@ export async function getCategoryProductImage(
 
 /** Category names/slugs treated as generic "all products" — breadcrumb prefers a more specific category when present. */
 const GENERIC_CATEGORY_NAMES = new Set([
+  "all",
   "all products",
   "products",
-  "all",
   "shop",
 ]);
-const GENERIC_CATEGORY_SLUGS = new Set(["products", "all", "shop"]);
-
-function isGenericCategory(name: string, slug: string | null): boolean {
-  const n = name?.toLowerCase().trim() ?? "";
-  const s = (slug?.toLowerCase().trim() ?? "").replace(/^\/+|\/+$/g, "");
-  return GENERIC_CATEGORY_NAMES.has(n) || GENERIC_CATEGORY_SLUGS.has(s);
-}
-
-/**
- * Build the category chain (leaf to root) for a given category id.
- */
-async function getCategoryChain(
-  categoryId: string,
-): Promise<{ id: string; name: string; parentId: null | string; slug: null | string }[]> {
-  const chain: {
-    id: string;
-    name: string;
-    parentId: null | string;
-    slug: null | string;
-  }[] = [];
-  let currentId: null | string = categoryId;
-  while (currentId) {
-    const [row] = await db
-      .select({
-        id: categoriesTable.id,
-        name: categoriesTable.name,
-        parentId: categoriesTable.parentId,
-        slug: categoriesTable.slug,
-      })
-      .from(categoriesTable)
-      .where(eq(categoriesTable.id, currentId))
-      .limit(1);
-    if (!row) break;
-    chain.push(row);
-    currentId = row.parentId;
-  }
-  return chain.reverse();
-}
+const GENERIC_CATEGORY_SLUGS = new Set(["all", "products", "shop"]);
 
 /**
  * Breadcrumb trail for a product page: Home > category > subcategory > product.
@@ -488,8 +451,8 @@ export async function getProductBreadcrumbTrail(
   }
 
   const mainPc = allPcs.find((pc) => pc.isMain);
-  let chosenCategoryId: string | null =
-    (mainPc?.categoryId ?? allPcs[0]?.categoryId) ?? null;
+  const chosenCategoryId: null | string =
+    mainPc?.categoryId ?? allPcs[0]?.categoryId ?? null;
   if (!chosenCategoryId) return [home, productItem];
 
   const mainChain = await getCategoryChain(chosenCategoryId);
@@ -599,4 +562,43 @@ export async function getSubcategories(
     .map((r) => ({ name: r.name, slug: r.slug }));
 
   return sortSubcategories(filtered);
+}
+
+/**
+ * Build the category chain (leaf to root) for a given category id.
+ */
+async function getCategoryChain(
+  categoryId: string,
+): Promise<
+  { id: string; name: string; parentId: null | string; slug: null | string }[]
+> {
+  const chain: {
+    id: string;
+    name: string;
+    parentId: null | string;
+    slug: null | string;
+  }[] = [];
+  let currentId: null | string = categoryId;
+  while (currentId) {
+    const [row] = await db
+      .select({
+        id: categoriesTable.id,
+        name: categoriesTable.name,
+        parentId: categoriesTable.parentId,
+        slug: categoriesTable.slug,
+      })
+      .from(categoriesTable)
+      .where(eq(categoriesTable.id, currentId))
+      .limit(1);
+    if (!row) break;
+    chain.push(row);
+    currentId = row.parentId;
+  }
+  return chain.reverse();
+}
+
+function isGenericCategory(name: string, slug: null | string): boolean {
+  const n = name?.toLowerCase().trim() ?? "";
+  const s = (slug?.toLowerCase().trim() ?? "").replace(/^\/+|\/+$/g, "");
+  return GENERIC_CATEGORY_NAMES.has(n) || GENERIC_CATEGORY_SLUGS.has(s);
 }

@@ -2,16 +2,6 @@
 
 import { useEffect, useState } from "react";
 
-export interface OrderPaymentInfo {
-  depositAddress: string;
-  email?: string;
-  expiresAt: string;
-  orderId: string;
-  /** Solana Pay: which token was selected (solana | usdc | whitewhale | crust | pump | troll | soluna). Used for balance check. */
-  token?: string;
-  totalCents: number;
-}
-
 /** Partial order from prefetch (layout); when present, skip fetch. */
 export type InitialOrderLike = Record<string, unknown> & {
   depositAddress?: string;
@@ -21,6 +11,16 @@ export type InitialOrderLike = Record<string, unknown> & {
   token?: string;
   totalCents?: number;
 };
+
+export interface OrderPaymentInfo {
+  depositAddress: string;
+  email?: string;
+  expiresAt: string;
+  orderId: string;
+  /** Solana Pay: which token was selected (solana | usdc | whitewhale | crust | pump | troll | soluna). Used for balance check. */
+  token?: string;
+  totalCents: number;
+}
 
 /**
  * Fetches and manages order state for crypto payments.
@@ -39,7 +39,7 @@ export function useCryptoOrder({
 }: {
   enabled?: boolean;
   /** When set, use this and skip fetch (earlier data from layout). */
-  initialOrder?: null | InitialOrderLike;
+  initialOrder?: InitialOrderLike | null;
   orderId: string;
   suiFromHash?: null | { amountUsd: number; expiresAt: string };
   token: string;
@@ -52,16 +52,22 @@ export function useCryptoOrder({
     ? {
         depositAddress: String(initialOrder.depositAddress ?? ""),
         email:
-          typeof initialOrder.email === "string" ? initialOrder.email : undefined,
+          typeof initialOrder.email === "string"
+            ? initialOrder.email
+            : undefined,
         expiresAt: String(initialOrder.expiresAt ?? ""),
         orderId: String(initialOrder.orderId ?? ""),
         token:
-          typeof initialOrder.token === "string" ? initialOrder.token : undefined,
+          typeof initialOrder.token === "string"
+            ? initialOrder.token
+            : undefined,
         totalCents: Number(initialOrder.totalCents) || 0,
       }
     : null;
 
-  const [order, setOrder] = useState<null | OrderPaymentInfo>(normalizedInitial);
+  const [order, setOrder] = useState<null | OrderPaymentInfo>(
+    normalizedInitial,
+  );
   const [loading, setLoading] = useState(!normalizedInitial);
   const [error, setError] = useState<null | string>(null);
 
@@ -97,7 +103,8 @@ export function useCryptoOrder({
         }
         return res.json();
       })
-      .then((raw: unknown) => { const data = raw as OrderPaymentInfo;
+      .then((raw: unknown) => {
+        const data = raw as OrderPaymentInfo;
         if (!cancelled) {
           setOrder(data);
         }

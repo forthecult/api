@@ -21,10 +21,15 @@ import {
 } from "@solana/web3.js";
 
 // memo program for adding human-readable transaction descriptions
-const MEMO_PROGRAM_ID = new PublicKeyClass("MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr");
+const MEMO_PROGRAM_ID = new PublicKeyClass(
+  "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr",
+);
 
 /** Create a memo instruction with a human-readable message */
-function createMemoInstruction(message: string, signer: PublicKeyClass): TransactionInstruction {
+function createMemoInstruction(
+  message: string,
+  signer: PublicKeyClass,
+): TransactionInstruction {
   return new TransactionInstruction({
     data: Buffer.from(message, "utf-8"),
     keys: [{ isSigner: true, isWritable: false, pubkey: signer }],
@@ -42,9 +47,12 @@ import {
   type LockDuration,
   type LockTier,
   TIER_30_DAYS,
-  TIER_12_MONTHS,
 } from "~/lib/cult-staking";
-import { CULT_MINT_MAINNET, TOKEN_2022_PROGRAM_ID_BASE58 } from "./token-config";
+
+import {
+  CULT_MINT_MAINNET,
+  TOKEN_2022_PROGRAM_ID_BASE58,
+} from "./token-config";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -58,6 +66,139 @@ const CULT_MINT = new PublicKeyClass(CULT_MINT_MAINNET);
 // ---------------------------------------------------------------------------
 // Instruction builders
 // ---------------------------------------------------------------------------
+
+/** @deprecated Native program doesn't need initialization */
+export function buildInitializeInstruction(_params: {
+  authority: PublicKeyClass;
+  mint: PublicKeyClass;
+  poolPda: PublicKeyClass;
+  programId: PublicKeyClass;
+  tokenProgram?: PublicKeyClass;
+  vault: PublicKeyClass;
+}): TransactionInstruction {
+  throw new Error(
+    "Native staking program does not require initialization. Vault ATA is created on first stake.",
+  );
+}
+
+/** @deprecated Native program doesn't need initialization */
+export function buildInitializeTransaction(_params: {
+  authority: PublicKeyClass;
+  blockhash: string;
+  lastValidBlockHeight: number;
+  mint: PublicKeyClass;
+  programId: PublicKeyClass;
+  tokenProgram?: PublicKeyClass;
+}): Transaction {
+  throw new Error(
+    "Native staking program does not require initialization. Vault ATA is created on first stake.",
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Transaction builders
+// ---------------------------------------------------------------------------
+
+/**
+ * Build a restake transaction (unstake then stake in same tx).
+ * Only works when the lock has expired.
+ * Note: Native program creates new stake entry, so this won't work as a single tx.
+ * For restake, user must unstake first, then stake again.
+ * Includes a memo instruction for better wallet display.
+ */
+export function buildRestakeTransaction(params: {
+  amount: bigint;
+  blockhash: string;
+  lastValidBlockHeight: number;
+  lockDuration: LockDuration;
+  mint?: PublicKeyClass;
+  oldLockTier: LockTier;
+  owner: PublicKeyClass;
+  programId: PublicKeyClass;
+  tokenSymbol?: string;
+}): Transaction {
+  const {
+    amount,
+    blockhash,
+    lastValidBlockHeight,
+    lockDuration,
+    oldLockTier,
+    owner,
+    programId,
+    tokenSymbol = "CULT",
+  } = params;
+
+  if (!isValidLockDuration(lockDuration)) {
+    throw new Error("Invalid lock duration");
+  }
+
+  const mint = params.mint ?? CULT_MINT;
+  const newLockTier = durationToTier(lockDuration);
+  const newDurationLabel =
+    lockDuration === LOCK_30_DAYS ? "30 days" : "12 months";
+
+  const [vaultAuthority] = getVaultAuthorityPda(programId, mint);
+  const vaultTokenAccount = getVaultAta(mint, vaultAuthority);
+  const userTokenAccount = getAssociatedTokenAddressSync(
+    mint,
+    owner,
+    false,
+    TOKEN_2022_PROGRAM_ID,
+    ASSOCIATED_TOKEN_PROGRAM_ID,
+  );
+  const [oldStakeEntryPda] = getStakeEntryPda(
+    programId,
+    owner,
+    oldLockTier,
+    mint,
+  );
+  const [newStakeEntryPda] = getStakeEntryPda(
+    programId,
+    owner,
+    newLockTier,
+    mint,
+  );
+
+  const tx = new Transaction();
+  tx.recentBlockhash = blockhash;
+  tx.lastValidBlockHeight = lastValidBlockHeight;
+  tx.feePayer = owner;
+
+  // add memo for wallet display
+  const memo = `Restake ${tokenSymbol} to ${newDurationLabel} membership - forthecult.store`;
+  tx.add(createMemoInstruction(memo, owner));
+
+  // unstake from old tier
+  tx.add(
+    buildUnstakeInstruction({
+      lockTier: oldLockTier,
+      mint,
+      owner,
+      programId,
+      stakeEntryPda: oldStakeEntryPda,
+      userTokenAccount,
+      vaultAuthority,
+      vaultTokenAccount,
+    }),
+  );
+
+  // stake to new tier
+  tx.add(
+    buildStakeInstruction({
+      amount,
+      lockTier: newLockTier,
+      mint,
+      owner,
+      programId,
+      stakeEntryPda: newStakeEntryPda,
+      userTokenAccount,
+      vaultAuthority,
+      vaultTokenAccount,
+    }),
+  );
+
+  return tx;
+}
 
 /**
  * Build stake instruction for native program.
@@ -118,63 +259,6 @@ export function buildStakeInstruction(params: {
     programId,
   });
 }
-
-/**
- * Build unstake instruction for native program.
- *
- * Accounts (order matters):
- *   0. staker (signer, writable)
- *   1. staker_token_account (writable)
- *   2. vault_token_account (writable)
- *   3. vault_authority PDA (read-only)
- *   4. mint (read-only)
- *   5. stake_entry PDA (writable)
- *   6. token_program (Token-2022)
- */
-export function buildUnstakeInstruction(params: {
-  lockTier: LockTier;
-  mint: PublicKeyClass;
-  owner: PublicKeyClass;
-  programId: PublicKeyClass;
-  stakeEntryPda: PublicKeyClass;
-  userTokenAccount: PublicKeyClass;
-  vaultAuthority: PublicKeyClass;
-  vaultTokenAccount: PublicKeyClass;
-}): TransactionInstruction {
-  const {
-    lockTier,
-    mint,
-    owner,
-    programId,
-    stakeEntryPda,
-    userTokenAccount,
-    vaultAuthority,
-    vaultTokenAccount,
-  } = params;
-
-  // native format: [tag(1), lock_tier(1)] = 2 bytes
-  const data = Buffer.alloc(2);
-  data.writeUInt8(1, 0);
-  data.writeUInt8(lockTier, 1);
-
-  return new TransactionInstruction({
-    data,
-    keys: [
-      { isSigner: true, isWritable: true, pubkey: owner },
-      { isSigner: false, isWritable: true, pubkey: userTokenAccount },
-      { isSigner: false, isWritable: true, pubkey: vaultTokenAccount },
-      { isSigner: false, isWritable: false, pubkey: vaultAuthority },
-      { isSigner: false, isWritable: false, pubkey: mint },
-      { isSigner: false, isWritable: true, pubkey: stakeEntryPda },
-      { isSigner: false, isWritable: false, pubkey: TOKEN_2022_PROGRAM_ID },
-    ],
-    programId,
-  });
-}
-
-// ---------------------------------------------------------------------------
-// Transaction builders
-// ---------------------------------------------------------------------------
 
 /**
  * Build a stake transaction.
@@ -268,6 +352,63 @@ export function buildStakeTransaction(params: {
   return tx;
 }
 
+// ---------------------------------------------------------------------------
+// Legacy compatibility exports (not used by native program but kept for API)
+// ---------------------------------------------------------------------------
+
+/**
+ * Build unstake instruction for native program.
+ *
+ * Accounts (order matters):
+ *   0. staker (signer, writable)
+ *   1. staker_token_account (writable)
+ *   2. vault_token_account (writable)
+ *   3. vault_authority PDA (read-only)
+ *   4. mint (read-only)
+ *   5. stake_entry PDA (writable)
+ *   6. token_program (Token-2022)
+ */
+export function buildUnstakeInstruction(params: {
+  lockTier: LockTier;
+  mint: PublicKeyClass;
+  owner: PublicKeyClass;
+  programId: PublicKeyClass;
+  stakeEntryPda: PublicKeyClass;
+  userTokenAccount: PublicKeyClass;
+  vaultAuthority: PublicKeyClass;
+  vaultTokenAccount: PublicKeyClass;
+}): TransactionInstruction {
+  const {
+    lockTier,
+    mint,
+    owner,
+    programId,
+    stakeEntryPda,
+    userTokenAccount,
+    vaultAuthority,
+    vaultTokenAccount,
+  } = params;
+
+  // native format: [tag(1), lock_tier(1)] = 2 bytes
+  const data = Buffer.alloc(2);
+  data.writeUInt8(1, 0);
+  data.writeUInt8(lockTier, 1);
+
+  return new TransactionInstruction({
+    data,
+    keys: [
+      { isSigner: true, isWritable: true, pubkey: owner },
+      { isSigner: false, isWritable: true, pubkey: userTokenAccount },
+      { isSigner: false, isWritable: true, pubkey: vaultTokenAccount },
+      { isSigner: false, isWritable: false, pubkey: vaultAuthority },
+      { isSigner: false, isWritable: false, pubkey: mint },
+      { isSigner: false, isWritable: true, pubkey: stakeEntryPda },
+      { isSigner: false, isWritable: false, pubkey: TOKEN_2022_PROGRAM_ID },
+    ],
+    programId,
+  });
+}
+
 /**
  * Build an unstake transaction.
  * Includes a memo instruction for better wallet display.
@@ -281,8 +422,14 @@ export function buildUnstakeTransaction(params: {
   programId: PublicKeyClass;
   tokenSymbol?: string;
 }): Transaction {
-  const { blockhash, lastValidBlockHeight, lockTier, owner, programId, tokenSymbol = "CULT" } =
-    params;
+  const {
+    blockhash,
+    lastValidBlockHeight,
+    lockTier,
+    owner,
+    programId,
+    tokenSymbol = "CULT",
+  } = params;
 
   const mint = params.mint ?? CULT_MINT;
   const tierLabel = lockTier === TIER_30_DAYS ? "30-day" : "12-month";
@@ -321,136 +468,4 @@ export function buildUnstakeTransaction(params: {
   );
 
   return tx;
-}
-
-/**
- * Build a restake transaction (unstake then stake in same tx).
- * Only works when the lock has expired.
- * Note: Native program creates new stake entry, so this won't work as a single tx.
- * For restake, user must unstake first, then stake again.
- * Includes a memo instruction for better wallet display.
- */
-export function buildRestakeTransaction(params: {
-  amount: bigint;
-  blockhash: string;
-  lastValidBlockHeight: number;
-  lockDuration: LockDuration;
-  mint?: PublicKeyClass;
-  oldLockTier: LockTier;
-  owner: PublicKeyClass;
-  programId: PublicKeyClass;
-  tokenSymbol?: string;
-}): Transaction {
-  const {
-    amount,
-    blockhash,
-    lastValidBlockHeight,
-    lockDuration,
-    oldLockTier,
-    owner,
-    programId,
-    tokenSymbol = "CULT",
-  } = params;
-
-  if (!isValidLockDuration(lockDuration)) {
-    throw new Error("Invalid lock duration");
-  }
-
-  const mint = params.mint ?? CULT_MINT;
-  const newLockTier = durationToTier(lockDuration);
-  const newDurationLabel = lockDuration === LOCK_30_DAYS ? "30 days" : "12 months";
-
-  const [vaultAuthority] = getVaultAuthorityPda(programId, mint);
-  const vaultTokenAccount = getVaultAta(mint, vaultAuthority);
-  const userTokenAccount = getAssociatedTokenAddressSync(
-    mint,
-    owner,
-    false,
-    TOKEN_2022_PROGRAM_ID,
-    ASSOCIATED_TOKEN_PROGRAM_ID,
-  );
-  const [oldStakeEntryPda] = getStakeEntryPda(
-    programId,
-    owner,
-    oldLockTier,
-    mint,
-  );
-  const [newStakeEntryPda] = getStakeEntryPda(
-    programId,
-    owner,
-    newLockTier,
-    mint,
-  );
-
-  const tx = new Transaction();
-  tx.recentBlockhash = blockhash;
-  tx.lastValidBlockHeight = lastValidBlockHeight;
-  tx.feePayer = owner;
-
-  // add memo for wallet display
-  const memo = `Restake ${tokenSymbol} to ${newDurationLabel} membership - forthecult.store`;
-  tx.add(createMemoInstruction(memo, owner));
-
-  // unstake from old tier
-  tx.add(
-    buildUnstakeInstruction({
-      lockTier: oldLockTier,
-      mint,
-      owner,
-      programId,
-      stakeEntryPda: oldStakeEntryPda,
-      userTokenAccount,
-      vaultAuthority,
-      vaultTokenAccount,
-    }),
-  );
-
-  // stake to new tier
-  tx.add(
-    buildStakeInstruction({
-      amount,
-      lockTier: newLockTier,
-      mint,
-      owner,
-      programId,
-      stakeEntryPda: newStakeEntryPda,
-      userTokenAccount,
-      vaultAuthority,
-      vaultTokenAccount,
-    }),
-  );
-
-  return tx;
-}
-
-// ---------------------------------------------------------------------------
-// Legacy compatibility exports (not used by native program but kept for API)
-// ---------------------------------------------------------------------------
-
-/** @deprecated Native program doesn't need initialization */
-export function buildInitializeInstruction(_params: {
-  authority: PublicKeyClass;
-  mint: PublicKeyClass;
-  poolPda: PublicKeyClass;
-  programId: PublicKeyClass;
-  tokenProgram?: PublicKeyClass;
-  vault: PublicKeyClass;
-}): TransactionInstruction {
-  throw new Error(
-    "Native staking program does not require initialization. Vault ATA is created on first stake.",
-  );
-}
-
-/** @deprecated Native program doesn't need initialization */
-export function buildInitializeTransaction(_params: {
-  authority: PublicKeyClass;
-  blockhash: string;
-  lastValidBlockHeight: number;
-  mint: PublicKeyClass;
-  programId: PublicKeyClass;
-  tokenProgram?: PublicKeyClass;
-}): Transaction {
-  throw new Error(
-    "Native staking program does not require initialization. Vault ATA is created on first stake.",
-  );
 }

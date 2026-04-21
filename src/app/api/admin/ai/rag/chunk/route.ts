@@ -1,10 +1,9 @@
+import { createId } from "@paralleldrive/cuid2";
 import { type NextRequest, NextResponse } from "next/server";
 
-import { createId } from "@paralleldrive/cuid2";
-
-import { adminAuthFailureResponse, getAdminAuth } from "~/lib/admin-api-auth";
 import { db } from "~/db";
 import { aiRagChunkTable } from "~/db/schema/ai-chat/tables";
+import { adminAuthFailureResponse, getAdminAuth } from "~/lib/admin-api-auth";
 import { embedTextVenice } from "~/lib/ai/embeddings";
 import { getServerVeniceApiKey } from "~/lib/ai/venice";
 

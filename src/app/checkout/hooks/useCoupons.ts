@@ -70,7 +70,7 @@ export function useCoupons({
   const [couponLoading, setCouponLoading] = useState(false);
   const [showDiscountCode, setShowDiscountCode] = useState(false);
   const [automaticCouponLoading, setAutomaticCouponLoading] = useState(false);
-  const [discountEvalKey, setDiscountEvalKey] = useState(0);
+  const [_discountEvalKey, setDiscountEvalKey] = useState(0);
 
   const handleApplyCoupon = useCallback(async () => {
     const code = discountCodeInput.trim();
@@ -175,14 +175,22 @@ export function useCoupons({
         shippingFeeCents: Math.round(shippingCents),
         subtotalCents: Math.round(subtotal * 100),
         wallet: wallet?.trim() || undefined,
-        ...(wallet?.trim() ? {} : { memberTier: memberTier != null && memberTier >= 1 && memberTier <= 3 ? memberTier : undefined }),
+        ...(wallet?.trim()
+          ? {}
+          : {
+              memberTier:
+                memberTier != null && memberTier >= 1 && memberTier <= 3
+                  ? memberTier
+                  : undefined,
+            }),
       }),
       credentials: "include",
       headers: { "Content-Type": "application/json" },
       method: "POST",
     })
       .then((res) => res.json())
-      .then((raw: unknown) => { const data = raw as Record<string, unknown> & { applied: boolean };
+      .then((raw: unknown) => {
+        const data = raw as Record<string, unknown> & { applied: boolean };
         if (cancelled) return;
         const tierList = Array.isArray(data.tierDiscounts)
           ? (data.tierDiscounts as TierDiscountLine[])
@@ -234,7 +242,7 @@ export function useCoupons({
     paymentMethodKey,
     wallet,
     memberTier,
-    discountEvalKey,
+    appliedCoupon?.source,
   ]);
 
   return {

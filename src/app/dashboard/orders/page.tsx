@@ -75,9 +75,7 @@ export default async function OrdersPage() {
       {orders.length === 0 ? (
         <Card>
           <CardContent
-            className={`
-            flex flex-col items-center justify-center py-12
-          `}
+            className={`flex flex-col items-center justify-center py-12`}
           >
             <p className="text-muted-foreground">
               You haven&apos;t placed any orders yet.
@@ -123,9 +121,7 @@ export default async function OrdersPage() {
                       data-testid="order-row"
                     >
                       <span
-                        className={`
-                        font-mono text-base text-muted-foreground
-                      `}
+                        className={`font-mono text-base text-muted-foreground`}
                       >
                         #{order.id.slice(0, 8)}
                       </span>

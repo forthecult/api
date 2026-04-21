@@ -10,12 +10,12 @@ import { userTable } from "../users/tables";
 export const solanaWalletStakeClaimedTable = pgTable(
   "solana_wallet_stake_claimed",
   {
-    wallet: text("wallet").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
     /** User who originally staked with this wallet; only they can link it again. */
     userId: text("user_id")
       .notNull()
       .references(() => userTable.id, { onDelete: "cascade" }),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
+    wallet: text("wallet").notNull(),
   },
   (t) => [
     primaryKey({

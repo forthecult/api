@@ -51,8 +51,8 @@ export function TestimonialCard({
       {productTitle && (
         <p
           className={`
-          mb-3 text-xs font-medium tracking-wide text-[#8A857E] uppercase
-        `}
+            mb-3 text-xs font-medium tracking-wide text-[#8A857E] uppercase
+          `}
         >
           {productTitle}
         </p>

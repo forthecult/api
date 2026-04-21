@@ -15,9 +15,9 @@ import { toast } from "sonner";
 
 import { cn } from "~/lib/cn";
 import { useCart } from "~/lib/hooks/use-cart";
-import { sanitizeProductDescription } from "~/lib/sanitize-product-description";
 import { useCountryCurrency } from "~/lib/hooks/use-country-currency";
 import { useWishlist } from "~/lib/hooks/use-wishlist";
+import { sanitizeProductDescription } from "~/lib/sanitize-product-description";
 import { isShippingExcluded } from "~/lib/shipping-restrictions";
 import { sortClothingSizes } from "~/lib/sort-clothing-sizes";
 import {
@@ -246,10 +246,7 @@ export function ProductQuickView({
       <DialogContent
         aria-describedby={undefined}
         className={cn(
-          `
-            max-w-[calc(100vw-2rem)] gap-0 overflow-hidden rounded-xl border p-0
- 
-          `,
+          `max-w-[calc(100vw-2rem)] gap-0 overflow-hidden rounded-xl border p-0`,
           "sm:max-w-4xl",
           `
             data-[state=open]:animate-in data-[state=open]:fade-in-0
@@ -260,13 +257,30 @@ export function ProductQuickView({
             data-[state=closed]:zoom-out-95
           `,
           "quickview-dialog",
-          "[&_[data-slot=dialog-close]]:flex [&_[data-slot=dialog-close]]:items-center [&_[data-slot=dialog-close]]:justify-center",
-          "[&_[data-slot=dialog-close]]:size-9 [&_[data-slot=dialog-close]]:rounded-full",
-          "[&_[data-slot=dialog-close]]:border [&_[data-slot=dialog-close]]:border-border",
-          "[&_[data-slot=dialog-close]]:bg-background [&_[data-slot=dialog-close]]:opacity-100",
- "[&_[data-slot=dialog-close]]:shadow-none",
+          `
+            [&_[data-slot=dialog-close]]:flex
+            [&_[data-slot=dialog-close]]:items-center
+            [&_[data-slot=dialog-close]]:justify-center
+          `,
+          `
+            [&_[data-slot=dialog-close]]:size-9
+            [&_[data-slot=dialog-close]]:rounded-full
+          `,
+          `
+            [&_[data-slot=dialog-close]]:border
+            [&_[data-slot=dialog-close]]:border-border
+          `,
+          `
+            [&_[data-slot=dialog-close]]:bg-background
+            [&_[data-slot=dialog-close]]:opacity-100
+          `,
+          "[&_[data-slot=dialog-close]]:shadow-none",
           "sm:[&_[data-slot=dialog-close]]:size-8",
-          "sm:[&_[data-slot=dialog-close]]:border-0 sm:[&_[data-slot=dialog-close]]:bg-transparent sm:[&_[data-slot=dialog-close]]:shadow-none",
+          `
+            sm:[&_[data-slot=dialog-close]]:border-0
+            sm:[&_[data-slot=dialog-close]]:bg-transparent
+            sm:[&_[data-slot=dialog-close]]:shadow-none
+          `,
           "[&_[data-slot=dialog-close]]:hover:bg-muted",
           "sm:[&_[data-slot=dialog-close]]:hover:bg-accent",
         )}
@@ -280,9 +294,9 @@ export function ProductQuickView({
         {error && (
           <div
             className={`
-            flex flex-col items-center justify-center gap-4 px-6 py-16
-            text-center
-          `}
+              flex flex-col items-center justify-center gap-4 px-6 py-16
+              text-center
+            `}
           >
             <p className="text-sm text-muted-foreground">{error}</p>
             <Button
@@ -313,22 +327,22 @@ export function ProductQuickView({
             return (
               <div
                 className={`
-                flex max-h-[90vh] flex-col
-                md:flex-row
-              `}
+                  flex max-h-[90vh] flex-col
+                  md:flex-row
+                `}
               >
                 {/* Left: image gallery — show selected variant image when it has one */}
                 <div
                   className={`
-                  w-full shrink-0 bg-muted/30
-                  md:max-h-[90vh] md:w-[48%]
-                `}
+                    w-full shrink-0 bg-muted/30
+                    md:max-h-[90vh] md:w-[48%]
+                  `}
                 >
                   <div
                     className={`
-                    sticky top-0 p-4
-                    md:p-5
-                  `}
+                      sticky top-0 p-4
+                      md:p-5
+                    `}
                   >
                     <MiniGallery
                       images={galleryImages}
@@ -340,15 +354,15 @@ export function ProductQuickView({
                 {/* Right: details — scrollable (pr/pt leave room for dialog close button) */}
                 <div
                   className={`
-                  flex flex-1 flex-col overflow-y-auto pt-14 pr-14
-                  md:max-h-[90vh]
-                `}
+                    flex flex-1 flex-col overflow-y-auto pt-14 pr-14
+                    md:max-h-[90vh]
+                  `}
                 >
                   <div
                     className={`
-                    flex flex-col gap-4 px-6 pb-6
-                    md:gap-5 md:px-8 md:pb-8
-                  `}
+                      flex flex-col gap-4 px-6 pb-6
+                      md:gap-5 md:px-8 md:pb-8
+                    `}
                   >
                     {/* Category + badges */}
                     <div className="flex flex-wrap items-center gap-2">
@@ -366,9 +380,9 @@ export function ProductQuickView({
                     {/* Product title */}
                     <h2
                       className={`
-                      text-xl leading-tight font-semibold tracking-tight
-                      md:text-2xl
-                    `}
+                        text-xl leading-tight font-semibold tracking-tight
+                        md:text-2xl
+                      `}
                     >
                       {product.name}
                     </h2>
@@ -412,9 +426,9 @@ export function ProductQuickView({
                           <li className="flex items-start gap-2" key={i}>
                             <span
                               className={`
-                              mt-1.5 block h-1.5 w-1.5 shrink-0 rounded-full
-                              bg-primary
-                            `}
+                                mt-1.5 block h-1.5 w-1.5 shrink-0 rounded-full
+                                bg-primary
+                              `}
                             />
                             {f}
                           </li>
@@ -426,10 +440,10 @@ export function ProductQuickView({
                     {product.description && (
                       <div
                         className={`
-                        line-clamp-4 text-sm leading-relaxed
-                        text-muted-foreground
-                        [&_a]:underline [&_a]:hover:no-underline
-                      `}
+                          line-clamp-4 text-sm leading-relaxed
+                          text-muted-foreground
+                          [&_a]:underline [&_a]:hover:no-underline
+                        `}
                         dangerouslySetInnerHTML={{
                           __html: sanitizeProductDescription(
                             product.description,
@@ -455,8 +469,8 @@ export function ProductQuickView({
                     <div className="flex flex-wrap items-center gap-3 pt-1">
                       <div
                         className={`
-                        flex items-center rounded-lg border border-input
-                      `}
+                          flex items-center rounded-lg border border-input
+                        `}
                       >
                         <Button
                           aria-label="Decrease quantity"
@@ -470,9 +484,9 @@ export function ProductQuickView({
                         </Button>
                         <span
                           className={`
-                          min-w-[2.5rem] text-center text-sm font-medium
-                          tabular-nums
-                        `}
+                            min-w-[2.5rem] text-center text-sm font-medium
+                            tabular-nums
+                          `}
                         >
                           {quantity}
                         </span>
@@ -592,16 +606,6 @@ export function QuickViewButton({
   );
 }
 
-/** e.g. "8M/10W" -> ["8m", "10w"]. So variant size "10W" matches selected "8M/10W". */
-function expandSizeValueForMatching(val: string): string[] {
-  const lower = val.trim().toLowerCase();
-  if (!lower) return [];
-  const parts = lower.split(/\s*\/\s*/).map((p) => p.trim()).filter(Boolean);
-  if (parts.length === 2 && /^\d+(\.\d+)?[mw]$/.test(parts[0]!) && /^\d+(\.\d+)?[mw]$/.test(parts[1]!))
-    return [lower, parts[0]!, parts[1]!];
-  return [lower];
-}
-
 function expandedSelectedSet(selectedSet: Set<string>): Set<string> {
   const out = new Set<string>();
   for (const s of selectedSet) {
@@ -612,16 +616,21 @@ function expandedSelectedSet(selectedSet: Set<string>): Set<string> {
   return out;
 }
 
-/** True if selected value s is contained in variantSet (exact, or when s contains " / ", all parts of s are in variantSet — Printify-style combined values). */
-function selectedValueInVariantSet(s: string, variantSet: Set<string>): boolean {
-  const sLower = s.toLowerCase().trim();
-  const variantLower = new Set([...variantSet].map((v) => v.toLowerCase()));
-  if (variantSet.has(s) || variantLower.has(sLower)) return true;
-  const expanded = expandSizeValueForMatching(s);
-  if (expanded.some((e) => variantSet.has(e) || variantLower.has(e))) return true;
-  const parts = s.split(/\s*\/\s*/).map((p) => p.trim().toLowerCase()).filter(Boolean);
-  if (parts.length > 1 && parts.every((p) => variantLower.has(p))) return true;
-  return false;
+/** e.g. "8M/10W" -> ["8m", "10w"]. So variant size "10W" matches selected "8M/10W". */
+function expandSizeValueForMatching(val: string): string[] {
+  const lower = val.trim().toLowerCase();
+  if (!lower) return [];
+  const parts = lower
+    .split(/\s*\/\s*/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+  if (
+    parts.length === 2 &&
+    /^\d+(\.\d+)?[mw]$/.test(parts[0]!) &&
+    /^\d+(\.\d+)?[mw]$/.test(parts[1]!)
+  )
+    return [lower, parts[0]!, parts[1]!];
+  return [lower];
 }
 
 /**
@@ -646,7 +655,11 @@ function findVariant(
     if (variantSet.size !== selectedSet.size) return false;
     for (const vVal of variantSet) {
       const vLower = vVal.toLowerCase();
-      if (!selectedSet.has(vVal) && !selectedSet.has(vLower) && !selectedExpanded.has(vLower))
+      if (
+        !selectedSet.has(vVal) &&
+        !selectedSet.has(vLower) &&
+        !selectedExpanded.has(vLower)
+      )
         return false;
     }
     return true;
@@ -708,10 +721,6 @@ function getVariantValueSet(v: QuickViewVariant): Set<string> {
   return new Set(parts);
 }
 
-/* -------------------------------------------------------------------------- */
-/*                              Loading Skeleton                               */
-/* -------------------------------------------------------------------------- */
-
 function MiniGallery({
   images,
   productName,
@@ -727,7 +736,7 @@ function MiniGallery({
   React.useEffect(() => {
     setSelectedIndex(0);
     setFailedUrls(new Set());
-  }, [images]);
+  }, []);
 
   const list = images.length > 0 ? images : ["/placeholder.svg"];
   const mainSrc = failedUrls.has(list[selectedIndex] ?? "")
@@ -739,9 +748,7 @@ function MiniGallery({
   return (
     <div className="flex flex-col gap-3">
       <div
-        className={`
-        relative aspect-square overflow-hidden rounded-xl bg-white
-      `}
+        className={`relative aspect-square overflow-hidden rounded-xl bg-white`}
       >
         <Image
           alt={productName}
@@ -789,7 +796,8 @@ function MiniGallery({
                   sizes="56px"
                   src={thumbSrc}
                   unoptimized={
-                    thumbSrc.startsWith("data:") || thumbSrc.startsWith("http://")
+                    thumbSrc.startsWith("data:") ||
+                    thumbSrc.startsWith("http://")
                   }
                 />
               </button>
@@ -802,35 +810,35 @@ function MiniGallery({
 }
 
 /* -------------------------------------------------------------------------- */
-/*                             Main Component                                  */
+/*                              Loading Skeleton                               */
 /* -------------------------------------------------------------------------- */
 
 function QuickViewSkeleton() {
   return (
     <div
       className={`
-      flex flex-col
-      md:max-h-[85vh] md:flex-row
-    `}
+        flex flex-col
+        md:max-h-[85vh] md:flex-row
+      `}
     >
       <div
         className={`
-        w-full shrink-0 bg-muted/50
-        md:w-[45%]
-      `}
+          w-full shrink-0 bg-muted/50
+          md:w-[45%]
+        `}
       >
         <Skeleton
           className={`
-          aspect-square w-full rounded-none
-          md:rounded-l-lg
-        `}
+            aspect-square w-full rounded-none
+            md:rounded-l-lg
+          `}
         />
       </div>
       <div
         className={`
-        flex flex-1 flex-col gap-4 p-6
-        md:p-8
-      `}
+          flex flex-1 flex-col gap-4 p-6
+          md:p-8
+        `}
       >
         <Skeleton className="h-7 w-3/4" />
         <Skeleton className="h-6 w-1/4" />
@@ -843,13 +851,36 @@ function QuickViewSkeleton() {
 }
 
 /* -------------------------------------------------------------------------- */
+/*                             Main Component                                  */
+/* -------------------------------------------------------------------------- */
+
+/** True if selected value s is contained in variantSet (exact, or when s contains " / ", all parts of s are in variantSet — Printify-style combined values). */
+function selectedValueInVariantSet(
+  s: string,
+  variantSet: Set<string>,
+): boolean {
+  const sLower = s.toLowerCase().trim();
+  const variantLower = new Set([...variantSet].map((v) => v.toLowerCase()));
+  if (variantSet.has(s) || variantLower.has(sLower)) return true;
+  const expanded = expandSizeValueForMatching(s);
+  if (expanded.some((e) => variantSet.has(e) || variantLower.has(e)))
+    return true;
+  const parts = s
+    .split(/\s*\/\s*/)
+    .map((p) => p.trim().toLowerCase())
+    .filter(Boolean);
+  if (parts.length > 1 && parts.every((p) => variantLower.has(p))) return true;
+  return false;
+}
+
+/* -------------------------------------------------------------------------- */
 /*                          Quick View Trigger Button                          */
 /* -------------------------------------------------------------------------- */
 
 function VariantSelector({
   onSelectVariant,
   optionDefinitions,
-  selectedVariant,
+  selectedVariant: _selectedVariant,
   variants,
 }: {
   onSelectVariant: (v: null | QuickViewVariant) => void;
@@ -887,7 +918,12 @@ function VariantSelector({
     }
     const match = findVariant(variants, selectedByIndex);
     onSelectVariant(match);
-  }, [selectedByIndex, allMultiValueOptionsSelected, variants, onSelectVariant]);
+  }, [
+    selectedByIndex,
+    allMultiValueOptionsSelected,
+    variants,
+    onSelectVariant,
+  ]);
 
   // Sync phone option selection when displayed fallback model differs from current (e.g. brand switch)
   React.useEffect(() => {
@@ -940,23 +976,23 @@ function VariantSelector({
             <div className="space-y-2" key={opt.name}>
               <span
                 className={`
-                mb-1.5 block text-xs font-medium tracking-wide
-                text-muted-foreground uppercase
-              `}
+                  mb-1.5 block text-xs font-medium tracking-wide
+                  text-muted-foreground uppercase
+                `}
               >
                 {opt.name}
               </span>
               <div
                 className={`
-                flex flex-col gap-2
-                sm:flex-row sm:items-end
-              `}
+                  flex flex-col gap-2
+                  sm:flex-row sm:items-end
+                `}
               >
                 <div
                   className={`
-                  flex flex-col gap-1
-                  sm:min-w-[8rem]
-                `}
+                    flex flex-col gap-1
+                    sm:min-w-[8rem]
+                  `}
                 >
                   <label
                     className="text-xs text-muted-foreground"
@@ -988,9 +1024,9 @@ function VariantSelector({
                 </div>
                 <div
                   className={`
-                  flex flex-col gap-1
-                  sm:min-w-[10rem]
-                `}
+                    flex flex-col gap-1
+                    sm:min-w-[10rem]
+                  `}
                 >
                   <label
                     className="text-xs text-muted-foreground"
@@ -1030,9 +1066,9 @@ function VariantSelector({
           <div key={opt.name}>
             <span
               className={`
-              mb-1.5 block text-xs font-medium tracking-wide
-              text-muted-foreground uppercase
-            `}
+                mb-1.5 block text-xs font-medium tracking-wide
+                text-muted-foreground uppercase
+              `}
             >
               {opt.name}
             </span>

@@ -99,7 +99,8 @@ export function MyEsimsClient() {
   const refetch = useCallback(() => {
     return fetch("/api/esim/my-esims", { credentials: "include" })
       .then((res) => res.json())
-      .then((raw: unknown) => { const data = raw as { data?: EsimOrder[]; status: boolean };
+      .then((raw: unknown) => {
+        const data = raw as { data?: EsimOrder[]; status: boolean };
         if (data.status && data.data) {
           setOrders(data.data);
         }
@@ -110,7 +111,8 @@ export function MyEsimsClient() {
   useEffect(() => {
     fetch("/api/esim/my-esims", { credentials: "include" })
       .then((res) => res.json())
-      .then((raw: unknown) => { const data = raw as { data?: EsimOrder[]; status: boolean };
+      .then((raw: unknown) => {
+        const data = raw as { data?: EsimOrder[]; status: boolean };
         if (data.status && data.data) {
           setOrders(data.data);
         }
@@ -133,31 +135,31 @@ export function MyEsimsClient() {
       {showBanner && (
         <div
           className={`
-          mb-4 rounded-lg border border-green-200 bg-green-50 p-4
-          dark:border-green-800 dark:bg-green-950/30
-        `}
+            mb-4 rounded-lg border border-green-200 bg-green-50 p-4
+            dark:border-green-800 dark:bg-green-950/30
+          `}
         >
           <div className="flex items-center gap-2">
             <CheckCircle
               className={`
-              h-5 w-5 text-green-600
-              dark:text-green-400
-            `}
+                h-5 w-5 text-green-600
+                dark:text-green-400
+              `}
             />
             <div>
               <p
                 className={`
-                font-medium text-green-800
-                dark:text-green-300
-              `}
+                  font-medium text-green-800
+                  dark:text-green-300
+                `}
               >
                 Payment successful!
               </p>
               <p
                 className={`
-                text-sm text-green-700
-                dark:text-green-400
-              `}
+                  text-sm text-green-700
+                  dark:text-green-400
+                `}
               >
                 Your eSIM is being provisioned. It may take a few moments to
                 become active. Refresh this page to check the latest status.
@@ -187,9 +189,7 @@ export function MyEsimsClient() {
       ) : orders.length === 0 ? (
         <Card>
           <CardContent
-            className={`
-            flex flex-col items-center justify-center py-12
-          `}
+            className={`flex flex-col items-center justify-center py-12`}
           >
             <Wifi className="mb-3 h-12 w-12 text-muted-foreground/50" />
             <p className="text-muted-foreground">
@@ -221,9 +221,9 @@ export function MyEsimsClient() {
         </CardHeader>
         <CardContent className="space-y-2 text-sm text-muted-foreground">
           <p>
-            <strong>On the same phone you&apos;ll use?</strong> Tap &quot;Install
-            on this device&quot; in the card — no QR code needed. The link opens
-            your carrier&apos;s installer directly.
+            <strong>On the same phone you&apos;ll use?</strong> Tap
+            &quot;Install on this device&quot; in the card — no QR code needed.
+            The link opens your carrier&apos;s installer directly.
           </p>
           <p>
             <strong>On another device?</strong> Use the QR code in the card and
@@ -325,7 +325,8 @@ function EsimOrderCard({
     setLoadingUsage(true);
     fetch(`/api/esim/my-esims/${order.id}/usage`)
       .then((res) => res.json())
-      .then((raw: unknown) => { const data = raw as { data?: UsageData; status: boolean };
+      .then((raw: unknown) => {
+        const data = raw as { data?: UsageData; status: boolean };
         if (data.status && data.data) {
           setUsage(data.data);
         }
@@ -339,9 +340,9 @@ function EsimOrderCard({
       <CardContent className="p-5">
         <div
           className={`
-          flex flex-col gap-4
-          sm:flex-row sm:items-start sm:justify-between
-        `}
+            flex flex-col gap-4
+            sm:flex-row sm:items-start sm:justify-between
+          `}
         >
           {/* Left: Package info */}
           <div className="min-w-0 flex-1 space-y-2">
@@ -363,8 +364,8 @@ function EsimOrderCard({
 
             <div
               className={`
-              flex flex-wrap items-center gap-3 text-xs text-muted-foreground
-            `}
+                flex flex-wrap items-center gap-3 text-xs text-muted-foreground
+              `}
             >
               <span className="flex items-center gap-1">
                 <Wifi className="h-3 w-3" />
@@ -480,78 +481,101 @@ function EsimOrderCard({
         </div>
 
         {/* Activate: install on this device (no QR) + optional QR for another device */}
-        {order.activationLink && (order.status === "active" || order.status === "processing") && (
-          <div
-            className={`
-            mt-5 border-t border-border pt-5
-          `}
-          >
-            <h4 className="mb-3 text-sm font-semibold">Activate your eSIM</h4>
+        {order.activationLink &&
+          (order.status === "active" || order.status === "processing") && (
+            <div className={`mt-5 border-t border-border pt-5`}>
+              <h4 className="mb-3 text-sm font-semibold">Activate your eSIM</h4>
 
-            {/* Primary: Install on this device — no QR code needed (e.g. purchased on phone) */}
-            <div className="mb-4 rounded-lg border border-green-200 bg-green-50/50 p-4 dark:border-green-900/50 dark:bg-green-950/20">
-              <p className="mb-2 text-sm font-medium text-green-800 dark:text-green-300">
-                On this phone? Install without a QR code
-              </p>
-              <p className="mb-3 text-xs text-green-700/90 dark:text-green-400/90">
-                Tap below to open the installer on this device. Your carrier will
-                add the eSIM — no need to scan anything.
-              </p>
-              <Button asChild size="sm">
-                <a
-                  href={order.activationLink}
-                  rel="noopener noreferrer"
-                  target="_blank"
+              {/* Primary: Install on this device — no QR code needed (e.g. purchased on phone) */}
+              <div
+                className={`
+                  mb-4 rounded-lg border border-green-200 bg-green-50/50 p-4
+                  dark:border-green-900/50 dark:bg-green-950/20
+                `}
+              >
+                <p
+                  className={`
+                    mb-2 text-sm font-medium text-green-800
+                    dark:text-green-300
+                  `}
                 >
-                  Install on this device
-                  <ExternalLink className="ml-1.5 size-3.5" />
-                </a>
-              </Button>
-            </div>
+                  On this phone? Install without a QR code
+                </p>
+                <p
+                  className={`
+                    mb-3 text-xs text-green-700/90
+                    dark:text-green-400/90
+                  `}
+                >
+                  Tap below to open the installer on this device. Your carrier
+                  will add the eSIM — no need to scan anything.
+                </p>
+                <Button asChild size="sm">
+                  <a
+                    href={order.activationLink}
+                    rel="noopener noreferrer"
+                    target="_blank"
+                  >
+                    Install on this device
+                    <ExternalLink className="ml-1.5 size-3.5" />
+                  </a>
+                </Button>
+              </div>
 
-            {/* Secondary: QR code for another device or desktop */}
-            <p className="mb-2 text-xs font-medium text-muted-foreground">
-              Or install on another device (scan QR code)
-            </p>
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-6">
-              {qrDataUrl && (
-                <div className="flex shrink-0 flex-col items-center gap-1">
-                  <img
-                    alt="eSIM activation QR code — scan with your phone"
-                    className="rounded-lg border border-border bg-white p-2"
-                    height={200}
-                    src={qrDataUrl}
-                    width={200}
-                  />
-                  <span className="text-xs text-muted-foreground">
-                    Scan with the device you want to use
-                  </span>
+              {/* Secondary: QR code for another device or desktop */}
+              <p className="mb-2 text-xs font-medium text-muted-foreground">
+                Or install on another device (scan QR code)
+              </p>
+              <div
+                className={`
+                  flex flex-col gap-4
+                  sm:flex-row sm:items-start sm:gap-6
+                `}
+              >
+                {qrDataUrl && (
+                  <div className="flex shrink-0 flex-col items-center gap-1">
+                    <img
+                      alt="eSIM activation QR code — scan with your phone"
+                      className="rounded-lg border border-border bg-white p-2"
+                      height={200}
+                      src={qrDataUrl}
+                      width={200}
+                    />
+                    <span className="text-xs text-muted-foreground">
+                      Scan with the device you want to use
+                    </span>
+                  </div>
+                )}
+                {qrError && (
+                  <p className="text-xs text-muted-foreground">
+                    {qrError}. Use &quot;Copy link&quot; above and open it on
+                    the device you want to use.
+                  </p>
+                )}
+                <div
+                  className={`
+                    min-w-0 flex-1 space-y-2 text-sm text-muted-foreground
+                  `}
+                >
+                  <p>
+                    <strong className="text-foreground">iPhone:</strong>{" "}
+                    Settings → Cellular → Add eSIM → Use QR Code, or tap
+                    &quot;Install on this device&quot; above if you&apos;re on
+                    the phone already.
+                  </p>
+                  <p>
+                    <strong className="text-foreground">Android:</strong>{" "}
+                    Settings → Network &amp; internet → SIMs → Add eSIM, then
+                    scan QR or tap &quot;Install on this device&quot; on this
+                    phone.
+                  </p>
+                  <p className="text-xs">
+                    Use Wi‑Fi when installing. Your device must support eSIM.
+                  </p>
                 </div>
-              )}
-              {qrError && (
-                <p className="text-xs text-muted-foreground">
-                  {qrError}. Use &quot;Copy link&quot; above and open it on the
-                  device you want to use.
-                </p>
-              )}
-              <div className="min-w-0 flex-1 space-y-2 text-sm text-muted-foreground">
-                <p>
-                  <strong className="text-foreground">iPhone:</strong> Settings →
-                  Cellular → Add eSIM → Use QR Code, or tap &quot;Install on this
-                  device&quot; above if you&apos;re on the phone already.
-                </p>
-                <p>
-                  <strong className="text-foreground">Android:</strong> Settings
-                  → Network &amp; internet → SIMs → Add eSIM, then scan QR or
-                  tap &quot;Install on this device&quot; on this phone.
-                </p>
-                <p className="text-xs">
-                  Use Wi‑Fi when installing. Your device must support eSIM.
-                </p>
               </div>
             </div>
-          </div>
-        )}
+          )}
       </CardContent>
     </Card>
   );

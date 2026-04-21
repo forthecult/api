@@ -184,7 +184,10 @@ export function solanaAuthPlugin() {
                 .from(solanaWalletStakeClaimedTable)
                 .where(eq(solanaWalletStakeClaimedTable.wallet, addressTrim))
                 .limit(1);
-              if (stakeClaimed.length > 0 && stakeClaimed[0]!.userId !== sessionUserId) {
+              if (
+                stakeClaimed.length > 0 &&
+                stakeClaimed[0]!.userId !== sessionUserId
+              ) {
                 throw new APIError("BAD_REQUEST", {
                   message:
                     "This wallet was previously used for staking and cannot be linked to another account",
@@ -335,38 +338,38 @@ export function solanaAuthPlugin() {
                   const rows = await tx
                     .insert(userTable)
                     .values({
-                      id: userId,
-                      name: "Solana User",
+                      createdAt: now,
                       email,
                       emailVerified: true,
-                      createdAt: now,
-                      updatedAt: now,
-                      twoFactorEnabled: false,
-                      role: "user",
+                      id: userId,
                       marketingAiCompanion: false,
                       marketingDiscord: false,
                       marketingEmail: true,
                       marketingSms: false,
                       marketingTelegram: false,
                       marketingWebsite: false,
+                      name: "Solana User",
                       receiveMarketing: false,
                       receiveOrderNotificationsViaTelegram: false,
                       receiveSmsMarketing: false,
+                      role: "user",
                       transactionalAiCompanion: false,
                       transactionalDiscord: false,
                       transactionalEmail: true,
                       transactionalSms: false,
                       transactionalTelegram: false,
                       transactionalWebsite: true,
+                      twoFactorEnabled: false,
+                      updatedAt: now,
                     })
                     .returning();
                   await tx.insert(accountTable).values({
-                    id: accountId,
                     accountId: addressTrim,
-                    providerId: SOLANA_PROVIDER_ID,
-                    userId: rows[0].id,
                     createdAt: now,
+                    id: accountId,
+                    providerId: SOLANA_PROVIDER_ID,
                     updatedAt: now,
+                    userId: rows[0].id,
                   });
                   return rows;
                 });
@@ -417,12 +420,12 @@ export function solanaAuthPlugin() {
                     if (!existingAcc[0]) {
                       try {
                         await db.insert(accountTable).values({
-                          id: generateId({ model: "account" }),
                           accountId: addressTrim,
-                          providerId: SOLANA_PROVIDER_ID,
-                          userId: user.id,
                           createdAt: now,
+                          id: generateId({ model: "account" }),
+                          providerId: SOLANA_PROVIDER_ID,
                           updatedAt: now,
+                          userId: user.id,
                         });
                       } catch (linkErr) {
                         if (!isDuplicateAccountError(linkErr)) throw linkErr;
@@ -540,6 +543,18 @@ function getAppName(): string {
   return process.env.NEXT_PUBLIC_APP_NAME ?? "For the Culture";
 }
 
+function getErrorCode(err: unknown): string {
+  if (err && typeof err === "object" && "code" in err)
+    return String((err as { code: string }).code);
+  const cause =
+    err && typeof err === "object" && "cause" in err
+      ? (err as { cause: unknown }).cause
+      : null;
+  if (cause && typeof cause === "object" && "code" in cause)
+    return String((cause as { code: string }).code);
+  return "";
+}
+
 /** Collect error message from error and its cause chain (e.g. Postgres wraps in cause). */
 function getFullErrorMessage(err: unknown): string {
   const parts: string[] = [];
@@ -581,6 +596,18 @@ function getSignatureBytes(params: {
   return null;
 }
 
+/** True if this error is a DB unique constraint on account (providerId + accountId). */
+function isDuplicateAccountError(err: unknown): boolean {
+  const msg = getFullErrorMessage(err);
+  if (
+    /account.*unique|unique.*account|duplicate key|unique constraint/i.test(msg)
+  )
+    return true;
+  const code = getErrorCode(err);
+  if (code === "23505") return true;
+  return false;
+}
+
 /** True if this error is a DB unique constraint on user email (duplicate signup). */
 function isDuplicateUserEmailError(err: unknown): boolean {
   const msg = getFullErrorMessage(err);
@@ -592,36 +619,6 @@ function isDuplicateUserEmailError(err: unknown): boolean {
   const code = getErrorCode(err);
   if (code === "23505") return true; // PostgreSQL unique_violation
   return false;
-}
-
-/** True if this error is a DB unique constraint on account (providerId + accountId). */
-function isDuplicateAccountError(err: unknown): boolean {
-  const msg = getFullErrorMessage(err);
-  if (
-    /account.*unique|unique.*account|duplicate key|unique constraint/i.test(
-      msg,
-    )
-  )
-    return true;
-  const code = getErrorCode(err);
-  if (code === "23505") return true;
-  return false;
-}
-
-function getErrorCode(err: unknown): string {
-  if (err && typeof err === "object" && "code" in err)
-    return String((err as { code: string }).code);
-  const cause =
-    err && typeof err === "object" && "cause" in err
-      ? (err as { cause: unknown }).cause
-      : null;
-  if (
-    cause &&
-    typeof cause === "object" &&
-    "code" in cause
-  )
-    return String((cause as { code: string }).code);
-  return "";
 }
 
 function makeMessage(nonce: string): string {

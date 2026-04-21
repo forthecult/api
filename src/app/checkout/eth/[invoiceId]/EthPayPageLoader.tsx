@@ -12,16 +12,16 @@ const EthPayPageClient = dynamic(
         <Skeleton className="mb-6 h-16 w-full max-w-7xl" />
         <div
           className={`
-          mx-auto flex max-w-7xl flex-col gap-6
-          sm:flex-row
-        `}
+            mx-auto flex max-w-7xl flex-col gap-6
+            sm:flex-row
+          `}
         >
           <Skeleton className="h-96 min-w-0 flex-1 rounded-xl" />
           <Skeleton
             className={`
-            h-64 w-full rounded-xl
-            sm:w-80
-          `}
+              h-64 w-full rounded-xl
+              sm:w-80
+            `}
           />
         </div>
       </div>

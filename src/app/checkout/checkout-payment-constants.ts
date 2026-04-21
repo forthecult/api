@@ -18,6 +18,7 @@ export const CRYPTO_SUB_OPTIONS: {
   value:
     | "bitcoin"
     | "crust"
+    | "cult"
     | "dogecoin"
     | "eth"
     | "monero"
@@ -26,8 +27,7 @@ export const CRYPTO_SUB_OPTIONS: {
     | "seeker"
     | "solana"
     | "soluna"
-    | "troll"
-    | "cult";
+    | "troll";
 }[] = [
   { label: "Bitcoin (BTC)", value: "bitcoin" },
   { label: "Culture (CULT)", value: "cult" },
@@ -91,19 +91,19 @@ export const CRYPTO_LOGO_SRC: Partial<
   Record<
     | "bitcoin"
     | "crust"
+    | "cult"
     | "dogecoin"
     | "eth"
     | "monero"
     | "other"
     | "pump"
-  | "seeker"
-  | "solana"
-  | "soluna"
-  | "sui"
-  | "ton"
-  | "troll"
-  | "cult",
-  string
+    | "seeker"
+    | "solana"
+    | "soluna"
+    | "sui"
+    | "ton"
+    | "troll",
+    string
   >
 > = {
   bitcoin: "/crypto/bitcoin/bitcoin-logo.svg",

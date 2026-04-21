@@ -52,14 +52,17 @@ function improveTitleForSeo(name: string): string {
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
     .join(" ");
   if (titleCased.length <= 60) return titleCased;
-  return titleCased.slice(0, 57) + "...";
+  return `${titleCased.slice(0, 57)}...`;
 }
 
 /** Suggested meta description (for your DB) – keep under ~155 chars. */
-function suggestedMetaDescription(title: string, variantCount: number): string {
+function suggestedMetaDescription(
+  title: string,
+  _variantCount: number,
+): string {
   const base = `${title}. Premium quality, multiple sizes and colors.`;
   if (base.length <= 155) return base;
-  return base.slice(0, 152) + "...";
+  return `${base.slice(0, 152)}...`;
 }
 
 /** Suggested page title for SEO (for your DB). */

@@ -240,15 +240,15 @@ export function FooterPreferencesModal({
             <div className="relative">
               <Search
                 className={`
-                absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2
-                text-muted-foreground
-              `}
+                  absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2
+                  text-muted-foreground
+                `}
               />
               <Input
-                ref={countrySearchInputRef}
                 className="pl-9"
                 onChange={(e) => setCountrySearch(e.target.value)}
                 placeholder="Search country"
+                ref={countrySearchInputRef}
                 value={countrySearch}
               />
             </div>
@@ -256,7 +256,6 @@ export function FooterPreferencesModal({
               className={`
                 max-h-[60vh] overflow-auto rounded-md border border-input
               `}
-              role="listbox"
             >
               {filteredCountries.map((o) => (
                 <li key={o.code}>
@@ -286,9 +285,9 @@ export function FooterPreferencesModal({
                     {draftCountry === o.code && (
                       <Check
                         className={`
-                        h-5 w-5 shrink-0 text-green-600
-                        dark:text-green-400
-                      `}
+                          h-5 w-5 shrink-0 text-green-600
+                          dark:text-green-400
+                        `}
                       />
                     )}
                   </button>
@@ -318,9 +317,9 @@ export function FooterPreferencesModal({
             <div className="relative">
               <Search
                 className={`
-                absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2
-                text-muted-foreground
-              `}
+                  absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2
+                  text-muted-foreground
+                `}
               />
               <Input
                 className="pl-9"
@@ -333,7 +332,6 @@ export function FooterPreferencesModal({
               className={`
                 max-h-[60vh] overflow-auto rounded-md border border-input
               `}
-              role="listbox"
             >
               {filteredCurrencies.map((o) => (
                 <li key={o.code}>
@@ -363,9 +361,9 @@ export function FooterPreferencesModal({
                     {draftCurrency === o.code && (
                       <Check
                         className={`
-                        h-5 w-5 shrink-0 text-green-600
-                        dark:text-green-400
-                      `}
+                          h-5 w-5 shrink-0 text-green-600
+                          dark:text-green-400
+                        `}
                       />
                     )}
                   </button>

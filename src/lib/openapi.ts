@@ -395,67 +395,12 @@ export const openApiSpec = {
         tags: ["Discovery"],
       },
     },
-    "/payment-methods": {
-      get: {
-        description:
-          "Get all supported payment methods: enabled settings (data) and chains/tokens. Expandable to non-blockchain methods.",
-        operationId: "getPaymentMethods",
-        responses: {
-          "200": {
-            content: {
-              "application/json": {
-                schema: {
-                  properties: {
-                    data: {
-                      description: "Enabled payment method settings (display order, label, methodKey)",
-                      items: { type: "object" },
-                      type: "array",
-                    },
-                    chains: {
-                      items: {
-                        properties: {
-                          id: { example: "solana", type: "string" },
-                          name: { example: "Solana", type: "string" },
-                          tokens: {
-                            items: {
-                              properties: {
-                                decimals: { type: "integer" },
-                                mint: { type: "string" },
-                                name: { type: "string" },
-                                symbol: { type: "string" },
-                                type: {
-                                  enum: ["native", "spl"],
-                                  type: "string",
-                                },
-                              },
-                              type: "object",
-                            },
-                            type: "array",
-                          },
-                        },
-                        type: "object",
-                      },
-                      type: "array",
-                    },
-                  },
-                  required: ["data", "chains"],
-                  type: "object",
-                },
-              },
-            },
-            description: "Payment method settings and supported chains/tokens",
-          },
-        },
-        summary: "Get all supported payment methods",
-        tags: ["Payment Methods"],
-      },
-    },
     "/chains": {
       get: {
+        deprecated: true,
         description:
           "Deprecated. Prefer GET /payment-methods for the canonical list. Returns chains and tokens only.",
         operationId: "getChains",
-        deprecated: true,
         responses: {
           "200": {
             content: {
@@ -660,12 +605,12 @@ export const openApiSpec = {
             schema: { type: "string" },
           },
           {
+            description:
+              "Confirmation token (from order confirmation email) to view full details without auth; only for orders created <1 hour ago.",
             in: "query",
             name: "ct",
             required: false,
             schema: { type: "string" },
-            description:
-              "Confirmation token (from order confirmation email) to view full details without auth; only for orders created <1 hour ago.",
           },
         ],
         responses: {
@@ -709,6 +654,58 @@ export const openApiSpec = {
           "404": { description: "Order not found" },
         },
         summary: "Get order details",
+        tags: ["Orders"],
+      },
+    },
+    "/orders/{orderId}/cancel": {
+      post: {
+        description:
+          "Cancel a pending order (before payment or before fulfillment). Requires: authenticated session (owner), admin, or request body with lookupValue (billing email, payment address, or shipping postal code) to prove ownership.",
+        operationId: "cancelOrder",
+        parameters: [
+          {
+            in: "path",
+            name: "orderId",
+            required: true,
+            schema: { type: "string" },
+          },
+        ],
+        requestBody: {
+          content: {
+            "application/json": {
+              schema: {
+                properties: {
+                  lookupValue: {
+                    description:
+                      "Optional: billing email, payer wallet address, or shipping postal code to prove ownership when not authenticated.",
+                    type: "string",
+                  },
+                },
+                type: "object",
+              },
+            },
+          },
+        },
+        responses: {
+          "200": {
+            content: {
+              "application/json": {
+                schema: {
+                  properties: {
+                    orderId: { type: "string" },
+                    status: { example: "cancelled", type: "string" },
+                  },
+                  type: "object",
+                },
+              },
+            },
+            description: "Order cancelled",
+          },
+          "400": { description: "Order already paid/shipped or invalid" },
+          "401": { description: "Not authorized" },
+          "404": { description: "Order not found" },
+        },
+        summary: "Cancel pending order",
         tags: ["Orders"],
       },
     },
@@ -772,56 +769,60 @@ export const openApiSpec = {
         tags: ["Orders"],
       },
     },
-    "/orders/{orderId}/cancel": {
-      post: {
+    "/payment-methods": {
+      get: {
         description:
-          "Cancel a pending order (before payment or before fulfillment). Requires: authenticated session (owner), admin, or request body with lookupValue (billing email, payment address, or shipping postal code) to prove ownership.",
-        operationId: "cancelOrder",
-        parameters: [
-          {
-            in: "path",
-            name: "orderId",
-            required: true,
-            schema: { type: "string" },
-          },
-        ],
-        requestBody: {
-          content: {
-            "application/json": {
-              schema: {
-                properties: {
-                  lookupValue: {
-                    type: "string",
-                    description:
-                      "Optional: billing email, payer wallet address, or shipping postal code to prove ownership when not authenticated.",
-                  },
-                },
-                type: "object",
-              },
-            },
-          },
-        },
+          "Get all supported payment methods: enabled settings (data) and chains/tokens. Expandable to non-blockchain methods.",
+        operationId: "getPaymentMethods",
         responses: {
           "200": {
-            description: "Order cancelled",
             content: {
               "application/json": {
                 schema: {
                   properties: {
-                    orderId: { type: "string" },
-                    status: { example: "cancelled", type: "string" },
+                    chains: {
+                      items: {
+                        properties: {
+                          id: { example: "solana", type: "string" },
+                          name: { example: "Solana", type: "string" },
+                          tokens: {
+                            items: {
+                              properties: {
+                                decimals: { type: "integer" },
+                                mint: { type: "string" },
+                                name: { type: "string" },
+                                symbol: { type: "string" },
+                                type: {
+                                  enum: ["native", "spl"],
+                                  type: "string",
+                                },
+                              },
+                              type: "object",
+                            },
+                            type: "array",
+                          },
+                        },
+                        type: "object",
+                      },
+                      type: "array",
+                    },
+                    data: {
+                      description:
+                        "Enabled payment method settings (display order, label, methodKey)",
+                      items: { type: "object" },
+                      type: "array",
+                    },
                   },
+                  required: ["data", "chains"],
                   type: "object",
                 },
               },
             },
+            description: "Payment method settings and supported chains/tokens",
           },
-          "400": { description: "Order already paid/shipped or invalid" },
-          "401": { description: "Not authorized" },
-          "404": { description: "Order not found" },
         },
-        summary: "Cancel pending order",
-        tags: ["Orders"],
+        summary: "Get all supported payment methods",
+        tags: ["Payment Methods"],
       },
     },
     "/products/featured": {
@@ -938,7 +939,8 @@ export const openApiSpec = {
                             type: "object",
                           },
                           productUrl: {
-                            description: "Present for marketplace-sourced items",
+                            description:
+                              "Present for marketplace-sourced items",
                             type: "string",
                           },
                           slug: { type: "string" },
@@ -1151,6 +1153,65 @@ export const openApiSpec = {
           },
         },
         summary: "Calculate shipping (with optional address)",
+        tags: ["Checkout"],
+      },
+    },
+    "/shipping/product-estimate": {
+      post: {
+        description:
+          "List estimated shipping option lines for one product and a destination (country, postal code, region when required). No auth required.",
+        operationId: "postShippingProductEstimate",
+        requestBody: {
+          content: {
+            "application/json": {
+              schema: {
+                properties: {
+                  countryCode: { type: "string" },
+                  postalCode: { type: "string" },
+                  productId: { type: "string" },
+                  productVariantId: { type: "string" },
+                  quantity: { type: "integer" },
+                  stateCode: { type: "string" },
+                },
+                required: ["countryCode", "productId"],
+                type: "object",
+              },
+            },
+          },
+        },
+        responses: {
+          "200": {
+            content: {
+              "application/json": {
+                schema: {
+                  properties: {
+                    canShipToCountry: { type: "boolean" },
+                    fulfillmentError: { nullable: true, type: "string" },
+                    options: {
+                      items: {
+                        properties: {
+                          deliveryHint: { nullable: true, type: "string" },
+                          label: { type: "string" },
+                          shippingCents: { type: "integer" },
+                          shippingSpeed: { type: "string" },
+                        },
+                        type: "object",
+                      },
+                      type: "array",
+                    },
+                    unavailableProducts: {
+                      items: { type: "string" },
+                      type: "array",
+                    },
+                  },
+                  type: "object",
+                },
+              },
+            },
+            description: "Shipping estimate lines for the product",
+          },
+        },
+        summary: "Estimate shipping options for a single product",
         tags: ["Checkout"],
       },
     },

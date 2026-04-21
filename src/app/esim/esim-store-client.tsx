@@ -1,12 +1,22 @@
 "use client";
 
-import { Globe, Loader2, MapPin, Minus, Plus, Search, Signal, Wifi } from "lucide-react";
+import {
+  Globe,
+  Loader2,
+  MapPin,
+  Minus,
+  Plus,
+  Search,
+  Signal,
+  Wifi,
+} from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
+import { EsimDeviceCompatibilityModal } from "~/app/esim/esim-device-compatibility-modal";
 import { cn } from "~/lib/cn";
 import {
   formatEsimPackageName,
@@ -24,8 +34,6 @@ import { Button } from "~/ui/primitives/button";
 import { Card, CardContent } from "~/ui/primitives/card";
 import { Input } from "~/ui/primitives/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/ui/primitives/tabs";
-
-import { EsimDeviceCompatibilityModal } from "~/app/esim/esim-device-compatibility-modal";
 
 // ---------- Types ----------
 
@@ -83,7 +91,7 @@ function ContinentCard({
         `,
         `
           cursor-pointer
- hover:border-primary/30 
+          hover:border-primary/30
         `,
       )}
       onClick={onClick}
@@ -111,7 +119,7 @@ function CountryCard({
         `,
         `
           w-full cursor-pointer
- hover:border-primary/30 
+          hover:border-primary/30
         `,
       )}
       onClick={onClick}
@@ -229,16 +237,15 @@ function PackageCard({
   return (
     <Card
       className={`
-      group relative flex h-full flex-col transition-all
- hover:border-primary/30 
-    `}
+        group relative flex h-full flex-col transition-all
+        hover:border-primary/30
+      `}
     >
       {pkg.has5g && (
         <span
           className={`
             absolute top-3 right-3 z-10 inline-flex items-center gap-0.5 rounded
             bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary
- 
           `}
           title="5G available"
         >
@@ -303,8 +310,8 @@ function PackageCard({
           )}
           <div
             className={`
-            mt-auto flex items-start justify-between gap-2 border-t pt-2
-          `}
+              mt-auto flex items-start justify-between gap-2 border-t pt-2
+            `}
           >
             <div className="flex flex-col gap-0.5">
               <span className="text-xl font-bold text-primary">
@@ -369,16 +376,15 @@ function UnlimitedPlanCard({
   return (
     <Card
       className={`
-      group relative flex h-full flex-col transition-all
- hover:border-primary/30 
-    `}
+        group relative flex h-full flex-col transition-all
+        hover:border-primary/30
+      `}
     >
       {has5g && (
         <span
           className={`
             absolute top-3 right-3 z-10 inline-flex items-center gap-0.5 rounded
             bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary
- 
           `}
           title="5G available"
         >
@@ -468,8 +474,8 @@ function UnlimitedPlanCard({
         </div>
         <div
           className={`
-          mt-auto flex items-center gap-2 pt-2 text-sm text-muted-foreground
-        `}
+            mt-auto flex items-center gap-2 pt-2 text-sm text-muted-foreground
+          `}
         >
           <Globe className="h-3.5 w-3.5 shrink-0" />
           <span className="truncate">
@@ -553,21 +559,6 @@ const MOST_POPULAR_COUNTRY_ALIASES: string[][] = [
 
 const MOST_POPULAR_EXCLUDE = new Set(["united states virgin islands"]);
 
-function getPopularIndex(country: Country): number {
-  const name = country.name.toLowerCase();
-  if (MOST_POPULAR_EXCLUDE.has(name)) return -1;
-  for (let i = 0; i < MOST_POPULAR_COUNTRY_ALIASES.length; i++) {
-    const matched = MOST_POPULAR_COUNTRY_ALIASES[i]!.some(
-      (alias) =>
-        name === alias.toLowerCase() ||
-        name.startsWith(alias.toLowerCase() + " ") ||
-        name.startsWith(alias.toLowerCase() + ","),
-    );
-    if (matched) return i;
-  }
-  return -1;
-}
-
 export function EsimStorePage() {
   const searchParams = useSearchParams();
   const { addItem, openCart } = useCart();
@@ -581,7 +572,7 @@ export function EsimStorePage() {
   const [countries, setCountries] = useState<Country[]>([]);
   const [countriesLoading, setCountriesLoading] = useState(true);
   const [continents, setContinents] = useState<Continent[]>([]);
-  const [continentsLoading, setContinentsLoading] = useState(true);
+  const [_continentsLoading, setContinentsLoading] = useState(true);
   const [packages, setPackages] = useState<Package[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -621,7 +612,8 @@ export function EsimStorePage() {
     setCountriesLoading(true);
     fetch("/api/esim/countries")
       .then((res) => res.json())
-      .then((raw: unknown) => { const data = raw as { data?: Country[]; status: boolean };
+      .then((raw: unknown) => {
+        const data = raw as { data?: Country[]; status: boolean };
         if (data.status && data.data) {
           setCountries(data.data);
         }
@@ -635,7 +627,8 @@ export function EsimStorePage() {
     setContinentsLoading(true);
     fetch("/api/esim/continents")
       .then((res) => res.json())
-      .then((raw: unknown) => { const data = raw as { data?: Continent[]; status: boolean };
+      .then((raw: unknown) => {
+        const data = raw as { data?: Continent[]; status: boolean };
         if (data.status && data.data) {
           setContinents(data.data);
         }
@@ -650,7 +643,8 @@ export function EsimStorePage() {
     setLoading(true);
     fetch(`/api/esim/packages/global?package_type=${packageType}`)
       .then((res) => res.json())
-      .then((raw: unknown) => { const data = raw as { data?: Package[]; status: boolean };
+      .then((raw: unknown) => {
+        const data = raw as { data?: Package[]; status: boolean };
         if (data.status && data.data) {
           setPackages(data.data);
         }
@@ -669,7 +663,8 @@ export function EsimStorePage() {
         `/api/esim/packages/country/${country.id}?package_type=${packageType}`,
       )
         .then((res) => res.json())
-        .then((raw: unknown) => { const data = raw as { data?: Package[]; status: boolean };
+        .then((raw: unknown) => {
+          const data = raw as { data?: Package[]; status: boolean };
           if (data.status && data.data) {
             setPackages(data.data);
           }
@@ -690,7 +685,8 @@ export function EsimStorePage() {
         `/api/esim/packages/continent/${continent.id}?package_type=${packageType}`,
       )
         .then((res) => res.json())
-        .then((raw: unknown) => { const data = raw as { data?: Package[]; status: boolean };
+        .then((raw: unknown) => {
+          const data = raw as { data?: Package[]; status: boolean };
           if (data.status && data.data) {
             setPackages(data.data);
           }
@@ -708,8 +704,12 @@ export function EsimStorePage() {
     } else if (selectedContinent) {
       handleContinentSelect(selectedContinent);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [packageType]);
+  }, [
+    selectedCountry,
+    handleContinentSelect,
+    selectedContinent,
+    handleCountrySelect,
+  ]);
 
   // Restore country/continent selection from URL when returning from detail page
   useEffect(() => {
@@ -726,7 +726,8 @@ export function EsimStorePage() {
             `/api/esim/packages/country/${c.id}?package_type=${packageType}`,
           )
             .then((res) => res.json())
-            .then((raw: unknown) => { const data = raw as { data?: Package[]; status: boolean };
+            .then((raw: unknown) => {
+              const data = raw as { data?: Package[]; status: boolean };
               if (data.status && data.data) setPackages(data.data);
             })
             .catch(console.error)
@@ -746,7 +747,8 @@ export function EsimStorePage() {
             `/api/esim/packages/continent/${c.id}?package_type=${packageType}`,
           )
             .then((res) => res.json())
-            .then((raw: unknown) => { const data = raw as { data?: Package[]; status: boolean };
+            .then((raw: unknown) => {
+              const data = raw as { data?: Package[]; status: boolean };
               if (data.status && data.data) setPackages(data.data);
             })
             .catch(console.error)
@@ -804,7 +806,15 @@ export function EsimStorePage() {
         next ? `${window.location.pathname}?${next}` : window.location.pathname,
       );
     }
-  }, [filterValidity, filterData, searchParams]);
+  }, [
+    filterValidity,
+    filterData,
+    searchParams,
+    selectedCountry,
+    activeTab,
+    selectedContinent,
+    packageType,
+  ]);
 
   // Client-side filter packages by validity and data
   const filteredPackages = useMemo(
@@ -851,9 +861,8 @@ export function EsimStorePage() {
 
   const showLoadAll =
     !searchQuery.trim() && otherCountries.length > 0 && !showAllCountries;
-  const countriesToShowInFullList = showAllCountries || searchQuery.trim()
-    ? otherCountries
-    : [];
+  const countriesToShowInFullList =
+    showAllCountries || searchQuery.trim() ? otherCountries : [];
 
   const clearSelection = () => {
     setSelectedCountry(null);
@@ -883,10 +892,10 @@ export function EsimStorePage() {
     <div className="min-h-screen bg-background">
       <div
         className={`
-        container mx-auto max-w-7xl px-4 py-8
-        sm:px-6
-        lg:px-8
-      `}
+          container mx-auto max-w-7xl px-4 py-8
+          sm:px-6
+          lg:px-8
+        `}
       >
         {/* Hero */}
         <div className="mb-10 text-center">
@@ -897,9 +906,9 @@ export function EsimStorePage() {
           </div>
           <h1
             className={`
-            text-3xl font-bold tracking-tight
-            sm:text-4xl
-          `}
+              text-3xl font-bold tracking-tight
+              sm:text-4xl
+            `}
           >
             eSIM Data Plans
           </h1>
@@ -959,9 +968,9 @@ export function EsimStorePage() {
                 <div className="relative mx-auto mb-6 max-w-md">
                   <Search
                     className={`
-                    absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2
-                    text-muted-foreground
-                  `}
+                      absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2
+                      text-muted-foreground
+                    `}
                   />
                   <Input
                     className="pl-9"
@@ -973,9 +982,9 @@ export function EsimStorePage() {
                 {countriesLoading ? (
                   <div
                     className={`
-                    flex items-center justify-center gap-2 py-16
-                    text-muted-foreground
-                  `}
+                      flex items-center justify-center gap-2 py-16
+                      text-muted-foreground
+                    `}
                   >
                     <Loader2 className="h-5 w-5 animate-spin" />
                     <span>Loading countries…</span>
@@ -989,11 +998,11 @@ export function EsimStorePage() {
                         </h2>
                         <div
                           className={`
-                          grid grid-cols-2 gap-3
-                          sm:grid-cols-3
-                          md:grid-cols-4
-                          lg:grid-cols-5
-                        `}
+                            grid grid-cols-2 gap-3
+                            sm:grid-cols-3
+                            md:grid-cols-4
+                            lg:grid-cols-5
+                          `}
                         >
                           {popularCountries.map((country) => (
                             <CountryCard
@@ -1022,11 +1031,11 @@ export function EsimStorePage() {
                         </h2>
                         <div
                           className={`
-                          grid grid-cols-2 gap-3
-                          sm:grid-cols-3
-                          md:grid-cols-4
-                          lg:grid-cols-5
-                        `}
+                            grid grid-cols-2 gap-3
+                            sm:grid-cols-3
+                            md:grid-cols-4
+                            lg:grid-cols-5
+                          `}
                         >
                           {countriesToShowInFullList.map((country) => (
                             <CountryCard
@@ -1117,11 +1126,11 @@ export function EsimStorePage() {
                     </div>
                     <div
                       className={`
-                      grid gap-4
-                      sm:grid-cols-2
-                      lg:grid-cols-3
-                      xl:grid-cols-4
-                    `}
+                        grid gap-4
+                        sm:grid-cols-2
+                        lg:grid-cols-3
+                        xl:grid-cols-4
+                      `}
                     >
                       {displayItems.map((item) =>
                         item.type === "single" ? (
@@ -1166,11 +1175,11 @@ export function EsimStorePage() {
             {!selectedContinent ? (
               <div
                 className={`
-                grid grid-cols-2 gap-4
-                sm:grid-cols-3
-                md:grid-cols-4
-                lg:grid-cols-6
-              `}
+                  grid grid-cols-2 gap-4
+                  sm:grid-cols-3
+                  md:grid-cols-4
+                  lg:grid-cols-6
+                `}
               >
                 {continents.map((continent) => (
                   <ContinentCard
@@ -1239,11 +1248,11 @@ export function EsimStorePage() {
                     </div>
                     <div
                       className={`
-                      grid gap-4
-                      sm:grid-cols-2
-                      lg:grid-cols-3
-                      xl:grid-cols-4
-                    `}
+                        grid gap-4
+                        sm:grid-cols-2
+                        lg:grid-cols-3
+                        xl:grid-cols-4
+                      `}
                     >
                       {displayItems.map((item) =>
                         item.type === "single" ? (
@@ -1328,11 +1337,11 @@ export function EsimStorePage() {
                 </div>
                 <div
                   className={`
-                  grid gap-4
-                  sm:grid-cols-2
-                  lg:grid-cols-3
-                  xl:grid-cols-4
-                `}
+                    grid gap-4
+                    sm:grid-cols-2
+                    lg:grid-cols-3
+                    xl:grid-cols-4
+                  `}
                 >
                   {displayItems.map((item) =>
                     item.type === "single" ? (
@@ -1371,32 +1380,32 @@ export function EsimStorePage() {
         <section className="mt-16 border-t border-border pt-12">
           <h2
             className={`
-            mb-10 text-center text-3xl font-bold text-[#1A1611]
-            dark:text-[#F5F1EB]
-          `}
+              mb-10 text-center text-3xl font-bold text-[#1A1611]
+              dark:text-[#F5F1EB]
+            `}
           >
             How eSIM Works
           </h2>
           <div
             className={`
-            mx-auto grid w-full max-w-7xl grid-cols-1 gap-8
-            sm:grid-cols-3
-          `}
+              mx-auto grid w-full max-w-7xl grid-cols-1 gap-8
+              sm:grid-cols-3
+            `}
           >
             <div className="text-center">
               <div
                 className={`
-                mx-auto mb-4 flex h-14 w-14 items-center justify-center
-                rounded-full bg-primary/10
-              `}
+                  mx-auto mb-4 flex h-14 w-14 items-center justify-center
+                  rounded-full bg-primary/10
+                `}
               >
                 <span className="text-xl font-bold text-primary">1</span>
               </div>
               <h3
                 className={`
-                text-xl font-semibold text-[#1A1611]
-                dark:text-[#F5F1EB]
-              `}
+                  text-xl font-semibold text-[#1A1611]
+                  dark:text-[#F5F1EB]
+                `}
               >
                 Choose a Plan
               </h3>
@@ -1408,17 +1417,17 @@ export function EsimStorePage() {
             <div className="text-center">
               <div
                 className={`
-                mx-auto mb-4 flex h-14 w-14 items-center justify-center
-                rounded-full bg-primary/10
-              `}
+                  mx-auto mb-4 flex h-14 w-14 items-center justify-center
+                  rounded-full bg-primary/10
+                `}
               >
                 <span className="text-xl font-bold text-primary">2</span>
               </div>
               <h3
                 className={`
-                text-xl font-semibold text-[#1A1611]
-                dark:text-[#F5F1EB]
-              `}
+                  text-xl font-semibold text-[#1A1611]
+                  dark:text-[#F5F1EB]
+                `}
               >
                 Purchase &amp; Install
               </h3>
@@ -1430,17 +1439,17 @@ export function EsimStorePage() {
             <div className="text-center">
               <div
                 className={`
-                mx-auto mb-4 flex h-14 w-14 items-center justify-center
-                rounded-full bg-primary/10
-              `}
+                  mx-auto mb-4 flex h-14 w-14 items-center justify-center
+                  rounded-full bg-primary/10
+                `}
               >
                 <span className="text-xl font-bold text-primary">3</span>
               </div>
               <h3
                 className={`
-                text-xl font-semibold text-[#1A1611]
-                dark:text-[#F5F1EB]
-              `}
+                  text-xl font-semibold text-[#1A1611]
+                  dark:text-[#F5F1EB]
+                `}
               >
                 Stay Connected
               </h3>
@@ -1456,24 +1465,25 @@ export function EsimStorePage() {
         <section className="mt-16 border-t border-border pt-12">
           <h2
             className={`
-            mb-10 text-center text-3xl font-bold text-[#1A1611]
-            dark:text-[#F5F1EB]
-          `}
+              mb-10 text-center text-3xl font-bold text-[#1A1611]
+              dark:text-[#F5F1EB]
+            `}
           >
             Frequently asked questions
           </h2>
           <div className="mx-auto w-full max-w-7xl space-y-3">
             {[
               {
-                id: "devices",
-                q: "What devices support eSIM?",
                 a: (
                   <>
-                    eSIMs are compatible with many devices but not all. To
-                    check if you can use eSIMs on your device, please have a
-                    look at our{" "}
+                    eSIMs are compatible with many devices but not all. To check
+                    if you can use eSIMs on your device, please have a look at
+                    our{" "}
                     <button
-                      className="font-medium text-primary underline hover:no-underline"
+                      className={`
+                        font-medium text-primary underline
+                        hover:no-underline
+                      `}
                       onClick={() => setDeviceCompatibilityOpen(true)}
                       type="button"
                     >
@@ -1482,60 +1492,70 @@ export function EsimStorePage() {
                     .
                   </>
                 ),
+                id: "devices",
+                q: "What devices support eSIM?",
               },
               {
+                a: "To install the eSIM, a stable internet connection is necessary. You can install your eSIM with QR code or manually. You can access our installation guide after purchase in your account. Consider setting up the eSIM before traveling abroad.",
                 id: "use",
                 q: "How do I use my eSIM?",
-                a: "To install the eSIM, a stable internet connection is necessary. You can install your eSIM with QR code or manually. You can access our installation guide after purchase in your account. Consider setting up the eSIM before traveling abroad.",
               },
               {
+                a: "Some devices allow you to install multiple eSIMs; the number of active eSIMs at the same time can vary depending on the device model. You can continue using your regular SIM card while using an eSIM.",
                 id: "many",
                 q: "How many eSIMs can I have?",
-                a: "Some devices allow you to install multiple eSIMs; the number of active eSIMs at the same time can vary depending on the device model. You can continue using your regular SIM card while using an eSIM.",
               },
               {
+                a: "Data-only eSIM plans do not include a phone number. If you need voice or SMS, look for DATA-VOICE-SMS packages in the store.",
                 id: "phone-number",
                 q: "Does my eSIM come with a phone number?",
-                a: "Data-only eSIM plans do not include a phone number. If you need voice or SMS, look for DATA-VOICE-SMS packages in the store.",
               },
               {
+                a: "Validity depends on the plan you buy (e.g. 7, 14, or 30 days, or longer). Your plan is active from the moment you activate it, so activate when you're ready to use it.",
                 id: "how-long",
                 q: "How long can I use an eSIM?",
-                a: "Validity depends on the plan you buy (e.g. 7, 14, or 30 days, or longer). Your plan is active from the moment you activate it, so activate when you're ready to use it.",
               },
               {
+                a: "After purchase, you can view your eSIM and data usage in your account under My eSIMs. Your provider may also send usage alerts.",
                 id: "data-usage",
                 q: "How can I check my current data usage?",
-                a: "After purchase, you can view your eSIM and data usage in your account under My eSIMs. Your provider may also send usage alerts.",
               },
               {
+                a: "If your plan and device support it, you can turn on hotspot or tethering in your device settings. Support depends on your phone and the eSIM plan; check your plan details before buying.",
                 id: "hotspot",
                 q: "How do I share data with my eSIM or activate a hotspot?",
-                a: "If your plan and device support it, you can turn on hotspot or tethering in your device settings. Support depends on your phone and the eSIM plan; check your plan details before buying.",
               },
               {
+                a: "eSIMs are digital products. Once activated, they cannot be refunded. If you have not yet activated your eSIM and need a refund, contact us within 30 days of purchase at support@forthecult.store or via our Contact page.",
                 id: "returns",
                 q: "eSIM returns",
-                a: "eSIMs are digital products. Once activated, they cannot be refunded. If you have not yet activated your eSIM and need a refund, contact us within 30 days of purchase at support@forthecult.store or via our Contact page.",
               },
             ].map((faq) => {
               const isOpen = faqOpenIds.has(faq.id);
               return (
                 <div
-                  key={faq.id}
                   className={cn(
                     "rounded-lg border border-border bg-card transition-colors",
                     isOpen && "bg-muted/30",
                   )}
+                  key={faq.id}
                 >
                   <button
                     aria-expanded={isOpen}
-                    className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left font-medium text-foreground"
+                    className={`
+                      flex w-full items-center justify-between gap-4 px-5 py-4
+                      text-left font-medium text-foreground
+                    `}
                     onClick={() => toggleFaq(faq.id)}
                     type="button"
                   >
                     <span>{faq.q}</span>
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border">
+                    <span
+                      className={`
+                        flex h-8 w-8 shrink-0 items-center justify-center
+                        rounded-full border border-border
+                      `}
+                    >
                       {isOpen ? (
                         <Minus className="h-4 w-4" />
                       ) : (
@@ -1544,7 +1564,12 @@ export function EsimStorePage() {
                     </span>
                   </button>
                   {isOpen && (
-                    <div className="border-t border-border px-5 py-4 text-sm text-muted-foreground">
+                    <div
+                      className={`
+                        border-t border-border px-5 py-4 text-sm
+                        text-muted-foreground
+                      `}
+                    >
                       {faq.a}
                     </div>
                   )}
@@ -1561,6 +1586,21 @@ export function EsimStorePage() {
       />
     </div>
   );
+}
+
+function getPopularIndex(country: Country): number {
+  const name = country.name.toLowerCase();
+  if (MOST_POPULAR_EXCLUDE.has(name)) return -1;
+  for (let i = 0; i < MOST_POPULAR_COUNTRY_ALIASES.length; i++) {
+    const matched = MOST_POPULAR_COUNTRY_ALIASES[i]!.some(
+      (alias) =>
+        name === alias.toLowerCase() ||
+        name.startsWith(`${alias.toLowerCase()} `) ||
+        name.startsWith(`${alias.toLowerCase()},`),
+    );
+    if (matched) return i;
+  }
+  return -1;
 }
 
 function parseData(s: null | string): DataFilter {

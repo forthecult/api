@@ -156,7 +156,7 @@ export async function POST(request: NextRequest) {
     const {
       catalogProductId,
       color,
-      description,
+      description: _description,
       position,
       priceCents,
       sizes,

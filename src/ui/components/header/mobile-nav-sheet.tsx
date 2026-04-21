@@ -18,13 +18,13 @@ import * as React from "react";
 
 import { SEO_CONFIG } from "~/app";
 import { cn } from "~/lib/cn";
-import { orderCategoriesBySection } from "~/lib/shop-sections";
 import { countryFlag } from "~/lib/country-flag";
 import {
   COUNTRY_OPTIONS_ALPHABETICAL,
   CURRENCY_OPTIONS,
   useCountryCurrency,
 } from "~/lib/hooks/use-country-currency";
+import { orderCategoriesBySection } from "~/lib/shop-sections";
 import { PRELOAD_CART } from "~/ui/components/cart";
 import { Button } from "~/ui/primitives/button";
 import { Input } from "~/ui/primitives/input";
@@ -137,8 +137,8 @@ export function MobileNavSheet({
           {/* Header: Close, Culture, User, Cart */}
           <div
             className={`
-            flex h-14 shrink-0 items-center justify-between border-b px-4
-          `}
+              flex h-14 shrink-0 items-center justify-between border-b px-4
+            `}
           >
             <div className="flex items-center gap-2">
               <SheetClose asChild>
@@ -158,31 +158,29 @@ export function MobileNavSheet({
               </Link>
             </div>
             <div className="flex items-center gap-1">
-              {showAuth && (authUser || !authPending) && (
-                <>
-                  {authUser ? (
-                    <Button asChild size="icon" variant="ghost">
-                      <Link
-                        aria-label="Account"
-                        href="/dashboard"
-                        onClick={() => onOpenChange(false)}
-                      >
-                        <UserIcon className="h-5 w-5" />
-                      </Link>
-                    </Button>
-                  ) : (
-                    <Button asChild size="icon" variant="ghost">
-                      <Link
-                        aria-label="Log in"
-                        href="/login"
-                        onClick={() => onOpenChange(false)}
-                      >
-                        <UserIcon className="h-5 w-5" />
-                      </Link>
-                    </Button>
-                  )}
-                </>
-              )}
+              {showAuth &&
+                (authUser || !authPending) &&
+                (authUser ? (
+                  <Button asChild size="icon" variant="ghost">
+                    <Link
+                      aria-label="Account"
+                      href="/dashboard"
+                      onClick={() => onOpenChange(false)}
+                    >
+                      <UserIcon className="h-5 w-5" />
+                    </Link>
+                  </Button>
+                ) : (
+                  <Button asChild size="icon" variant="ghost">
+                    <Link
+                      aria-label="Log in"
+                      href="/login"
+                      onClick={() => onOpenChange(false)}
+                    >
+                      <UserIcon className="h-5 w-5" />
+                    </Link>
+                  </Button>
+                ))}
               <div className="[&_.border-rounded]:rounded-full">
                 {cartRequested && <Cart />}
               </div>
@@ -196,9 +194,9 @@ export function MobileNavSheet({
           >
             <Search
               className={`
-              h-4 w-4 shrink-0 text-[#1A1611]
-              dark:text-[#F5F1EB]
-            `}
+                h-4 w-4 shrink-0 text-[#1A1611]
+                dark:text-[#F5F1EB]
+              `}
             />
             <Input
               aria-label="Search"
@@ -217,8 +215,8 @@ export function MobileNavSheet({
           {authUser && !authPending && (
             <div
               className={`
-              shrink-0 border-b px-4 py-2 text-sm text-muted-foreground
-            `}
+                shrink-0 border-b px-4 py-2 text-sm text-muted-foreground
+              `}
             >
               <span aria-hidden>💎</span> Member
             </div>
@@ -419,8 +417,8 @@ export function MobileNavSheet({
               <div className="px-4 py-2">
                 <span
                   className={`
-                  mb-1 block text-xs font-medium text-muted-foreground
-                `}
+                    mb-1 block text-xs font-medium text-muted-foreground
+                  `}
                 >
                   Theme
                 </span>

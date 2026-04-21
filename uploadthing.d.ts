@@ -1,4 +1,4 @@
-/** Ambient types for uploadthing (package has no .d.ts). */
+/** Narrow augmentations only — prefer package .d.ts for uploadthing/next. */
 declare module "uploadthing/server" {
   export class UploadThingError extends Error {
     code: string;
@@ -15,16 +15,4 @@ declare module "uploadthing/server" {
   export function extractRouterConfig(
     router: unknown,
   ): import("@uploadthing/shared").EndpointMetadata;
-}
-
-declare module "uploadthing/next" {
-  export type FileRouter = Record<string, unknown>;
-  export function createRouteHandler(opts: {
-    config?: unknown;
-    router: unknown;
-  }): {
-    GET: (request: Request, context?: unknown) => Promise<Response> | Response;
-    POST: (request: Request, context?: unknown) => Promise<Response> | Response;
-  };
-  export function createUploadthing(): (config: unknown) => any;
 }

@@ -3,11 +3,11 @@
 import { Camera, ChevronLeft } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRef, useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
-import { compressAvatarImage } from "~/lib/avatar-image-compress";
 import { useCurrentUserOrRedirect } from "~/lib/auth-client";
+import { compressAvatarImage } from "~/lib/avatar-image-compress";
 import { isRealEmail } from "~/lib/is-real-email";
 import { useUploadThing } from "~/lib/uploadthing";
 import { Button } from "~/ui/primitives/button";
@@ -25,15 +25,22 @@ export function ProfilePageClient() {
   const [phone, setPhone] = useState("");
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [avatarUrlOverride, setAvatarUrlOverride] = useState<null | string>(null);
+  const [avatarUrlOverride, setAvatarUrlOverride] = useState<null | string>(
+    null,
+  );
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { startUpload, isUploading } = useUploadThing("avatarUploader", {
+  const { isUploading, startUpload } = useUploadThing("avatarUploader", {
     onClientUploadComplete: (res) => {
       const first = Array.isArray(res) ? res[0] : res;
-      let url: string | null = null;
-      if (first && "fileUrl" in first && typeof first.fileUrl === "string") url = first.fileUrl;
-      else if (first && "url" in first && typeof (first as { url: string }).url === "string")
+      let url: null | string = null;
+      if (first && "fileUrl" in first && typeof first.fileUrl === "string")
+        url = first.fileUrl;
+      else if (
+        first &&
+        "url" in first &&
+        typeof (first as { url: string }).url === "string"
+      )
         url = (first as { url: string }).url;
       if (url) {
         setAvatarUrlOverride(url);
@@ -59,7 +66,9 @@ export function ProfilePageClient() {
       }
       toast.success("Profile photo updated");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to update photo");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to update photo",
+      );
     }
   };
 
@@ -67,7 +76,9 @@ export function ProfilePageClient() {
     fileInputRef.current?.click();
   };
 
-  const handleAvatarFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarFileChange = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
@@ -184,11 +195,11 @@ export function ProfilePageClient() {
           <div className="relative">
             <div
               className={`
-              relative size-24 overflow-hidden rounded-full border-2
-              border-border bg-muted
-            `}
+                relative size-24 overflow-hidden rounded-full border-2
+                border-border bg-muted
+              `}
             >
-              {avatarUrlOverride ?? user?.image ? (
+              {(avatarUrlOverride ?? user?.image) ? (
                 <Image
                   alt=""
                   className="object-cover"
@@ -199,9 +210,9 @@ export function ProfilePageClient() {
               ) : (
                 <span
                   className={`
-                  flex size-full items-center justify-center text-2xl
-                  font-semibold text-muted-foreground
-                `}
+                    flex size-full items-center justify-center text-2xl
+                    font-semibold text-muted-foreground
+                  `}
                 >
                   {(
                     firstName?.[0] ??
@@ -218,11 +229,12 @@ export function ProfilePageClient() {
                 absolute right-0 bottom-0 flex size-8 items-center
                 justify-center rounded-full border-2 border-background
                 bg-primary text-primary-foreground shadow
-                hover:bg-primary/90 disabled:opacity-50
+                hover:bg-primary/90
+                disabled:opacity-50
               `}
               disabled={isUploading}
-              type="button"
               onClick={handleAvatarClick}
+              type="button"
             >
               <Camera className="h-4 w-4" />
             </button>
@@ -230,9 +242,9 @@ export function ProfilePageClient() {
 
           <div
             className={`
-            grid w-full gap-4
-            sm:grid-cols-2
-          `}
+              grid w-full gap-4
+              sm:grid-cols-2
+            `}
           >
             <div className="space-y-2">
               <Label htmlFor="firstName">First Name</Label>
@@ -255,9 +267,9 @@ export function ProfilePageClient() {
             {isRealEmail(email) && (
               <div
                 className={`
-                space-y-2
-                sm:col-span-2
-              `}
+                  space-y-2
+                  sm:col-span-2
+                `}
               >
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -276,9 +288,9 @@ export function ProfilePageClient() {
             )}
             <div
               className={`
-              space-y-2
-              sm:col-span-2
-            `}
+                space-y-2
+                sm:col-span-2
+              `}
             >
               <Label htmlFor="phone">Phone</Label>
               <Input
@@ -294,9 +306,9 @@ export function ProfilePageClient() {
 
         <Button
           className={`
-          w-full
-          sm:w-auto
-        `}
+            w-full
+            sm:w-auto
+          `}
           disabled={saving}
           type="submit"
         >

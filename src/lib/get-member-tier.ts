@@ -15,13 +15,13 @@ import {
   subscriptionOfferTable,
   subscriptionPlanTable,
 } from "~/db/schema";
+import { fetchUserStake, getStakingProgramId } from "~/lib/cult-staking";
+import { fetchTokenMarketData } from "~/lib/market-cap";
+import { computeTierPricing } from "~/lib/membership-pricing";
 import {
   ensureMembershipCatalogSeeded,
   MEMBERSHIP_OFFER_SLUG,
 } from "~/lib/membership-subscription-catalog";
-import { fetchUserStake, getStakingProgramId } from "~/lib/cult-staking";
-import { fetchTokenMarketData } from "~/lib/market-cap";
-import { computeTierPricing } from "~/lib/membership-pricing";
 import { getSolanaRpcUrlServer } from "~/lib/solana-pay";
 import { getActiveToken } from "~/lib/token-config";
 
@@ -29,100 +29,10 @@ import { getActiveToken } from "~/lib/token-config";
 // these match the pricing at ~$0.00005/token with the bonding curve
 // Tier 1 (best): $100+, Tier 2: $50+, Tier 3 (entry): $25+
 const FALLBACK_TOKEN_THRESHOLDS: Record<number, number> = {
-  1: 4_000_000,  // tier 1: ~$200 at $0.00005
-  2: 2_000_000,  // tier 2: ~$100 at $0.00005
-  3: 1_000_000,  // tier 3: ~$50 at $0.00005
+  1: 4_000_000, // tier 1: ~$200 at $0.00005
+  2: 2_000_000, // tier 2: ~$100 at $0.00005
+  3: 1_000_000, // tier 3: ~$50 at $0.00005
 };
-
-/**
- * Active subscription tier for a user. Returns the best (lowest number) active tier, or null if none.
- * A subscription is considered active when status is "active" or "trialing" and
- * currentPeriodEnd is in the future.
- */
-export async function getSubscriptionTierForUser(
-  userId: string,
-): Promise<null | number> {
-  if (!userId?.trim()) return null;
-  await ensureMembershipCatalogSeeded();
-  const now = new Date();
-  const rows = await db
-    .select({ metadata: subscriptionPlanTable.metadata })
-    .from(subscriptionInstanceTable)
-    .innerJoin(
-      subscriptionOfferTable,
-      eq(subscriptionInstanceTable.offerId, subscriptionOfferTable.id),
-    )
-    .innerJoin(
-      subscriptionPlanTable,
-      eq(subscriptionInstanceTable.planId, subscriptionPlanTable.id),
-    )
-    .where(
-      and(
-        eq(subscriptionOfferTable.slug, MEMBERSHIP_OFFER_SLUG),
-        eq(subscriptionInstanceTable.userId, userId),
-        inArray(subscriptionInstanceTable.status, ["active", "trialing"]),
-        gt(subscriptionInstanceTable.currentPeriodEnd, now),
-      ),
-    );
-  if (rows.length === 0) return null;
-  const tiers: number[] = [];
-  for (const r of rows) {
-    const m = r.metadata as { membershipTier?: unknown } | null | undefined;
-    const t = m?.membershipTier;
-    if (typeof t === "number" && t >= 1 && t <= 3) tiers.push(t);
-  }
-  if (tiers.length === 0) return null;
-  return tiers.reduce<number>((best, t) => (t < best ? t : best), tiers[0]!);
-}
-
-export async function getMemberTierForWallet(
-  wallet: string,
-): Promise<null | number> {
-  const programId = getStakingProgramId();
-  if (!programId) return null;
-
-  const trimmed = wallet?.trim();
-  if (!trimmed || trimmed.length < 32) return null;
-
-  let stakedHuman = 0;
-
-  try {
-    const token = getActiveToken();
-    const connection = new Connection(getSolanaRpcUrlServer());
-
-    const stakeData = await fetchUserStake(connection, programId, trimmed);
-    if (!stakeData || stakeData.amount === 0n) return null;
-
-    stakedHuman = Number(stakeData.amount) / 10 ** token.decimals;
-
-    // try with market data first
-    try {
-      const market = await fetchTokenMarketData(token.mint);
-      if (market && market.priceUsd > 0) {
-        const pricing = computeTierPricing(
-          token,
-          market.priceUsd,
-          market.marketCapUsd,
-          0,
-        );
-        const tier = detectTierFromPricing(stakedHuman, pricing.tiers);
-        if (tier != null) return tier;
-      }
-    } catch {
-      // market data fetch failed, fall through to hardcoded thresholds
-    }
-  } catch (e) {
-    console.error("[getMemberTierForWallet] error:", e);
-    // if we at least got stakedHuman before the error, try fallback
-  }
-
-  // ALWAYS try fallback thresholds if we have any staked tokens
-  if (stakedHuman >= FALLBACK_TOKEN_THRESHOLDS[1]) return 1;
-  if (stakedHuman >= FALLBACK_TOKEN_THRESHOLDS[2]) return 2;
-  if (stakedHuman >= FALLBACK_TOKEN_THRESHOLDS[3]) return 3;
-
-  return null;
-}
 
 /**
  * Active admin-granted tier for a user (expiresAt > now). Returns null if none or expired.
@@ -181,6 +91,96 @@ export async function getMemberTierForUser(
       bestTier = r.tier;
   }
   return bestTier;
+}
+
+export async function getMemberTierForWallet(
+  wallet: string,
+): Promise<null | number> {
+  const programId = getStakingProgramId();
+  if (!programId) return null;
+
+  const trimmed = wallet?.trim();
+  if (!trimmed || trimmed.length < 32) return null;
+
+  let stakedHuman = 0;
+
+  try {
+    const token = getActiveToken();
+    const connection = new Connection(getSolanaRpcUrlServer());
+
+    const stakeData = await fetchUserStake(connection, programId, trimmed);
+    if (!stakeData || stakeData.amount === 0n) return null;
+
+    stakedHuman = Number(stakeData.amount) / 10 ** token.decimals;
+
+    // try with market data first
+    try {
+      const market = await fetchTokenMarketData(token.mint);
+      if (market && market.priceUsd > 0) {
+        const pricing = computeTierPricing(
+          token,
+          market.priceUsd,
+          market.marketCapUsd,
+          0,
+        );
+        const tier = detectTierFromPricing(stakedHuman, pricing.tiers);
+        if (tier != null) return tier;
+      }
+    } catch {
+      // market data fetch failed, fall through to hardcoded thresholds
+    }
+  } catch (e) {
+    console.error("[getMemberTierForWallet] error:", e);
+    // if we at least got stakedHuman before the error, try fallback
+  }
+
+  // ALWAYS try fallback thresholds if we have any staked tokens
+  if (stakedHuman >= FALLBACK_TOKEN_THRESHOLDS[1]) return 1;
+  if (stakedHuman >= FALLBACK_TOKEN_THRESHOLDS[2]) return 2;
+  if (stakedHuman >= FALLBACK_TOKEN_THRESHOLDS[3]) return 3;
+
+  return null;
+}
+
+/**
+ * Active subscription tier for a user. Returns the best (lowest number) active tier, or null if none.
+ * A subscription is considered active when status is "active" or "trialing" and
+ * currentPeriodEnd is in the future.
+ */
+export async function getSubscriptionTierForUser(
+  userId: string,
+): Promise<null | number> {
+  if (!userId?.trim()) return null;
+  await ensureMembershipCatalogSeeded();
+  const now = new Date();
+  const rows = await db
+    .select({ metadata: subscriptionPlanTable.metadata })
+    .from(subscriptionInstanceTable)
+    .innerJoin(
+      subscriptionOfferTable,
+      eq(subscriptionInstanceTable.offerId, subscriptionOfferTable.id),
+    )
+    .innerJoin(
+      subscriptionPlanTable,
+      eq(subscriptionInstanceTable.planId, subscriptionPlanTable.id),
+    )
+    .where(
+      and(
+        eq(subscriptionOfferTable.slug, MEMBERSHIP_OFFER_SLUG),
+        eq(subscriptionInstanceTable.userId, userId),
+        inArray(subscriptionInstanceTable.status, ["active", "trialing"]),
+        gt(subscriptionInstanceTable.currentPeriodEnd, now),
+      ),
+    );
+  if (rows.length === 0) return null;
+  const tiers: number[] = [];
+  for (const r of rows) {
+    const m = r.metadata as null | undefined | { membershipTier?: unknown };
+    const t = m?.membershipTier;
+    if (typeof t === "number" && t >= 1 && t <= 3) tiers.push(t);
+  }
+  if (tiers.length === 0) return null;
+  return tiers.reduce<number>((best, t) => (t < best ? t : best), tiers[0]!);
 }
 
 function detectTierFromPricing(

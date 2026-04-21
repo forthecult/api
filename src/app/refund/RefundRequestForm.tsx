@@ -9,7 +9,7 @@ import { Input } from "~/ui/primitives/input";
 import { Label } from "~/ui/primitives/label";
 
 const inputClass =
- "flex min-h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 placeholder:text-muted-foreground disabled:opacity-50";
+  "flex min-h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 placeholder:text-muted-foreground disabled:opacity-50";
 
 export function RefundRequestForm() {
   const [orderId, setOrderId] = useState("");
@@ -208,8 +208,8 @@ export function RefundRequestForm() {
           {showRefundAddressField && (
             <div
               className={`
-              space-y-2 rounded-md border border-border bg-muted/30 p-4
-            `}
+                space-y-2 rounded-md border border-border bg-muted/30 p-4
+              `}
             >
               <p className="text-sm font-medium text-foreground">
                 This order was paid with crypto
@@ -262,9 +262,9 @@ export function RefundRequestForm() {
           {submitStatus === "success" && (
             <p
               className={`
-              rounded-md bg-green-50 p-3 text-sm text-green-800
-              dark:bg-green-950/30 dark:text-green-400
-            `}
+                rounded-md bg-green-50 p-3 text-sm text-green-800
+                dark:bg-green-950/30 dark:text-green-400
+              `}
             >
               Your refund request has been submitted. We’ll process it and
               notify you on the channels you’ve selected for transactional

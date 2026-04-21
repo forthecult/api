@@ -53,39 +53,27 @@ interface MembershipListResponse {
 
 const TIER_CONFIG: Record<
   number,
-  { accent: string; bg: string; icon: React.ComponentType<{ className?: string }>; name: string }
+  {
+    accent: string;
+    bg: string;
+    icon: React.ComponentType<{ className?: string }>;
+    name: string;
+  }
 > = {
-  1: { accent: "text-amber-500", bg: "bg-amber-500/10", icon: Crown, name: "APEX" },
-  2: { accent: "text-purple-500", bg: "bg-purple-500/10", icon: Star, name: "PRIME" },
+  1: {
+    accent: "text-amber-500",
+    bg: "bg-amber-500/10",
+    icon: Crown,
+    name: "APEX",
+  },
+  2: {
+    accent: "text-purple-500",
+    bg: "bg-purple-500/10",
+    icon: Star,
+    name: "PRIME",
+  },
   3: { accent: "text-blue-500", bg: "bg-blue-500/10", icon: Zap, name: "BASE" },
 };
-
-function getTierConfig(tier: null | number) {
-  if (tier === null) return null;
-  return TIER_CONFIG[tier] ?? { accent: "text-muted-foreground", bg: "bg-muted", icon: Shield, name: `Tier ${tier}` };
-}
-
-function formatDate(s: null | string): string {
-  if (!s) return "—";
-  try {
-    return new Intl.DateTimeFormat("en-US", {
-      dateStyle: "medium",
-    }).format(new Date(s));
-  } catch {
-    return "—";
-  }
-}
-
-function formatStakedBalance(balance: string, symbol: string): string {
-  const num = Number.parseFloat(balance);
-  if (num === 0) return "—";
-  return `${num.toLocaleString(undefined, { maximumFractionDigits: 0 })} ${symbol}`;
-}
-
-function truncateWallet(address: null | string): string {
-  if (!address) return "—";
-  return `${address.slice(0, 4)}…${address.slice(-4)}`;
-}
 
 export default function AdminMembershipPage() {
   const [data, setData] = useState<MembershipListResponse | null>(null);
@@ -94,7 +82,7 @@ export default function AdminMembershipPage() {
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
-  const [tierFilter, setTierFilter] = useState<"" | "1" | "2" | "3">("");
+  const [tierFilter, setTierFilter] = useState<"1" | "2" | "3" | "">("");
 
   const fetchMembers = useCallback(async () => {
     setLoading(true);
@@ -166,13 +154,16 @@ export default function AdminMembershipPage() {
         <div>
           <h2 className="text-2xl font-semibold tracking-tight">Membership</h2>
           <p className="text-sm text-muted-foreground">
-            Members with active on-chain stakes (subscription billing is under Membership → Subscriptions)
+            Members with active on-chain stakes (subscription billing is under
+            Membership → Subscriptions)
           </p>
         </div>
         {data && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Crown className="h-4 w-4" />
-            <span>{data.totalCount} total member{data.totalCount !== 1 ? "s" : ""}</span>
+            <span>
+              {data.totalCount} total member{data.totalCount !== 1 ? "s" : ""}
+            </span>
           </div>
         )}
       </div>
@@ -198,8 +189,8 @@ export default function AdminMembershipPage() {
                 autoComplete="off"
                 className={cn(
                   `
-                    w-full rounded-md border border-input bg-background py-2 pr-3
-                    pl-9 text-sm
+                    w-full rounded-md border border-input bg-background py-2
+                    pr-3 pl-9 text-sm
                   `,
                   `
                     placeholder:text-muted-foreground
@@ -222,7 +213,7 @@ export default function AdminMembershipPage() {
                 focus:ring-2 focus:ring-ring focus:outline-none
               `}
               onChange={(e) => {
-                setTierFilter(e.target.value as "" | "1" | "2" | "3");
+                setTierFilter(e.target.value as "1" | "2" | "3" | "");
                 setPage(1);
               }}
               value={tierFilter}
@@ -256,13 +247,35 @@ export default function AdminMembershipPage() {
                         uppercase
                       `}
                     >
-                      <th className="p-4 font-medium whitespace-nowrap">Tier</th>
-                      <th className="p-4 font-medium whitespace-nowrap">Member Since</th>
-                      <th className="p-4 font-medium whitespace-nowrap">Customer</th>
-                      <th className="p-4 font-medium whitespace-nowrap text-right">Orders</th>
-                      <th className="p-4 font-medium whitespace-nowrap text-right">Staked</th>
-                      <th className="p-4 font-medium whitespace-nowrap">Lock Status</th>
-                      <th className="p-4 font-medium whitespace-nowrap">Wallet</th>
+                      <th className="p-4 font-medium whitespace-nowrap">
+                        Tier
+                      </th>
+                      <th className="p-4 font-medium whitespace-nowrap">
+                        Member Since
+                      </th>
+                      <th className="p-4 font-medium whitespace-nowrap">
+                        Customer
+                      </th>
+                      <th
+                        className={`
+                        p-4 text-right font-medium whitespace-nowrap
+                      `}
+                      >
+                        Orders
+                      </th>
+                      <th
+                        className={`
+                        p-4 text-right font-medium whitespace-nowrap
+                      `}
+                      >
+                        Staked
+                      </th>
+                      <th className="p-4 font-medium whitespace-nowrap">
+                        Lock Status
+                      </th>
+                      <th className="p-4 font-medium whitespace-nowrap">
+                        Wallet
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -283,7 +296,10 @@ export default function AdminMembershipPage() {
                         const TierIcon = tierConfig?.icon ?? Shield;
                         return (
                           <tr
-                            className="border-b last:border-0"
+                            className={`
+                              border-b
+                              last:border-0
+                            `}
                             key={member.id}
                           >
                             <td className="p-4">
@@ -291,15 +307,23 @@ export default function AdminMembershipPage() {
                                 <div className="flex items-center gap-2">
                                   <div
                                     className={cn(
-                                      "flex h-8 w-8 items-center justify-center rounded-lg",
+                                      `
+                                        flex h-8 w-8 items-center justify-center
+                                        rounded-lg
+                                      `,
                                       tierConfig.bg,
                                     )}
                                   >
                                     <TierIcon
-                                      className={cn("h-4 w-4", tierConfig.accent)}
+                                      className={cn(
+                                        "h-4 w-4",
+                                        tierConfig.accent,
+                                      )}
                                     />
                                   </div>
-                                  <span className="font-medium">{tierConfig.name}</span>
+                                  <span className="font-medium">
+                                    {tierConfig.name}
+                                  </span>
                                 </div>
                               ) : (
                                 <span className="text-muted-foreground">—</span>
@@ -312,8 +336,8 @@ export default function AdminMembershipPage() {
                               <div className="flex items-center gap-3">
                                 <div
                                   className={`
-                                    relative flex h-9 w-9 shrink-0 overflow-hidden
-                                    rounded-full border bg-muted
+                                    relative flex h-9 w-9 shrink-0
+                                    overflow-hidden rounded-full border bg-muted
                                   `}
                                 >
                                   {member.image ? (
@@ -328,8 +352,9 @@ export default function AdminMembershipPage() {
                                     <span
                                       aria-hidden
                                       className={`
-                                        flex size-full items-center justify-center
-                                        text-xs font-medium text-muted-foreground
+                                        flex size-full items-center
+                                        justify-center text-xs font-medium
+                                        text-muted-foreground
                                       `}
                                     >
                                       {member.name
@@ -350,7 +375,11 @@ export default function AdminMembershipPage() {
                                   >
                                     {member.name}
                                   </Link>
-                                  <span className="block truncate text-xs text-muted-foreground">
+                                  <span
+                                    className={`
+                                    block truncate text-xs text-muted-foreground
+                                  `}
+                                  >
                                     {member.email}
                                   </span>
                                 </div>
@@ -360,7 +389,10 @@ export default function AdminMembershipPage() {
                               {member.orderCount}
                             </td>
                             <td className="p-4 text-right tabular-nums">
-                              {formatStakedBalance(member.stakedBalance, data.tokenSymbol)}
+                              {formatStakedBalance(
+                                member.stakedBalance,
+                                data.tokenSymbol,
+                              )}
                             </td>
                             <td className="p-4">
                               {member.lock ? (
@@ -369,13 +401,25 @@ export default function AdminMembershipPage() {
                                     className={cn(
                                       "text-sm font-medium",
                                       member.lock.isLocked
-                                        ? "text-amber-600 dark:text-amber-400"
-                                        : "text-green-600 dark:text-green-400",
+                                        ? `
+                                          text-amber-600
+                                          dark:text-amber-400
+                                        `
+                                        : `
+                                          text-green-600
+                                          dark:text-green-400
+                                        `,
                                     )}
                                   >
-                                    {member.lock.isLocked ? "Locked" : "Unlocked"}
+                                    {member.lock.isLocked
+                                      ? "Locked"
+                                      : "Unlocked"}
                                   </span>
-                                  <span className="text-xs text-muted-foreground">
+                                  <span
+                                    className={`
+                                    text-xs text-muted-foreground
+                                  `}
+                                  >
                                     {member.lock.durationLabel}
                                     {member.lock.isLocked &&
                                       ` · ${formatDate(member.lock.unlocksAt)}`}
@@ -389,8 +433,8 @@ export default function AdminMembershipPage() {
                               {member.walletAddress ? (
                                 <a
                                   className={`
-                                    inline-flex items-center gap-1 font-mono text-xs
-                                    text-muted-foreground
+                                    inline-flex items-center gap-1 font-mono
+                                    text-xs text-muted-foreground
                                     hover:text-foreground
                                   `}
                                   href={`https://solscan.io/account/${member.walletAddress}`}
@@ -487,4 +531,38 @@ export default function AdminMembershipPage() {
       </Card>
     </div>
   );
+}
+
+function formatDate(s: null | string): string {
+  if (!s) return "—";
+  try {
+    return new Intl.DateTimeFormat("en-US", {
+      dateStyle: "medium",
+    }).format(new Date(s));
+  } catch {
+    return "—";
+  }
+}
+
+function formatStakedBalance(balance: string, symbol: string): string {
+  const num = Number.parseFloat(balance);
+  if (num === 0) return "—";
+  return `${num.toLocaleString(undefined, { maximumFractionDigits: 0 })} ${symbol}`;
+}
+
+function getTierConfig(tier: null | number) {
+  if (tier === null) return null;
+  return (
+    TIER_CONFIG[tier] ?? {
+      accent: "text-muted-foreground",
+      bg: "bg-muted",
+      icon: Shield,
+      name: `Tier ${tier}`,
+    }
+  );
+}
+
+function truncateWallet(address: null | string): string {
+  if (!address) return "—";
+  return `${address.slice(0, 4)}…${address.slice(-4)}`;
 }

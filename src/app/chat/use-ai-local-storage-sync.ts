@@ -16,12 +16,8 @@ export function useAiLocalStorageSync(options: {
   setUrlScrapingEnabled: (v: boolean) => void;
   setWebEnabled: (v: boolean) => void;
 }): void {
-  const {
-    setTemperature,
-    setTopP,
-    setUrlScrapingEnabled,
-    setWebEnabled,
-  } = options;
+  const { setTemperature, setTopP, setUrlScrapingEnabled, setWebEnabled } =
+    options;
 
   useEffect(() => {
     const onStorage = (e: StorageEvent) => {

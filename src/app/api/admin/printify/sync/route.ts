@@ -10,7 +10,6 @@ import {
   deletePrintifyProduct,
   getPrintifyIfConfigured,
   listPrintifyWebhooks,
-  publishPrintifyProduct,
 } from "~/lib/printify";
 import {
   exportAllPrintifyProducts,

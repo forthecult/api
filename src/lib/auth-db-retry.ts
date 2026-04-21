@@ -26,9 +26,7 @@ export function isFkConstraintError(err: unknown): boolean {
 
   // Check message / cause message
   const message =
-    (err as Error).message ??
-    (err as { cause?: Error }).cause?.message ??
-    "";
+    (err as Error).message ?? (err as { cause?: Error }).cause?.message ?? "";
   const messageStr = String(message);
   if (
     messageStr.includes("foreign key") ||

@@ -11,9 +11,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { db } from "~/db";
 import { stripeCustomerTable } from "~/db/schema";
 import { auth } from "~/lib/auth";
-import {
-  findMembershipPlanByTierInterval,
-} from "~/lib/membership-subscription-catalog";
+import { findMembershipPlanByTierInterval } from "~/lib/membership-subscription-catalog";
 import { createPayPalSubscription } from "~/lib/paypal-billing";
 import { getStripe } from "~/lib/stripe";
 

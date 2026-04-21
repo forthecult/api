@@ -1,13 +1,13 @@
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
-import { auth } from "~/lib/auth";
 import { db } from "~/db";
 import {
   AI_BACKUP_MODE_VALUES,
   aiAgentTable,
 } from "~/db/schema/ai-chat/tables";
 import { getOrCreateAiAgent } from "~/lib/ai/user-agent";
+import { auth } from "~/lib/auth";
 
 export async function GET(request: Request) {
   const session = await auth.api.getSession({ headers: request.headers });
@@ -62,11 +62,11 @@ export async function PUT(request: Request) {
         typeof backupMode === "string" ? backupMode : existing.backupMode,
       characterName:
         typeof body.characterName === "string" || body.characterName === null
-          ? (body.characterName as string | null)
+          ? (body.characterName as null | string)
           : existing.characterName,
       characterSlug:
         typeof body.characterSlug === "string" || body.characterSlug === null
-          ? (body.characterSlug as string | null)
+          ? (body.characterSlug as null | string)
           : existing.characterSlug,
       jsonSettings:
         body.jsonSettings !== undefined
@@ -78,12 +78,12 @@ export async function PUT(request: Request) {
           : existing.localCacheEncrypted,
       name:
         typeof body.name === "string" || body.name === null
-          ? (body.name as string | null)
+          ? (body.name as null | string)
           : existing.name,
       updatedAt: new Date(),
       userPrompt:
         typeof body.userPrompt === "string" || body.userPrompt === null
-          ? (body.userPrompt as string | null)
+          ? (body.userPrompt as null | string)
           : existing.userPrompt,
       userRagEnabled:
         typeof body.userRagEnabled === "boolean"
@@ -91,7 +91,7 @@ export async function PUT(request: Request) {
           : existing.userRagEnabled,
       veniceApiKey:
         typeof body.veniceApiKey === "string" || body.veniceApiKey === null
-          ? (body.veniceApiKey as string | null)
+          ? (body.veniceApiKey as null | string)
           : existing.veniceApiKey,
     })
     .where(eq(aiAgentTable.id, existing.id));

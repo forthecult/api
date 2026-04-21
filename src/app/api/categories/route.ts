@@ -1,4 +1,4 @@
-import { and, asc, eq, isNull, sql } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
 import { db } from "~/db";

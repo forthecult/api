@@ -16,6 +16,7 @@ import {
 import type { ProductOptionDefinition, ProductVariantOption } from "./types";
 
 import { ProductActions, ProductPriceDisplay } from "./product-detail-client";
+import { useProductShippingEstimateContext } from "./product-shipping-estimate-context";
 import { useProductVariantImage } from "./product-variant-image-context";
 import { SecureCheckoutLine } from "./secure-checkout-line";
 
@@ -94,6 +95,14 @@ export function ProductVariantSection({
       ? findVariant(variants, selectedByIndex)
       : null;
 
+  const shippingEstimateCtx = useProductShippingEstimateContext();
+  React.useEffect(() => {
+    if (!shippingEstimateCtx) return;
+    shippingEstimateCtx.setSelection(
+      selectedVariant ? selectedVariant.id : null,
+    );
+  }, [shippingEstimateCtx, selectedVariant?.id, selectedVariant]);
+
   // Depend on primitive fields to avoid infinite re-renders from new object references
   const selectedVariantId = selectedVariant?.id ?? null;
   const selectedVariantImageUrl = selectedVariant?.imageUrl ?? null;
@@ -141,7 +150,7 @@ export function ProductVariantSection({
     if (updates) setSelectedByIndex((prev) => ({ ...prev, ...updates }));
     // Only run on mount so we don't override user selection when other options change
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [optionDefinitions.forEach]);
 
   if (!hasVariants || optionDefinitions.length === 0 || variants.length === 0) {
     return (
@@ -243,10 +252,7 @@ export function ProductVariantSection({
                               transition-all duration-200
                             `,
                             isSelected
-                              ? `
-                                border-[#C4873A] bg-[#C4873A] text-[#111111]
- 
-                              `
+                              ? `border-[#C4873A] bg-[#C4873A] text-[#111111]`
                               : outOfStock
                                 ? `
                                   cursor-not-allowed border-[#2A2A2A]
@@ -360,21 +366,6 @@ function deriveOptionDefinitionsFromVariants(
   return opts;
 }
 
-/** Normalize a set of strings to lowercase for case-insensitive comparison. */
-function toLowerSet(set: Set<string>): Set<string> {
-  return new Set([...set].map((s) => s.toLowerCase()));
-}
-
-/** e.g. "8M/10W" -> ["8m", "10w"]; "10W" -> ["10w"]. Used so variant size "10W" matches selected "8M/10W". */
-function expandSizeValueForMatching(val: string): string[] {
-  const lower = val.trim().toLowerCase();
-  if (!lower) return [];
-  const parts = lower.split(/\s*\/\s*/).map((p) => p.trim()).filter(Boolean);
-  if (parts.length === 2 && /^\d+(\.\d+)?[mw]$/.test(parts[0]!) && /^\d+(\.\d+)?[mw]$/.test(parts[1]!))
-    return [lower, parts[0]!, parts[1]!];
-  return [lower];
-}
-
 /** Selected set expanded so combined sizes (8M/10W) also include 8M and 10W for matching variant size 10W or 8M. */
 function expandedSelectedLower(selectedSet: Set<string>): Set<string> {
   const out = new Set<string>();
@@ -385,17 +376,21 @@ function expandedSelectedLower(selectedSet: Set<string>): Set<string> {
   return out;
 }
 
-/** True if selected value s (lowercase) is in variantLower, or when s contains " / ", all parts of s are in variantLower (Printify-style combined option values). */
-function selectedValueInVariantSetLower(
-  s: string,
-  variantLower: Set<string>,
-): boolean {
-  if (variantLower.has(s)) return true;
-  if ([...variantLower].some((vVal) => expandSizeValueForMatching(s).includes(vVal)))
-    return true;
-  const parts = s.split(/\s*\/\s*/).map((p) => p.trim().toLowerCase()).filter(Boolean);
-  if (parts.length > 1 && parts.every((p) => variantLower.has(p))) return true;
-  return false;
+/** e.g. "8M/10W" -> ["8m", "10w"]; "10W" -> ["10w"]. Used so variant size "10W" matches selected "8M/10W". */
+function expandSizeValueForMatching(val: string): string[] {
+  const lower = val.trim().toLowerCase();
+  if (!lower) return [];
+  const parts = lower
+    .split(/\s*\/\s*/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+  if (
+    parts.length === 2 &&
+    /^\d+(\.\d+)?[mw]$/.test(parts[0]!) &&
+    /^\d+(\.\d+)?[mw]$/.test(parts[1]!)
+  )
+    return [lower, parts[0]!, parts[1]!];
+  return [lower];
 }
 
 /**
@@ -438,7 +433,10 @@ function findVariant(
   let bestSubsetSize = 0;
   for (const v of variants) {
     const variantLower = toLowerSet(getVariantValueSet(v));
-    if (variantLower.size > bestSubsetSize && variantLower.size <= selectedLower.size) {
+    if (
+      variantLower.size > bestSubsetSize &&
+      variantLower.size <= selectedLower.size
+    ) {
       let allIn = true;
       for (const x of variantLower) {
         if (!selectedLower.has(x) && !selectedExpanded.has(x)) {
@@ -525,15 +523,15 @@ function PhoneModelDropdowns({
   return (
     <div
       className={`
-      flex flex-col gap-3
-      sm:flex-row sm:items-center
-    `}
+        flex flex-col gap-3
+        sm:flex-row sm:items-center
+      `}
     >
       <div
         className={`
-        flex flex-col gap-1.5
-        sm:min-w-[10rem]
-      `}
+          flex flex-col gap-1.5
+          sm:min-w-[10rem]
+        `}
       >
         <label className="text-xs text-muted-foreground" htmlFor="phone-brand">
           Brand
@@ -558,9 +556,9 @@ function PhoneModelDropdowns({
       </div>
       <div
         className={`
-        flex flex-col gap-1.5
-        sm:min-w-[12rem]
-      `}
+          flex flex-col gap-1.5
+          sm:min-w-[12rem]
+        `}
       >
         <label className="text-xs text-muted-foreground" htmlFor="phone-model">
           Model
@@ -589,6 +587,31 @@ function PhoneModelDropdowns({
       </div>
     </div>
   );
+}
+
+/** True if selected value s (lowercase) is in variantLower, or when s contains " / ", all parts of s are in variantLower (Printify-style combined option values). */
+function selectedValueInVariantSetLower(
+  s: string,
+  variantLower: Set<string>,
+): boolean {
+  if (variantLower.has(s)) return true;
+  if (
+    [...variantLower].some((vVal) =>
+      expandSizeValueForMatching(s).includes(vVal),
+    )
+  )
+    return true;
+  const parts = s
+    .split(/\s*\/\s*/)
+    .map((p) => p.trim().toLowerCase())
+    .filter(Boolean);
+  if (parts.length > 1 && parts.every((p) => variantLower.has(p))) return true;
+  return false;
+}
+
+/** Normalize a set of strings to lowercase for case-insensitive comparison. */
+function toLowerSet(set: Set<string>): Set<string> {
+  return new Set([...set].map((s) => s.toLowerCase()));
 }
 
 /** Same country-availability logic as ProductActions: excluded globally or product restricted and current country not in list. */

@@ -96,5 +96,9 @@ export async function POST(request: Request) {
     inserted.push(id);
   }
 
-  return NextResponse.json({ chunkIds: inserted, chunks: inserted.length, ok: true });
+  return NextResponse.json({
+    chunkIds: inserted,
+    chunks: inserted.length,
+    ok: true,
+  });
 }

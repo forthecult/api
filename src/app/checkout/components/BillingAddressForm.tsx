@@ -1,13 +1,7 @@
 "use client";
 
 import { Loader2 } from "lucide-react";
-import {
-  forwardRef,
-  useCallback,
-  useImperativeHandle,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useImperativeHandle, useState } from "react";
 
 import type { MappedShippingAddress } from "~/lib/loqate";
 
@@ -131,9 +125,9 @@ export const BillingAddressForm = function BillingAddressForm({
           <h3 className="font-semibold">Billing address</h3>
           <div
             className={`
-            grid gap-4
-            sm:grid-cols-2
-          `}
+              grid gap-4
+              sm:grid-cols-2
+            `}
           >
             <div className="sm:col-span-2">
               <select
@@ -244,7 +238,7 @@ export const BillingAddressForm = function BillingAddressForm({
                     className={`
                       absolute top-full right-0 left-0 z-50 mt-1 max-h-60
                       overflow-auto rounded-md border border-border
- bg-background 
+                      bg-background
                     `}
                     role="listbox"
                   >
@@ -252,9 +246,9 @@ export const BillingAddressForm = function BillingAddressForm({
                     billingLoqate.suggestions.length === 0 ? (
                       <div
                         className={`
-                        flex items-center gap-2 px-3 py-2 text-sm
-                        text-muted-foreground
-                      `}
+                          flex items-center gap-2 px-3 py-2 text-sm
+                          text-muted-foreground
+                        `}
                       >
                         <Loader2
                           aria-hidden
@@ -303,9 +297,9 @@ export const BillingAddressForm = function BillingAddressForm({
             </div>
             <div
               className={`
-              grid gap-4
-              sm:col-span-2 sm:grid-cols-3
-            `}
+                grid gap-4
+                sm:col-span-2 sm:grid-cols-3
+              `}
             >
               <div>
                 <Input

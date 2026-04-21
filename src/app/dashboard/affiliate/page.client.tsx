@@ -97,6 +97,7 @@ export function AffiliatePageClient() {
     data?.affiliate?.payoutMethod,
     data?.affiliate?.payoutAddress,
     data?.affiliate?.code,
+    data?.affiliate,
   ]);
 
   const handleApply = async (e: React.FormEvent) => {
@@ -188,8 +189,7 @@ export function AffiliatePageClient() {
         return;
       }
       setCodeMessage({
-        text:
-          typeof json.message === "string" ? json.message : "Code updated.",
+        text: typeof json.message === "string" ? json.message : "Code updated.",
         type: "success",
       });
       const baseUrl =
@@ -237,8 +237,7 @@ export function AffiliatePageClient() {
       >;
       if (!res.ok) {
         setPayoutMessage({
-          text:
-            typeof json.error === "string" ? json.error : "Failed to save.",
+          text: typeof json.error === "string" ? json.error : "Failed to save.",
           type: "error",
         });
         return;
@@ -340,9 +339,9 @@ export function AffiliatePageClient() {
               </div>
               <div
                 className={`
-                grid gap-4
-                sm:grid-cols-2
-              `}
+                  grid gap-4
+                  sm:grid-cols-2
+                `}
               >
                 <div className="space-y-2">
                   <Label htmlFor="applyPayoutMethod">
@@ -396,7 +395,7 @@ export function AffiliatePageClient() {
                   className={cn(
                     `
                       flex min-h-[80px] w-full rounded-md border border-input
- bg-transparent px-3 py-2 text-sm 
+                      bg-transparent px-3 py-2 text-sm
                     `,
                     `
                       placeholder:text-muted-foreground
@@ -448,24 +447,24 @@ export function AffiliatePageClient() {
             <>
               <Card
                 className={`
-                border-amber-200 bg-amber-50/50
-                dark:border-amber-900/50 dark:bg-amber-950/20
-              `}
+                  border-amber-200 bg-amber-50/50
+                  dark:border-amber-900/50 dark:bg-amber-950/20
+                `}
               >
                 <CardContent className="pt-6">
                   <p
                     className={`
-                    font-medium text-amber-800
-                    dark:text-amber-200
-                  `}
+                      font-medium text-amber-800
+                      dark:text-amber-200
+                    `}
                   >
                     Your application is under review.
                   </p>
                   <p
                     className={`
-                    mt-1 text-sm text-amber-700
-                    dark:text-amber-300
-                  `}
+                      mt-1 text-sm text-amber-700
+                      dark:text-amber-300
+                    `}
                   >
                     We&apos;ll notify you once it&apos;s approved; you&apos;ll
                     get your referral link after approval.
@@ -548,16 +547,16 @@ export function AffiliatePageClient() {
           {isRejected && (
             <Card
               className={`
-              border-red-200
-              dark:border-red-900/50
-            `}
+                border-red-200
+                dark:border-red-900/50
+              `}
             >
               <CardContent className="pt-6">
                 <p
                   className={`
-                  font-medium text-red-800
-                  dark:text-red-200
-                `}
+                    font-medium text-red-800
+                    dark:text-red-200
+                  `}
                 >
                   Your application was not approved.
                 </p>
@@ -668,15 +667,15 @@ export function AffiliatePageClient() {
               <CardContent>
                 <dl
                   className={`
-                  grid grid-cols-2 gap-4
-                  sm:grid-cols-4
-                `}
+                    grid grid-cols-2 gap-4
+                    sm:grid-cols-4
+                  `}
                 >
                   <div>
                     <dt
                       className={`
-                      text-sm font-medium text-muted-foreground uppercase
-                    `}
+                        text-sm font-medium text-muted-foreground uppercase
+                      `}
                     >
                       Conversions
                     </dt>
@@ -687,8 +686,8 @@ export function AffiliatePageClient() {
                   <div>
                     <dt
                       className={`
-                      text-sm font-medium text-muted-foreground uppercase
-                    `}
+                        text-sm font-medium text-muted-foreground uppercase
+                      `}
                     >
                       Total earned
                     </dt>
@@ -699,8 +698,8 @@ export function AffiliatePageClient() {
                   <div>
                     <dt
                       className={`
-                      text-sm font-medium text-muted-foreground uppercase
-                    `}
+                        text-sm font-medium text-muted-foreground uppercase
+                      `}
                     >
                       Paid out
                     </dt>
@@ -711,8 +710,8 @@ export function AffiliatePageClient() {
                   <div>
                     <dt
                       className={`
-                      text-sm font-medium text-muted-foreground uppercase
-                    `}
+                        text-sm font-medium text-muted-foreground uppercase
+                      `}
                     >
                       Pending
                     </dt>
@@ -758,9 +757,9 @@ export function AffiliatePageClient() {
                 <form className="space-y-4" onSubmit={handlePayoutSave}>
                   <div
                     className={`
-                    grid gap-4
-                    sm:grid-cols-2
-                  `}
+                      grid gap-4
+                      sm:grid-cols-2
+                    `}
                   >
                     <div className="space-y-2">
                       <Label htmlFor="payoutMethod">Payout method</Label>

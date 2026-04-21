@@ -38,9 +38,12 @@ export const subscriptionPlanTable = pgTable(
   "subscription_plan",
   {
     createdAt: timestamp("created_at").defaultNow().notNull(),
-    cryptoProductId: text("crypto_product_id").references(() => productsTable.id, {
-      onDelete: "set null",
-    }),
+    cryptoProductId: text("crypto_product_id").references(
+      () => productsTable.id,
+      {
+        onDelete: "set null",
+      },
+    ),
     currency: text("currency").notNull().default("USD"),
     displayName: text("display_name"),
     id: text("id").primaryKey(),
@@ -52,9 +55,9 @@ export const subscriptionPlanTable = pgTable(
       .notNull()
       .references(() => subscriptionOfferTable.id, { onDelete: "cascade" }),
     payCryptoManual: boolean("pay_crypto_manual").notNull().default(false),
+    paypalPlanId: text("paypal_plan_id"),
     payPaypal: boolean("pay_paypal").notNull().default(false),
     payStripe: boolean("pay_stripe").notNull().default(false),
-    paypalPlanId: text("paypal_plan_id"),
     priceCents: integer("price_cents").notNull(),
     published: boolean("published").notNull().default(true),
     sortOrder: integer("sort_order").notNull().default(0),

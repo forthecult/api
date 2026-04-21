@@ -14,7 +14,7 @@
  */
 
 import { Keypair } from "@solana/web3.js";
-import { parseArgs } from "util";
+import { parseArgs } from "node:util";
 
 const { values } = parseArgs({
   args: process.argv.slice(2),

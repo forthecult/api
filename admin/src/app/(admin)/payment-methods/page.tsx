@@ -164,9 +164,9 @@ export default function AdminPaymentMethodsPage() {
       {error && (
         <div
           className={`
-          rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3
-          text-sm text-destructive
-        `}
+            rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3
+            text-sm text-destructive
+          `}
         >
           {error}
         </div>
@@ -212,8 +212,8 @@ export default function AdminPaymentMethodsPage() {
                   >
                     <div
                       className={`
-                      flex items-center justify-between gap-4 px-4 py-3
-                    `}
+                        flex items-center justify-between gap-4 px-4 py-3
+                      `}
                     >
                       <div className="flex min-w-0 items-center gap-2">
                         {hasNetworks && (
@@ -291,13 +291,13 @@ export default function AdminPaymentMethodsPage() {
                     {hasNetworks && expanded && (
                       <div
                         className={`
-                        border-t border-border bg-muted/20 px-4 py-3
-                      `}
+                          border-t border-border bg-muted/20 px-4 py-3
+                        `}
                       >
                         <p
                           className={`
-                          mb-2 text-xs font-medium text-muted-foreground
-                        `}
+                            mb-2 text-xs font-medium text-muted-foreground
+                          `}
                         >
                           Enabled networks (uncheck to hide from checkout)
                         </p>

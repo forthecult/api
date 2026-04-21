@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+
 import Link from "next/link";
 
 import { SEO_CONFIG } from "~/app";
@@ -21,16 +22,16 @@ export default function TokenStakePage() {
   return (
     <div
       className={`
-      min-h-screen bg-gradient-to-b from-muted/50 via-muted/25 to-background
-    `}
+        min-h-screen bg-gradient-to-b from-muted/50 via-muted/25 to-background
+      `}
     >
       <div className="border-b border-border bg-card/50">
         <div
           className={`
-          container mx-auto max-w-7xl px-4 py-6
-          sm:px-6
-          lg:px-8
-        `}
+            container mx-auto max-w-7xl px-4 py-6
+            sm:px-6
+            lg:px-8
+          `}
         >
           <p className="text-sm font-medium text-muted-foreground">
             {SEO_CONFIG.name}

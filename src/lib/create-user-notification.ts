@@ -55,16 +55,6 @@ export async function createUserNotification(
   return { id };
 }
 
-/** True if the order contains only eSIM line items (all item names start with "eSIM:"). */
-async function orderIsEsimOnly(orderId: string): Promise<boolean> {
-  const items = await db
-    .select({ name: orderItemsTable.name })
-    .from(orderItemsTable)
-    .where(eq(orderItemsTable.orderId, orderId));
-  if (items.length === 0) return false;
-  return items.every((i) => /^eSIM:/i.test(i.name ?? ""));
-}
-
 /**
  * Called when an order is created (Stripe checkout complete, crypto create-order, or admin marks paid).
  * Sends Telegram "order placed", website notification, and order-confirmation email when preferences allow.
@@ -105,7 +95,7 @@ export async function onOrderCreated(orderId: string): Promise<void> {
       await createUserNotification({
         description:
           "Thank you for your order. Check your eSIM Dashboard to activate your eSIM.",
-        metadata: { orderId, esimDashboardPath: "/dashboard/esim" },
+        metadata: { esimDashboardPath: "/dashboard/esim", orderId },
         title: "Order confirmed",
         type: "order_placed",
         userId: webNotificationUserId,
@@ -126,8 +116,8 @@ export async function onOrderCreated(orderId: string): Promise<void> {
     (await userWantsTransactionalEmail(order.userId))
   ) {
     void sendOrderConfirmationEmail({
-      orderId,
       isEsimOrder: isEsimOnly,
+      orderId,
       to: order.email.trim(),
     });
   }
@@ -160,6 +150,16 @@ export async function userWantsTransactionalWebsite(
     .where(eq(userTable.id, userId))
     .limit(1);
   return row?.transactionalWebsite ?? true;
+}
+
+/** True if the order contains only eSIM line items (all item names start with "eSIM:"). */
+async function orderIsEsimOnly(orderId: string): Promise<boolean> {
+  const items = await db
+    .select({ name: orderItemsTable.name })
+    .from(orderItemsTable)
+    .where(eq(orderItemsTable.orderId, orderId));
+  if (items.length === 0) return false;
+  return items.every((i) => /^eSIM:/i.test(i.name ?? ""));
 }
 
 /** Kinds that create a website notification when order status changes. */

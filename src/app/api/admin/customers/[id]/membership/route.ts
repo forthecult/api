@@ -22,18 +22,22 @@ import { getMemberTierForWallet } from "~/lib/get-member-tier";
 import { getSolanaRpcUrlServer } from "~/lib/solana-pay";
 import { getActiveToken } from "~/lib/token-config";
 
-export interface WalletMembershipInfo {
-  address: string;
-  stakedBalance: string;
-  stakedBalanceRaw: string;
-  tier: null | number;
-  lock: null | {
-    durationLabel: string;
-    isLocked: boolean;
-    unlocksAt: string;
-    secondsRemaining: number;
-    stakedAt: string;
+export interface MembershipResponse {
+  /** Admin-granted membership (active = expiresAt > now). */
+  adminGrant: null | { expiresAt: string; tier: number };
+  bestTier: null | number;
+  history: {
+    periods: TierPeriod[];
+    rows: {
+      date: string;
+      stakedAmountRaw: string;
+      tier: null | number;
+      wallet: string;
+    }[];
   };
+  memberSince: null | string;
+  tokenSymbol: string;
+  wallets: WalletMembershipInfo[];
 }
 
 /** Consecutive tier period for display (e.g. "Tier 3 for 3 months"). */
@@ -43,40 +47,18 @@ export interface TierPeriod {
   tier: number;
 }
 
-export interface MembershipResponse {
-  /** Admin-granted membership (active = expiresAt > now). */
-  adminGrant: null | { expiresAt: string; tier: number };
-  bestTier: null | number;
-  history: {
-    periods: TierPeriod[];
-    rows: { date: string; stakedAmountRaw: string; tier: null | number; wallet: string }[];
+export interface WalletMembershipInfo {
+  address: string;
+  lock: null | {
+    durationLabel: string;
+    isLocked: boolean;
+    secondsRemaining: number;
+    stakedAt: string;
+    unlocksAt: string;
   };
-  memberSince: null | string;
-  tokenSymbol: string;
-  wallets: WalletMembershipInfo[];
-}
-
-/** Build consecutive same-tier periods from best-tier-per-day. */
-function buildTierPeriods(
-  bestTierByDate: { date: string; tier: number }[],
-): TierPeriod[] {
-  if (bestTierByDate.length === 0) return [];
-  const periods: TierPeriod[] = [];
-  let start = bestTierByDate[0]!.date;
-  let tier = bestTierByDate[0]!.tier;
-  for (let i = 1; i < bestTierByDate.length; i++) {
-    const row = bestTierByDate[i]!;
-    if (row.tier === tier) continue;
-    periods.push({ endDate: bestTierByDate[i - 1]!.date, startDate: start, tier });
-    start = row.date;
-    tier = row.tier;
-  }
-  periods.push({
-    endDate: bestTierByDate[bestTierByDate.length - 1]!.date,
-    startDate: start,
-    tier,
-  });
-  return periods;
+  stakedBalance: string;
+  stakedBalanceRaw: string;
+  tier: null | number;
 }
 
 export async function GET(
@@ -126,7 +108,9 @@ export async function GET(
     for (const w of walletsFromAccountTable) {
       if (w.address) allWalletAddresses.add(w.address);
     }
-    const wallets = Array.from(allWalletAddresses).map((address) => ({ address }));
+    const wallets = Array.from(allWalletAddresses).map((address) => ({
+      address,
+    }));
 
     const now = new Date();
     const adminGrantRow = await db
@@ -171,9 +155,9 @@ export async function GET(
     // fallback tier thresholds (same as in get-member-tier.ts)
     // Tier 1 (best): highest requirement, Tier 3 (entry): lowest requirement
     const FALLBACK_THRESHOLDS: Record<number, number> = {
-      1: 4_000_000,  // tier 1
-      2: 2_000_000,  // tier 2
-      3: 1_000_000,  // tier 3
+      1: 4_000_000, // tier 1
+      2: 2_000_000, // tier 2
+      3: 1_000_000, // tier 3
     };
 
     for (const { address } of wallets) {
@@ -182,15 +166,11 @@ export async function GET(
         ? await fetchUserStake(connection, programId, address)
         : null;
 
-      const human = stake
-        ? Number(stake.amount) / 10 ** token.decimals
-        : 0;
+      const human = stake ? Number(stake.amount) / 10 ** token.decimals : 0;
       const lockStatus = stake ? getLockStatus(stake) : null;
 
       // get tier from getMemberTierForWallet (includes market-based pricing)
-      let tier = programId
-        ? await getMemberTierForWallet(address)
-        : null;
+      let tier = programId ? await getMemberTierForWallet(address) : null;
 
       // fallback: if we have stake but no tier, calculate from hardcoded thresholds
       if (tier === null && human > 0) {
@@ -203,25 +183,28 @@ export async function GET(
         bestTier = tier;
       }
 
-      if (stake?.lockStart && (earliestStakedAt === null || stake.lockStart < earliestStakedAt)) {
+      if (
+        stake?.lockStart &&
+        (earliestStakedAt === null || stake.lockStart < earliestStakedAt)
+      ) {
         earliestStakedAt = stake.lockStart;
       }
 
       walletInfos.push({
         address,
-        stakedBalance: human.toFixed(token.decimals),
-        stakedBalanceRaw: stake?.amount?.toString() ?? "0",
-        tier,
         lock:
           stake && lockStatus
             ? {
                 durationLabel: lockStatus.durationLabel,
                 isLocked: lockStatus.isLocked,
-                unlocksAt: lockStatus.unlocksAt,
                 secondsRemaining: lockStatus.secondsRemaining,
                 stakedAt: new Date(stake.lockStart * 1000).toISOString(),
+                unlocksAt: lockStatus.unlocksAt,
               }
             : null,
+        stakedBalance: human.toFixed(token.decimals),
+        stakedBalanceRaw: stake?.amount?.toString() ?? "0",
+        tier,
       });
     }
 
@@ -281,4 +264,31 @@ export async function GET(
       { status: 500 },
     );
   }
+}
+
+/** Build consecutive same-tier periods from best-tier-per-day. */
+function buildTierPeriods(
+  bestTierByDate: { date: string; tier: number }[],
+): TierPeriod[] {
+  if (bestTierByDate.length === 0) return [];
+  const periods: TierPeriod[] = [];
+  let start = bestTierByDate[0]!.date;
+  let tier = bestTierByDate[0]!.tier;
+  for (let i = 1; i < bestTierByDate.length; i++) {
+    const row = bestTierByDate[i]!;
+    if (row.tier === tier) continue;
+    periods.push({
+      endDate: bestTierByDate[i - 1]!.date,
+      startDate: start,
+      tier,
+    });
+    start = row.date;
+    tier = row.tier;
+  }
+  periods.push({
+    endDate: bestTierByDate[bestTierByDate.length - 1]!.date,
+    startDate: start,
+    tier,
+  });
+  return periods;
 }

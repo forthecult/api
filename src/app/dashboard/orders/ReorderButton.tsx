@@ -126,14 +126,12 @@ export function ReorderButton({
           Loading…
         </>
       ) : (
-        <>
-          {children ?? (
-            <>
-              <RotateCcw aria-hidden className="mr-1.5 size-3.5" />
-              Reorder
-            </>
-          )}
-        </>
+        (children ?? (
+          <>
+            <RotateCcw aria-hidden className="mr-1.5 size-3.5" />
+            Reorder
+          </>
+        ))
       )}
     </Button>
   );

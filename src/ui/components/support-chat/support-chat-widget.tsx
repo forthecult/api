@@ -368,7 +368,7 @@ export function SupportChatWidget({
       if (el) el.scrollTop = el.scrollHeight;
     });
     return () => cancelAnimationFrame(rafId);
-  }, [loading, messages.length]);
+  }, []);
 
   const quickPrompts = [
     { icon: "🛒", label: "Place an Order" },
@@ -395,7 +395,7 @@ export function SupportChatWidget({
           className={cn(
             `
               relative z-10 flex w-[min(100vw-2rem,400px)] flex-col rounded-xl
- border bg-background 
+              border bg-background
             `,
             "max-h-[min(90vh,640px)] overflow-hidden",
           )}
@@ -410,7 +410,7 @@ export function SupportChatWidget({
                     sm:text-sm
                   `,
                   widgetMode === "support"
- ? "bg-background text-foreground "
+                    ? "bg-background text-foreground"
                     : `
                       text-muted-foreground
                       hover:text-foreground
@@ -429,7 +429,7 @@ export function SupportChatWidget({
                     sm:text-sm
                   `,
                   widgetMode === "personal"
- ? "bg-background text-foreground "
+                    ? "bg-background text-foreground"
                     : `
                       text-muted-foreground
                       hover:text-foreground
@@ -444,7 +444,11 @@ export function SupportChatWidget({
           ) : null}
 
           {widgetMode === "personal" ? (
-            <div className="flex min-h-0 max-h-[min(60vh,520px)] min-h-[280px] flex-col">
+            <div
+              className={`
+                flex max-h-[min(60vh,520px)] min-h-0 min-h-[280px] flex-col
+              `}
+            >
               <div
                 className={`
                   flex cursor-grab items-center gap-3 border-b px-4 py-3
@@ -498,7 +502,7 @@ export function SupportChatWidget({
                 <div
                   className={`
                     relative flex h-10 w-10 shrink-0 items-center justify-center
- rounded-full bg-primary text-white 
+                    rounded-full bg-primary text-white
                   `}
                 >
                   {/* Avatar */}
@@ -528,9 +532,7 @@ export function SupportChatWidget({
                     {takenOverBy ? "Live Support" : "Support"}
                   </span>
                   <span className="text-sm text-muted-foreground">
-                    {takenOverBy
-                      ? "A team member is helping you"
-                      : "Online"}
+                    {takenOverBy ? "A team member is helping you" : "Online"}
                   </span>
                 </div>
                 <Button
@@ -546,15 +548,20 @@ export function SupportChatWidget({
               </div>
 
               {/* Messages area */}
-              <div className="flex-1 overflow-y-auto p-3" ref={messagesScrollRef}>
+              <div
+                className="flex-1 overflow-y-auto p-3"
+                ref={messagesScrollRef}
+              >
                 {messages.length === 0 && !loading && !error && (
-                  <div className={`
-                    flex flex-col items-center gap-2 py-6 text-center
-                  `}>
+                  <div
+                    className={`
+                      flex flex-col items-center gap-2 py-6 text-center
+                    `}
+                  >
                     <div
                       className={`
                         flex h-14 w-14 items-center justify-center rounded-full
- bg-primary text-primary-foreground 
+                        bg-primary text-primary-foreground
                       `}
                     >
                       <svg
@@ -742,7 +749,7 @@ export function SupportChatWidget({
         aria-label={open ? "Close chat" : "Open support chat"}
         className={cn(
           `
- h-12 w-12 cursor-grab rounded-full 
+            h-12 w-12 cursor-grab rounded-full
             active:cursor-grabbing
           `,
           open && "relative z-0",

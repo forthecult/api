@@ -1,9 +1,5 @@
 "use client";
 
-import type BigNumber from "bignumber.js";
-
-import { createQR, encodeURL } from "@solana/pay";
-import { PublicKey } from "@solana/web3-compat";
 import { Loader2, Lock } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -34,12 +30,7 @@ import {
 } from "~/lib/checkout-payment-options";
 import { useCountryCurrency } from "~/lib/hooks/use-country-currency";
 import { usePaymentMethodSettings } from "~/lib/hooks/use-payment-method-settings";
-import {
-  getSolanaPayLabel,
-  getSolanaPayRecipient,
-  USDC_MINT_MAINNET,
-  usdcAmountFromUsd,
-} from "~/lib/solana-pay";
+import { getSolanaPayRecipient } from "~/lib/solana-pay";
 import { Button } from "~/ui/primitives/button";
 import {
   Card,
@@ -48,12 +39,6 @@ import {
   CardHeader,
   CardTitle,
 } from "~/ui/primitives/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "~/ui/primitives/dialog";
 import {
   Popover,
   PopoverContent,
@@ -97,6 +82,7 @@ import {
 type CryptoSub =
   | "bitcoin"
   | "crust"
+  | "cult"
   | "dogecoin"
   | "eth"
   | "monero"
@@ -105,8 +91,7 @@ type CryptoSub =
   | "seeker"
   | "solana"
   | "soluna"
-  | "troll"
-  | "cult";
+  | "troll";
 type PaymentMethodTop = "credit-card" | "crypto" | "paypal" | "stablecoins";
 type UsdcSub = "arbitrum" | "base" | "ethereum" | "polygon" | "solana";
 type UsdtSub = "arbitrum" | "bnb" | "ethereum" | "polygon";
@@ -226,12 +211,7 @@ export const PaymentMethodSelector = forwardRef<
       if (stablecoinToken === "usdt") return "stablecoin_usdt";
     }
     return null;
-  }, [
-    paymentMethod,
-    paymentSubOption,
-    cryptoOtherSubOption,
-    stablecoinToken,
-  ]);
+  }, [paymentMethod, paymentSubOption, cryptoOtherSubOption, stablecoinToken]);
 
   useEffect(() => {
     onPaymentMethodKeyChange?.(paymentMethodKey);
@@ -297,7 +277,8 @@ export const PaymentMethodSelector = forwardRef<
     const ac = new AbortController();
     fetch("/api/crypto/prices", { signal: ac.signal })
       .then((res) => res.json())
-      .then((raw: unknown) => { const data = raw as {
+      .then((raw: unknown) => {
+        const data = raw as {
           CRUST?: number;
           CULT?: number;
           PUMP?: number;
@@ -306,9 +287,8 @@ export const PaymentMethodSelector = forwardRef<
           SOLUNA?: number;
           TROLL?: number;
         };
-          if (data && typeof data === "object") setCryptoPrices(data);
-        },
-      )
+        if (data && typeof data === "object") setCryptoPrices(data);
+      })
       .catch((err: unknown) => {
         if (err instanceof DOMException && err.name === "AbortError") return;
         // Prices will use fallback values if fetch fails
@@ -640,7 +620,7 @@ export const PaymentMethodSelector = forwardRef<
     setNavigatingToPay,
   ]);
 
-  const handlePayWithSolana = useCallback(() => {
+  const _handlePayWithSolana = useCallback(() => {
     if (!validateForPayment()) return;
     shippingFormRef.current?.persistForm();
     openSolanaPayDialog();
@@ -977,9 +957,7 @@ export const PaymentMethodSelector = forwardRef<
           />
           {PAYMENT_CONFIG.stripeEnabled && totalCents > 0 && (
             <div
-              className={`
-              flex items-center gap-2 text-sm text-muted-foreground
-            `}
+              className={`flex items-center gap-2 text-sm text-muted-foreground`}
             >
               <span aria-hidden className="flex-1 border-t border-border" />
               <span>Or pay with</span>
@@ -1146,11 +1124,11 @@ export const PaymentMethodSelector = forwardRef<
                     <div key={opt.value}>
                       <label
                         className={`
-                        flex cursor-pointer items-center gap-3 rounded-md border
-                        border-border p-2.5
-                        has-[:checked]:border-primary has-[:checked]:ring-1
-                        has-[:checked]:ring-primary/20
-                      `}
+                          flex cursor-pointer items-center gap-3 rounded-md
+                          border border-border p-2.5
+                          has-[:checked]:border-primary has-[:checked]:ring-1
+                          has-[:checked]:ring-primary/20
+                        `}
                       >
                         <input
                           checked={paymentSubOption === opt.value}
@@ -1187,8 +1165,8 @@ export const PaymentMethodSelector = forwardRef<
                       {opt.value === "eth" && paymentSubOption === "eth" && (
                         <div
                           className={`
-                          mt-2 ml-5 space-y-2 border-l-2 border-muted pl-4
-                        `}
+                            mt-2 ml-5 space-y-2 border-l-2 border-muted pl-4
+                          `}
                         >
                           {ETH_CHAIN_OPTIONS.map((chainOpt) => (
                             <label
@@ -1232,8 +1210,8 @@ export const PaymentMethodSelector = forwardRef<
                         paymentSubOption === "other" && (
                           <div
                             className={`
-                            mt-2 ml-5 space-y-2 border-l-2 border-muted pl-4
-                          `}
+                              mt-2 ml-5 space-y-2 border-l-2 border-muted pl-4
+                            `}
                           >
                             {OTHER_SUB_OPTIONS.map((otherOpt) => (
                               <label
@@ -1513,8 +1491,8 @@ export const PaymentMethodSelector = forwardRef<
                 <div className="space-y-3 border-t border-border px-3 pt-4 pb-3">
                   <div
                     className={`
-                    flex items-center gap-2 rounded-md bg-muted/50 px-3 py-2.5
-                  `}
+                      flex items-center gap-2 rounded-md bg-muted/50 px-3 py-2.5
+                    `}
                   >
                     <Lock
                       aria-hidden
@@ -1555,201 +1533,235 @@ export const PaymentMethodSelector = forwardRef<
             </ul>
           </div>
         )}
-        {paymentMethod === "credit-card" ? (
-          (payHandlerRef.current = handleCardPayment),
-          <Button
-            className={paymentButtonClass}
-            disabled={navigatingToPay}
-            onClick={handleCardPayment}
-            size="lg"
-            type="button"
-          >
-            {navigatingToPay ? (
-              <>
-                <Loader2 aria-hidden className="mr-2 size-4 animate-spin" />
-                Securing your payment…
-              </>
-            ) : (
-              <>
-                <Lock aria-hidden className="mr-2 size-4" />
-                Pay securely with card
-              </>
-            )}
-          </Button>
-        ) : paymentMethod === "paypal" && PAYMENT_CONFIG.paypalEnabled ? (
-          (payHandlerRef.current = handlePlaceOrder),
-          <Button
-            className={paymentButtonClass}
-            disabled={navigatingToPay}
-            onClick={handlePlaceOrder}
-            size="lg"
-            type="button"
-          >
-            {navigatingToPay ? (
-              <>
-                <Loader2 aria-hidden className="mr-2 size-4 animate-spin" />
-                Redirecting to PayPal…
-              </>
-            ) : (
-              <>
-                <Image
-                  alt=""
-                  className="mr-2 h-5 w-6 object-contain"
-                  height={20}
-                  src="/payments/paypal.svg"
-                  width={24}
-                />
-                Pay with PayPal
-              </>
-            )}
-          </Button>
-        ) : isBtcPaySupported ? (
-          (payHandlerRef.current = handleGoToBtcPay),
-          <Button
-            className={paymentButtonClass}
-            disabled={navigatingToPay}
-            onClick={handleGoToBtcPay}
-            size="lg"
-            type="button"
-          >
-            {navigatingToPay ? (
-              <>
-                <Loader2 aria-hidden className="mr-2 size-4 animate-spin" />
-                Creating order…
-              </>
-            ) : paymentSubOption === "bitcoin" ? (
-              "Pay with Bitcoin"
-            ) : paymentSubOption === "dogecoin" ? (
-              "Pay with Dogecoin"
-            ) : (
-              "Pay with Monero"
-            )}
-          </Button>
-        ) : isEvmPaySupported ? (
-          (payHandlerRef.current = handleGoToEthPay),
-          <Button
-            className={paymentButtonClass}
-            disabled={navigatingToPay || !canShipToCountry}
-            onClick={handleGoToEthPay}
-            size="lg"
-            type="button"
-          >
-            {navigatingToPay ? (
-              <>
-                <Loader2 aria-hidden className="mr-2 size-4 animate-spin" />
-                Creating order…
-              </>
-            ) : paymentMethod === "crypto" ? (
-              `Pay with ETH (${cryptoEthChain === "ethereum" ? "Ethereum" : cryptoEthChain === "arbitrum" ? "Arbitrum" : cryptoEthChain === "base" ? "Base" : "Polygon"})`
-            ) : paymentMethod === "stablecoins" &&
-              stablecoinToken === "usdc" ? (
-              `Pay with USDC (${paymentSubOption === "ethereum" ? "Ethereum" : paymentSubOption === "arbitrum" ? "Arbitrum" : paymentSubOption === "base" ? "Base" : "Polygon"})`
-            ) : (
-              `Pay with USDT (${paymentSubOption === "ethereum" ? "Ethereum" : paymentSubOption === "arbitrum" ? "Arbitrum" : paymentSubOption === "base" ? "Base" : paymentSubOption === "bnb" ? "BNB" : "Polygon"})`
-            )}
-          </Button>
-        ) : isSolanaPaySupported ? (
-          (payHandlerRef.current = handleGoToCryptoPay),
-          <Button
-            className={paymentButtonClass}
-            disabled={navigatingToPay || !canShipToCountry}
-            onClick={handleGoToCryptoPay}
-            size="lg"
-            type="button"
-          >
-            {navigatingToPay
-              ? "Redirecting…"
-              : paymentMethod === "crypto" && paymentSubOption === "crust"
-                ? "Pay with CRUST"
-                : paymentMethod === "crypto" && paymentSubOption === "pump"
-                  ? "Pay with Pump"
-                  : paymentMethod === "crypto" && paymentSubOption === "troll"
-                    ? "Pay with TROLL"
-                    : paymentMethod === "crypto" &&
-                        paymentSubOption === "soluna"
-                      ? "Pay with SOLUNA"
-                      : paymentMethod === "crypto" &&
-                          paymentSubOption === "seeker"
-                        ? "Pay with Seeker (SKR)"
-                        : paymentMethod === "crypto" &&
-                            paymentSubOption === "cult"
-                          ? "Pay with CULT"
-                          : paymentMethod === "stablecoins" &&
-                            stablecoinToken === "usdc" &&
-                            paymentSubOption === "solana"
-                          ? "Pay with USDC (Solana)"
-                          : "Pay with Solana"}
-          </Button>
-        ) : isSuiPaySupported ? (
-          (payHandlerRef.current = handleGoToCryptoPay),
-          <Button
-            className={paymentButtonClass}
-            disabled={navigatingToPay || !canShipToCountry}
-            onClick={handleGoToCryptoPay}
-            size="lg"
-            type="button"
-          >
-            {navigatingToPay ? "Redirecting…" : "Pay with SUI"}
-          </Button>
-        ) : isTonPaySupported ? (
-          (payHandlerRef.current = handleGoToTonPay),
-          <Button
-            className={paymentButtonClass}
-            disabled={navigatingToPay || !canShipToCountry}
-            onClick={handleGoToTonPay}
-            size="lg"
-            type="button"
-          >
-            {navigatingToPay ? "Redirecting…" : "Pay with TON"}
-          </Button>
-        ) : paymentMethod === "" ? (
-          (payHandlerRef.current = () => {}),
-          <p
-            className={`
-            rounded-md border border-border bg-muted/50 px-4 py-3.5 text-base
-            text-muted-foreground
-          `}
-          >
-            Select a payment method above.
-          </p>
-        ) : paymentMethod === "crypto" && paymentSubOption === "" ? (
-          (payHandlerRef.current = () => {}),
-          <p
-            className={`
-            rounded-md border border-border bg-muted/50 px-4 py-3 text-sm
-            text-muted-foreground
-          `}
-          >
-            Select a crypto option above (e.g. Ethereum, Solana, Crustafarian).
-          </p>
-        ) : paymentMethod === "stablecoins" ? (
-          (payHandlerRef.current = () => {}),
-          <p
-            className={`
-            rounded-md border border-border bg-muted/50 px-4 py-3 text-sm
-            text-muted-foreground
-          `}
-          >
-            Select USDC or USDT and a network above.
-          </p>
-        ) : (
-          (payHandlerRef.current = () => {}),
-          <p
-            className={`
-            rounded-md border border-border bg-muted/50 px-4 py-3 text-sm
-            text-muted-foreground
-          `}
-          >
-            This payment option is not available yet. Use Credit/debit card,
-            Crypto, Stablecoins (USDC/USDT), or PayPal.
-          </p>
-        )}
+        {paymentMethod === "credit-card"
+          ? ((payHandlerRef.current = handleCardPayment),
+            (
+              <Button
+                className={paymentButtonClass}
+                disabled={navigatingToPay}
+                onClick={handleCardPayment}
+                size="lg"
+                type="button"
+              >
+                {navigatingToPay ? (
+                  <>
+                    <Loader2 aria-hidden className="mr-2 size-4 animate-spin" />
+                    Securing your payment…
+                  </>
+                ) : (
+                  <>
+                    <Lock aria-hidden className="mr-2 size-4" />
+                    Pay securely with card
+                  </>
+                )}
+              </Button>
+            ))
+          : paymentMethod === "paypal" && PAYMENT_CONFIG.paypalEnabled
+            ? ((payHandlerRef.current = handlePlaceOrder),
+              (
+                <Button
+                  className={paymentButtonClass}
+                  disabled={navigatingToPay}
+                  onClick={handlePlaceOrder}
+                  size="lg"
+                  type="button"
+                >
+                  {navigatingToPay ? (
+                    <>
+                      <Loader2
+                        aria-hidden
+                        className="mr-2 size-4 animate-spin"
+                      />
+                      Redirecting to PayPal…
+                    </>
+                  ) : (
+                    <>
+                      <Image
+                        alt=""
+                        className="mr-2 h-5 w-6 object-contain"
+                        height={20}
+                        src="/payments/paypal.svg"
+                        width={24}
+                      />
+                      Pay with PayPal
+                    </>
+                  )}
+                </Button>
+              ))
+            : isBtcPaySupported
+              ? ((payHandlerRef.current = handleGoToBtcPay),
+                (
+                  <Button
+                    className={paymentButtonClass}
+                    disabled={navigatingToPay}
+                    onClick={handleGoToBtcPay}
+                    size="lg"
+                    type="button"
+                  >
+                    {navigatingToPay ? (
+                      <>
+                        <Loader2
+                          aria-hidden
+                          className="mr-2 size-4 animate-spin"
+                        />
+                        Creating order…
+                      </>
+                    ) : paymentSubOption === "bitcoin" ? (
+                      "Pay with Bitcoin"
+                    ) : paymentSubOption === "dogecoin" ? (
+                      "Pay with Dogecoin"
+                    ) : (
+                      "Pay with Monero"
+                    )}
+                  </Button>
+                ))
+              : isEvmPaySupported
+                ? ((payHandlerRef.current = handleGoToEthPay),
+                  (
+                    <Button
+                      className={paymentButtonClass}
+                      disabled={navigatingToPay || !canShipToCountry}
+                      onClick={handleGoToEthPay}
+                      size="lg"
+                      type="button"
+                    >
+                      {navigatingToPay ? (
+                        <>
+                          <Loader2
+                            aria-hidden
+                            className="mr-2 size-4 animate-spin"
+                          />
+                          Creating order…
+                        </>
+                      ) : paymentMethod === "crypto" ? (
+                        `Pay with ETH (${cryptoEthChain === "ethereum" ? "Ethereum" : cryptoEthChain === "arbitrum" ? "Arbitrum" : cryptoEthChain === "base" ? "Base" : "Polygon"})`
+                      ) : paymentMethod === "stablecoins" &&
+                        stablecoinToken === "usdc" ? (
+                        `Pay with USDC (${paymentSubOption === "ethereum" ? "Ethereum" : paymentSubOption === "arbitrum" ? "Arbitrum" : paymentSubOption === "base" ? "Base" : "Polygon"})`
+                      ) : (
+                        `Pay with USDT (${paymentSubOption === "ethereum" ? "Ethereum" : paymentSubOption === "arbitrum" ? "Arbitrum" : paymentSubOption === "base" ? "Base" : paymentSubOption === "bnb" ? "BNB" : "Polygon"})`
+                      )}
+                    </Button>
+                  ))
+                : isSolanaPaySupported
+                  ? ((payHandlerRef.current = handleGoToCryptoPay),
+                    (
+                      <Button
+                        className={paymentButtonClass}
+                        disabled={navigatingToPay || !canShipToCountry}
+                        onClick={handleGoToCryptoPay}
+                        size="lg"
+                        type="button"
+                      >
+                        {navigatingToPay
+                          ? "Redirecting…"
+                          : paymentMethod === "crypto" &&
+                              paymentSubOption === "crust"
+                            ? "Pay with CRUST"
+                            : paymentMethod === "crypto" &&
+                                paymentSubOption === "pump"
+                              ? "Pay with Pump"
+                              : paymentMethod === "crypto" &&
+                                  paymentSubOption === "troll"
+                                ? "Pay with TROLL"
+                                : paymentMethod === "crypto" &&
+                                    paymentSubOption === "soluna"
+                                  ? "Pay with SOLUNA"
+                                  : paymentMethod === "crypto" &&
+                                      paymentSubOption === "seeker"
+                                    ? "Pay with Seeker (SKR)"
+                                    : paymentMethod === "crypto" &&
+                                        paymentSubOption === "cult"
+                                      ? "Pay with CULT"
+                                      : paymentMethod === "stablecoins" &&
+                                          stablecoinToken === "usdc" &&
+                                          paymentSubOption === "solana"
+                                        ? "Pay with USDC (Solana)"
+                                        : "Pay with Solana"}
+                      </Button>
+                    ))
+                  : isSuiPaySupported
+                    ? ((payHandlerRef.current = handleGoToCryptoPay),
+                      (
+                        <Button
+                          className={paymentButtonClass}
+                          disabled={navigatingToPay || !canShipToCountry}
+                          onClick={handleGoToCryptoPay}
+                          size="lg"
+                          type="button"
+                        >
+                          {navigatingToPay ? "Redirecting…" : "Pay with SUI"}
+                        </Button>
+                      ))
+                    : isTonPaySupported
+                      ? ((payHandlerRef.current = handleGoToTonPay),
+                        (
+                          <Button
+                            className={paymentButtonClass}
+                            disabled={navigatingToPay || !canShipToCountry}
+                            onClick={handleGoToTonPay}
+                            size="lg"
+                            type="button"
+                          >
+                            {navigatingToPay ? "Redirecting…" : "Pay with TON"}
+                          </Button>
+                        ))
+                      : paymentMethod === ""
+                        ? ((payHandlerRef.current = () => {}),
+                          (
+                            <p
+                              className={`
+                                rounded-md border border-border bg-muted/50 px-4
+                                py-3.5 text-base text-muted-foreground
+                              `}
+                            >
+                              Select a payment method above.
+                            </p>
+                          ))
+                        : paymentMethod === "crypto" && paymentSubOption === ""
+                          ? ((payHandlerRef.current = () => {}),
+                            (
+                              <p
+                                className={`
+                                  rounded-md border border-border bg-muted/50
+                                  px-4 py-3 text-sm text-muted-foreground
+                                `}
+                              >
+                                Select a crypto option above (e.g. Ethereum,
+                                Solana, Crustafarian).
+                              </p>
+                            ))
+                          : paymentMethod === "stablecoins"
+                            ? ((payHandlerRef.current = () => {}),
+                              (
+                                <p
+                                  className={`
+                                    rounded-md border border-border bg-muted/50
+                                    px-4 py-3 text-sm text-muted-foreground
+                                  `}
+                                >
+                                  Select USDC or USDT and a network above.
+                                </p>
+                              ))
+                            : ((payHandlerRef.current = () => {}),
+                              (
+                                <p
+                                  className={`
+                                    rounded-md border border-border bg-muted/50
+                                    px-4 py-3 text-sm text-muted-foreground
+                                  `}
+                                >
+                                  This payment option is not available yet. Use
+                                  Credit/debit card, Crypto, Stablecoins
+                                  (USDC/USDT), or PayPal.
+                                </p>
+                              ))}
         {/* Reassurance messaging */}
         <div
           className={`
-          flex flex-col gap-2.5 rounded-md border border-[#C4873A]/20
-          bg-[#C4873A]/5 px-4 py-3.5
-        `}
+            flex flex-col gap-2.5 rounded-md border border-[#C4873A]/20
+            bg-[#C4873A]/5 px-4 py-3.5
+          `}
         >
           <div className="flex items-center gap-2.5 text-base text-[#C4873A]">
             <svg
@@ -1795,9 +1807,9 @@ export const PaymentMethodSelector = forwardRef<
         <div className="border-t border-border pt-4">
           <p
             className={`
-            flex flex-wrap items-center justify-center gap-x-2 gap-y-1
-            text-center text-sm text-muted-foreground
-          `}
+              flex flex-wrap items-center justify-center gap-x-2 gap-y-1
+              text-center text-sm text-muted-foreground
+            `}
           >
             <PolicyPopup
               fullPolicyHref="/policies/refund"
@@ -1805,8 +1817,9 @@ export const PaymentMethodSelector = forwardRef<
                 <div className="space-y-3">
                   <div
                     className={`
-                    flex items-center gap-2 rounded-md bg-[#C4873A]/10 px-3 py-2
-                  `}
+                      flex items-center gap-2 rounded-md bg-[#C4873A]/10 px-3
+                      py-2
+                    `}
                   >
                     <svg
                       aria-hidden
@@ -1826,9 +1839,9 @@ export const PaymentMethodSelector = forwardRef<
                     <li className="flex items-start gap-2">
                       <span
                         className={`
-                        mt-1 block size-1.5 shrink-0 rounded-full
-                        bg-foreground/40
-                      `}
+                          mt-1 block size-1.5 shrink-0 rounded-full
+                          bg-foreground/40
+                        `}
                       />
                       Return any item within{" "}
                       <strong>30 days of delivery</strong> for a full refund
@@ -1836,9 +1849,9 @@ export const PaymentMethodSelector = forwardRef<
                     <li className="flex items-start gap-2">
                       <span
                         className={`
-                        mt-1 block size-1.5 shrink-0 rounded-full
-                        bg-foreground/40
-                      `}
+                          mt-1 block size-1.5 shrink-0 rounded-full
+                          bg-foreground/40
+                        `}
                       />
                       Items must be unworn/unused, with tags and original
                       packaging
@@ -1846,9 +1859,9 @@ export const PaymentMethodSelector = forwardRef<
                     <li className="flex items-start gap-2">
                       <span
                         className={`
-                        mt-1 block size-1.5 shrink-0 rounded-full
-                        bg-foreground/40
-                      `}
+                          mt-1 block size-1.5 shrink-0 rounded-full
+                          bg-foreground/40
+                        `}
                       />
                       Contact us first and we&apos;ll provide a{" "}
                       <strong>free return label</strong>
@@ -1856,9 +1869,9 @@ export const PaymentMethodSelector = forwardRef<
                     <li className="flex items-start gap-2">
                       <span
                         className={`
-                        mt-1 block size-1.5 shrink-0 rounded-full
-                        bg-foreground/40
-                      `}
+                          mt-1 block size-1.5 shrink-0 rounded-full
+                          bg-foreground/40
+                        `}
                       />
                       Refunds processed within <strong>10 business days</strong>{" "}
                       after inspection
@@ -1866,39 +1879,35 @@ export const PaymentMethodSelector = forwardRef<
                     <li className="flex items-start gap-2">
                       <span
                         className={`
-                        mt-1 block size-1.5 shrink-0 rounded-full
-                        bg-foreground/40
-                      `}
+                          mt-1 block size-1.5 shrink-0 rounded-full
+                          bg-foreground/40
+                        `}
                       />
                       EU/UK customers: 14-day right to cancel for any reason
                     </li>
                   </ul>
                   {hasEsimInCart ? (
-                    <>
-                      <div className="border-t border-border pt-3">
-                        <p className="mb-2 text-sm font-medium text-foreground">
-                          eSIM plans (in your cart)
-                        </p>
-                        <ul
-                          className={`
-                          space-y-1.5 text-sm text-muted-foreground
-                        `}
-                        >
-                          {ESIM_REFUND_POPUP_ITEMS.map((item, i) => (
-                            <li className="flex items-start gap-2" key={i}>
-                              <span
-                                aria-hidden
-                                className={`
-                                  mt-1 block size-1.5 shrink-0 rounded-full
-                                  bg-amber-500/60
-                                `}
-                              />
-                              {item}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    </>
+                    <div className="border-t border-border pt-3">
+                      <p className="mb-2 text-sm font-medium text-foreground">
+                        eSIM plans (in your cart)
+                      </p>
+                      <ul
+                        className={`space-y-1.5 text-sm text-muted-foreground`}
+                      >
+                        {ESIM_REFUND_POPUP_ITEMS.map((item, i) => (
+                          <li className="flex items-start gap-2" key={i}>
+                            <span
+                              aria-hidden
+                              className={`
+                                mt-1 block size-1.5 shrink-0 rounded-full
+                                bg-amber-500/60
+                              `}
+                            />
+                            {item}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   ) : null}
                   <p className="text-sm text-muted-foreground">
                     We want you to love your purchase. If something isn&apos;t
@@ -1917,9 +1926,9 @@ export const PaymentMethodSelector = forwardRef<
                 <div className="space-y-3">
                   <div
                     className={`
-                    flex items-center gap-2 rounded-md bg-blue-50 px-3 py-2
-                    dark:bg-blue-950/30
-                  `}
+                      flex items-center gap-2 rounded-md bg-blue-50 px-3 py-2
+                      dark:bg-blue-950/30
+                    `}
                   >
                     <svg
                       aria-hidden
@@ -1940,9 +1949,9 @@ export const PaymentMethodSelector = forwardRef<
                     </svg>
                     <span
                       className={`
-                      text-sm font-medium text-blue-700
-                      dark:text-blue-400
-                    `}
+                        text-sm font-medium text-blue-700
+                        dark:text-blue-400
+                      `}
                     >
                       Most orders ship within 1 business day
                     </span>
@@ -1951,18 +1960,18 @@ export const PaymentMethodSelector = forwardRef<
                     <li className="flex items-start gap-2">
                       <span
                         className={`
-                        mt-1 block size-1.5 shrink-0 rounded-full
-                        bg-foreground/40
-                      `}
+                          mt-1 block size-1.5 shrink-0 rounded-full
+                          bg-foreground/40
+                        `}
                       />
                       <strong>Domestic (US):</strong> 2–4 business days delivery
                     </li>
                     <li className="flex items-start gap-2">
                       <span
                         className={`
-                        mt-1 block size-1.5 shrink-0 rounded-full
-                        bg-foreground/40
-                      `}
+                          mt-1 block size-1.5 shrink-0 rounded-full
+                          bg-foreground/40
+                        `}
                       />
                       <strong>International:</strong> 5–14 business days
                       delivery
@@ -1970,18 +1979,18 @@ export const PaymentMethodSelector = forwardRef<
                     <li className="flex items-start gap-2">
                       <span
                         className={`
-                        mt-1 block size-1.5 shrink-0 rounded-full
-                        bg-foreground/40
-                      `}
+                          mt-1 block size-1.5 shrink-0 rounded-full
+                          bg-foreground/40
+                        `}
                       />
                       Tracking number sent via email once shipped
                     </li>
                     <li className="flex items-start gap-2">
                       <span
                         className={`
-                        mt-1 block size-1.5 shrink-0 rounded-full
-                        bg-foreground/40
-                      `}
+                          mt-1 block size-1.5 shrink-0 rounded-full
+                          bg-foreground/40
+                        `}
                       />
                       Peak seasons may add up to 1 week
                     </li>
@@ -2004,9 +2013,9 @@ export const PaymentMethodSelector = forwardRef<
                 <div className="space-y-3">
                   <div
                     className={`
-                    flex items-center gap-2 rounded-md bg-purple-50 px-3 py-2
-                    dark:bg-purple-950/30
-                  `}
+                      flex items-center gap-2 rounded-md bg-purple-50 px-3 py-2
+                      dark:bg-purple-950/30
+                    `}
                   >
                     <svg
                       aria-hidden
@@ -2024,9 +2033,9 @@ export const PaymentMethodSelector = forwardRef<
                     </svg>
                     <span
                       className={`
-                      text-sm font-medium text-purple-700
-                      dark:text-purple-400
-                    `}
+                        text-sm font-medium text-purple-700
+                        dark:text-purple-400
+                      `}
                     >
                       We never sell your data
                     </span>
@@ -2035,18 +2044,18 @@ export const PaymentMethodSelector = forwardRef<
                     <li className="flex items-start gap-2">
                       <span
                         className={`
-                        mt-1 block size-1.5 shrink-0 rounded-full
-                        bg-foreground/40
-                      `}
+                          mt-1 block size-1.5 shrink-0 rounded-full
+                          bg-foreground/40
+                        `}
                       />
                       We collect only what&apos;s needed to fulfill your order
                     </li>
                     <li className="flex items-start gap-2">
                       <span
                         className={`
-                        mt-1 block size-1.5 shrink-0 rounded-full
-                        bg-foreground/40
-                      `}
+                          mt-1 block size-1.5 shrink-0 rounded-full
+                          bg-foreground/40
+                        `}
                       />
                       <strong>No targeted advertising</strong> — your data stays
                       between us
@@ -2054,18 +2063,18 @@ export const PaymentMethodSelector = forwardRef<
                     <li className="flex items-start gap-2">
                       <span
                         className={`
-                        mt-1 block size-1.5 shrink-0 rounded-full
-                        bg-foreground/40
-                      `}
+                          mt-1 block size-1.5 shrink-0 rounded-full
+                          bg-foreground/40
+                        `}
                       />
                       Only essential cookies (sign-in, cart, security)
                     </li>
                     <li className="flex items-start gap-2">
                       <span
                         className={`
-                        mt-1 block size-1.5 shrink-0 rounded-full
-                        bg-foreground/40
-                      `}
+                          mt-1 block size-1.5 shrink-0 rounded-full
+                          bg-foreground/40
+                        `}
                       />
                       You can access, correct, delete, or export your data
                       anytime
@@ -2094,27 +2103,27 @@ export const PaymentMethodSelector = forwardRef<
                     <li className="flex items-start gap-2">
                       <span
                         className={`
-                        mt-1 block size-1.5 shrink-0 rounded-full
-                        bg-foreground/40
-                      `}
+                          mt-1 block size-1.5 shrink-0 rounded-full
+                          bg-foreground/40
+                        `}
                       />
                       You must be the age of majority in your jurisdiction
                     </li>
                     <li className="flex items-start gap-2">
                       <span
                         className={`
-                        mt-1 block size-1.5 shrink-0 rounded-full
-                        bg-foreground/40
-                      `}
+                          mt-1 block size-1.5 shrink-0 rounded-full
+                          bg-foreground/40
+                        `}
                       />
                       We may correct pricing errors or limit order quantities
                     </li>
                     <li className="flex items-start gap-2">
                       <span
                         className={`
-                        mt-1 block size-1.5 shrink-0 rounded-full
-                        bg-foreground/40
-                      `}
+                          mt-1 block size-1.5 shrink-0 rounded-full
+                          bg-foreground/40
+                        `}
                       />
                       Questions? Contact us first — we&apos;re happy to help
                       resolve any issue
@@ -2122,9 +2131,9 @@ export const PaymentMethodSelector = forwardRef<
                     <li className="flex items-start gap-2">
                       <span
                         className={`
-                        mt-1 block size-1.5 shrink-0 rounded-full
-                        bg-foreground/40
-                      `}
+                          mt-1 block size-1.5 shrink-0 rounded-full
+                          bg-foreground/40
+                        `}
                       />
                       Governing law: United States
                     </li>

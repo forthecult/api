@@ -159,9 +159,9 @@ export default function AdminShippingOptionCreatePage() {
             {error && (
               <div
                 className={`
-                rounded-md border border-destructive/50 bg-destructive/10 px-3
-                py-2 text-sm text-destructive
-              `}
+                  rounded-md border border-destructive/50 bg-destructive/10 px-3
+                  py-2 text-sm text-destructive
+                `}
               >
                 {error}
               </div>
@@ -169,9 +169,9 @@ export default function AdminShippingOptionCreatePage() {
 
             <div
               className={`
-              grid gap-6
-              sm:grid-cols-2
-            `}
+                grid gap-6
+                sm:grid-cols-2
+              `}
             >
               <div className="space-y-2">
                 <label className={labelClass} htmlFor="name">
@@ -225,9 +225,9 @@ export default function AdminShippingOptionCreatePage() {
 
             <div
               className={`
-              grid gap-6
-              sm:grid-cols-2
-            `}
+                grid gap-6
+                sm:grid-cols-2
+              `}
             >
               <div className="space-y-2">
                 <label className={labelClass} htmlFor="minOrder">
@@ -261,9 +261,9 @@ export default function AdminShippingOptionCreatePage() {
 
             <div
               className={`
-              grid gap-6
-              sm:grid-cols-2
-            `}
+                grid gap-6
+                sm:grid-cols-2
+              `}
             >
               <div className="space-y-2">
                 <label className={labelClass} htmlFor="minQty">
@@ -297,9 +297,9 @@ export default function AdminShippingOptionCreatePage() {
 
             <div
               className={`
-              grid gap-6
-              sm:grid-cols-2
-            `}
+                grid gap-6
+                sm:grid-cols-2
+              `}
             >
               <div className="space-y-2">
                 <label className={labelClass} htmlFor="minWeight">
@@ -333,9 +333,9 @@ export default function AdminShippingOptionCreatePage() {
 
             <div
               className={`
-              grid gap-6
-              sm:grid-cols-2
-            `}
+                grid gap-6
+                sm:grid-cols-2
+              `}
             >
               <div className="space-y-2">
                 <label className={labelClass} htmlFor="type">
@@ -445,9 +445,9 @@ export default function AdminShippingOptionCreatePage() {
 
             <div
               className={`
-              grid gap-6
-              sm:grid-cols-2
-            `}
+                grid gap-6
+                sm:grid-cols-2
+              `}
             >
               <div className="space-y-2">
                 <label className={labelClass} htmlFor="sourceUrl">

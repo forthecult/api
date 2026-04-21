@@ -8,7 +8,6 @@ import {
   formatEther,
   formatUnits,
   http,
-  isAddress,
   parseAbiItem,
 } from "viem";
 import {
@@ -24,7 +23,6 @@ import {
 
 import { db } from "~/db";
 import { ordersTable } from "~/db/schema";
-import { ERC20ABI } from "~/lib/contracts/abis";
 import {
   getRpcUrl,
   getTokenAddress,
@@ -92,7 +90,7 @@ export async function POST(request: NextRequest) {
     if (!orderId) {
       return NextResponse.json({ error: "orderId required" }, { status: 400 });
     }
-    if (!txHash || !txHash.startsWith("0x")) {
+    if (!txHash?.startsWith("0x")) {
       return NextResponse.json(
         { error: "Valid txHash required" },
         { status: 400 },
@@ -163,7 +161,7 @@ export async function POST(request: NextRequest) {
       receipt = await client.getTransactionReceipt({
         hash: txHash as `0x${string}`,
       });
-    } catch (err) {
+    } catch (_err) {
       return NextResponse.json(
         {
           error:

@@ -1,9 +1,10 @@
+import type { NextRequest } from "next/server";
+
 import { inArray } from "drizzle-orm";
-import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
 import { productsTable, productVariantsTable } from "~/db/schema";
-import { apiError, apiSuccess, validateRequired } from "~/lib/api-error";
+import { apiError, apiSuccess } from "~/lib/api-error";
 
 interface EstimateItem {
   productId: string;

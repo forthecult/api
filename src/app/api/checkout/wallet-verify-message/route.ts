@@ -11,7 +11,7 @@ import { getTierVerificationMessage } from "~/lib/wallet-tier-verify";
 export async function GET() {
   const message = getTierVerificationMessage();
   return NextResponse.json({
-    message,
     expiresInSeconds: 300,
+    message,
   });
 }

@@ -23,11 +23,11 @@ const CARD_OR_PAYPAL_NAMES = new Set([
 ]);
 
 const SOLANA_ECOSYSTEM_NAMES = new Set([
-  "Solana",
   "Crustafarian",
   "Pump",
-  "Troll",
   "Seeker (SKR)",
+  "Solana",
+  "Troll",
 ]);
 
 export function FooterPaymentsBar() {
@@ -48,13 +48,15 @@ export function FooterPaymentsBar() {
   const otherCryptoItems = cryptoItems.filter(
     (i) => !SOLANA_ECOSYSTEM_NAMES.has(i.name),
   );
-  const showSolanaExpand = Boolean(solanaItem && otherSolanaEcosystem.length > 0);
+  const showSolanaExpand = Boolean(
+    solanaItem && otherSolanaEcosystem.length > 0,
+  );
 
   const renderItem = (
     item: { name: string; src: string; title?: string },
     iconWidth: number,
   ) => (
-    <li className="shrink-0" key={item.name} role="listitem">
+    <li className="shrink-0" key={item.name}>
       <span
         className="flex items-center justify-center overflow-hidden"
         style={{
@@ -86,23 +88,24 @@ export function FooterPaymentsBar() {
       {cryptoItems.length > 0 && (
         <ul
           aria-label="Crypto payment options"
-          className={`flex flex-wrap items-center justify-center ${logoGap}`}
-          role="list"
+          className={`
+            flex flex-wrap items-center justify-center
+            ${logoGap}
+          `}
         >
-          {otherCryptoItems.map((item) =>
-            renderItem(item, CRYPTO_ICON_WIDTH),
-          )}
+          {otherCryptoItems.map((item) => renderItem(item, CRYPTO_ICON_WIDTH))}
           {showSolanaExpand && solanaItem && (
             <li
               className="flex shrink-0 items-center"
               onMouseEnter={() => setSolanaHover(true)}
               onMouseLeave={() => setSolanaHover(false)}
-              role="listitem"
             >
               <ul
                 aria-label="Solana ecosystem"
-                className={`flex flex-wrap items-center ${logoGap}`}
-                role="list"
+                className={`
+                  flex flex-wrap items-center
+                  ${logoGap}
+                `}
               >
                 {renderItem(solanaItem, CRYPTO_ICON_WIDTH)}
                 {solanaHover &&
@@ -121,8 +124,10 @@ export function FooterPaymentsBar() {
       {cardItems.length > 0 && (
         <ul
           aria-label="Card and wallet payment options"
-          className={`flex flex-wrap items-center justify-center ${logoGap}`}
-          role="list"
+          className={`
+            flex flex-wrap items-center justify-center
+            ${logoGap}
+          `}
         >
           {cardItems.map((item) => renderItem(item, CARD_ICON_WIDTH))}
         </ul>

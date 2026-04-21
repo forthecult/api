@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+
 import {
   ArrowRight,
   Check,
@@ -9,8 +11,6 @@ import {
   Zap,
 } from "lucide-react";
 import Link from "next/link";
-
-import type { Metadata } from "next";
 
 import { SEO_CONFIG } from "~/app";
 import { getPublicSiteUrl } from "~/lib/app-url";
@@ -225,15 +225,15 @@ export default function TokenPage() {
         {/* Web3 eCommerce lead */}
         <section
           className={`
-          border-b border-border py-8
-          md:py-10
-        `}
+            border-b border-border py-8
+            md:py-10
+          `}
         >
           <p
             className={`
-            mx-auto max-w-2xl text-center text-lg text-muted-foreground
-            md:text-xl
-          `}
+              mx-auto max-w-2xl text-center text-lg text-muted-foreground
+              md:text-xl
+            `}
           >
             When you search &apos;web3 eCommerce&apos; you&apos;ll find dozens
             of articles about the benefits, but no one is doing it the way it
@@ -245,11 +245,15 @@ export default function TokenPage() {
         {/* Hero */}
         <section
           className={`
-          relative overflow-hidden py-12
-          md:py-16
-        `}
+            relative overflow-hidden py-12
+            md:py-16
+          `}
         >
-          <div className="relative z-10 mx-auto w-full max-w-3xl space-y-6 text-center">
+          <div
+            className={`
+              relative z-10 mx-auto w-full max-w-3xl space-y-6 text-center
+            `}
+          >
             <p className="text-base font-medium text-muted-foreground">
               {SEO_CONFIG.name}
             </p>
@@ -271,10 +275,15 @@ export default function TokenPage() {
                 CULT Token
               </span>
             </h1>
-            <p className="text-base leading-relaxed text-muted-foreground md:text-lg">
+            <p
+              className={`
+                text-base leading-relaxed text-muted-foreground
+                md:text-lg
+              `}
+            >
               Holding CULT gives free shipping. Spending CULT gives up to 20%
-              discount on eligible purchases. We kept 13.37% supply for the team, locked for 1 year. You
-              get the rest.
+              discount on eligible purchases. We kept 13.37% supply for the
+              team, locked for 1 year. You get the rest.
             </p>
             <p className="mt-4 text-center text-sm text-muted-foreground">
               Contract address (Solana):{" "}
@@ -282,7 +291,10 @@ export default function TokenPage() {
                 {CULT_MINT_MAINNET}
               </code>{" "}
               <Link
-                className="inline-flex items-center gap-1 font-medium text-primary hover:underline"
+                className={`
+                  inline-flex items-center gap-1 font-medium text-primary
+                  hover:underline
+                `}
                 href={`${SOLSCAN_BASE}/${CULT_MINT_MAINNET}`}
                 rel="noopener noreferrer"
                 target="_blank"
@@ -297,23 +309,31 @@ export default function TokenPage() {
         {/* Why Pump.fun, value cards, then What CULT Gets You */}
         <section
           className={`
-          space-y-10 py-6
-          md:py-6
-        `}
+            space-y-10 py-6
+            md:py-6
+          `}
         >
           <div className="space-y-6">
             <h2
               className={`
-              font-display text-2xl font-semibold text-foreground
-              md:text-3xl
-            `}
+                font-display text-2xl font-semibold text-foreground
+                md:text-3xl
+              `}
             >
               Why Pump.fun?
             </h2>
-            <p className="max-w-3xl text-base leading-relaxed text-muted-foreground">
+            <p
+              className={`
+                max-w-3xl text-base leading-relaxed text-muted-foreground
+              `}
+            >
               We believe in fair launches. Pump.fun was the natural choice.
             </p>
-            <p className="max-w-3xl text-base leading-relaxed text-muted-foreground">
+            <p
+              className={`
+                max-w-3xl text-base leading-relaxed text-muted-foreground
+              `}
+            >
               We chose pump.fun because it embodies fair launch principles:
               equal pricing for everyone, transparent distribution, and no
               structural advantages for insiders. No VCs means no one telling us
@@ -325,10 +345,10 @@ export default function TokenPage() {
           {/* Value cards (4 boxes) */}
           <div
             className={`
-            grid gap-6
-            md:grid-cols-2
-            lg:grid-cols-4
-          `}
+              grid gap-6
+              md:grid-cols-2
+              lg:grid-cols-4
+            `}
           >
             {valueCards.map(({ description, icon: Icon, title }) => (
               <Card className="border-border bg-card" key={title}>
@@ -348,24 +368,22 @@ export default function TokenPage() {
           <div className="space-y-4">
             <p
               className={`
-              text-base font-medium text-foreground/90 italic
-              sm:text-lg
-            `}
+                text-base font-medium text-foreground/90 italic
+                sm:text-lg
+              `}
             >
               A new Age of eCommerce
             </p>
             <h3
               className={`
-              font-display text-xl font-semibold text-foreground
-              md:text-2xl
-            `}
+                font-display text-xl font-semibold text-foreground
+                md:text-2xl
+              `}
             >
               What CULT gets you
             </h3>
             <ul
-              className={`
-              list-inside list-disc space-y-2 text-muted-foreground
-            `}
+              className={`list-inside list-disc space-y-2 text-muted-foreground`}
             >
               <li>
                 <strong className="text-foreground">Free Shipping</strong> for
@@ -396,29 +414,38 @@ export default function TokenPage() {
         {/* Membership */}
         <section
           className={`
-          space-y-8 py-12
-          md:py-10
-        `}
+            space-y-8 py-12
+            md:py-10
+          `}
         >
           <div className="space-y-4">
             <h2
               className={`
-              font-display text-2xl font-semibold text-foreground
-              md:text-3xl
-            `}
+                font-display text-2xl font-semibold text-foreground
+                md:text-3xl
+              `}
             >
               Membership
             </h2>
-            <p className="max-w-3xl text-base leading-relaxed text-muted-foreground">
+            <p
+              className={`
+                max-w-3xl text-base leading-relaxed text-muted-foreground
+              `}
+            >
               Stake CULT to unlock tiered membership: first eSIM free, 30% off
-              additional eSIMs, free shipping, and VPN subscription at APEX;
-              25% off at PRIME; 15% off at BASE.
+              additional eSIMs, free shipping, and VPN subscription at APEX; 25%
+              off at PRIME; 15% off at BASE.
             </p>
           </div>
 
           <Card className="overflow-hidden border-border bg-muted/30">
             <CardHeader className="space-y-2">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+              <div
+                className={`
+                  flex h-10 w-10 items-center justify-center rounded-lg
+                  bg-primary/10
+                `}
+              >
                 <Users className="h-5 w-5 text-primary" />
               </div>
               <CardTitle className="text-lg">
@@ -445,29 +472,33 @@ export default function TokenPage() {
         {/* Proposed Token Allocation */}
         <section
           className={`
-          space-y-8 py-12
-          md:py-6
-        `}
+            space-y-8 py-12
+            md:py-6
+          `}
         >
           <div>
             <h2
               className={`
-              font-display text-2xl font-semibold text-foreground
-              md:text-3xl
-            `}
+                font-display text-2xl font-semibold text-foreground
+                md:text-3xl
+              `}
             >
               Proposed token allocation
             </h2>
-            <p className="mt-2 max-w-3xl text-base leading-relaxed text-muted-foreground">
+            <p
+              className={`
+                mt-2 max-w-3xl text-base leading-relaxed text-muted-foreground
+              `}
+            >
               Following fair launch standards: team 10–20%, public ≥30%,
               transparent vesting. We believe in the middle path.
             </p>
           </div>
           <div
             className={`
-            grid gap-4
-            md:grid-cols-3
-          `}
+              grid gap-4
+              md:grid-cols-3
+            `}
           >
             {allocationItems.map(({ label, pct, sublabel }) => (
               <Card className="border-border bg-card" key={label}>
@@ -490,15 +521,15 @@ export default function TokenPage() {
         {/* Fair Launch Principles */}
         <section
           className={`
-          space-y-6 py-6
-          md:py-6
-        `}
+            space-y-6 py-6
+            md:py-6
+          `}
         >
           <h2
             className={`
-            font-display text-2xl font-semibold text-foreground
-            md:text-3xl
-          `}
+              font-display text-2xl font-semibold text-foreground
+              md:text-3xl
+            `}
           >
             Fair launch principles
           </h2>
@@ -518,20 +549,24 @@ export default function TokenPage() {
         {/* Creator Fee Allocation */}
         <section
           className={`
-          space-y-8 py-16
-          md:py-12
-        `}
+            space-y-8 py-16
+            md:py-12
+          `}
         >
           <div>
             <h2
               className={`
-              font-display text-2xl font-semibold text-foreground
-              md:text-3xl
-            `}
+                font-display text-2xl font-semibold text-foreground
+                md:text-3xl
+              `}
             >
               Creator Fee Allocation
             </h2>
-            <p className="mt-2 max-w-3xl text-base leading-relaxed text-muted-foreground">
+            <p
+              className={`
+                mt-2 max-w-3xl text-base leading-relaxed text-muted-foreground
+              `}
+            >
               Fee splits are sent to dedicated wallets. Verified allocations can
               be viewed on Solscan.
             </p>
@@ -540,9 +575,9 @@ export default function TokenPage() {
             {/* Pie chart: viewBox 130; pie radius 42. Lines run from pie to fixed rLineEnd (equal length); labels at rLabel so text sits behind lines (drawn first). */}
             <div
               className={`
-              flex flex-col items-center overflow-visible px-2 py-8
-              md:px-6 md:py-10
-            `}
+                flex flex-col items-center overflow-visible px-2 py-8
+                md:px-6 md:py-10
+              `}
             >
               <div
                 className="relative w-full max-w-[380px] overflow-visible"
@@ -554,7 +589,6 @@ export default function TokenPage() {
                   className={`
                     absolute top-1/2 left-1/2 h-[65%] w-[65%] -translate-x-1/2
                     -translate-y-1/2 rounded-full border-4 border-background
- 
                   `}
                   style={{ background: creatorFeePieGradient() }}
                 />
@@ -642,8 +676,8 @@ export default function TokenPage() {
                     <TableHead>Use</TableHead>
                     <TableHead
                       className={`
-                      min-w-0 font-mono text-sm text-muted-foreground
-                    `}
+                        min-w-0 font-mono text-sm text-muted-foreground
+                      `}
                     >
                       Address
                     </TableHead>
@@ -704,19 +738,23 @@ export default function TokenPage() {
         {/* Hackathon Funding */}
         <section
           className={`
-          space-y-6 py-6
-          md:py-6
-        `}
+            space-y-6 py-6
+            md:py-6
+          `}
         >
           <h2
             className={`
-            font-display text-2xl font-semibold text-foreground
-            md:text-3xl
-          `}
+              font-display text-2xl font-semibold text-foreground
+              md:text-3xl
+            `}
           >
             Hackathon Funding
           </h2>
-          <p className="max-w-3xl text-base leading-relaxed text-muted-foreground">
+          <p
+            className={`
+              max-w-3xl text-base leading-relaxed text-muted-foreground
+            `}
+          >
             Funds will be used for:
           </p>
           <ul className="space-y-3">
@@ -750,15 +788,15 @@ export default function TokenPage() {
         {/* Culture */}
         <section
           className={`
-          space-y-6 py-6
-          md:py-6
-        `}
+            space-y-6 py-6
+            md:py-6
+          `}
         >
           <h2
             className={`
-            font-display text-2xl font-semibold text-foreground
-            md:text-3xl
-          `}
+              font-display text-2xl font-semibold text-foreground
+              md:text-3xl
+            `}
           >
             What's unique about Culture
           </h2>
@@ -778,26 +816,30 @@ export default function TokenPage() {
         {/*  Governance */}
         <section
           className={`
-          space-y-8 py-12
-          md:py-16
-        `}
+            space-y-8 py-12
+            md:py-16
+          `}
         >
           <h2
             className={`
-            font-display text-2xl font-semibold text-foreground
-            md:text-3xl
-          `}
+              font-display text-2xl font-semibold text-foreground
+              md:text-3xl
+            `}
           >
             Voting
           </h2>
-          <p className="max-w-3xl text-base leading-relaxed text-muted-foreground">
+          <p
+            className={`
+              max-w-3xl text-base leading-relaxed text-muted-foreground
+            `}
+          >
             We believe the community should decide the future of the ecosystem.
           </p>
           <div
             className={`
-            grid gap-8
-            md:grid-cols-2
-          `}
+              grid gap-8
+              md:grid-cols-2
+            `}
           >
             <Card className="border-border bg-card">
               <CardHeader>
@@ -806,9 +848,9 @@ export default function TokenPage() {
               <CardContent>
                 <ul
                   className={`
-                  list-inside list-disc space-y-1 text-base
-                  text-muted-foreground
-                `}
+                    list-inside list-disc space-y-1 text-base
+                    text-muted-foreground
+                  `}
                 >
                   <li>Charity funds allocation</li>
                   <li>Determine new products and features</li>
@@ -825,9 +867,9 @@ export default function TokenPage() {
               <CardContent>
                 <ul
                   className={`
-                  list-inside list-disc space-y-1 text-base
-                  text-muted-foreground
-                `}
+                    list-inside list-disc space-y-1 text-base
+                    text-muted-foreground
+                  `}
                 >
                   <li>Better capital management</li>
                   <li>Clear framework for decentralized operations</li>
@@ -841,15 +883,15 @@ export default function TokenPage() {
         {/* Token FAQ (dropdown accordion like tns.id/token) */}
         <section
           className={`
-          space-y-6 py-6
-          md:py-6
-        `}
+            space-y-6 py-6
+            md:py-6
+          `}
         >
           <h2
             className={`
-            font-display text-2xl font-semibold text-foreground
-            md:text-3xl
-          `}
+              font-display text-2xl font-semibold text-foreground
+              md:text-3xl
+            `}
           >
             Token FAQ
           </h2>
@@ -866,17 +908,19 @@ export default function TokenPage() {
               >
                 <summary
                   className={`
-                  flex cursor-pointer list-none items-center justify-between
-                  gap-2 py-4 pr-2 font-medium text-foreground transition-colors
-                  hover:text-primary
-                  [&::-webkit-details-marker]:hidden
-                `}
+                    flex cursor-pointer list-none items-center justify-between
+                    gap-2 py-4 pr-2 font-medium text-foreground
+                    transition-colors
+                    hover:text-primary
+                    [&::-webkit-details-marker]:hidden
+                  `}
                 >
                   <span>{q}</span>
                   <ChevronDown
                     className={`
-                    h-5 w-5 shrink-0 text-muted-foreground transition-transform
-                  `}
+                      h-5 w-5 shrink-0 text-muted-foreground
+                      transition-transform
+                    `}
                   />
                 </summary>
                 <p className="pr-8 pb-4 text-muted-foreground">{a}</p>

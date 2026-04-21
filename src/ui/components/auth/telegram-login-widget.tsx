@@ -74,7 +74,7 @@ export function TelegramLoginWidget({
         });
 
         const data = (await res.json().catch(() => ({}))) as {
-          error?: { message?: string } | string;
+          error?: string | { message?: string };
           message?: string;
         };
 
@@ -86,8 +86,7 @@ export function TelegramLoginWidget({
               : typeof err === "string"
                 ? err
                 : undefined;
-          const message =
-            fromErr ?? data.message ?? "Telegram sign-in failed";
+          const message = fromErr ?? data.message ?? "Telegram sign-in failed";
           onError?.(message);
           setLoading(false);
           return;
@@ -185,7 +184,7 @@ export function TelegramLoginWidget({
             ? "flex h-9 min-w-0 items-center justify-center"
             : `
               relative flex h-9 min-w-0 items-center justify-center rounded-md
- border border-input bg-background px-4 py-2 
+              border border-input bg-background px-4 py-2
             `
         }
       >

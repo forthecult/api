@@ -3,7 +3,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import crypto, { createHmac } from "node:crypto";
 
 import { db } from "~/db";
-import { productsTable, productVariantsTable } from "~/db/schema";
+import { productVariantsTable } from "~/db/schema";
 import { updateOrderFromPrintfulWebhook } from "~/lib/printful-orders";
 import {
   handleProductDeleted,

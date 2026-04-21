@@ -7,6 +7,24 @@ import { PublicKey } from "@solana/web3.js";
 import bs58 from "bs58";
 import nacl from "tweetnacl";
 
+export function verifySolanaSignature(params: {
+  address: string;
+  message: string;
+  signature?: string;
+  signatureBase58?: string;
+}): boolean {
+  const signature = getSignatureBytes(params);
+  if (!signature || signature.length !== 64) return false;
+  try {
+    const publicKey = new PublicKey(params.address);
+    const publicKeyBytes = publicKey.toBytes();
+    const messageBytes = new TextEncoder().encode(params.message);
+    return nacl.sign.detached.verify(messageBytes, signature, publicKeyBytes);
+  } catch {
+    return false;
+  }
+}
+
 function getSignatureBytes(params: {
   signature?: string;
   signatureBase58?: string;
@@ -30,22 +48,4 @@ function getSignatureBytes(params: {
     }
   }
   return null;
-}
-
-export function verifySolanaSignature(params: {
-  address: string;
-  message: string;
-  signature?: string;
-  signatureBase58?: string;
-}): boolean {
-  const signature = getSignatureBytes(params);
-  if (!signature || signature.length !== 64) return false;
-  try {
-    const publicKey = new PublicKey(params.address);
-    const publicKeyBytes = publicKey.toBytes();
-    const messageBytes = new TextEncoder().encode(params.message);
-    return nacl.sign.detached.verify(messageBytes, signature, publicKeyBytes);
-  } catch {
-    return false;
-  }
 }

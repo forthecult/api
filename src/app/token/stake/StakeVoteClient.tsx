@@ -1,6 +1,5 @@
 "use client";
 
-import { useSolanaConnection, useSolanaWallet } from "~/app/checkout/crypto/solana-wallet-stub";
 import { type Connection, PublicKey } from "@solana/web3.js";
 import {
   ArrowRight,
@@ -16,13 +15,14 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import {
+  useSolanaConnection,
+  useSolanaWallet,
+} from "~/app/checkout/crypto/solana-wallet-stub";
 import { useStakeTransaction } from "~/hooks/use-stake-transaction";
 import { LOCK_12_MONTHS, LOCK_30_DAYS } from "~/lib/cult-staking";
 import { formatDateTime, formatPower } from "~/lib/format";
-import {
-  buildSwapSolToCult,
-  estimateCultFromSol,
-} from "~/lib/pump-swap-cult";
+import { buildSwapSolToCult, estimateCultFromSol } from "~/lib/pump-swap-cult";
 import { Button } from "~/ui/primitives/button";
 import {
   Card,
@@ -123,8 +123,12 @@ export function StakeVoteClient() {
     if (!wallet) return;
     setVotingPowerLoading(true);
     Promise.all([
-      fetch(`/api/governance/voting-power?wallet=${encodeURIComponent(wallet)}`).then((r) => r.json()),
-      fetch(`/api/governance/staked-balance?wallet=${encodeURIComponent(wallet)}`).then((r) => r.json()),
+      fetch(
+        `/api/governance/voting-power?wallet=${encodeURIComponent(wallet)}`,
+      ).then((r) => r.json()),
+      fetch(
+        `/api/governance/staked-balance?wallet=${encodeURIComponent(wallet)}`,
+      ).then((r) => r.json()),
     ])
       .then(([powerRaw, stakedRaw]) => {
         const powerData = powerRaw as {
@@ -135,7 +139,9 @@ export function StakeVoteClient() {
         const stakedData = stakedRaw as {
           lock?: { lockTier?: null | number };
         };
-        const total = powerData.votingPowerRaw ? BigInt(powerData.votingPowerRaw) : 0n;
+        const total = powerData.votingPowerRaw
+          ? BigInt(powerData.votingPowerRaw)
+          : 0n;
         const walletRaw = powerData.walletBalanceRaw
           ? BigInt(powerData.walletBalanceRaw)
           : 0n;
@@ -194,7 +200,9 @@ export function StakeVoteClient() {
     setEstimateLoading(true);
     if (!conn) {
       setEstimateLoading(false);
-      return () => { cancelled = true; };
+      return () => {
+        cancelled = true;
+      };
     }
     estimateCultFromSol(conn, lamports)
       .then((res) => {
@@ -306,8 +314,7 @@ export function StakeVoteClient() {
 
   const showGetCult =
     !!wallet &&
-    (walletBalanceRaw === null ||
-      walletBalanceRaw < GET_CULT_THRESHOLD_RAW);
+    (walletBalanceRaw === null || walletBalanceRaw < GET_CULT_THRESHOLD_RAW);
   const solBalanceSol = solBalanceLamports / LAMPORTS_PER_SOL;
 
   const handleSwapSolToCult = useCallback(async () => {
@@ -334,7 +341,7 @@ export function StakeVoteClient() {
     try {
       const { transaction } = await buildSwapSolToCult(conn, pk, lamports);
       const sig = await sendTransaction(transaction, conn, SEND_OPTS);
-      toast.success("Swap submitted: " + sig.slice(0, 8) + "…");
+      toast.success(`Swap submitted: ${sig.slice(0, 8)}…`);
       setSolAmount("");
       setEstimatedCult(null);
       await refreshBalances();
@@ -357,19 +364,19 @@ export function StakeVoteClient() {
   return (
     <div
       className={`
-      container mx-auto max-w-7xl space-y-10 px-4 py-10
-      sm:px-6
-      lg:px-8
-    `}
+        container mx-auto max-w-7xl space-y-10 px-4 py-10
+        sm:px-6
+        lg:px-8
+      `}
     >
       {/* Voting power card */}
       <Card className="border-border bg-card">
         <CardHeader>
           <div
             className={`
-            flex flex-col gap-4
-            sm:flex-row sm:items-center sm:justify-between
-          `}
+              flex flex-col gap-4
+              sm:flex-row sm:items-center sm:justify-between
+            `}
           >
             <div>
               <CardTitle className="flex items-center gap-2 text-xl">
@@ -389,9 +396,9 @@ export function StakeVoteClient() {
             ) : (
               <div
                 className={`
-                flex items-center gap-2 rounded-lg border border-border
-                bg-muted/30 px-4 py-2
-              `}
+                  flex items-center gap-2 rounded-lg border border-border
+                  bg-muted/30 px-4 py-2
+                `}
               >
                 {votingPowerLoading ? (
                   <Skeleton className="h-6 w-24" />
@@ -410,9 +417,7 @@ export function StakeVoteClient() {
           {wallet && (
             <CardContent className="pt-0">
               <div
-                className={`
-                flex flex-wrap gap-4 text-sm text-muted-foreground
-              `}
+                className={`flex flex-wrap gap-4 text-sm text-muted-foreground`}
               >
                 <span>
                   Wallet:{" "}
@@ -477,12 +482,7 @@ export function StakeVoteClient() {
                 <Button
                   disabled={swapPending}
                   onClick={() =>
-                    setSolAmount(
-                      Math.max(
-                        0,
-                        solBalanceSol - 0.01,
-                      ).toFixed(6),
-                    )
+                    setSolAmount(Math.max(0, solBalanceSol - 0.01).toFixed(6))
                   }
                   type="button"
                   variant="secondary"
@@ -495,9 +495,7 @@ export function StakeVoteClient() {
               </p>
             </div>
             {estimateLoading && solAmount.trim() && (
-              <p className="text-sm text-muted-foreground">
-                Estimating…
-              </p>
+              <p className="text-sm text-muted-foreground">Estimating…</p>
             )}
             {!estimateLoading && estimatedCult != null && (
               <p className="text-sm font-medium text-foreground">
@@ -554,8 +552,8 @@ export function StakeVoteClient() {
           <Card className="border-dashed">
             <CardContent
               className={`
-              flex flex-col items-center justify-center py-12 text-center
-            `}
+                flex flex-col items-center justify-center py-12 text-center
+              `}
             >
               <Clock className="mb-2 h-10 w-10 text-muted-foreground" />
               <p className="font-medium text-foreground">No proposals yet</p>
@@ -635,9 +633,9 @@ function ProposalCard({
               ${
                 isActive
                   ? `
-                bg-green-500/15 text-green-700
-                dark:text-green-400
-              `
+                    bg-green-500/15 text-green-700
+                    dark:text-green-400
+                  `
                   : `bg-muted text-muted-foreground`
               }
             `}
@@ -681,8 +679,8 @@ function ProposalCard({
             {detail.userVote && (
               <p
                 className={`
-                flex items-center gap-1.5 text-sm text-muted-foreground
-              `}
+                  flex items-center gap-1.5 text-sm text-muted-foreground
+                `}
               >
                 <CheckCircle2 className="h-4 w-4 text-green-600" />
                 You voted{" "}
@@ -741,7 +739,7 @@ function ProposalCard({
 
 function StakeForm({
   currentLockTier,
-  openConnectModal,
+  openConnectModal: _openConnectModal,
   refreshBalances,
   stake,
   stakePending,
@@ -784,9 +782,9 @@ function StakeForm({
         {!wallet && (
           <p
             className={`
-            rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm
-            text-muted-foreground
-          `}
+              rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm
+              text-muted-foreground
+            `}
           >
             Connect your wallet to use the form below.
           </p>
@@ -815,9 +813,9 @@ function StakeForm({
         </div>
         <div
           className={`
-          grid gap-4
-          sm:grid-cols-2
-        `}
+            grid gap-4
+            sm:grid-cols-2
+          `}
         >
           <div className="space-y-2">
             <label className="text-sm font-medium">Stake (CULT)</label>

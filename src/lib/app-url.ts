@@ -22,7 +22,8 @@ export function getAgentBaseUrl(): string {
   if (!trimmed) return "";
   // Accept both "https://ai.example.com" and bare "ai.example.com"
   let url = trimmed;
-  if (!/^https?:\/\//i.test(trimmed)) url = `https://${trimmed.replace(/^\/+/, "")}`;
+  if (!/^https?:\/\//i.test(trimmed))
+    url = `https://${trimmed.replace(/^\/+/, "")}`;
   else url = trimmed.replace(/\/+$/, "");
   try {
     const parsed = new URL(url);
@@ -32,8 +33,7 @@ export function getAgentBaseUrl(): string {
       host === "127.0.0.1" ||
       host.endsWith(".localhost");
     if (!isLocal && parsed.protocol === "http:") {
-      const port =
-        parsed.port && parsed.port !== "80" ? `:${parsed.port}` : "";
+      const port = parsed.port && parsed.port !== "80" ? `:${parsed.port}` : "";
       return `https://${parsed.hostname}${port}`;
     }
     return parsed.origin;
@@ -72,7 +72,9 @@ export function getPublicSiteUrl(): string {
   const raw = process.env.NEXT_PUBLIC_APP_URL?.trim() || DEFAULT_PUBLIC_SITE;
   const withoutQuery = raw.split(/[?#]/)[0]?.trim() ?? "";
   const trimmed = withoutQuery.replace(/[&/]+$/, "");
-  const url = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed.replace(/^\/+/, "")}`;
+  const url = /^https?:\/\//i.test(trimmed)
+    ? trimmed
+    : `https://${trimmed.replace(/^\/+/, "")}`;
   try {
     const parsed = new URL(url);
     const host = parsed.hostname.toLowerCase();
@@ -81,8 +83,7 @@ export function getPublicSiteUrl(): string {
       host === "127.0.0.1" ||
       host.endsWith(".localhost");
     if (!isLocal && parsed.protocol === "http:") {
-      const port =
-        parsed.port && parsed.port !== "80" ? `:${parsed.port}` : "";
+      const port = parsed.port && parsed.port !== "80" ? `:${parsed.port}` : "";
       return `https://${parsed.hostname}${port}`;
     }
     return parsed.origin;
@@ -112,17 +113,6 @@ export function getServerBaseUrl(): string {
   return process.env.NEXT_PUBLIC_APP_URL || DEFAULT_SERVER;
 }
 
-/**
- * For public API responses (e.g. /api/agent/capabilities, /api/agent/summary).
- * Never expose localhost or 127.0.0.1; return fallback instead.
- */
-export function sanitizeBaseUrlForPublicApi(base: string, fallback: string): string {
-  const u = (base ?? "").trim().toLowerCase();
-  if (!u) return fallback;
-  if (u.includes("localhost") || u.includes("127.0.0.1")) return fallback;
-  return base!.trim();
-}
-
 /** True when the request host is the configured AI/agent subdomain. */
 export function isAgentSubdomain(host: null | string | undefined): boolean {
   const agentHost = getAgentHostname();
@@ -132,10 +122,26 @@ export function isAgentSubdomain(host: null | string | undefined): boolean {
 }
 
 /**
+ * For public API responses (e.g. /api/agent/capabilities, /api/agent/summary).
+ * Never expose localhost or 127.0.0.1; return fallback instead.
+ */
+export function sanitizeBaseUrlForPublicApi(
+  base: string,
+  fallback: string,
+): string {
+  const u = (base ?? "").trim().toLowerCase();
+  if (!u) return fallback;
+  if (u.includes("localhost") || u.includes("127.0.0.1")) return fallback;
+  return base!.trim();
+}
+
+/**
  * True when we should noindex for agent (on agent subdomain) and agent host is distinct from main site.
  * Prevents accidental mass noindex when agent URL is misconfigured to point at the main store.
  */
-export function shouldNoindexForAgent(host: null | string | undefined): boolean {
+export function shouldNoindexForAgent(
+  host: null | string | undefined,
+): boolean {
   const agentHost = getAgentHostname();
   if (!agentHost) return false;
   try {

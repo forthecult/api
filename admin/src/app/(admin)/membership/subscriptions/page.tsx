@@ -19,6 +19,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "~/ui/card";
 
 const API_BASE = getMainAppUrl();
 
+interface SubscriptionListResponse {
+  items: SubscriptionRow[];
+  limit: number;
+  page: number;
+  totalCount: number;
+  totalPages: number;
+}
+
 interface SubscriptionRow {
   billingProvider: string;
   cancelAtPeriodEnd: boolean;
@@ -33,47 +41,41 @@ interface SubscriptionRow {
   userId: string;
 }
 
-interface SubscriptionListResponse {
-  items: SubscriptionRow[];
-  limit: number;
-  page: number;
-  totalCount: number;
-  totalPages: number;
-}
-
 const TIER_CONFIG: Record<
   number,
-  { accent: string; bg: string; icon: React.ComponentType<{ className?: string }>; name: string }
+  {
+    accent: string;
+    bg: string;
+    icon: React.ComponentType<{ className?: string }>;
+    name: string;
+  }
 > = {
-  1: { accent: "text-amber-500", bg: "bg-amber-500/10", icon: Crown, name: "APEX" },
-  2: { accent: "text-purple-500", bg: "bg-purple-500/10", icon: Star, name: "PRIME" },
+  1: {
+    accent: "text-amber-500",
+    bg: "bg-amber-500/10",
+    icon: Crown,
+    name: "APEX",
+  },
+  2: {
+    accent: "text-purple-500",
+    bg: "bg-purple-500/10",
+    icon: Star,
+    name: "PRIME",
+  },
   3: { accent: "text-blue-500", bg: "bg-blue-500/10", icon: Zap, name: "BASE" },
 };
 
-function getTierConfig(tier: number) {
-  return TIER_CONFIG[tier] ?? { accent: "text-muted-foreground", bg: "bg-muted", icon: Shield, name: `Tier ${tier}` };
-}
-
-function formatDate(s: null | string): string {
-  if (!s) return "—";
-  try {
-    return new Intl.DateTimeFormat("en-US", {
-      dateStyle: "medium",
-    }).format(new Date(s));
-  } catch {
-    return "—";
-  }
-}
-
 export default function AdminMembershipSubscriptionsPage() {
-  const [data, setData] = useState<SubscriptionListResponse | null>(null);
+  const [data, setData] = useState<null | SubscriptionListResponse>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<null | string>(null);
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
-  const [tierFilter, setTierFilter] = useState<"" | "1" | "2" | "3">("");
-  const [providerFilter, setProviderFilter] = useState<"" | "paypal" | "stripe">("");
+  const [tierFilter, setTierFilter] = useState<"1" | "2" | "3" | "">("");
+  const [providerFilter, setProviderFilter] = useState<
+    "" | "paypal" | "stripe"
+  >("");
 
   const fetchList = useCallback(async () => {
     setLoading(true);
@@ -93,7 +95,9 @@ export default function AdminMembershipSubscriptionsPage() {
       const json = (await res.json()) as SubscriptionListResponse;
       setData(json);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load subscriptions");
+      setError(
+        err instanceof Error ? err.message : "Failed to load subscriptions",
+      );
       setData(null);
     } finally {
       setLoading(false);
@@ -122,11 +126,7 @@ export default function AdminMembershipSubscriptionsPage() {
         `}
       >
         {error}
-        <Button
-          className="mt-2"
-          onClick={() => void fetchList()}
-          type="button"
-        >
+        <Button className="mt-2" onClick={() => void fetchList()} type="button">
           Retry
         </Button>
       </div>
@@ -179,8 +179,8 @@ export default function AdminMembershipSubscriptionsPage() {
                 autoComplete="off"
                 className={cn(
                   `
-                    w-full rounded-md border border-input bg-background py-2 pr-3
-                    pl-9 text-sm
+                    w-full rounded-md border border-input bg-background py-2
+                    pr-3 pl-9 text-sm
                   `,
                   `
                     placeholder:text-muted-foreground
@@ -203,7 +203,7 @@ export default function AdminMembershipSubscriptionsPage() {
                 focus:ring-2 focus:ring-ring focus:outline-none
               `}
               onChange={(e) => {
-                setTierFilter(e.target.value as "" | "1" | "2" | "3");
+                setTierFilter(e.target.value as "1" | "2" | "3" | "");
                 setPage(1);
               }}
               value={tierFilter}
@@ -253,12 +253,24 @@ export default function AdminMembershipSubscriptionsPage() {
                         uppercase
                       `}
                     >
-                      <th className="p-4 font-medium whitespace-nowrap">Tier</th>
-                      <th className="p-4 font-medium whitespace-nowrap">Provider</th>
-                      <th className="p-4 font-medium whitespace-nowrap">Status</th>
-                      <th className="p-4 font-medium whitespace-nowrap">Interval</th>
-                      <th className="p-4 font-medium whitespace-nowrap">Renews / ends</th>
-                      <th className="p-4 font-medium whitespace-nowrap">Customer</th>
+                      <th className="p-4 font-medium whitespace-nowrap">
+                        Tier
+                      </th>
+                      <th className="p-4 font-medium whitespace-nowrap">
+                        Provider
+                      </th>
+                      <th className="p-4 font-medium whitespace-nowrap">
+                        Status
+                      </th>
+                      <th className="p-4 font-medium whitespace-nowrap">
+                        Interval
+                      </th>
+                      <th className="p-4 font-medium whitespace-nowrap">
+                        Renews / ends
+                      </th>
+                      <th className="p-4 font-medium whitespace-nowrap">
+                        Customer
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -278,12 +290,21 @@ export default function AdminMembershipSubscriptionsPage() {
                         const tierConfig = getTierConfig(row.tier);
                         const TierIcon = tierConfig.icon;
                         return (
-                          <tr className="border-b last:border-0" key={row.id}>
+                          <tr
+                            className={`
+                            border-b
+                            last:border-0
+                          `}
+                            key={row.id}
+                          >
                             <td className="p-4">
                               <div className="flex items-center gap-2">
                                 <div
                                   className={cn(
-                                    "flex h-8 w-8 items-center justify-center rounded-lg",
+                                    `
+                                      flex h-8 w-8 items-center justify-center
+                                      rounded-lg
+                                    `,
                                     tierConfig.bg,
                                   )}
                                 >
@@ -291,10 +312,12 @@ export default function AdminMembershipSubscriptionsPage() {
                                     className={cn("h-4 w-4", tierConfig.accent)}
                                   />
                                 </div>
-                                <span className="font-medium">{tierConfig.name}</span>
+                                <span className="font-medium">
+                                  {tierConfig.name}
+                                </span>
                               </div>
                             </td>
-                            <td className="p-4 capitalize text-muted-foreground">
+                            <td className="p-4 text-muted-foreground capitalize">
                               {row.billingProvider}
                             </td>
                             <td className="p-4">
@@ -319,7 +342,11 @@ export default function AdminMembershipSubscriptionsPage() {
                               >
                                 {row.name}
                               </Link>
-                              <span className="block truncate text-xs text-muted-foreground">
+                              <span
+                                className={`
+                                block truncate text-xs text-muted-foreground
+                              `}
+                              >
                                 {row.email}
                               </span>
                             </td>
@@ -371,5 +398,27 @@ export default function AdminMembershipSubscriptionsPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+function formatDate(s: null | string): string {
+  if (!s) return "—";
+  try {
+    return new Intl.DateTimeFormat("en-US", {
+      dateStyle: "medium",
+    }).format(new Date(s));
+  } catch {
+    return "—";
+  }
+}
+
+function getTierConfig(tier: number) {
+  return (
+    TIER_CONFIG[tier] ?? {
+      accent: "text-muted-foreground",
+      bg: "bg-muted",
+      icon: Shield,
+      name: `Tier ${tier}`,
+    }
   );
 }

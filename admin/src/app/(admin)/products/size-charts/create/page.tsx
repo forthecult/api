@@ -86,9 +86,9 @@ export default function AdminSizeChartsCreatePage() {
         {error && (
           <p
             className={`
-            rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2
-            text-sm text-destructive
-          `}
+              rounded-md border border-destructive/50 bg-destructive/10 px-3
+              py-2 text-sm text-destructive
+            `}
           >
             {error}
           </p>
@@ -106,9 +106,9 @@ export default function AdminSizeChartsCreatePage() {
           <CardContent className="space-y-4">
             <div
               className={`
-              grid gap-4
-              sm:grid-cols-3
-            `}
+                grid gap-4
+                sm:grid-cols-3
+              `}
             >
               <div>
                 <label className={labelClass} htmlFor="provider">

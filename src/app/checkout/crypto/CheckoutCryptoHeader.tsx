@@ -1,10 +1,9 @@
 "use client";
 
-import { useSolanaWallet } from "~/app/checkout/crypto/solana-wallet-stub";
 import { ChevronDown, Wallet } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { SEO_CONFIG } from "~/app";
 import {
@@ -12,6 +11,7 @@ import {
   openModalRef,
   useOpenConnectWalletModal,
 } from "~/app/checkout/crypto/open-wallet-modal";
+import { useSolanaWallet } from "~/app/checkout/crypto/solana-wallet-stub";
 import { Button } from "~/ui/primitives/button";
 import {
   DropdownMenu,
@@ -79,16 +79,16 @@ export function CheckoutCryptoHeader() {
   return (
     <header
       className={`
-      sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur
-      supports-[backdrop-filter]:bg-background/60
-    `}
+        sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur
+        supports-[backdrop-filter]:bg-background/60
+      `}
     >
       <div
         className={`
-        container mx-auto max-w-7xl px-4
-        sm:px-6
-        lg:px-8
-      `}
+          container mx-auto max-w-7xl px-4
+          sm:px-6
+          lg:px-8
+        `}
       >
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center gap-3">
@@ -127,10 +127,10 @@ export function CheckoutCryptoHeader() {
               ) : (
                 <span
                   className={`
-                  font-heading text-lg font-bold tracking-[0.2em] text-[#1A1611]
-                  uppercase
-                  dark:text-[#F5F1EB]
-                `}
+                    font-heading text-lg font-bold tracking-[0.2em]
+                    text-[#1A1611] uppercase
+                    dark:text-[#F5F1EB]
+                  `}
                 >
                   {SEO_CONFIG.name}
                 </span>
@@ -171,9 +171,9 @@ export function CheckoutCryptoHeader() {
               <DropdownMenuContent align="end" className="w-[20rem]">
                 <DropdownMenuLabel
                   className={`
-                  text-xs font-medium tracking-wider text-muted-foreground
-                  uppercase
-                `}
+                    text-xs font-medium tracking-wider text-muted-foreground
+                    uppercase
+                  `}
                 >
                   Connected
                 </DropdownMenuLabel>

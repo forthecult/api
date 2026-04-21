@@ -41,14 +41,17 @@ const headers: Record<string, string> = {
   Authorization: `Bearer ${API_KEY}`,
 };
 
-const CRUSTAFARIAN_DESIGN_DIR = resolve(
+const CRUSTAFARIAN_DESIGN_DIR = resolve(process.cwd(), "public/crustafarian");
+const CRUSTAFARIAN_MAIN_IMAGE = resolve(
   process.cwd(),
-  "public/crustafarian",
+  "public/crustafarian.png",
 );
-const CRUSTAFARIAN_MAIN_IMAGE = resolve(process.cwd(), "public/crustafarian.png");
 
 function designFileForProduct(productLabel: string): string {
-  const base = productLabel.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+  const base = productLabel
+    .toLowerCase()
+    .replace(/\s+/g, "-")
+    .replace(/[^a-z0-9-]/g, "");
   const candidates = [
     resolve(CRUSTAFARIAN_DESIGN_DIR, `${base}.png`),
     resolve(CRUSTAFARIAN_DESIGN_DIR, `${base}.jpg`),
@@ -178,30 +181,46 @@ async function ensureCrustafarianCategory(): Promise<string> {
   });
   if (!createRes.ok) {
     const text = await createRes.text();
-    throw new Error(`Create Crustafarian category failed: ${createRes.status} ${text}`);
+    throw new Error(
+      `Create Crustafarian category failed: ${createRes.status} ${text}`,
+    );
   }
   const created = (await createRes.json()) as { id: string; name: string };
   console.log("Created Crustafarian category:", created.id);
   return created.id;
 }
 
-async function uploadImage(imagePath: string): Promise<{ imageId: string; imageUrl: string }> {
+async function uploadImage(
+  imagePath: string,
+): Promise<{ imageId: string; imageUrl: string }> {
   if (!existsSync(imagePath)) {
     throw new Error(`Design file not found: ${imagePath}`);
   }
   const buffer = readFileSync(imagePath);
   const formData = new FormData();
-  const ext = imagePath.endsWith(".png") ? "png" : imagePath.endsWith(".webp") ? "webp" : "jpg";
+  const ext = imagePath.endsWith(".png")
+    ? "png"
+    : imagePath.endsWith(".webp")
+      ? "webp"
+      : "jpg";
   const file = new File([buffer], `crustafarian.${ext}`, {
-    type: ext === "png" ? "image/png" : ext === "webp" ? "image/webp" : "image/jpeg",
+    type:
+      ext === "png"
+        ? "image/png"
+        : ext === "webp"
+          ? "image/webp"
+          : "image/jpeg",
   });
   formData.append("file", file);
 
-  const res = await fetch(`${API_BASE}/api/admin/pod/upload?provider=printify`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${API_KEY}` },
-    body: formData,
-  });
+  const res = await fetch(
+    `${API_BASE}/api/admin/pod/upload?provider=printify`,
+    {
+      method: "POST",
+      headers: { Authorization: `Bearer ${API_KEY}` },
+      body: formData,
+    },
+  );
   if (!res.ok) {
     const text = await res.text();
     throw new Error(`Upload failed: ${res.status} ${text}`);
@@ -224,7 +243,10 @@ async function getPrintifyBlueprintAndProvider(search: string): Promise<{
     { headers },
   );
   if (!catalogRes.ok) return null;
-  const catalog = (await catalogRes.json()) as Array<{ id: string; title: string }>;
+  const catalog = (await catalogRes.json()) as Array<{
+    id: string;
+    title: string;
+  }>;
   if (!Array.isArray(catalog) || catalog.length === 0) return null;
 
   const blueprint = catalog[0];
@@ -290,9 +312,7 @@ async function createProduct(params: {
       ? variants.reduce((s, v) => s + v.priceCents, 0) / variants.length
       : 0;
   const costCents = Math.max(999, Math.round(avgCost));
-  const minSellCents = Math.ceil(
-    costCents * (1 + MIN_MARKUP_PERCENT / 100),
-  );
+  const minSellCents = Math.ceil(costCents * (1 + MIN_MARKUP_PERCENT / 100));
   const sellPrice = Math.max(100, minSellCents);
 
   const body = {
@@ -329,8 +349,7 @@ async function createProduct(params: {
     printifyProductId?: string;
     errors?: string[];
   };
-  const printifyId =
-    result.externalProductId ?? result.printifyProductId ?? "";
+  const printifyId = result.externalProductId ?? result.printifyProductId ?? "";
   return {
     localProductId: result.localProductId,
     printifyProductId: printifyId,
@@ -402,7 +421,10 @@ async function main() {
       imageId = uploaded.imageId;
       imageUrl = uploaded.imageUrl;
     } catch (e) {
-      console.warn("  Upload failed, skipping:", e instanceof Error ? e.message : e);
+      console.warn(
+        "  Upload failed, skipping:",
+        e instanceof Error ? e.message : e,
+      );
       continue;
     }
 

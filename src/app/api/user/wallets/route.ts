@@ -6,10 +6,10 @@
 import { and, eq, or } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 
-import { auth } from "~/lib/auth";
 import { db } from "~/db";
 import { accountTable } from "~/db/schema";
 import { userWalletsTable } from "~/db/schema/wallets/tables";
+import { auth } from "~/lib/auth";
 
 export async function GET(request: NextRequest) {
   const session = await auth.api.getSession({ headers: request.headers });
@@ -47,7 +47,10 @@ export async function GET(request: NextRequest) {
       .where(eq(userWalletsTable.userId, userId));
 
     // combine and dedupe; normalize chain to "solana" | "ethereum" for API
-    const walletMap = new Map<string, { address: string; blockchain: string }>();
+    const walletMap = new Map<
+      string,
+      { address: string; blockchain: string }
+    >();
 
     for (const w of accountWallets) {
       const blockchain = w.providerId === "solana" ? "solana" : "ethereum";
@@ -66,6 +69,9 @@ export async function GET(request: NextRequest) {
     });
   } catch (e) {
     console.error("[api/user/wallets] error:", e);
-    return NextResponse.json({ error: "Failed to fetch wallets" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to fetch wallets" },
+      { status: 500 },
+    );
   }
 }

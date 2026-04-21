@@ -10,7 +10,6 @@ import {
   fetchCatalogVariants,
   fetchVariantPrices,
   type PrintfulCatalogProduct,
-  type PrintfulCatalogVariant,
 } from "@/lib/printful";
 
 import type {

@@ -24,12 +24,11 @@ export function AgentSubdomainLayout({
           border-b border-neutral-200 bg-neutral-50 px-4 py-2
           dark:border-neutral-800 dark:bg-neutral-900
         `}
-        role="banner"
       >
         <div
           className={`
-          mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-2
-        `}
+            mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-2
+          `}
         >
           <Link
             className={`
@@ -67,7 +66,6 @@ export function AgentSubdomainLayout({
           dark:bg-neutral-950
         `}
         id="main-content"
-        role="main"
       >
         {children}
       </main>

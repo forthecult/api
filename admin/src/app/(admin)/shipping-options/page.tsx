@@ -61,7 +61,7 @@ interface ShippingOptionRow {
   updatedAt: string;
 }
 
-const SORT_KEYS = [
+const _sortKeys = [
   "name",
   "countryCode",
   "minOrderCents",
@@ -72,7 +72,7 @@ const SORT_KEYS = [
   "priority",
   "brandName",
 ] as const;
-type SortBy = (typeof SORT_KEYS)[number];
+type SortBy = (typeof _sortKeys)[number];
 
 export default function AdminShippingOptionsPage() {
   const [data, setData] = useState<ListResponse | null>(null);
@@ -198,9 +198,9 @@ export default function AdminShippingOptionsPage() {
     return (
       <div
         className={`
-        rounded-lg border border-red-200 bg-red-50 p-4 text-red-800
-        dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
-      `}
+          rounded-lg border border-red-200 bg-red-50 p-4 text-red-800
+          dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
+        `}
       >
         {error}
         <Button
@@ -218,9 +218,9 @@ export default function AdminShippingOptionsPage() {
     <div className="space-y-6">
       <div
         className={`
-        flex flex-col gap-4
-        sm:flex-row sm:items-center sm:justify-between
-      `}
+          flex flex-col gap-4
+          sm:flex-row sm:items-center sm:justify-between
+        `}
       >
         <h2 className="text-2xl font-semibold tracking-tight">
           Shipping options
@@ -279,18 +279,18 @@ export default function AdminShippingOptionsPage() {
           {loading ? (
             <div
               className={`
-              flex min-h-[200px] items-center justify-center
-              text-muted-foreground
-            `}
+                flex min-h-[200px] items-center justify-center
+                text-muted-foreground
+              `}
             >
               Loading…
             </div>
           ) : data?.items.length === 0 ? (
             <div
               className={`
-              flex min-h-[200px] flex-col items-center justify-center gap-2 p-8
-              text-muted-foreground
-            `}
+                flex min-h-[200px] flex-col items-center justify-center gap-2
+                p-8 text-muted-foreground
+              `}
             >
               <p>No shipping options yet.</p>
               <Link href="/shipping-options/create">
@@ -306,9 +306,9 @@ export default function AdminShippingOptionsPage() {
                 <thead>
                   <tr
                     className={`
-                    border-b bg-muted/50 text-left text-xs font-semibold
-                    tracking-wider text-muted-foreground uppercase
-                  `}
+                      border-b bg-muted/50 text-left text-xs font-semibold
+                      tracking-wider text-muted-foreground uppercase
+                    `}
                   >
                     <SortHeader column="name" label="Name" />
                     <SortHeader column="brandName" label="Brand" />

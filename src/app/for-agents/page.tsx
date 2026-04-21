@@ -68,25 +68,25 @@ function ForAgentsPageAgentView({ apiBaseUrl }: { apiBaseUrl: string }) {
   return (
     <article
       className={`
-      container mx-auto max-w-7xl px-4 py-8 font-mono text-sm
-      sm:px-6
-      lg:px-8
-    `}
+        container mx-auto max-w-7xl px-4 py-8 font-mono text-sm
+        sm:px-6
+        lg:px-8
+      `}
     >
       <AgentApiSummaryScript apiBaseUrl={apiBaseUrl} />
       <h1
         className={`
-        mb-2 text-xl font-semibold text-neutral-900
-        dark:text-neutral-100
-      `}
+          mb-2 text-xl font-semibold text-neutral-900
+          dark:text-neutral-100
+        `}
       >
         For the Cult — API for AI agents
       </h1>
       <p
         className={`
-        mb-6 text-neutral-600
-        dark:text-neutral-400
-      `}
+          mb-6 text-neutral-600
+          dark:text-neutral-400
+        `}
       >
         API-first store. Browse products, optional Sign in with Moltbook,
         checkout with crypto. Start with GET /api/agent/capabilities.
@@ -95,17 +95,17 @@ function ForAgentsPageAgentView({ apiBaseUrl }: { apiBaseUrl: string }) {
       <section className="mb-8">
         <h2
           className={`
-          mb-2 text-base font-semibold text-neutral-800
-          dark:text-neutral-200
-        `}
+            mb-2 text-base font-semibold text-neutral-800
+            dark:text-neutral-200
+          `}
         >
           Quick start
         </h2>
         <ol
           className={`
-          list-inside list-decimal space-y-1 text-neutral-700
-          dark:text-neutral-300
-        `}
+            list-inside list-decimal space-y-1 text-neutral-700
+            dark:text-neutral-300
+          `}
         >
           <li>
             GET /api/agent/capabilities — endpoints, payment options, limits.
@@ -125,17 +125,17 @@ function ForAgentsPageAgentView({ apiBaseUrl }: { apiBaseUrl: string }) {
       <section className="mb-8">
         <h2
           className={`
-          mb-2 text-base font-semibold text-neutral-800
-          dark:text-neutral-200
-        `}
+            mb-2 text-base font-semibold text-neutral-800
+            dark:text-neutral-200
+          `}
         >
           Checkout flow
         </h2>
         <ol
           className={`
-          list-inside list-decimal space-y-1 text-neutral-700
-          dark:text-neutral-300
-        `}
+            list-inside list-decimal space-y-1 text-neutral-700
+            dark:text-neutral-300
+          `}
         >
           <li>
             Discover products: GET /api/agent/products or POST
@@ -156,9 +156,9 @@ function ForAgentsPageAgentView({ apiBaseUrl }: { apiBaseUrl: string }) {
       <section className="mb-8">
         <h2
           className={`
-          mb-3 text-base font-semibold text-neutral-800
-          dark:text-neutral-200
-        `}
+            mb-3 text-base font-semibold text-neutral-800
+            dark:text-neutral-200
+          `}
         >
           Endpoints (one per line)
         </h2>
@@ -176,17 +176,17 @@ function ForAgentsPageAgentView({ apiBaseUrl }: { apiBaseUrl: string }) {
       <section className="mb-8">
         <h2
           className={`
-          mb-3 text-base font-semibold text-neutral-800
-          dark:text-neutral-200
-        `}
+            mb-3 text-base font-semibold text-neutral-800
+            dark:text-neutral-200
+          `}
         >
           Endpoint reference
         </h2>
         <dl
           className={`
-          space-y-3 text-neutral-700
-          dark:text-neutral-300
-        `}
+            space-y-3 text-neutral-700
+            dark:text-neutral-300
+          `}
         >
           {apiLinks.map((l) => (
             <div
@@ -207,9 +207,9 @@ function ForAgentsPageAgentView({ apiBaseUrl }: { apiBaseUrl: string }) {
               <dd className="mt-0.5">{l.description}</dd>
               <dd
                 className={`
-                mt-1 text-xs break-all text-blue-600
-                dark:text-blue-400
-              `}
+                  mt-1 text-xs break-all text-blue-600
+                  dark:text-blue-400
+                `}
               >
                 <a href={l.href} rel="noopener noreferrer" target="_blank">
                   {l.href}
@@ -223,24 +223,24 @@ function ForAgentsPageAgentView({ apiBaseUrl }: { apiBaseUrl: string }) {
       <section className="mb-8">
         <h2
           className={`
-          mb-2 text-base font-semibold text-neutral-800
-          dark:text-neutral-200
-        `}
+            mb-2 text-base font-semibold text-neutral-800
+            dark:text-neutral-200
+          `}
         >
           Error handling
         </h2>
         <p
           className={`
-          text-neutral-700
-          dark:text-neutral-300
-        `}
+            text-neutral-700
+            dark:text-neutral-300
+          `}
         >
           API error responses (4xx/5xx) may include a{" "}
           <code
             className={`
-            rounded bg-neutral-100 px-1
-            dark:bg-neutral-800
-          `}
+              rounded bg-neutral-100 px-1
+              dark:bg-neutral-800
+            `}
           >
             _suggestions
           </code>{" "}
@@ -251,18 +251,18 @@ function ForAgentsPageAgentView({ apiBaseUrl }: { apiBaseUrl: string }) {
       <section>
         <h2
           className={`
-          mb-2 text-base font-semibold text-neutral-800
-          dark:text-neutral-200
-        `}
+            mb-2 text-base font-semibold text-neutral-800
+            dark:text-neutral-200
+          `}
         >
           Links
         </h2>
         <pre
           className={`
-          overflow-x-auto rounded border border-neutral-200 bg-neutral-50 p-4
-          text-xs
-          dark:border-neutral-700 dark:bg-neutral-900
-        `}
+            overflow-x-auto rounded border border-neutral-200 bg-neutral-50 p-4
+            text-xs
+            dark:border-neutral-700 dark:bg-neutral-900
+          `}
         >
           <a
             className={`
@@ -325,38 +325,43 @@ function ForAgentsPageHumanView({ apiBaseUrl }: { apiBaseUrl: string }) {
     <div className="min-h-screen">
       <div
         className={`
-        container mx-auto max-w-7xl px-4 py-12
-        sm:px-6 sm:py-16
-        lg:px-8
-      `}
+          container mx-auto max-w-7xl px-4 py-12
+          sm:px-6 sm:py-16
+          lg:px-8
+        `}
       >
         <header className="mb-10 border-b border-border pb-8">
           <h1
             className={`
-            font-heading text-3xl font-bold tracking-tight
-            sm:text-4xl
-          `}
+              font-heading text-3xl font-bold tracking-tight
+              sm:text-4xl
+            `}
           >
             For AI Agents
           </h1>
           <p className="mt-3 text-lg text-muted-foreground">
-            The definitive agentic commerce API. Multi-chain payments, autonomous
-            checkout via x402, and a curated catalog — all without an API key.
+            The definitive agentic commerce API. Multi-chain payments,
+            autonomous checkout via x402, and a curated catalog — all without an
+            API key.
           </p>
           {agentBase && apiBaseUrl !== agentBase && (
             <p className="mt-2 text-sm text-muted-foreground">
               You can use either this site&apos;s API (
               <strong className="text-foreground">{apiBaseUrl}/api</strong>) or
               the agent subdomain (
-              <strong className="text-foreground">{agentBase}/api</strong>); same
-              endpoints.
+              <strong className="text-foreground">{agentBase}/api</strong>);
+              same endpoints.
             </p>
           )}
         </header>
 
         <section className="space-y-4">
           <h2 className="font-heading text-xl font-semibold">Quick Start</h2>
-          <ol className="list-inside list-decimal space-y-2 text-muted-foreground">
+          <ol
+            className={`
+              list-inside list-decimal space-y-2 text-muted-foreground
+            `}
+          >
             <li>
               Call{" "}
               <strong className="text-foreground">
@@ -366,9 +371,7 @@ function ForAgentsPageHumanView({ apiBaseUrl }: { apiBaseUrl: string }) {
             </li>
             <li>
               Use{" "}
-              <strong className="text-foreground">
-                POST /api/agent/shop
-              </strong>{" "}
+              <strong className="text-foreground">POST /api/agent/shop</strong>{" "}
               with natural language — get AI-curated product recommendations.
             </li>
             <li>
@@ -384,7 +387,10 @@ function ForAgentsPageHumanView({ apiBaseUrl }: { apiBaseUrl: string }) {
               </code>{" "}
               header to link orders to your agent profile via{" "}
               <a
-                className="text-foreground underline hover:no-underline"
+                className={`
+                  text-foreground underline
+                  hover:no-underline
+                `}
                 href="https://moltbook.com/developers.md"
                 rel="noopener noreferrer"
                 target="_blank"
@@ -409,9 +415,9 @@ function ForAgentsPageHumanView({ apiBaseUrl }: { apiBaseUrl: string }) {
                     {link.method && (
                       <span
                         className={`
-                        rounded bg-muted px-1.5 py-0.5 font-mono text-xs
-                        font-normal
-                      `}
+                          rounded bg-muted px-1.5 py-0.5 font-mono text-xs
+                          font-normal
+                        `}
                       >
                         {link.method}
                       </span>
@@ -442,7 +448,13 @@ function ForAgentsPageHumanView({ apiBaseUrl }: { apiBaseUrl: string }) {
 
       <UseCaseGallery />
 
-      <div className="container mx-auto max-w-7xl px-4 pb-16 sm:px-6 lg:px-8">
+      <div
+        className={`
+          container mx-auto max-w-7xl px-4 pb-16
+          sm:px-6
+          lg:px-8
+        `}
+      >
         <footer className="flex flex-wrap gap-4 border-t border-border pt-8">
           <Button asChild variant="outline">
             <Link href="/api/docs">API Docs (Swagger)</Link>

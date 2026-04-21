@@ -114,9 +114,9 @@ export function ChatPageClient() {
   const [newProjectName, setNewProjectName] = useState("");
   const [newProjectInstructions, setNewProjectInstructions] = useState("");
 
-  const [knowledgeItems, setKnowledgeItems] = useState<
-    ProjectKnowledgeItem[]
-  >([]);
+  const [knowledgeItems, setKnowledgeItems] = useState<ProjectKnowledgeItem[]>(
+    [],
+  );
   const [projectSettingsDialogOpen, setProjectSettingsDialogOpen] =
     useState(false);
   const [projectSettingsPanelCollapsed, setProjectSettingsPanelCollapsed] =
@@ -206,7 +206,6 @@ export function ChatPageClient() {
     // eslint-disable-next-line @eslint-react/set-state-in-effect -- localStorage-backed guest id
     setGuestId(getOrCreateGuestId());
   }, []);
-
 
   useEffect(() => {
     if (!userId) return;
@@ -313,7 +312,10 @@ export function ChatPageClient() {
     (async () => {
       try {
         const json = await fetchJson<{
-          agent?: { characterName: null | string; characterSlug: null | string };
+          agent?: {
+            characterName: null | string;
+            characterSlug: null | string;
+          };
         }>("/api/ai/agent");
         const slug = json.agent?.characterSlug?.trim();
         if (cancelled || !slug) return;
@@ -352,16 +354,19 @@ export function ChatPageClient() {
     [projects, selectedProjectId],
   );
 
-  const updateProjectInstructions = useCallback((next: string) => {
-    if (!selectedProjectId) return;
-    setProjects((prev) => {
-      const mapped = prev.map((p) =>
-        p.id === selectedProjectId ? { ...p, instructions: next } : p,
-      );
-      saveProjects(mapped);
-      return mapped;
-    });
-  }, [selectedProjectId]);
+  const updateProjectInstructions = useCallback(
+    (next: string) => {
+      if (!selectedProjectId) return;
+      setProjects((prev) => {
+        const mapped = prev.map((p) =>
+          p.id === selectedProjectId ? { ...p, instructions: next } : p,
+        );
+        saveProjects(mapped);
+        return mapped;
+      });
+    },
+    [selectedProjectId],
+  );
 
   const persistAgentCharacter = useCallback(
     async (next: AiCharacter | null) => {
@@ -696,10 +701,10 @@ export function ChatPageClient() {
         /* ignore */
       }
       if (userId) {
-        void fetch(
-          `/api/ai/conversations/${encodeURIComponent(id)}`,
-          { credentials: "include", method: "DELETE" },
-        );
+        void fetch(`/api/ai/conversations/${encodeURIComponent(id)}`, {
+          credentials: "include",
+          method: "DELETE",
+        });
       }
       const next = sessions.filter((s) => s.id !== id);
       saveSessionList(next);
@@ -847,8 +852,10 @@ export function ChatPageClient() {
       return;
     }
     const text = input.trim();
-    const parts: (| (typeof fileParts)[number]
-      | { text: string; type: "text" })[] = [...fileParts];
+    const parts: (
+      | (typeof fileParts)[number]
+      | { text: string; type: "text" }
+    )[] = [...fileParts];
     if (text) parts.push({ text, type: "text" });
     void sendMessage({ parts, role: "user" });
     setInput("");
@@ -884,7 +891,7 @@ export function ChatPageClient() {
     const el = scrollRef.current;
     if (!el) return;
     el.scrollTop = el.scrollHeight;
-  }, [messages.length, busy]);
+  }, [messages.length]);
 
   return (
     <div
@@ -939,406 +946,450 @@ export function ChatPageClient() {
           sessions={sessions}
         />
       ) : (
-      <div className={`
-        flex min-h-0 min-w-0 flex-1 flex-col
-        lg:flex-row
-      `}>
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-          <div
-            aria-hidden
-            className="pointer-events-none min-h-0 flex-[1] shrink-0 basis-0"
-          />
-          <div className="flex min-h-0 flex-[2] flex-col overflow-hidden">
-        <header className={`
-          flex shrink-0 items-center justify-between gap-2 border-b
-          border-border px-4 py-2
-        `}>
-          <div className="min-w-0 flex-1">
-            {selectedProject ? (
-              <div className="flex flex-wrap items-center gap-2">
+        <div
+          className={`
+            flex min-h-0 min-w-0 flex-1 flex-col
+            lg:flex-row
+          `}
+        >
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+            <div
+              aria-hidden
+              className="pointer-events-none min-h-0 flex-[1] shrink-0 basis-0"
+            />
+            <div className="flex min-h-0 flex-[2] flex-col overflow-hidden">
+              <header
+                className={`
+                  flex shrink-0 items-center justify-between gap-2 border-b
+                  border-border px-4 py-2
+                `}
+              >
+                <div className="min-w-0 flex-1">
+                  {selectedProject ? (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button
+                        className="shrink-0 gap-1 px-2"
+                        onClick={() => {
+                          setSelectedProjectId(null);
+                          setMainView("projects");
+                        }}
+                        size="sm"
+                        type="button"
+                        variant="ghost"
+                      >
+                        <ChevronLeft aria-hidden className="h-4 w-4" />
+                        All projects
+                      </Button>
+                      <div className="min-w-0">
+                        <h1
+                          className={`
+                            truncate text-lg font-semibold tracking-tight
+                          `}
+                        >
+                          {selectedProject.name}
+                        </h1>
+                        <p className="truncate text-xs text-muted-foreground">
+                          Project chat
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <h1
+                        className={`
+                          truncate text-lg font-semibold tracking-tight
+                        `}
+                      >
+                        Chat
+                      </h1>
+                    </div>
+                  )}
+                </div>
+                <div className="flex shrink-0 items-center gap-1">
+                  {selectedProject ? (
+                    <Button
+                      className={cn(
+                        !projectSettingsPanelCollapsed && "lg:hidden",
+                      )}
+                      onClick={() => {
+                        if (
+                          typeof window !== "undefined" &&
+                          window.matchMedia("(min-width: 1024px)").matches
+                        ) {
+                          setProjectSettingsPanelCollapsed(false);
+                        } else {
+                          setProjectSettingsDialogOpen(true);
+                        }
+                      }}
+                      size="sm"
+                      type="button"
+                      variant="outline"
+                    >
+                      Project settings
+                    </Button>
+                  ) : null}
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button size="icon" type="button" variant="ghost">
+                        <Settings2 aria-hidden className="h-4 w-4" />
+                        <span className="sr-only">Model settings</span>
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent align="end" className="w-80">
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium">
+                              Search the entire internet
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Hint the model to use web search when supported.
+                            </p>
+                          </div>
+                          <Switch
+                            checked={webEnabled}
+                            onCheckedChange={setWebEnabled}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium">
+                              Extract content from URLs in your messages
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Hint the model to fetch or quote page content.
+                            </p>
+                          </div>
+                          <Switch
+                            checked={urlScrapingEnabled}
+                            onCheckedChange={setUrlScrapingEnabled}
+                          />
+                        </div>
+                        <div
+                          className={`space-y-4 border-t border-border/60 pt-3`}
+                        >
+                          <p className="text-sm font-medium">Advanced</p>
+                          <div className="space-y-2">
+                            <Label className="text-xs">
+                              Temperature: {temperature.toFixed(2)}
+                            </Label>
+                            <Slider
+                              max={2}
+                              min={0}
+                              onValueChange={(v) => setTemperature(v[0] ?? 0.7)}
+                              step={0.05}
+                              value={[temperature]}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-xs">
+                              Top P: {topP.toFixed(2)}
+                            </Label>
+                            <Slider
+                              max={1}
+                              min={0.05}
+                              onValueChange={(v) => setTopP(v[0] ?? 0.95)}
+                              step={0.05}
+                              value={[topP]}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                  <Button
+                    onClick={newChat}
+                    size="sm"
+                    type="button"
+                    variant="outline"
+                  >
+                    <Plus aria-hidden className="mr-1 h-4 w-4" />
+                    New
+                  </Button>
+                  {userId ? (
+                    <Button asChild size="sm" variant="outline">
+                      <Link href="/dashboard/ai">Account</Link>
+                    </Button>
+                  ) : (
+                    <Button asChild size="sm" variant="outline">
+                      <Link href="/login">Sign in</Link>
+                    </Button>
+                  )}
+                </div>
+              </header>
+
+              {error ? (
+                <div
+                  className={`
+                    mx-4 mt-2 rounded-lg border border-destructive/40
+                    bg-destructive/10 px-4 py-3 text-sm text-destructive
+                  `}
+                  role="alert"
+                >
+                  <div
+                    className={`
+                      flex flex-wrap items-start justify-between gap-2
+                    `}
+                  >
+                    <p className="min-w-0 flex-1 font-medium">
+                      {error.message}
+                    </p>
+                    <Button
+                      className="shrink-0"
+                      onClick={() => clearError()}
+                      size="sm"
+                      type="button"
+                      variant="outline"
+                    >
+                      Dismiss
+                    </Button>
+                  </div>
+                </div>
+              ) : null}
+
+              <div
+                className="relative min-h-0 flex-1 overflow-y-auto px-4 py-6"
+                ref={scrollRef}
+              >
+                <div className="mx-auto flex max-w-3xl flex-col gap-4">
+                  {messages.length === 0 ? (
+                    <div
+                      className={`
+                        flex flex-col items-center justify-center gap-2 py-6
+                        text-center
+                      `}
+                    >
+                      <p className="max-w-sm text-sm text-muted-foreground">
+                        {selectedProject
+                          ? "Start a new conversation. Project instructions and knowledge apply to this chat."
+                          : "Start a conversation. Your messages stay private to this browser unless you use account backups."}
+                      </p>
+                    </div>
+                  ) : null}
+                  {messages.map((m) => {
+                    const isUser = m.role === "user";
+                    const isAssistant = m.role === "assistant";
+                    const text = isAssistant ? messageText(m) : "";
+                    return (
+                      <div
+                        className={cn(
+                          "flex w-full",
+                          isUser ? "justify-end" : "justify-start",
+                        )}
+                        key={m.id}
+                      >
+                        <div
+                          className={cn(
+                            `
+                              max-w-[min(100%,85%)] rounded-2xl px-4 py-3
+                              text-sm
+                            `,
+                            isUser
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-muted text-foreground",
+                          )}
+                        >
+                          {isUser ? (
+                            <MessageParts message={m} />
+                          ) : (
+                            <div className="space-y-2 whitespace-pre-wrap">
+                              {text}
+                            </div>
+                          )}
+                          {isAssistant && text ? (
+                            <div
+                              className={`
+                                mt-2 flex flex-wrap gap-1 border-t
+                                border-border/50 pt-2 opacity-90
+                              `}
+                            >
+                              <Button
+                                className="h-7 px-2 text-xs"
+                                onClick={() => void copyText(text)}
+                                size="sm"
+                                type="button"
+                                variant="ghost"
+                              >
+                                <Copy aria-hidden className="mr-1 h-3 w-3" />
+                                Copy
+                              </Button>
+                              {m.id === lastAssistantId ? (
+                                <Button
+                                  className="h-7 px-2 text-xs"
+                                  disabled={busy}
+                                  onClick={() => void regenerate()}
+                                  size="sm"
+                                  type="button"
+                                  variant="ghost"
+                                >
+                                  <RotateCcw
+                                    aria-hidden
+                                    className="mr-1 h-3 w-3"
+                                  />
+                                  Regenerate
+                                </Button>
+                              ) : null}
+                              <Button
+                                className={`
+                                  h-7 px-2 text-xs text-destructive
+                                  hover:text-destructive
+                                `}
+                                onClick={() => deleteAssistantMessage(m.id)}
+                                size="sm"
+                                type="button"
+                                variant="ghost"
+                              >
+                                <Trash2 aria-hidden className="mr-1 h-3 w-3" />
+                                Remove
+                              </Button>
+                            </div>
+                          ) : null}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {busy ? (
+                    <div
+                      className={`
+                        flex items-center gap-2 text-sm text-muted-foreground
+                      `}
+                    >
+                      <Loader2 aria-hidden className="h-4 w-4 animate-spin" />
+                      Thinking…
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+
+              <div
+                className={`
+                  shrink-0 border-b border-border/80 bg-background/95 p-4
+                  backdrop-blur
+                  supports-[backdrop-filter]:bg-background/80
+                `}
+              >
+                <div className="mx-auto w-full max-w-3xl">
+                  <input
+                    accept="image/*"
+                    className="hidden"
+                    onChange={onPickImage}
+                    ref={fileInputRef}
+                    type="file"
+                  />
+                  <form
+                    className={`
+                      rounded-2xl border border-border/80 bg-muted/30 p-2
+                    `}
+                    onSubmit={onSubmit}
+                  >
+                    <textarea
+                      className={cn(
+                        "border-input bg-transparent",
+                        "placeholder:text-muted-foreground",
+                        "min-h-[48px] w-full resize-none px-3 py-2 text-sm",
+                        "rounded-xl border-0 border-transparent",
+                        `
+                          ring-0 outline-none
+                          focus:ring-0
+                          focus-visible:ring-0 focus-visible:outline-none
+                        `,
+                      )}
+                      disabled={busy}
+                      onChange={(e) => setInput(e.target.value)}
+                      onKeyDown={onKeyDown}
+                      placeholder="Send a private message…"
+                      rows={2}
+                      value={input}
+                    />
+                    <div
+                      className={`
+                        flex items-center justify-between gap-2 px-1 pb-1
+                      `}
+                    >
+                      <div className="flex items-center gap-1">
+                        <Button
+                          disabled={busy}
+                          onClick={() => void startSpeech()}
+                          size="icon"
+                          title="Dictate"
+                          type="button"
+                          variant="ghost"
+                        >
+                          <Mic aria-hidden className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          disabled={busy}
+                          onClick={() => fileInputRef.current?.click()}
+                          size="icon"
+                          title="Attach image"
+                          type="button"
+                          variant="ghost"
+                        >
+                          <ImageIcon aria-hidden className="h-4 w-4" />
+                        </Button>
+                        {busy ? (
+                          <Button
+                            onClick={() => stop()}
+                            size="sm"
+                            type="button"
+                            variant="destructive"
+                          >
+                            <Square aria-hidden className="mr-1 h-3.5 w-3.5" />
+                            Stop
+                          </Button>
+                        ) : null}
+                      </div>
+                      <Button
+                        disabled={busy || !input.trim()}
+                        size="sm"
+                        type="submit"
+                      >
+                        Send
+                      </Button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+          {selectedProject && !projectSettingsPanelCollapsed ? (
+            <div
+              className={`
+                hidden h-full min-h-0 w-full max-w-[420px] shrink-0 flex-col
+                border-l border-border bg-muted/10
+                lg:flex
+              `}
+            >
+              <div
+                className={`
+                  flex shrink-0 items-center justify-between gap-2 border-b
+                  border-border px-3 py-2
+                `}
+              >
+                <span className="text-xs font-medium text-muted-foreground">
+                  Project settings
+                </span>
                 <Button
-                  className="shrink-0 gap-1 px-2"
-                  onClick={() => {
-                    setSelectedProjectId(null);
-                    setMainView("projects");
-                  }}
-                  size="sm"
+                  aria-label="Hide project settings"
+                  className="h-8 w-8 shrink-0"
+                  onClick={() => setProjectSettingsPanelCollapsed(true)}
+                  size="icon"
                   type="button"
                   variant="ghost"
                 >
-                  <ChevronLeft aria-hidden className="h-4 w-4" />
-                  All projects
+                  <PanelRightClose aria-hidden className="h-4 w-4" />
                 </Button>
-                <div className="min-w-0">
-                  <h1 className="truncate text-lg font-semibold tracking-tight">
-                    {selectedProject.name}
-                  </h1>
-                  <p className="truncate text-xs text-muted-foreground">
-                    Project chat
-                  </p>
-                </div>
               </div>
-            ) : (
-              <div>
-                <h1 className="truncate text-lg font-semibold tracking-tight">
-                  Chat
-                </h1>
-              </div>
-            )}
-          </div>
-          <div className="flex shrink-0 items-center gap-1">
-            {selectedProject ? (
-              <Button
-                className={cn(
-                  !projectSettingsPanelCollapsed && "lg:hidden",
-                )}
-                onClick={() => {
-                  if (
-                    typeof window !== "undefined" &&
-                    window.matchMedia("(min-width: 1024px)").matches
-                  ) {
-                    setProjectSettingsPanelCollapsed(false);
-                  } else {
-                    setProjectSettingsDialogOpen(true);
-                  }
-                }}
-                size="sm"
-                type="button"
-                variant="outline"
-              >
-                Project settings
-              </Button>
-            ) : null}
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button size="icon" type="button" variant="ghost">
-                  <Settings2 aria-hidden className="h-4 w-4" />
-                  <span className="sr-only">Model settings</span>
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent align="end" className="w-80">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium">
-                        Search the entire internet
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Hint the model to use web search when supported.
-                      </p>
-                    </div>
-                    <Switch
-                      checked={webEnabled}
-                      onCheckedChange={setWebEnabled}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium">
-                        Extract content from URLs in your messages
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Hint the model to fetch or quote page content.
-                      </p>
-                    </div>
-                    <Switch
-                      checked={urlScrapingEnabled}
-                      onCheckedChange={setUrlScrapingEnabled}
-                    />
-                  </div>
-                  <div className="space-y-4 border-t border-border/60 pt-3">
-                    <p className="text-sm font-medium">Advanced</p>
-                    <div className="space-y-2">
-                      <Label className="text-xs">
-                        Temperature: {temperature.toFixed(2)}
-                      </Label>
-                      <Slider
-                        max={2}
-                        min={0}
-                        onValueChange={(v) => setTemperature(v[0] ?? 0.7)}
-                        step={0.05}
-                        value={[temperature]}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs">Top P: {topP.toFixed(2)}</Label>
-                      <Slider
-                        max={1}
-                        min={0.05}
-                        onValueChange={(v) => setTopP(v[0] ?? 0.95)}
-                        step={0.05}
-                        value={[topP]}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </PopoverContent>
-            </Popover>
-            <Button
-              onClick={newChat}
-              size="sm"
-              type="button"
-              variant="outline"
-            >
-              <Plus aria-hidden className="mr-1 h-4 w-4" />
-              New
-            </Button>
-            {userId ? (
-              <Button asChild size="sm" variant="outline">
-                <Link href="/dashboard/ai">Account</Link>
-              </Button>
-            ) : (
-              <Button asChild size="sm" variant="outline">
-                <Link href="/login">Sign in</Link>
-              </Button>
-            )}
-          </div>
-        </header>
-
-        {error ? (
-          <div
-            className={`
-              mx-4 mt-2 rounded-lg border border-destructive/40
-              bg-destructive/10 px-4 py-3 text-sm text-destructive
-            `}
-            role="alert"
-          >
-            <div className="flex flex-wrap items-start justify-between gap-2">
-              <p className="min-w-0 flex-1 font-medium">{error.message}</p>
-              <Button
-                className="shrink-0"
-                onClick={() => clearError()}
-                size="sm"
-                type="button"
-                variant="outline"
-              >
-                Dismiss
-              </Button>
-            </div>
-          </div>
-        ) : null}
-
-        <div
-          className="relative min-h-0 flex-1 overflow-y-auto px-4 py-6"
-          ref={scrollRef}
-        >
-          <div className="mx-auto flex max-w-3xl flex-col gap-4">
-            {messages.length === 0 ? (
-              <div className={`
-                flex flex-col items-center justify-center gap-2 py-6 text-center
-              `}>
-                <p className="max-w-sm text-sm text-muted-foreground">
-                  {selectedProject
-                    ? "Start a new conversation. Project instructions and knowledge apply to this chat."
-                    : "Start a conversation. Your messages stay private to this browser unless you use account backups."}
-                </p>
-              </div>
-            ) : null}
-            {messages.map((m) => {
-              const isUser = m.role === "user";
-              const isAssistant = m.role === "assistant";
-              const text = isAssistant ? messageText(m) : "";
-              return (
-                <div
-                  className={cn(
-                    "flex w-full",
-                    isUser ? "justify-end" : "justify-start",
-                  )}
-                  key={m.id}
-                >
-                  <div
-                    className={cn(
-                      `max-w-[min(100%,85%)] rounded-2xl px-4 py-3 text-sm`,
-                      isUser
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted text-foreground",
-                    )}
-                  >
-                    {isUser ? (
-                      <MessageParts message={m} />
-                    ) : (
-                      <div className="space-y-2 whitespace-pre-wrap">{text}</div>
-                    )}
-                    {isAssistant && text ? (
-                      <div className={`
-                        mt-2 flex flex-wrap gap-1 border-t border-border/50 pt-2
-                        opacity-90
-                      `}>
-                        <Button
-                          className="h-7 px-2 text-xs"
-                          onClick={() => void copyText(text)}
-                          size="sm"
-                          type="button"
-                          variant="ghost"
-                        >
-                          <Copy aria-hidden className="mr-1 h-3 w-3" />
-                          Copy
-                        </Button>
-                        {m.id === lastAssistantId ? (
-                          <Button
-                            className="h-7 px-2 text-xs"
-                            disabled={busy}
-                            onClick={() => void regenerate()}
-                            size="sm"
-                            type="button"
-                            variant="ghost"
-                          >
-                            <RotateCcw aria-hidden className="mr-1 h-3 w-3" />
-                            Regenerate
-                          </Button>
-                        ) : null}
-                        <Button
-                          className={`
-                            h-7 px-2 text-xs text-destructive
-                            hover:text-destructive
-                          `}
-                          onClick={() => deleteAssistantMessage(m.id)}
-                          size="sm"
-                          type="button"
-                          variant="ghost"
-                        >
-                          <Trash2 aria-hidden className="mr-1 h-3 w-3" />
-                          Remove
-                        </Button>
-                      </div>
-                    ) : null}
-                  </div>
-                </div>
-              );
-            })}
-            {busy ? (
-              <div className={`
-                flex items-center gap-2 text-sm text-muted-foreground
-              `}>
-                <Loader2 aria-hidden className="h-4 w-4 animate-spin" />
-                Thinking…
-              </div>
-            ) : null}
-
-          </div>
-        </div>
-
-
-        <div className={`
-          shrink-0 border-b border-border/80 bg-background/95 p-4 backdrop-blur
-          supports-[backdrop-filter]:bg-background/80
-        `}>
-          <div className="mx-auto w-full max-w-3xl">
-            <input
-              accept="image/*"
-              className="hidden"
-              onChange={onPickImage}
-              ref={fileInputRef}
-              type="file"
-            />
-            <form
-              className={`rounded-2xl border border-border/80 bg-muted/30 p-2`}
-              onSubmit={onSubmit}
-            >
-              <textarea
-                className={cn(
-                  "border-input bg-transparent",
-                  "placeholder:text-muted-foreground",
-                  "min-h-[48px] w-full resize-none px-3 py-2 text-sm",
-                  "rounded-xl border-0 border-transparent",
-                  `
-                    ring-0 outline-none
-                    focus:ring-0
-                    focus-visible:ring-0 focus-visible:outline-none
-                  `,
-                )}
-                disabled={busy}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={onKeyDown}
-                placeholder="Send a private message…"
-                rows={2}
-                value={input}
+              <ProjectSettingsPanel
+                className={`min-h-0 flex-1 border-l-0 bg-transparent`}
+                knowledgeItems={knowledgeItems}
+                onInstructionsChange={updateProjectInstructions}
+                onKnowledgeChange={setKnowledgeItems}
+                project={selectedProject}
               />
-              <div className="flex items-center justify-between gap-2 px-1 pb-1">
-                <div className="flex items-center gap-1">
-                  <Button
-                    disabled={busy}
-                    onClick={() => void startSpeech()}
-                    size="icon"
-                    title="Dictate"
-                    type="button"
-                    variant="ghost"
-                  >
-                    <Mic aria-hidden className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    disabled={busy}
-                    onClick={() => fileInputRef.current?.click()}
-                    size="icon"
-                    title="Attach image"
-                    type="button"
-                    variant="ghost"
-                  >
-                    <ImageIcon aria-hidden className="h-4 w-4" />
-                  </Button>
-                  {busy ? (
-                    <Button
-                      onClick={() => stop()}
-                      size="sm"
-                      type="button"
-                      variant="destructive"
-                    >
-                      <Square aria-hidden className="mr-1 h-3.5 w-3.5" />
-                      Stop
-                    </Button>
-                  ) : null}
-                </div>
-                <Button
-                  disabled={busy || !input.trim()}
-                  size="sm"
-                  type="submit"
-                >
-                  Send
-                </Button>
-              </div>
-            </form>
-          </div>
+            </div>
+          ) : null}
         </div>
-          </div>
-        </div>
-            {selectedProject && !projectSettingsPanelCollapsed ? (
-              <div
-                className={`
-                  hidden h-full min-h-0 w-full max-w-[420px] shrink-0 flex-col
-                  border-l border-border bg-muted/10
-                  lg:flex
-                `}
-              >
-                <div
-                  className={`
-                    flex shrink-0 items-center justify-between gap-2 border-b
-                    border-border px-3 py-2
-                  `}
-                >
-                  <span className="text-xs font-medium text-muted-foreground">
-                    Project settings
-                  </span>
-                  <Button
-                    aria-label="Hide project settings"
-                    className="h-8 w-8 shrink-0"
-                    onClick={() => setProjectSettingsPanelCollapsed(true)}
-                    size="icon"
-                    type="button"
-                    variant="ghost"
-                  >
-                    <PanelRightClose aria-hidden className="h-4 w-4" />
-                  </Button>
-                </div>
-                <ProjectSettingsPanel
-                  className={`min-h-0 flex-1 border-l-0 bg-transparent`}
-                  knowledgeItems={knowledgeItems}
-                  onInstructionsChange={updateProjectInstructions}
-                  onKnowledgeChange={setKnowledgeItems}
-                  project={selectedProject}
-                />
-              </div>
-            ) : null}
-          </div>
       )}
 
       <Dialog
@@ -1435,7 +1486,6 @@ export function ChatPageClient() {
   );
 }
 
-
 async function fetchJson<T>(url: string): Promise<T> {
   const res = await fetch(url, { credentials: "include" });
   if (!res.ok) throw new Error(await res.text());
@@ -1490,9 +1540,7 @@ function MessageParts({ message }: { message: UIMessage }) {
   );
 }
 
-function messageText(m: {
-  parts?: { text?: string; type: string }[];
-}): string {
+function messageText(m: { parts?: { text?: string; type: string }[] }): string {
   if (!m.parts?.length) return "";
   return m.parts
     .filter((p) => p.type === "text")
@@ -1570,10 +1618,12 @@ function ProjectsBrowseView({
             No projects yet. Create one to get started.
           </p>
         ) : (
-          <div className={`
-            mx-auto grid max-w-4xl gap-4
-            sm:grid-cols-2
-          `}>
+          <div
+            className={`
+              mx-auto grid max-w-4xl gap-4
+              sm:grid-cols-2
+            `}
+          >
             {projects.map((p) => {
               const n = counts.get(p.id) ?? 0;
               return (

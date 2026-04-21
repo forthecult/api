@@ -144,14 +144,14 @@ export default function AdminProfilePage() {
     } finally {
       setSaveLoading(false);
     }
-  }, [firstName, lastName, avatarFile, profile?.image, fetchProfile]);
+  }, [firstName, lastName, avatarFile, fetchProfile]);
 
   if (loading) {
     return (
       <div
         className={`
-        flex min-h-[200px] items-center justify-center text-muted-foreground
-      `}
+          flex min-h-[200px] items-center justify-center text-muted-foreground
+        `}
       >
         Loading…
       </div>
@@ -217,15 +217,16 @@ export default function AdminProfilePage() {
 
           <div
             className={`
-            flex flex-col gap-6
-            sm:flex-row sm:items-start
-          `}
+              flex flex-col gap-6
+              sm:flex-row sm:items-start
+            `}
           >
             <div className="flex flex-col items-center gap-2">
               <div
                 className={`
-                relative h-24 w-24 overflow-hidden rounded-full border bg-muted
-              `}
+                  relative h-24 w-24 overflow-hidden rounded-full border
+                  bg-muted
+                `}
               >
                 {avatarPreview ? (
                   <Image
@@ -238,9 +239,9 @@ export default function AdminProfilePage() {
                 ) : (
                   <div
                     className={`
-                    flex h-full w-full items-center justify-center text-3xl
-                    text-muted-foreground
-                  `}
+                      flex h-full w-full items-center justify-center text-3xl
+                      text-muted-foreground
+                    `}
                   >
                     <User className="h-12 w-12" />
                   </div>

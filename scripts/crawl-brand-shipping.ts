@@ -107,7 +107,7 @@ function parseMaxOrderCents(s: string): number | null {
 function parseShippingTable(
   $: cheerio.CheerioAPI,
   brandName: string,
-  sourceUrl: string,
+  _sourceUrl: string,
 ): ParsedOption[] {
   const options: ParsedOption[] = [];
   const tables = $("table").toArray();

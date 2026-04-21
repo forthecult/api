@@ -1,4 +1,4 @@
-import { validateTransfer, type Amount } from "@solana/pay";
+import { type Amount, validateTransfer } from "@solana/pay";
 import {
   Connection,
   PublicKey,
@@ -13,7 +13,6 @@ import { type NextRequest, NextResponse } from "next/server";
 import { db } from "~/db";
 import { ordersTable } from "~/db/schema";
 import { onOrderCreated } from "~/lib/create-user-notification";
-import { fulfillSubscriptionCryptoOrder } from "~/lib/subscription-crypto-fulfillment";
 import { fulfillEsimOrder, hasEsimItems } from "~/lib/esim-fulfillment";
 import {
   createAndConfirmPrintfulOrder,
@@ -40,6 +39,7 @@ import {
   WHITEWHALE_MINT_MAINNET,
 } from "~/lib/solana-pay";
 import { getTokenBalanceAnyProgram } from "~/lib/solana-token-utils";
+import { fulfillSubscriptionCryptoOrder } from "~/lib/subscription-crypto-fulfillment";
 
 const NATIVE_SOL_SENTINEL = "native";
 
@@ -433,7 +433,7 @@ async function verifyNativeSolTransfer(
   signature: string,
   depositAddress: PublicKey,
   expectedLamports: number,
-): Promise<{ ok: boolean; lamports?: number }> {
+): Promise<{ lamports?: number; ok: boolean }> {
   const tx = await connection.getTransaction(signature, {
     commitment: "confirmed",
     maxSupportedTransactionVersion: 0,
@@ -451,7 +451,7 @@ async function verifyNativeSolTransfer(
         decoded.toPubkey.equals(depositAddress) &&
         decoded.lamports >= expectedLamports
       ) {
-        return { ok: true, lamports: Number(decoded.lamports) };
+        return { lamports: Number(decoded.lamports), ok: true };
       }
     } catch {
       // not a transfer instruction

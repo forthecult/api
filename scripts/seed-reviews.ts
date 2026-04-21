@@ -355,7 +355,7 @@ async function seed() {
 
   for (const review of validReviews) {
     const rating = parseInt(review.rating, 10);
-    if (isNaN(rating) || rating < 1 || rating > 5) {
+    if (Number.isNaN(rating) || rating < 1 || rating > 5) {
       skipped++;
       continue;
     }

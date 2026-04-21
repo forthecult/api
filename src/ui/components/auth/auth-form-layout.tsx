@@ -44,15 +44,15 @@ export function AuthFormHeader({ subtitle, title }: AuthFormHeaderProps) {
   return (
     <div
       className={`
-      space-y-1 text-center
-      md:text-left
-    `}
+        space-y-1 text-center
+        md:text-left
+      `}
     >
       <h2
         className={`
-        text-2xl font-bold
-        sm:text-3xl
-      `}
+          text-2xl font-bold
+          sm:text-3xl
+        `}
       >
         {title}
       </h2>
@@ -77,16 +77,16 @@ export function AuthFormLayout({
   return (
     <div
       className={`
-      grid h-screen w-full max-w-[100vw] overflow-hidden
-      md:grid-cols-2
-    `}
+        grid h-screen w-full max-w-[100vw] overflow-hidden
+        md:grid-cols-2
+      `}
     >
       {/* Left side - Image or gradient fallback */}
       <div
         className={`
-        relative hidden min-h-0 min-w-0
-        md:block
-      `}
+          relative hidden min-h-0 min-w-0
+          md:block
+        `}
       >
         {!imageError ? (
           <Image
@@ -109,8 +109,8 @@ export function AuthFormLayout({
         )}
         <div
           className={`
-          absolute inset-0 bg-gradient-to-t from-background/80 to-transparent
-        `}
+            absolute inset-0 bg-gradient-to-t from-background/80 to-transparent
+          `}
         />
         <div className="absolute bottom-8 left-8 z-10 text-white">
           <h1 className="text-3xl font-bold">{SEO_CONFIG.name}</h1>
@@ -123,10 +123,10 @@ export function AuthFormLayout({
       {/* Right side - Form content: aligned to top so no scroll on laptop; compact spacing */}
       <div
         className={`
-        flex min-h-0 min-w-0 items-start justify-center overflow-y-auto px-4
-        py-6
-        md:px-8 md:pt-10 md:pb-8
-      `}
+          flex min-h-0 min-w-0 items-start justify-center overflow-y-auto px-4
+          py-6
+          md:px-8 md:pt-10 md:pb-8
+        `}
       >
         <div className="w-full max-w-md min-w-0 space-y-3">{children}</div>
       </div>
@@ -143,15 +143,15 @@ export function AuthPageSkeleton({
   return (
     <div
       className={`
-      grid h-screen w-full max-w-[100vw] overflow-x-hidden
-      md:grid-cols-2
-    `}
+        grid h-screen w-full max-w-[100vw] overflow-x-hidden
+        md:grid-cols-2
+      `}
     >
       <Skeleton
         className={`
-        hidden h-full min-w-0
-        md:block
-      `}
+          hidden h-full min-w-0
+          md:block
+        `}
       />
       <div className="flex min-w-0 items-center justify-center p-8">
         <div className="w-full max-w-md space-y-4">

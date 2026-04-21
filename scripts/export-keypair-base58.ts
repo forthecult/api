@@ -10,8 +10,8 @@
 
 import { Keypair } from "@solana/web3.js";
 import bs58 from "bs58";
-import { readFileSync } from "fs";
-import { resolve } from "path";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 
 const keypairPath = process.argv[2] ?? "vanity-keypair.json";
 const resolved = resolve(process.cwd(), keypairPath);

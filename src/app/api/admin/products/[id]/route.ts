@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { asc, eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { type NextRequest, NextResponse } from "next/server";
 
@@ -136,7 +136,6 @@ export async function GET(
         .filter((c) => !isShippingExcluded(c)),
       barcode: product.barcode,
       brand: product.brand,
-      model: product.model ?? null,
       categoryId:
         productCategoriesRows.find((r) => r.isMain)?.categoryId ??
         productCategoriesRows[0]?.categoryId ??
@@ -165,6 +164,7 @@ export async function GET(
       mainImageAlt: product.mainImageAlt ?? null,
       mainImageTitle: product.mainImageTitle ?? null,
       metaDescription: product.metaDescription,
+      model: product.model ?? null,
       name: product.name,
       optionDefinitionsJson: product.optionDefinitionsJson,
       pageTitle: product.pageTitle,
@@ -248,7 +248,6 @@ export async function PATCH(
       availableCountryCodes?: string[];
       barcode?: null | string;
       brand?: null | string;
-      model?: null | string;
       categoryId?: null | string;
       categoryIds?: string[];
       compareAtPriceCents?: null | number;
@@ -272,6 +271,7 @@ export async function PATCH(
       mainImageAlt?: null | string;
       mainImageTitle?: null | string;
       metaDescription?: null | string;
+      model?: null | string;
       name?: string;
       optionDefinitionsJson?: null | string;
       pageTitle?: null | string;
@@ -434,7 +434,7 @@ export async function PATCH(
         ? body.categoryIds.filter(
             (c): c is string => typeof c === "string" && c.trim() !== "",
           )
-        : body.categoryId !== undefined && body.categoryId?.trim()
+        : body.categoryId?.trim()
           ? [body.categoryId.trim()]
           : [];
       const mainCategoryId =
@@ -491,7 +491,7 @@ export async function PATCH(
       await db
         .delete(productImagesTable)
         .where(eq(productImagesTable.productId, id));
-      const now = new Date();
+      const _now = new Date();
       const imageValues = body.images
         .map((img, i) => {
           if (!img?.url?.trim()) return null;

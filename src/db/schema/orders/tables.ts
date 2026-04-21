@@ -198,6 +198,8 @@ export const ordersTable = pgTable(
     affiliateId: text("affiliate_id").references(() => affiliateTable.id, {
       onDelete: "set null",
     }),
+    /** External fulfillment order id (for future tracking). */
+    amazonOrderId: text("amazon_order_id").unique(),
     // Payment — BTCPay Server (Bitcoin, Dogecoin, Monero via Bitpay-compatible API)
     btcpayInvoiceId: text("btcpay_invoice_id"),
     btcpayInvoiceUrl: text("btcpay_invoice_url"),
@@ -208,17 +210,19 @@ export const ordersTable = pgTable(
     cryptoCurrencyNetwork: text("crypto_currency_network"), // "Ethereum" | "Solana" | "Base" | etc.
     cryptoTxHash: text("crypto_tx_hash"),
     customerNote: text("customer_note"),
-    deliveredAt: timestamp("delivered_at"),
 
+    deliveredAt: timestamp("delivered_at"),
     discountPercent: integer("discount_percent").notNull().default(0),
     email: text("email").notNull(),
+
     /** Estimated delivery window – earliest date (ISO date string, e.g. "2025-06-15"). */
     estimatedDeliveryFrom: text("estimated_delivery_from"),
-
     /** Estimated delivery window – latest date (ISO date string, e.g. "2025-06-20"). */
     estimatedDeliveryTo: text("estimated_delivery_to"),
     // TODO (L17): migrate fulfillmentStatus to pgEnum for type safety
     fulfillmentStatus: text("fulfillment_status"), // "unfulfilled" | "on_hold" | "partially_fulfilled" | "fulfilled"
+    /** When true, order contains marketplace items that need external fulfillment. */
+    hasAmazonItems: boolean("has_amazon_items").notNull().default(false),
     id: text("id").primaryKey(),
     internalNotes: text("internal_notes"),
     // Moltbook agent identity (when order placed with X-Moltbook-Identity)
@@ -227,15 +231,15 @@ export const ordersTable = pgTable(
     paymentMethod: text("payment_method").notNull().default("stripe"), // "stripe" | "solana_pay" | "eth_pay" | "btcpay" | "ton_pay" | "paypal" | "crypto"
     // TODO (L17): migrate paymentStatus to pgEnum for type safety
     paymentStatus: text("payment_status"), // "pending" | "paid" | "refund_pending" | "refunded" | "cancelled"
+
     /** Printful shipping cost in cents (USD). */
     printfulCostShippingCents: integer("printful_cost_shipping_cents"),
+
     /** Printful tax/VAT cost in cents (USD). */
     printfulCostTaxCents: integer("printful_cost_tax_cents"),
-
     // --- Printful fulfillment costs (admin-only, wholesale cost to us) ---
     /** Printful total cost in cents (USD). Admin-only; not shown to customers. */
     printfulCostTotalCents: integer("printful_cost_total_cents"),
-
     printfulOrderId: text("printful_order_id").unique(),
     /** Printify shipping cost in cents (USD). */
     printifyCostShippingCents: integer("printify_cost_shipping_cents"),
@@ -245,10 +249,6 @@ export const ordersTable = pgTable(
     /** Printify total price in cents (USD). Admin-only; not shown to customers. */
     printifyCostTotalCents: integer("printify_cost_total_cents"),
     printifyOrderId: text("printify_order_id").unique(),
-    /** When true, order contains marketplace items that need external fulfillment. */
-    hasAmazonItems: boolean("has_amazon_items").notNull().default(false),
-    /** External fulfillment order id (for future tracking). */
-    amazonOrderId: text("amazon_order_id").unique(),
     shippedAt: timestamp("shipped_at"),
     shippingAddress1: text("shipping_address1"),
     shippingAddress2: text("shipping_address2"),
@@ -313,7 +313,13 @@ export const ordersTable = pgTable(
 );
 
 export const orderItemsTable = pgTable("order_item", {
+  /** ASIN for marketplace-sourced items. */
+  amazonAsin: text("amazon_asin"),
+  /** Product URL with affiliate tag for marketplace items. */
+  amazonProductUrl: text("amazon_product_url"),
   id: text("id").primaryKey(),
+  /** Product image URL (used for marketplace items that have no local product). */
+  imageUrl: text("image_url"),
   name: text("name").notNull(),
   orderId: text("order_id")
     .notNull()
@@ -329,12 +335,6 @@ export const orderItemsTable = pgTable("order_item", {
   quantity: integer("quantity").notNull(),
   /** "store" | "amazon" — source of the line item. */
   source: text("source").notNull().default("store"),
-  /** ASIN for marketplace-sourced items. */
-  amazonAsin: text("amazon_asin"),
-  /** Product URL with affiliate tag for marketplace items. */
-  amazonProductUrl: text("amazon_product_url"),
-  /** Product image URL (used for marketplace items that have no local product). */
-  imageUrl: text("image_url"),
 });
 
 /** Product media: multiple images per product with SEO (alt, title). */

@@ -188,9 +188,9 @@ export function BrandSelect({
         />
         <span
           className={`
-          pointer-events-none absolute top-1/2 right-2 -translate-y-1/2
-          text-muted-foreground
-        `}
+            pointer-events-none absolute top-1/2 right-2 -translate-y-1/2
+            text-muted-foreground
+          `}
         >
           <ChevronDown
             aria-hidden
@@ -205,7 +205,6 @@ export function BrandSelect({
             `}
             id={`${id}-listbox`}
             ref={listRef}
-            role="listbox"
           >
             {visible.length === 0 ? (
               <li className="px-3 py-2 text-sm text-muted-foreground">
@@ -231,7 +230,6 @@ export function BrandSelect({
                     close();
                   }}
                   onMouseEnter={() => setFocusedIndex(i)}
-                  role="option"
                 >
                   {b.name}
                 </li>

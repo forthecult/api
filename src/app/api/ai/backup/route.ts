@@ -1,11 +1,22 @@
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
-import { auth } from "~/lib/auth";
 import { db } from "~/db";
 import { aiEncryptedBackupTable } from "~/db/schema/ai-chat/tables";
+import { auth } from "~/lib/auth";
 
 const MAX_BACKUP_BYTES = 2 * 1024 * 1024;
+
+export async function DELETE(request: Request) {
+  const session = await auth.api.getSession({ headers: request.headers });
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  await db
+    .delete(aiEncryptedBackupTable)
+    .where(eq(aiEncryptedBackupTable.userId, session.user.id));
+  return NextResponse.json({ ok: true });
+}
 
 export async function GET(request: Request) {
   const session = await auth.api.getSession({ headers: request.headers });
@@ -78,16 +89,5 @@ export async function PUT(request: Request) {
       },
       target: aiEncryptedBackupTable.userId,
     });
-  return NextResponse.json({ ok: true });
-}
-
-export async function DELETE(request: Request) {
-  const session = await auth.api.getSession({ headers: request.headers });
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  await db
-    .delete(aiEncryptedBackupTable)
-    .where(eq(aiEncryptedBackupTable.userId, session.user.id));
   return NextResponse.json({ ok: true });
 }

@@ -1,10 +1,7 @@
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 
-import {
-  getAgentBaseUrl,
-  sanitizeBaseUrlForPublicApi,
-} from "~/lib/app-url";
+import { getAgentBaseUrl, sanitizeBaseUrlForPublicApi } from "~/lib/app-url";
 import {
   checkRateLimit,
   getClientIp,
@@ -15,11 +12,8 @@ import {
 import { x402Enabled, x402Network } from "~/lib/x402-config";
 
 /**
- * AI-agent discovery: returns comprehensive API capabilities, limitations, and quick-start guide.
+ * AI-agent discovery: capabilities, limitations, and quick-start.
  * GET /api/agent/capabilities
- *
- * Call this first so agents understand what the API can do before calling other endpoints.
- * This is the most important endpoint for AI agent onboarding.
  */
 export async function GET() {
   const headersList = await headers();
@@ -183,15 +177,11 @@ export async function GET() {
           estimate: "POST /api/cart/estimate",
         },
         categories: "/api/categories",
-        paymentMethods: "/api/payment-methods",
         checkout: "POST /api/checkout",
         checkoutX402: {
+          description:
+            "x402 checkout — returns 402 with payment requirements, retry with X-PAYMENT header",
           endpoint: "POST /api/checkout/x402",
-          description: "x402 checkout — returns 402 with payment requirements, retry with X-PAYMENT header",
-        },
-        shop: {
-          endpoint: "POST /api/agent/shop",
-          description: "Natural language shopping assistant — message in, AI reply + products out",
         },
         forAgentsPage: `${agentBase}/for-agents`,
         health: "/api/health",
@@ -203,6 +193,7 @@ export async function GET() {
           detail: "/api/orders/{orderId}",
           status: "/api/orders/{orderId}/status",
         },
+        paymentMethods: "/api/payment-methods",
         products: "/api/agent/products",
         productsSearch: {
           detail: "/api/products/{slug}",
@@ -212,6 +203,11 @@ export async function GET() {
           suggestions: "/api/products/suggestions?q={query}",
         },
         self: "/api/agent/capabilities",
+        shop: {
+          description:
+            "Natural language shopping assistant — message in, AI reply + products out",
+          endpoint: "POST /api/agent/shop",
+        },
         summary: `${agentBase}/api/agent/summary`,
       },
 
@@ -237,8 +233,8 @@ export async function GET() {
             action: "Find products",
             endpoint: "POST /api/agent/shop",
             example: {
-              message: "lightweight running shoes under $80",
               context: { priceRange: { max: 80 } },
+              message: "lightweight running shoes under $80",
             },
             step: 1,
           },
@@ -276,9 +272,17 @@ export async function GET() {
               example: {
                 email: "agent@example.com",
                 items: [{ productId: "prod_xxx", quantity: 1 }],
-                shipping: { name: "John Doe", address1: "123 Main St", city: "NYC", stateCode: "NY", zip: "10001", countryCode: "US" },
+                shipping: {
+                  address1: "123 Main St",
+                  city: "NYC",
+                  countryCode: "US",
+                  name: "John Doe",
+                  stateCode: "NY",
+                  zip: "10001",
+                },
               },
-              response: "402 with PAYMENT-REQUIRED header containing payment details",
+              response:
+                "402 with PAYMENT-REQUIRED header containing payment details",
               step: 1,
             },
             {
@@ -289,7 +293,8 @@ export async function GET() {
             {
               action: "Retry with payment",
               endpoint: "POST /api/checkout/x402",
-              header: "X-PAYMENT: base64({ transaction: '<signed-tx-base64>' })",
+              header:
+                "X-PAYMENT: base64({ transaction: '<signed-tx-base64>' })",
               response: "201 with order confirmation",
               step: 3,
             },

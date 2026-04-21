@@ -57,7 +57,7 @@ export function sanitizeProductDescription(
     allowedTags: ALLOWED_TAGS,
     // Allow target="_blank" but add rel="noopener noreferrer" for security
     transformTags: {
-      a: (tagName, attribs) => ({
+      a: (_tagName, attribs) => ({
         attribs: {
           ...attribs,
           ...(attribs.target === "_blank"
@@ -100,5 +100,5 @@ function plainTextNewlinesToHtml(text: string): string {
   const withParagraphs = normalized.replace(/\n\n+/g, '</p><p class="mb-3">');
   // Single newlines → line break
   const withBreaks = withParagraphs.replace(/\n/g, "<br />");
-  return '<p class="mb-3">' + withBreaks + "</p>";
+  return `<p class="mb-3">${withBreaks}</p>`;
 }

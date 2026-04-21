@@ -54,9 +54,16 @@ async function main() {
     console.error("Product is not a Printify product (no printifyProductId).");
     process.exit(1);
   }
-  console.log("Product id:", product.id, "| printifyProductId:", printifyProductId);
+  console.log(
+    "Product id:",
+    product.id,
+    "| printifyProductId:",
+    printifyProductId,
+  );
 
-  console.log("Re-syncing from Printify (overwrite: true) to align variants...");
+  console.log(
+    "Re-syncing from Printify (overwrite: true) to align variants...",
+  );
   const syncRes = await fetch(`${API_BASE}/api/admin/printify/sync`, {
     method: "POST",
     headers,
@@ -70,9 +77,14 @@ async function main() {
     console.error("Sync failed:", syncRes.status, await syncRes.text());
     process.exit(1);
   }
-  const result = (await syncRes.json()) as { success?: boolean; productId?: string };
+  const result = (await syncRes.json()) as {
+    success?: boolean;
+    productId?: string;
+  };
   console.log("Sync result:", result);
-  console.log("Done. Store variants should now match Printify (only your 2 enabled variants).");
+  console.log(
+    "Done. Store variants should now match Printify (only your 2 enabled variants).",
+  );
 }
 
 main().catch((err) => {

@@ -1,12 +1,22 @@
 import type { Metadata } from "next";
 
-import { GitBranch, Globe2, Link2, ShieldCheck, Smartphone, Sparkles } from "lucide-react";
+import {
+  GitBranch,
+  Globe2,
+  Link2,
+  ShieldCheck,
+  Smartphone,
+  Sparkles,
+} from "lucide-react";
 import Link from "next/link";
 
 import { SEO_CONFIG } from "~/app";
 import { getPublicSiteUrl } from "~/lib/app-url";
 import { cn } from "~/lib/cn";
-import { getOpenSourceLinks, type OpenSourceArea } from "~/lib/open-source-repos";
+import {
+  getOpenSourceLinks,
+  type OpenSourceArea,
+} from "~/lib/open-source-repos";
 import { GitHubIcon } from "~/ui/components/icons/github";
 import { Button } from "~/ui/primitives/button";
 
@@ -28,26 +38,23 @@ export const metadata: Metadata = {
 
 const ICONS: Record<
   OpenSourceArea,
-  { className: string; Icon: typeof Globe2; }
+  { className: string; Icon: typeof Globe2 }
 > = {
   ai: {
     className:
- "bg-gradient-to-br from-fuchsia-500 via-violet-600 to-indigo-600",
+      "bg-gradient-to-br from-fuchsia-500 via-violet-600 to-indigo-600",
     Icon: Sparkles,
   },
   mobile: {
-    className:
- "bg-gradient-to-br from-sky-500 via-blue-600 to-indigo-700",
+    className: "bg-gradient-to-br from-sky-500 via-blue-600 to-indigo-700",
     Icon: Smartphone,
   },
   smartContracts: {
-    className:
- "bg-gradient-to-br from-amber-500 via-orange-500 to-rose-600",
+    className: "bg-gradient-to-br from-amber-500 via-orange-500 to-rose-600",
     Icon: Link2,
   },
   website: {
-    className:
- "bg-gradient-to-br from-violet-500 via-purple-600 to-blue-700",
+    className: "bg-gradient-to-br from-violet-500 via-purple-600 to-blue-700",
     Icon: Globe2,
   },
 };
@@ -69,14 +76,16 @@ export default function OpenSourcePage() {
       >
         <div
           className={`
-          container mx-auto max-w-7xl px-4 text-center
-          sm:px-6
-          lg:px-8
-        `}
+            container mx-auto max-w-7xl px-4 text-center
+            sm:px-6
+            lg:px-8
+          `}
         >
-          <p className={`
-            mb-3 text-xs font-semibold tracking-[0.2em] text-primary uppercase
-          `}>
+          <p
+            className={`
+              mb-3 text-xs font-semibold tracking-[0.2em] text-primary uppercase
+            `}
+          >
             Transparency
           </p>
           <h1
@@ -92,25 +101,27 @@ export default function OpenSourcePage() {
             and hold us accountable—without trusting a black box.
           </p>
           <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-            Commerce and community both require trust. Publishing source is how we
-            earn it: you can diff our claims against the implementation, file
-            issues when something drifts, and contribute improvements the same way
-            you would any other project you rely on.
+            Commerce and community both require trust. Publishing source is how
+            we earn it: you can diff our claims against the implementation, file
+            issues when something drifts, and contribute improvements the same
+            way you would any other project you rely on.
           </p>
         </div>
       </section>
 
       <section
         className={`
-        container mx-auto max-w-7xl px-4 py-14
-        sm:px-6 sm:py-16
-        lg:px-8
-      `}
+          container mx-auto max-w-7xl px-4 py-14
+          sm:px-6 sm:py-16
+          lg:px-8
+        `}
       >
-        <div className={`
-          mb-12 rounded-lg border border-border bg-card/50 p-6
-          sm:p-8
-        `}>
+        <div
+          className={`
+            mb-12 rounded-lg border border-border bg-card/50 p-6
+            sm:p-8
+          `}
+        >
           <h2 className="font-heading text-xl font-semibold text-foreground">
             Why we publish
           </h2>
@@ -126,16 +137,18 @@ export default function OpenSourcePage() {
           </p>
           <p className="mt-3 leading-relaxed text-muted-foreground">
             This is not a stunt—open repositories are how we invite review from
-            security researchers, partners, and customers who want receipts. When
-            you find a bug, open a PR or a ticket; we triage security issues
-            separately from feature work.
+            security researchers, partners, and customers who want receipts.
+            When you find a bug, open a PR or a ticket; we triage security
+            issues separately from feature work.
           </p>
         </div>
 
-        <ul className={`
-          grid gap-6
-          sm:grid-cols-2
-        `}>
+        <ul
+          className={`
+            grid gap-6
+            sm:grid-cols-2
+          `}
+        >
           {order.map((key) => {
             const item = links[key];
             const { className: iconWrap, Icon } = ICONS[key];
@@ -147,10 +160,7 @@ export default function OpenSourcePage() {
                       flex h-full flex-col rounded-xl border border-border
                       bg-card/80
                     `,
-                    `
- p-6 
- 
-                    `,
+                    `p-6`,
                   )}
                 >
                   <div className="flex gap-4">
@@ -167,27 +177,35 @@ export default function OpenSourcePage() {
                       <Icon className="h-6 w-6" strokeWidth={1.75} />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <h3 className={`
-                        font-heading text-lg font-semibold text-foreground
-                      `}>
+                      <h3
+                        className={`
+                          font-heading text-lg font-semibold text-foreground
+                        `}
+                      >
                         {item.label}
                       </h3>
-                      <p className={`
-                        mt-1 text-sm leading-relaxed text-muted-foreground
-                      `}>
+                      <p
+                        className={`
+                          mt-1 text-sm leading-relaxed text-muted-foreground
+                        `}
+                      >
                         {item.description}
                       </p>
                     </div>
                   </div>
-                  <p className={`
-                    mt-4 text-sm leading-relaxed text-muted-foreground
-                  `}>
+                  <p
+                    className={`
+                      mt-4 text-sm leading-relaxed text-muted-foreground
+                    `}
+                  >
                     {item.extended}
                   </p>
-                  <ul className={`
-                    mt-4 list-disc space-y-1.5 pl-5 text-sm
-                    text-muted-foreground
-                  `}>
+                  <ul
+                    className={`
+                      mt-4 list-disc space-y-1.5 pl-5 text-sm
+                      text-muted-foreground
+                    `}
+                  >
                     {item.highlights.map((h) => (
                       <li key={h}>{h}</li>
                     ))}
@@ -208,10 +226,12 @@ export default function OpenSourcePage() {
           })}
         </ul>
 
-        <div className={`
-          mt-14 grid gap-6
-          md:grid-cols-2
-        `}>
+        <div
+          className={`
+            mt-14 grid gap-6
+            md:grid-cols-2
+          `}
+        >
           <div className="rounded-xl border border-border bg-muted/20 p-6">
             <div className="mb-2 flex items-center gap-2 text-primary">
               <ShieldCheck aria-hidden className="h-5 w-5" />
@@ -220,9 +240,10 @@ export default function OpenSourcePage() {
               </h2>
             </div>
             <p className="text-sm leading-relaxed text-muted-foreground">
-              Clone the repo, run the build, and compare network behavior to what
-              you see in production. If something is unclear, open a discussion
-              or issue—we would rather fix the docs than leave ambiguity in place.
+              Clone the repo, run the build, and compare network behavior to
+              what you see in production. If something is unclear, open a
+              discussion or issue—we would rather fix the docs than leave
+              ambiguity in place.
             </p>
           </div>
           <div className="rounded-xl border border-border bg-muted/20 p-6">
@@ -233,9 +254,9 @@ export default function OpenSourcePage() {
               </h2>
             </div>
             <p className="text-sm leading-relaxed text-muted-foreground">
-              We welcome focused PRs: docs, tests, accessibility, and performance
-              wins all count. For larger changes, open an issue first so we can
-              align on scope and avoid duplicate work.
+              We welcome focused PRs: docs, tests, accessibility, and
+              performance wins all count. For larger changes, open an issue
+              first so we can align on scope and avoid duplicate work.
             </p>
           </div>
         </div>

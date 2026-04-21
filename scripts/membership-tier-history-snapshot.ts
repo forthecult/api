@@ -20,10 +20,7 @@ import { eq } from "drizzle-orm";
 import { db } from "~/db";
 import { membershipTierHistoryTable } from "~/db/schema";
 import { userWalletsTable } from "~/db/schema/wallets/tables";
-import {
-  fetchUserStake,
-  getStakingProgramId,
-} from "~/lib/cult-staking";
+import { fetchUserStake, getStakingProgramId } from "~/lib/cult-staking";
 import { getMemberTierForWallet } from "~/lib/get-member-tier";
 import { getSolanaRpcUrlServer } from "~/lib/solana-pay";
 import { getActiveToken } from "~/lib/token-config";
@@ -44,9 +41,7 @@ async function main() {
 
   const programId = getStakingProgramId();
   getActiveToken(); // ensure token config loaded
-  const connection = programId
-    ? new Connection(getSolanaRpcUrlServer())
-    : null;
+  const connection = programId ? new Connection(getSolanaRpcUrlServer()) : null;
 
   const wallets = await db
     .select({

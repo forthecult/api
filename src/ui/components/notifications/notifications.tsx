@@ -113,10 +113,10 @@ export const Notifications: React.FC<NotificationsProps> = ({
                 !notification.metadata?.esimDashboardPath && (
                   <Link
                     className={`
-                    inline-flex items-center gap-1 text-xs font-medium
-                    text-primary
-                    hover:underline
-                  `}
+                      inline-flex items-center gap-1 text-xs font-medium
+                      text-primary
+                      hover:underline
+                    `}
                     href={notification.metadata.orderStatusPath as string}
                     onClick={(e) => e.stopPropagation()}
                   >

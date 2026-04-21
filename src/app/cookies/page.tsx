@@ -20,9 +20,9 @@ export default function CookiesPolicyPage() {
       <header className="mb-12 border-b border-border pb-10">
         <h1
           className={`
-          text-3xl font-bold tracking-tight text-foreground
-          sm:text-4xl
-        `}
+            text-3xl font-bold tracking-tight text-foreground
+            sm:text-4xl
+          `}
         >
           Cookies policy
         </h1>
@@ -34,9 +34,9 @@ export default function CookiesPolicyPage() {
       <div className="space-y-10">
         <section
           className={`
-          rounded-lg border border-border bg-card/50 px-5 py-5
-          sm:px-6
-        `}
+            rounded-lg border border-border bg-card/50 px-5 py-5
+            sm:px-6
+          `}
         >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             We only use essential cookies
@@ -54,9 +54,9 @@ export default function CookiesPolicyPage() {
 
         <section
           className={`
-          rounded-lg border border-border bg-card/50 px-5 py-5
-          sm:px-6
-        `}
+            rounded-lg border border-border bg-card/50 px-5 py-5
+            sm:px-6
+          `}
         >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             No &quot;bad&quot; cookies — that&apos;s why there&apos;s no popup
@@ -71,9 +71,9 @@ export default function CookiesPolicyPage() {
 
         <section
           className={`
-          rounded-lg border border-border bg-card/50 px-5 py-5
-          sm:px-6
-        `}
+            rounded-lg border border-border bg-card/50 px-5 py-5
+            sm:px-6
+          `}
         >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             We don&apos;t follow you around the internet
@@ -88,14 +88,14 @@ export default function CookiesPolicyPage() {
 
         <section
           className={`
-          rounded-lg border border-border bg-card/50 px-5 py-5
-          sm:px-6
-        `}
+            rounded-lg border border-border bg-card/50 px-5 py-5
+            sm:px-6
+          `}
         >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Summary
           </h2>
-          <ul className="mt-3 space-y-2 text-muted-foreground" role="list">
+          <ul className="mt-3 space-y-2 text-muted-foreground">
             <li className="flex gap-2 leading-relaxed">
               <span
                 aria-hidden

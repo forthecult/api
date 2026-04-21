@@ -7,10 +7,10 @@ import { useRouter } from "next/navigation";
 import * as React from "react";
 
 import { cn } from "~/lib/cn";
-import { PRELOAD_CART } from "~/ui/components/cart";
 import { useCountryCurrency } from "~/lib/hooks/use-country-currency";
 import { useShippingCountry } from "~/lib/hooks/use-shipping-country";
 import { isShippingExcluded } from "~/lib/shipping-restrictions";
+import { PRELOAD_CART } from "~/ui/components/cart";
 import { CryptoPrice } from "~/ui/components/CryptoPrice";
 import { FiatPrice } from "~/ui/components/FiatPrice";
 import { TokenGateGuard } from "~/ui/components/token-gate/TokenGateGuard";
@@ -161,7 +161,7 @@ function ProductCardInner({
     setHoverImageError(false);
     setHoverImageLoaded(false);
     setPrimaryImageLoaded(false);
-  }, [product.id, product.image, hoverImage]);
+  }, []);
 
   /** Only data: and http: skip Next Image optimization; https remotes use remotePatterns and get resized/WebP. */
   const isExternalImage =
@@ -229,7 +229,7 @@ function ProductCardInner({
               relative flex h-full flex-col overflow-hidden rounded-lg
               border-[#2A2A2A] bg-[#1A1A1A] py-0 transition-all duration-300
               ease-in-out will-change-transform
- hover:-translate-y-0.5
+              hover:-translate-y-0.5
             `,
             isHovered && "border-[#C4873A]/20 ring-1 ring-[#C4873A]/20",
           )}
@@ -249,11 +249,11 @@ function ProductCardInner({
             {/* Blur layer so real image fades in over it instead of popping over white */}
             {imageSrc !== "/placeholder.svg" && (
               <div
+                aria-hidden
                 className="absolute inset-0 bg-cover bg-center opacity-100"
                 style={{
                   backgroundImage: `url(${BLUR_DATA_URL})`,
                 }}
-                aria-hidden
               />
             )}
             {(imageSrc === "/placeholder.svg" || product.image) && (
@@ -277,9 +277,7 @@ function ProductCardInner({
                 fill
                 onError={() => setImageError(true)}
                 onLoad={() => setPrimaryImageLoaded(true)}
-                placeholder={
-                  imageSrc !== "/placeholder.svg" ? "blur" : "empty"
-                }
+                placeholder={imageSrc !== "/placeholder.svg" ? "blur" : "empty"}
                 priority={priority}
                 sizes="(max-width: 640px) 50vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 284px"
                 src={imageSrc}
@@ -306,7 +304,8 @@ function ProductCardInner({
                 sizes="(max-width: 640px) 50vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 284px"
                 src={hoverImage}
                 unoptimized={
-                  hoverImage.startsWith("data:") || hoverImage.startsWith("http://")
+                  hoverImage.startsWith("data:") ||
+                  hoverImage.startsWith("http://")
                 }
               />
             )}
@@ -340,9 +339,9 @@ function ProductCardInner({
               >
                 <div
                   className={`
-                  flex size-14 items-center justify-center rounded-full
- bg-background 
-                `}
+                    flex size-14 items-center justify-center rounded-full
+                    bg-background
+                  `}
                 >
                   <Lock aria-hidden className="h-7 w-7 text-primary" />
                 </div>
@@ -392,9 +391,9 @@ function ProductCardInner({
                 {isNew && (
                   <Badge
                     className={`
-                    bg-[#C4873A] font-semibold text-[#111111]
-                    hover:bg-[#C4873A]
-                  `}
+                      bg-[#C4873A] font-semibold text-[#111111]
+                      hover:bg-[#C4873A]
+                    `}
                   >
                     New
                   </Badge>
@@ -414,9 +413,9 @@ function ProductCardInner({
             {!isGated && discount > 0 && (
               <Badge
                 className={`
-                absolute top-2 right-2 z-[5] bg-destructive
-                text-destructive-foreground
-              `}
+                  absolute top-2 right-2 z-[5] bg-destructive
+                  text-destructive-foreground
+                `}
               >
                 {discount}% OFF
               </Badge>
@@ -531,12 +530,12 @@ function ProductCardInner({
                   isAddingToCart && "opacity-70",
                 )}
                 disabled={isAddingToCart || product.inStock === false}
+                onClick={handleAddToCart}
                 onMouseEnter={() => {
                   if (typeof window !== "undefined") {
                     window.dispatchEvent(new CustomEvent(PRELOAD_CART));
                   }
                 }}
-                onClick={handleAddToCart}
                 variant={product.hasVariants ? "outline" : "default"}
               >
                 {isAddingToCart ? (
@@ -582,9 +581,9 @@ function ProductCardInner({
                 {unavailableInCountry ? (
                   <span
                     className={`
-                    text-xs font-medium text-amber-700
-                    dark:text-amber-400
-                  `}
+                      text-xs font-medium text-amber-700
+                      dark:text-amber-400
+                    `}
                   >
                     Unavailable in your country
                   </span>
@@ -596,12 +595,12 @@ function ProductCardInner({
                   <Button
                     className="h-8 w-8 rounded-full"
                     disabled={isAddingToCart}
+                    onClick={handleAddToCart}
                     onMouseEnter={() => {
                       if (typeof window !== "undefined") {
                         window.dispatchEvent(new CustomEvent(PRELOAD_CART));
                       }
                     }}
-                    onClick={handleAddToCart}
                     size="icon"
                     variant="ghost"
                   >
@@ -628,9 +627,9 @@ function ProductCardInner({
         <Dialog onOpenChange={setTokenGateOpen} open={tokenGateOpen}>
           <DialogContent
             className={`
-            max-h-[90vh] overflow-y-auto
-            sm:max-w-md
-          `}
+              max-h-[90vh] overflow-y-auto
+              sm:max-w-md
+            `}
           >
             <DialogTitle className="sr-only">
               {product.name} — sign in to view

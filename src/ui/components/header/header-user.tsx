@@ -56,7 +56,7 @@ export function HeaderUserDropdown({
     fetch("/api/user/membership", { credentials: "include" })
       .then((r) => (r.ok ? r.json() : null))
       .then((raw: unknown) => {
-        const data = raw as { tierName?: null | string } | null;
+        const data = raw as null | { tierName?: null | string };
         if (!cancelled && data?.tierName) setTierName(data.tierName);
       })
       .catch(() => {});
@@ -125,7 +125,11 @@ export function HeaderUserDropdown({
               {userEmail}
             </p>
             {tierName && (
-              <p className="flex items-center gap-1 text-xs text-muted-foreground">
+              <p
+                className={`
+                  flex items-center gap-1 text-xs text-muted-foreground
+                `}
+              >
                 <Shield className="h-3 w-3 shrink-0" />
                 {tierName} Member
               </p>

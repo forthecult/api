@@ -3,9 +3,9 @@ import { relations } from "drizzle-orm";
 import { userTable } from "../users/tables";
 import {
   aiAgentTable,
+  aiChatConversationTable,
   aiEncryptedBackupTable,
   aiMemoryTable,
-  aiChatConversationTable,
   aiMessagingChannelTable,
   aiMessagingUserLinkTable,
   aiRagChunkTable,
@@ -75,4 +75,3 @@ export const aiMessagingUserLinkRelations = relations(
     }),
   }),
 );
-

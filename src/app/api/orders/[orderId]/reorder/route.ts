@@ -127,7 +127,7 @@ export async function GET(
         .where(eq(productsTable.id, pid))
         .limit(1);
 
-      if (!product || !product.published) {
+      if (!product?.published) {
         result.push({
           available: false,
           category: "",

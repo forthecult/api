@@ -205,7 +205,7 @@ export default function AdminCategoryEditPage() {
       e.preventDefault();
       setImageDropActive(false);
       const file = e.dataTransfer.files?.[0];
-      if (file && file.type.startsWith("image/")) uploadImageFile(file);
+      if (file?.type.startsWith("image/")) uploadImageFile(file);
     },
     [uploadImageFile],
   );
@@ -537,8 +537,8 @@ export default function AdminCategoryEditPage() {
     return (
       <div
         className={`
-        flex min-h-[200px] items-center justify-center text-muted-foreground
-      `}
+          flex min-h-[200px] items-center justify-center text-muted-foreground
+        `}
       >
         Loading…
       </div>
@@ -559,9 +559,9 @@ export default function AdminCategoryEditPage() {
         </Link>
         <div
           className={`
-          rounded-lg border border-red-200 bg-red-50 p-4 text-red-800
-          dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
-        `}
+            rounded-lg border border-red-200 bg-red-50 p-4 text-red-800
+            dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
+          `}
         >
           {error}
         </div>
@@ -579,9 +579,9 @@ export default function AdminCategoryEditPage() {
     <div className="space-y-6">
       <div
         className={`
-        flex flex-col gap-4
-        sm:flex-row sm:items-center sm:justify-between
-      `}
+          flex flex-col gap-4
+          sm:flex-row sm:items-center sm:justify-between
+        `}
       >
         <div className="flex flex-wrap items-center gap-4">
           <h2 className="text-2xl font-semibold tracking-tight">
@@ -626,9 +626,9 @@ export default function AdminCategoryEditPage() {
       {error && (
         <div
           className={`
-          rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800
-          dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
-        `}
+            rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800
+            dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
+          `}
         >
           {error}
         </div>
@@ -650,9 +650,9 @@ export default function AdminCategoryEditPage() {
             <div className="space-y-2">
               <p
                 className={`
-                font-medium text-green-800
-                dark:text-green-200
-              `}
+                  font-medium text-green-800
+                  dark:text-green-200
+                `}
               >
                 Active perpetual rules ({savedRules.length}) — saved for future
                 products
@@ -732,10 +732,10 @@ export default function AdminCategoryEditPage() {
           )}
           <div
             className={`
-            grid gap-4
-            sm:grid-cols-2
-            lg:grid-cols-4
-          `}
+              grid gap-4
+              sm:grid-cols-2
+              lg:grid-cols-4
+            `}
           >
             <div className="space-y-2">
               <label className={labelClass} htmlFor="bulk-title">
@@ -867,9 +867,9 @@ export default function AdminCategoryEditPage() {
           <CardContent className="space-y-6">
             <div
               className={`
-              grid gap-6
-              sm:grid-cols-2
-            `}
+                grid gap-6
+                sm:grid-cols-2
+              `}
             >
               <div className="space-y-2">
                 <label className={labelClass} htmlFor="name">
@@ -962,11 +962,11 @@ export default function AdminCategoryEditPage() {
                 <div className="relative mt-2 flex items-center gap-3">
                   <div
                     className={`
-                    relative size-20 shrink-0 overflow-hidden rounded-md border
-                    bg-muted
-                  `}
+                      relative size-20 shrink-0 overflow-hidden rounded-md
+                      border bg-muted
+                    `}
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    {}
                     <img
                       alt=""
                       className="size-full object-cover"
@@ -983,9 +983,9 @@ export default function AdminCategoryEditPage() {
 
             <div
               className={`
-              grid gap-6
-              sm:grid-cols-2
-            `}
+                grid gap-6
+                sm:grid-cols-2
+              `}
             >
               <div className="space-y-2">
                 <label className={labelClass} htmlFor="level">

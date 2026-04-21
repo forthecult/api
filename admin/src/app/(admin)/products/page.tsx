@@ -77,7 +77,7 @@ function formatPrice(cents: number): string {
   }).format(cents / 100);
 }
 
-const SORTABLE_COLUMNS = [
+const _sortableColumns = [
   "name",
   "category",
   "brand",
@@ -86,7 +86,7 @@ const SORTABLE_COLUMNS = [
   "published",
   "inStock",
 ] as const;
-type SortBy = (typeof SORTABLE_COLUMNS)[number];
+type SortBy = (typeof _sortableColumns)[number];
 
 const COLUMNS = [
   { key: "name", label: "Name", sortKey: "name" as const },
@@ -361,7 +361,7 @@ export default function AdminProductsPage() {
   const allSelected =
     visibleIds.length > 0 && visibleIds.every((id) => selectedIds.includes(id));
   const someSelected = selectedIds.length > 0;
-  const isIndeterminate = someSelected && !allSelected;
+  const _isIndeterminate = someSelected && !allSelected;
 
   const handleSelectAll = useCallback(() => {
     if (allSelected) {
@@ -456,9 +456,9 @@ export default function AdminProductsPage() {
     return (
       <div
         className={`
-        rounded-lg border border-red-200 bg-red-50 p-4 text-red-800
-        dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
-      `}
+          rounded-lg border border-red-200 bg-red-50 p-4 text-red-800
+          dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
+        `}
       >
         {error}
         <Button
@@ -480,9 +480,9 @@ export default function AdminProductsPage() {
     <div className="space-y-6">
       <div
         className={`
-        flex flex-col gap-4
-        sm:flex-row sm:items-center sm:justify-between
-      `}
+          flex flex-col gap-4
+          sm:flex-row sm:items-center sm:justify-between
+        `}
       >
         <h2 className="text-2xl font-semibold tracking-tight">Product List</h2>
         <Link href="/products/create">
@@ -563,8 +563,8 @@ export default function AdminProductsPage() {
           {syncState?.loading && (
             <span
               className={`
-              flex items-center gap-1.5 text-sm text-muted-foreground
-            `}
+                flex items-center gap-1.5 text-sm text-muted-foreground
+              `}
             >
               <RefreshCw className="h-4 w-4 animate-spin" />
               {syncVendorLabel(syncState.vendor)}…
@@ -598,17 +598,17 @@ export default function AdminProductsPage() {
         <CardHeader className="space-y-4">
           <div
             className={`
-            flex flex-col gap-4
-            sm:flex-row sm:items-center sm:justify-between
-          `}
+              flex flex-col gap-4
+              sm:flex-row sm:items-center sm:justify-between
+            `}
           >
             <CardTitle className="sr-only">Product list</CardTitle>
             <div className="relative max-w-md flex-1">
               <Search
                 className={`
-                absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2
-                text-muted-foreground
-              `}
+                  absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2
+                  text-muted-foreground
+                `}
               />
               <input
                 aria-label="Search products"
@@ -706,9 +706,9 @@ export default function AdminProductsPage() {
           {loading ? (
             <div
               className={`
-              flex min-h-[200px] items-center justify-center
-              text-muted-foreground
-            `}
+                flex min-h-[200px] items-center justify-center
+                text-muted-foreground
+              `}
             >
               Loading…
             </div>
@@ -717,9 +717,9 @@ export default function AdminProductsPage() {
               {someSelected && (
                 <div
                   className={`
-                  mb-4 flex flex-wrap items-center gap-3 rounded-md border
-                  border-border bg-muted/30 px-4 py-3
-                `}
+                    mb-4 flex flex-wrap items-center gap-3 rounded-md border
+                    border-border bg-muted/30 px-4 py-3
+                  `}
                 >
                   <span className="text-sm font-medium">
                     {selectedIds.length} selected
@@ -773,16 +773,16 @@ export default function AdminProductsPage() {
                   <thead>
                     <tr
                       className={`
-                      border-b border-border bg-muted/50 text-left text-xs
-                      font-semibold tracking-wider text-muted-foreground
-                      uppercase
-                    `}
+                        border-b border-border bg-muted/50 text-left text-xs
+                        font-semibold tracking-wider text-muted-foreground
+                        uppercase
+                      `}
                     >
                       <th className="w-10 p-4 whitespace-nowrap" scope="col">
                         <label
                           className={`
-                          flex cursor-pointer items-center justify-center
-                        `}
+                            flex cursor-pointer items-center justify-center
+                          `}
                         >
                           <input
                             aria-label="Select all products on this page"
@@ -888,16 +888,16 @@ export default function AdminProductsPage() {
                       data.items.map((product) => (
                         <tr
                           className={`
-                          border-b
-                          last:border-0
-                        `}
+                            border-b
+                            last:border-0
+                          `}
                           key={product.id}
                         >
                           <td className="w-10 p-4">
                             <label
                               className={`
-                              flex cursor-pointer items-center justify-center
-                            `}
+                                flex cursor-pointer items-center justify-center
+                              `}
                             >
                               <input
                                 aria-label={`Select ${product.name}`}
@@ -912,13 +912,12 @@ export default function AdminProductsPage() {
                             <div className="flex items-center gap-3">
                               <div
                                 className={`
-                                relative flex h-10 w-10 shrink-0 items-center
-                                justify-center overflow-hidden rounded-md border
-                                bg-muted
-                              `}
+                                  relative flex h-10 w-10 shrink-0 items-center
+                                  justify-center overflow-hidden rounded-md
+                                  border bg-muted
+                                `}
                               >
                                 {product.imageUrl ? (
-                                  // eslint-disable-next-line @next/next/no-img-element
                                   <img
                                     alt=""
                                     className="size-full object-cover"
@@ -928,9 +927,7 @@ export default function AdminProductsPage() {
                                   />
                                 ) : (
                                   <span
-                                    className={`
-                                    text-xs text-muted-foreground
-                                  `}
+                                    className={`text-xs text-muted-foreground`}
                                   >
                                     —
                                   </span>
@@ -949,8 +946,8 @@ export default function AdminProductsPage() {
                                 </Link>
                                 <p
                                   className={`
-                                  font-mono text-xs text-muted-foreground
-                                `}
+                                    font-mono text-xs text-muted-foreground
+                                  `}
                                 >
                                   #{product.id.slice(0, 8)}
                                 </p>
@@ -1076,8 +1073,8 @@ export default function AdminProductsPage() {
               {data.items.length > 0 && (
                 <div
                   className={`
-                  mt-4 flex items-center justify-center gap-2 border-t pt-4
-                `}
+                    mt-4 flex items-center justify-center gap-2 border-t pt-4
+                  `}
                 >
                   <Button
                     aria-label="Previous page"

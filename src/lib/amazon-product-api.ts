@@ -7,23 +7,23 @@
 
 export interface AmazonProduct {
   asin: string;
-  source: "amazon";
-  name: string;
-  price: { usd: number; crypto: Record<string, string> };
   imageUrl?: string;
+  inStock: boolean;
+  isPrime?: boolean;
+  name: string;
+  price: { crypto: Record<string, string>; usd: number };
+  productUrl: string;
   rating?: number;
   reviewCount?: number;
-  isPrime?: boolean;
-  productUrl: string;
-  inStock: boolean;
+  source: "amazon";
 }
 
 export interface SearchAmazonProductsParams {
-  query: string;
   limit?: number;
   page?: number;
-  priceMin?: number;
   priceMax?: number;
+  priceMin?: number;
+  query: string;
 }
 
 export interface SearchAmazonProductsResult {
@@ -62,19 +62,166 @@ interface CachedToken {
 
 let cachedToken: CachedToken | null = null;
 
-function getConfig() {
-  const credentialId = process.env.AMAZON_CREDENTIAL_ID;
-  const credentialSecret = process.env.AMAZON_CREDENTIAL_SECRET;
-  const partnerTag = process.env.AMAZON_PARTNER_TAG;
-  const marketplace = process.env.AMAZON_MARKETPLACE ?? "www.amazon.com";
-  // version: "2.1" for NA, "2.2" for EU, "2.3" for FE
-  const version = process.env.AMAZON_API_VERSION ?? "2.1";
-  return { credentialId, credentialSecret, partnerTag, marketplace, version };
+interface CreatorsApiItem {
+  asin?: string;
+  customerReviews?: { count?: number; starRating?: { value?: number } };
+  detailPageUrl?: string;
+  images?: {
+    primary?: { medium?: { url?: string }; small?: { url?: string } };
+  };
+  itemInfo?: {
+    title?: { displayValue?: string };
+  };
+  offersV2?: {
+    listings?: {
+      availability?: { type?: string };
+      deliveryInfo?: { isPrimeEligible?: boolean };
+      price?: { amount?: number; displayAmount?: string };
+    }[];
+  };
+}
+
+interface GetItemsResponse {
+  errors?: { code?: string; message?: string }[];
+  itemsResult?: {
+    items?: CreatorsApiItem[];
+  };
+}
+
+interface SearchItemsResponse {
+  errors?: { code?: string; message?: string }[];
+  searchResult?: {
+    items?: CreatorsApiItem[];
+    totalResultCount?: number;
+  };
+}
+
+/**
+ * Get a single Amazon product by ASIN.
+ */
+export async function getAmazonProduct(
+  asin: string,
+): Promise<AmazonProduct | null> {
+  const [product] = await getAmazonProducts([asin]);
+  return product ?? null;
+}
+
+/**
+ * Get multiple Amazon products by ASIN (up to 10). Returns only successfully resolved items.
+ */
+export async function getAmazonProducts(
+  asins: string[],
+): Promise<AmazonProduct[]> {
+  if (asins.length === 0) return [];
+
+  const { marketplace, partnerTag, version } = getConfig();
+  if (!partnerTag) {
+    throw new Error("AMAZON_PARTNER_TAG must be set");
+  }
+
+  const token = await getAccessToken();
+  const ids = asins.slice(0, 10).filter((id) => id?.trim());
+
+  const requestBody = {
+    itemIds: ids,
+    partnerTag,
+    resources: GET_ITEMS_RESOURCES,
+  };
+
+  const response = await fetch(`${CREATORS_API_HOST}/get-items`, {
+    body: JSON.stringify(requestBody),
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json; charset=utf-8",
+      "x-api-version": version,
+      "x-marketplace": marketplace,
+    },
+    method: "POST",
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(
+      `Creators API getItems failed: ${response.status} - ${text}`,
+    );
+  }
+
+  const data = (await response.json()) as GetItemsResponse;
+
+  if (data.errors?.length) {
+    const errMsg = data.errors.map((e) => e.message).join(", ");
+    throw new Error(`Creators API getItems errors: ${errMsg}`);
+  }
+
+  const items = data.itemsResult?.items ?? [];
+
+  return items
+    .map((item) => normalizeItem(item, partnerTag))
+    .filter((p): p is AmazonProduct => p != null);
 }
 
 export function isAmazonProductApiConfigured(): boolean {
   const { credentialId, credentialSecret, partnerTag } = getConfig();
   return Boolean(credentialId && credentialSecret && partnerTag);
+}
+
+/**
+ * Search Amazon products via Creators API searchItems.
+ */
+export async function searchAmazonProducts(
+  params: SearchAmazonProductsParams,
+): Promise<SearchAmazonProductsResult> {
+  const { marketplace, partnerTag, version } = getConfig();
+  if (!partnerTag) {
+    throw new Error("AMAZON_PARTNER_TAG must be set");
+  }
+
+  const token = await getAccessToken();
+  const limit = Math.min(10, Math.max(1, params.limit ?? 10));
+  const page = Math.max(1, params.page ?? 1);
+
+  const requestBody = {
+    itemCount: limit,
+    itemPage: page,
+    keywords: params.query.trim(),
+    partnerTag,
+    resources: SEARCH_RESOURCES,
+    searchIndex: SEARCH_INDEX,
+  };
+
+  const response = await fetch(`${CREATORS_API_HOST}/search-items`, {
+    body: JSON.stringify(requestBody),
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json; charset=utf-8",
+      "x-api-version": version,
+      "x-marketplace": marketplace,
+    },
+    method: "POST",
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(
+      `Creators API searchItems failed: ${response.status} - ${text}`,
+    );
+  }
+
+  const data = (await response.json()) as SearchItemsResponse;
+
+  if (data.errors?.length) {
+    const errMsg = data.errors.map((e) => e.message).join(", ");
+    throw new Error(`Creators API searchItems errors: ${errMsg}`);
+  }
+
+  const items = data.searchResult?.items ?? [];
+  const totalResultCount = data.searchResult?.totalResultCount;
+
+  const products = items
+    .map((item) => normalizeItem(item, partnerTag))
+    .filter((p): p is AmazonProduct => p != null);
+
+  return { products, totalResultCount };
 }
 
 /**
@@ -96,21 +243,23 @@ async function getAccessToken(): Promise<string> {
   }
 
   const response = await fetch(AUTH_ENDPOINT, {
-    method: "POST",
+    body: new URLSearchParams({
+      client_id: credentialId,
+      client_secret: credentialSecret,
+      grant_type: "client_credentials",
+      scope: AUTH_SCOPE,
+    }).toString(),
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
     },
-    body: new URLSearchParams({
-      grant_type: "client_credentials",
-      client_id: credentialId,
-      client_secret: credentialSecret,
-      scope: AUTH_SCOPE,
-    }).toString(),
+    method: "POST",
   });
 
   if (!response.ok) {
     const text = await response.text();
-    throw new Error(`Failed to get Amazon OAuth token: ${response.status} - ${text}`);
+    throw new Error(
+      `Failed to get Amazon OAuth token: ${response.status} - ${text}`,
+    );
   }
 
   const data = (await response.json()) as {
@@ -127,24 +276,15 @@ async function getAccessToken(): Promise<string> {
   return cachedToken.accessToken;
 }
 
-type CreatorsApiItem = {
-  asin?: string;
-  detailPageUrl?: string;
-  images?: {
-    primary?: { medium?: { url?: string }; small?: { url?: string } };
-  };
-  itemInfo?: {
-    title?: { displayValue?: string };
-  };
-  offersV2?: {
-    listings?: Array<{
-      price?: { amount?: number; displayAmount?: string };
-      deliveryInfo?: { isPrimeEligible?: boolean };
-      availability?: { type?: string };
-    }>;
-  };
-  customerReviews?: { starRating?: { value?: number }; count?: number };
-};
+function getConfig() {
+  const credentialId = process.env.AMAZON_CREDENTIAL_ID;
+  const credentialSecret = process.env.AMAZON_CREDENTIAL_SECRET;
+  const partnerTag = process.env.AMAZON_PARTNER_TAG;
+  const marketplace = process.env.AMAZON_MARKETPLACE ?? "www.amazon.com";
+  // version: "2.1" for NA, "2.2" for EU, "2.3" for FE
+  const version = process.env.AMAZON_API_VERSION ?? "2.1";
+  return { credentialId, credentialSecret, marketplace, partnerTag, version };
+}
 
 function normalizeItem(
   item: CreatorsApiItem,
@@ -170,148 +310,14 @@ function normalizeItem(
 
   return {
     asin,
-    source: "amazon",
-    name: title,
-    price: { usd, crypto: {} },
     imageUrl: image ?? undefined,
+    inStock,
+    isPrime: listing?.deliveryInfo?.isPrimeEligible ?? false,
+    name: title,
+    price: { crypto: {}, usd },
+    productUrl,
     rating: item.customerReviews?.starRating?.value,
     reviewCount: item.customerReviews?.count,
-    isPrime: listing?.deliveryInfo?.isPrimeEligible ?? false,
-    productUrl,
-    inStock,
+    source: "amazon",
   };
-}
-
-interface SearchItemsResponse {
-  searchResult?: {
-    items?: CreatorsApiItem[];
-    totalResultCount?: number;
-  };
-  errors?: Array<{ code?: string; message?: string }>;
-}
-
-interface GetItemsResponse {
-  itemsResult?: {
-    items?: CreatorsApiItem[];
-  };
-  errors?: Array<{ code?: string; message?: string }>;
-}
-
-/**
- * Search Amazon products via Creators API searchItems.
- */
-export async function searchAmazonProducts(
-  params: SearchAmazonProductsParams,
-): Promise<SearchAmazonProductsResult> {
-  const { partnerTag, marketplace, version } = getConfig();
-  if (!partnerTag) {
-    throw new Error("AMAZON_PARTNER_TAG must be set");
-  }
-
-  const token = await getAccessToken();
-  const limit = Math.min(10, Math.max(1, params.limit ?? 10));
-  const page = Math.max(1, params.page ?? 1);
-
-  const requestBody = {
-    partnerTag,
-    keywords: params.query.trim(),
-    searchIndex: SEARCH_INDEX,
-    itemCount: limit,
-    itemPage: page,
-    resources: SEARCH_RESOURCES,
-  };
-
-  const response = await fetch(`${CREATORS_API_HOST}/search-items`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json; charset=utf-8",
-      "x-marketplace": marketplace,
-      "x-api-version": version,
-    },
-    body: JSON.stringify(requestBody),
-  });
-
-  if (!response.ok) {
-    const text = await response.text();
-    throw new Error(`Creators API searchItems failed: ${response.status} - ${text}`);
-  }
-
-  const data = (await response.json()) as SearchItemsResponse;
-
-  if (data.errors?.length) {
-    const errMsg = data.errors.map((e) => e.message).join(", ");
-    throw new Error(`Creators API searchItems errors: ${errMsg}`);
-  }
-
-  const items = data.searchResult?.items ?? [];
-  const totalResultCount = data.searchResult?.totalResultCount;
-
-  const products = items
-    .map((item) => normalizeItem(item, partnerTag))
-    .filter((p): p is AmazonProduct => p != null);
-
-  return { products, totalResultCount };
-}
-
-/**
- * Get a single Amazon product by ASIN.
- */
-export async function getAmazonProduct(
-  asin: string,
-): Promise<AmazonProduct | null> {
-  const [product] = await getAmazonProducts([asin]);
-  return product ?? null;
-}
-
-/**
- * Get multiple Amazon products by ASIN (up to 10). Returns only successfully resolved items.
- */
-export async function getAmazonProducts(
-  asins: string[],
-): Promise<AmazonProduct[]> {
-  if (asins.length === 0) return [];
-
-  const { partnerTag, marketplace, version } = getConfig();
-  if (!partnerTag) {
-    throw new Error("AMAZON_PARTNER_TAG must be set");
-  }
-
-  const token = await getAccessToken();
-  const ids = asins.slice(0, 10).filter((id) => id?.trim());
-
-  const requestBody = {
-    partnerTag,
-    itemIds: ids,
-    resources: GET_ITEMS_RESOURCES,
-  };
-
-  const response = await fetch(`${CREATORS_API_HOST}/get-items`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json; charset=utf-8",
-      "x-marketplace": marketplace,
-      "x-api-version": version,
-    },
-    body: JSON.stringify(requestBody),
-  });
-
-  if (!response.ok) {
-    const text = await response.text();
-    throw new Error(`Creators API getItems failed: ${response.status} - ${text}`);
-  }
-
-  const data = (await response.json()) as GetItemsResponse;
-
-  if (data.errors?.length) {
-    const errMsg = data.errors.map((e) => e.message).join(", ");
-    throw new Error(`Creators API getItems errors: ${errMsg}`);
-  }
-
-  const items = data.itemsResult?.items ?? [];
-
-  return items
-    .map((item) => normalizeItem(item, partnerTag))
-    .filter((p): p is AmazonProduct => p != null);
 }

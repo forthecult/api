@@ -80,7 +80,7 @@ export async function userMeetsTokenHolderCondition(
  * Check EVM ERC20 balance for a wallet. Returns raw amount (with decimals).
  */
 async function getEvmTokenBalance(
-  chainId: number,
+  _chainId: number,
   tokenAddress: `0x${string}`,
   walletAddress: `0x${string}`,
 ): Promise<bigint> {

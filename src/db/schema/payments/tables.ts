@@ -23,14 +23,14 @@ export const paymentMethodSettingTable = pgTable("payment_method_setting", {
 
 /** Maps app users to Stripe Customer IDs for subscription billing. */
 export const stripeCustomerTable = pgTable("stripe_customer", {
-  userId: text("user_id")
-    .notNull()
-    .primaryKey()
-    .references(() => userTable.id, { onDelete: "cascade" }),
-  stripeCustomerId: text("stripe_customer_id").notNull().unique(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  stripeCustomerId: text("stripe_customer_id").notNull().unique(),
   updatedAt: timestamp("updated_at")
     .defaultNow()
     .$onUpdate(() => new Date())
     .notNull(),
+  userId: text("user_id")
+    .notNull()
+    .primaryKey()
+    .references(() => userTable.id, { onDelete: "cascade" }),
 });

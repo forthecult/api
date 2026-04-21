@@ -1,20 +1,19 @@
 "use client";
 
+import type { Stripe } from "@stripe/stripe-js";
+
 import {
   Elements,
   ExpressCheckoutElement,
   useElements,
   useStripe,
 } from "@stripe/react-stripe-js";
-import type { Stripe } from "@stripe/stripe-js";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import {
-  getStripePromise,
-  setStripePromiseFromLoad,
-} from "../stripe-preload";
 import type { OrderPayload } from "../checkout-shared";
 import type { ShippingAddressFormRef } from "./ShippingAddressForm";
+
+import { getStripePromise, setStripePromiseFromLoad } from "../stripe-preload";
 
 const STRIPE_PUBLISHABLE_KEY =
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? "";
@@ -37,9 +36,8 @@ export function ExpressCheckout({
   totalCents,
 }: ExpressCheckoutProps) {
   // Use preloaded Stripe promise if available; otherwise load when visible and enabled.
-  const [stripePromise, setStripePromise] = useState<null | Promise<Stripe | null>>(
-    () => getStripePromise() ?? null,
-  );
+  const [stripePromise, setStripePromise] =
+    useState<null | Promise<null | Stripe>>(() => getStripePromise() ?? null);
   useEffect(() => {
     if (!stripeEnabled || !STRIPE_PUBLISHABLE_KEY || totalCents <= 0) return;
     if (stripePromise) return;
@@ -51,7 +49,9 @@ export function ExpressCheckout({
         setStripePromise(p);
       }
     });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [stripeEnabled, totalCents, stripePromise]);
 
   const elementsOptions = useMemo(

@@ -276,9 +276,9 @@ export function DashboardAiChannelsClient() {
           ) : (
             <>
               Your public site address for integrations could not be determined
-              right now. You can still copy the webhook paths below; if Telegram,
-              Discord, or Slack do not connect after you save, try again later or
-              contact support.
+              right now. You can still copy the webhook paths below; if
+              Telegram, Discord, or Slack do not connect after you save, try
+              again later or contact support.
             </>
           )}
         </p>
@@ -346,10 +346,12 @@ export function DashboardAiChannelsClient() {
               </p>
             ) : null}
             {tg?.telegramChatLinked ? (
-              <p className={`
-                text-emerald-600
-                dark:text-emerald-400
-              `}>
+              <p
+                className={`
+                  text-emerald-600
+                  dark:text-emerald-400
+                `}
+              >
                 Telegram chat linked.
               </p>
             ) : null}
@@ -402,9 +404,10 @@ export function DashboardAiChannelsClient() {
             token. Set the Interactions endpoint URL to the webhook below
             (POST). We register a{" "}
             <code className="rounded bg-muted px-1 py-0.5 text-xs">/ftc</code>{" "}
-            slash command with a <code className={`
-              rounded bg-muted px-1 py-0.5 text-xs
-            `}>message</code>{" "}
+            slash command with a{" "}
+            <code className={`rounded bg-muted px-1 py-0.5 text-xs`}>
+              message
+            </code>{" "}
             option.
           </CardDescription>
         </CardHeader>
@@ -423,7 +426,9 @@ export function DashboardAiChannelsClient() {
             ) : null}
             {dc?.discordLinkCode ? (
               <p>
-                <span className="font-medium">Link your FTC account (slash + DM)</span>{" "}
+                <span className="font-medium">
+                  Link your FTC account (slash + DM)
+                </span>{" "}
                 <code className="rounded bg-muted px-1 py-0.5 text-xs break-all">
                   {dc.discordLinkCode}
                 </code>{" "}
@@ -439,8 +444,10 @@ export function DashboardAiChannelsClient() {
               </p>
             ) : null}
             <p className="text-muted-foreground">
-              <span className="font-medium text-foreground">DM chat (no slash):</span> run the
-              long-lived gateway worker (
+              <span className="font-medium text-foreground">
+                DM chat (no slash):
+              </span>{" "}
+              run the long-lived gateway worker (
               <code className="rounded bg-muted px-1 py-0.5 text-xs">
                 bun run discord-gateway
               </code>
@@ -602,9 +609,9 @@ export function DashboardAiChannelsClient() {
             Not wired here yet. Two common paths:
           </CardDescription>
         </CardHeader>
-        <CardContent className={`
-          space-y-3 text-sm leading-relaxed text-muted-foreground
-        `}>
+        <CardContent
+          className={`space-y-3 text-sm leading-relaxed text-muted-foreground`}
+        >
           <p>
             <strong className="text-foreground">Meta Cloud API</strong> — You
             work directly with Meta: Business verification, a WhatsApp Business

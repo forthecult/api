@@ -58,7 +58,8 @@ const MOBILE_BREAKPOINT_PX = 768;
 /** Load Sideshift script on demand and open the widget. No network cost until first click. */
 function loadSideshiftAndShow(): void {
   if (typeof window === "undefined") return;
-  (window as unknown as Record<string, unknown>).__SIDESHIFT__ = SIDESHIFT_CONFIG;
+  (window as unknown as Record<string, unknown>).__SIDESHIFT__ =
+    SIDESHIFT_CONFIG;
   const w = window as unknown as { sideshift?: { show: () => void } };
 
   const tryShow = () => {
@@ -71,7 +72,9 @@ function loadSideshiftAndShow(): void {
 
   if (tryShow()) return;
 
-  const existing = document.querySelector(`script[src="${SIDESHIFT_SCRIPT_URL}"]`);
+  const existing = document.querySelector(
+    `script[src="${SIDESHIFT_SCRIPT_URL}"]`,
+  );
   if (existing) {
     existing.addEventListener("load", () => {
       tryShow() || scheduleRetry();
@@ -195,32 +198,36 @@ export function FooterBottom({
       >
         {fiatPrice != null && currentCrypto && (
           <button
-            type="button"
             aria-label="Shift crypto — open Sideshift"
             className={`
-              font-mono-crypto flex cursor-pointer items-center gap-1.5 font-medium
-              rounded-sm transition-opacity hover:opacity-80
+              font-mono-crypto flex cursor-pointer items-center gap-1.5
+              rounded-sm font-medium transition-opacity
+              hover:opacity-80
               ${
                 selectedCrypto === "SOL" ||
                 selectedCrypto === "PUMP" ||
                 selectedCrypto === "CULT"
-                  ? `
-                font-semibold
-              `
+                  ? `font-semibold`
                   : ""
               }
             `}
-            style={{ color: CRYPTO_COLORS[selectedCrypto] }}
             onClick={() => {
               if (
                 typeof window !== "undefined" &&
-                window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT_PX - 1}px)`).matches
+                window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT_PX - 1}px)`)
+                  .matches
               ) {
-                window.open(SIDESHIFT_AFFILIATE_URL, "_blank", "noopener,noreferrer");
+                window.open(
+                  SIDESHIFT_AFFILIATE_URL,
+                  "_blank",
+                  "noopener,noreferrer",
+                );
                 return;
               }
               loadSideshiftAndShow();
             }}
+            style={{ color: CRYPTO_COLORS[selectedCrypto] }}
+            type="button"
           >
             <Image
               alt=""
@@ -237,9 +244,9 @@ export function FooterBottom({
         )}
         <div
           className={`
-          flex flex-col items-center justify-center gap-2
-          md:flex-row md:gap-4
-        `}
+            flex flex-col items-center justify-center gap-2
+            md:flex-row md:gap-4
+          `}
         >
           <DropdownMenu
             onOpenChange={(open) => {
@@ -305,9 +312,9 @@ export function FooterBottom({
               <span aria-hidden className="flex items-center gap-1.5">
                 <span
                   className={`
-                  flex h-5 w-5 shrink-0 items-center justify-center text-base
-                  leading-none
-                `}
+                    flex h-5 w-5 shrink-0 items-center justify-center text-base
+                    leading-none
+                  `}
                 >
                   {countryFlag(currentCountry.code)}
                 </span>

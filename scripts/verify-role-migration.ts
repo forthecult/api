@@ -8,7 +8,6 @@
 
 import { db } from "../src/db";
 import { userTable } from "../src/db/schema/users/tables";
-import { sql } from "drizzle-orm";
 
 async function main() {
   try {

@@ -6,7 +6,6 @@ import { useEffect } from "react";
 import type { User } from "~/db/schema/users/types";
 
 import { PAYMENT_CONFIG } from "~/app";
-import { Button } from "~/ui/primitives/button";
 import {
   Card,
   CardContent,
@@ -60,17 +59,17 @@ export function BillingPageClient({ user }: BillingPageClientProps) {
           <div className="flex flex-wrap items-center gap-2">
             <span
               className={`
-              rounded-md bg-primary/10 px-2 py-1 text-sm font-medium
-              text-primary
-            `}
+                rounded-md bg-primary/10 px-2 py-1 text-sm font-medium
+                text-primary
+              `}
             >
               Solana Pay (active)
             </span>
             <span
               className={`
-              rounded-md border bg-muted/50 px-2 py-1 text-sm
-              text-muted-foreground
-            `}
+                rounded-md border bg-muted/50 px-2 py-1 text-sm
+                text-muted-foreground
+              `}
             >
               Stripe (disabled)
             </span>

@@ -1,6 +1,6 @@
 "use client";
 
-import { encodeURL, type Amount } from "@solana/pay";
+import { type Amount, encodeURL } from "@solana/pay";
 import { PublicKey } from "@solana/web3-compat";
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";

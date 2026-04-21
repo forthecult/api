@@ -1,15 +1,15 @@
 "use client";
 
+import type { Stripe } from "@stripe/stripe-js";
+
 import {
   Elements,
   PaymentElement,
   useElements,
   useStripe,
 } from "@stripe/react-stripe-js";
-import type { Stripe } from "@stripe/stripe-js";
 import { useTheme } from "next-themes";
 import {
-  forwardRef,
   useCallback,
   useEffect,
   useImperativeHandle,
@@ -17,14 +17,11 @@ import {
   useState,
 } from "react";
 
-import {
-  getStripePromise,
-  preloadStripe,
-  setStripePromiseFromLoad,
-} from "../stripe-preload";
 import type { OrderPayload } from "../checkout-shared";
 import type { BillingAddressFormRef } from "./BillingAddressForm";
 import type { ShippingAddressFormRef } from "./ShippingAddressForm";
+
+import { getStripePromise, setStripePromiseFromLoad } from "../stripe-preload";
 
 const STRIPE_PUBLISHABLE_KEY =
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? "";
@@ -256,9 +253,8 @@ export const StripeCardPayment = function StripeCardPayment({
   ref?: React.RefObject<null | StripeCardPaymentRef>;
 }) {
   // Use preloaded Stripe promise if available (from hover/focus on credit card option); otherwise load now.
-  const [stripePromise, setStripePromise] = useState<null | Promise<Stripe | null>>(
-    () => getStripePromise() ?? null,
-  );
+  const [stripePromise, setStripePromise] =
+    useState<null | Promise<null | Stripe>>(() => getStripePromise() ?? null);
   useEffect(() => {
     if (stripePromise || !STRIPE_PUBLISHABLE_KEY) return;
     let cancelled = false;
@@ -269,7 +265,9 @@ export const StripeCardPayment = function StripeCardPayment({
         setStripePromise(p);
       }
     });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [stripePromise]);
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === "dark";

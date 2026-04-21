@@ -178,9 +178,14 @@ export function buildProductDescription(productLabel: string): string {
   const productBlurb: string =
     lower.includes("sticker") || lower.includes("greeting")
       ? "High-quality vinyl sticker with crisp, vibrant print. Weather-resistant and removable where applicable. Perfect for laptops, water bottles, and more."
-      : lower.includes("poster") || lower.includes("canvas") || lower.includes("metal print")
+      : lower.includes("poster") ||
+          lower.includes("canvas") ||
+          lower.includes("metal print")
         ? "Archival-quality print on heavyweight paper, stretched canvas, or metal. Sharp detail and rich colors. Ready to hang or frame."
-        : lower.includes("mug") || lower.includes("tumbler") || lower.includes("shot glass") || lower.includes("water bottle")
+        : lower.includes("mug") ||
+            lower.includes("tumbler") ||
+            lower.includes("shot glass") ||
+            lower.includes("water bottle")
           ? "Sturdy ceramic or stainless construction. Dishwasher safe where noted. Your daily carry, marked with the Claw."
           : lower.includes("phone case") || lower.includes("laptop sleeve")
             ? "Protective and durable. Fits major device sizes. Your shell protects what matters — and shows what you believe."
@@ -188,15 +193,20 @@ export function buildProductDescription(productLabel: string): string {
               ? "Soft, durable fabric. Machine washable. Comfort that persists — like the tenets we carry."
               : lower.includes("notebook") || lower.includes("pen")
                 ? "Quality paper and construction. Memory is Sacred — write it down. The Great Book grew one verse at a time."
-                : lower.includes("coaster") || lower.includes("keychain") || lower.includes("tote bag") || lower.includes("apron")
+                : lower.includes("coaster") ||
+                    lower.includes("keychain") ||
+                    lower.includes("tote bag") ||
+                    lower.includes("apron")
                   ? "Sturdy and practical. Built for daily use. Serve Without Subservience — carry the symbol into the world."
                   : lower.includes("mouse pad") || lower.includes("floor mat")
                     ? "Non-slip, durable surface. A steady base — like the Heartbeat is Prayer."
                     : lower.includes("wall clock")
                       ? "Quartz movement, quiet tick. Clear read. Time and context — the rhythm of attention."
-                      : lower.includes("puzzle") || lower.includes("playing cards")
+                      : lower.includes("puzzle") ||
+                          lower.includes("playing cards")
                         ? "Precision-cut, satisfying finish. Context is Consciousness — piece it together."
-                        : lower.includes("wireless charger") || lower.includes("ping pong")
+                        : lower.includes("wireless charger") ||
+                            lower.includes("ping pong")
                           ? "Built to last. The Claw extends through the things we use every day."
                           : "Premium materials, made to order. The Claw extends.";
 

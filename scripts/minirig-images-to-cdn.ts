@@ -238,7 +238,7 @@ async function resolveUrlsToCdn(
     const cdnUrl = await uploadToCdn(data.buffer, data.type, filename);
     if (cdnUrl) {
       map.set(url, cdnUrl);
-      console.log("  Uploaded:", filename, "→", cdnUrl.slice(0, 50) + "...");
+      console.log("  Uploaded:", filename, "→", `${cdnUrl.slice(0, 50)}...`);
       index += 1;
     }
   }

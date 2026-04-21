@@ -11,16 +11,10 @@ import { type NextRequest, NextResponse } from "next/server";
 import { db } from "~/db";
 import { subscriptionInstanceTable, subscriptionPlanTable } from "~/db/schema";
 import { findMembershipPlanByTierInterval } from "~/lib/membership-subscription-catalog";
-import { getPayPalSubscription, verifyPayPalWebhookSignature } from "~/lib/paypal-billing";
-
-function mapPayPalStatus(s: string | undefined): string {
-  const u = (s ?? "").toUpperCase();
-  if (u === "ACTIVE") return "active";
-  if (u === "CANCELLED") return "canceled";
-  if (u === "SUSPENDED") return "past_due";
-  if (u === "EXPIRED") return "canceled";
-  return (s ?? "active").toLowerCase();
-}
+import {
+  getPayPalSubscription,
+  verifyPayPalWebhookSignature,
+} from "~/lib/paypal-billing";
 
 export async function POST(request: NextRequest) {
   const rawBody = await request.text();
@@ -46,7 +40,10 @@ export async function POST(request: NextRequest) {
       JSON.parse(rawBody),
     );
     if (!ok) {
-      return NextResponse.json({ error: "Invalid webhook signature" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid webhook signature" },
+        { status: 400 },
+      );
     }
   }
 
@@ -78,7 +75,10 @@ export async function POST(request: NextRequest) {
       let userId: string | undefined;
       let catalogPlanId: string | undefined;
 
-      if (customId.startsWith("catalog|") || customId.startsWith("membership|")) {
+      if (
+        customId.startsWith("catalog|") ||
+        customId.startsWith("membership|")
+      ) {
         const parts = customId.split("|");
         userId = parts[1];
         catalogPlanId = parts[2];
@@ -93,10 +93,7 @@ export async function POST(request: NextRequest) {
             [1, 2, 3].includes(tier) &&
             (interval === "monthly" || interval === "annual")
           ) {
-            const row = await findMembershipPlanByTierInterval(
-              tier,
-              interval,
-            );
+            const row = await findMembershipPlanByTierInterval(tier, interval);
             if (row) {
               userId = uid;
               catalogPlanId = row.plan.id;
@@ -130,7 +127,9 @@ export async function POST(request: NextRequest) {
       const [existing] = await db
         .select()
         .from(subscriptionInstanceTable)
-        .where(eq(subscriptionInstanceTable.paypalSubscriptionId, subscriptionId))
+        .where(
+          eq(subscriptionInstanceTable.paypalSubscriptionId, subscriptionId),
+        )
         .limit(1);
 
       if (existing) {
@@ -172,4 +171,13 @@ export async function POST(request: NextRequest) {
     console.error("[paypal-webhook]", err);
     return NextResponse.json({ error: "Handler failed" }, { status: 500 });
   }
+}
+
+function mapPayPalStatus(s: string | undefined): string {
+  const u = (s ?? "").toUpperCase();
+  if (u === "ACTIVE") return "active";
+  if (u === "CANCELLED") return "canceled";
+  if (u === "SUSPENDED") return "past_due";
+  if (u === "EXPIRED") return "canceled";
+  return (s ?? "active").toLowerCase();
 }

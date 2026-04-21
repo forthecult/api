@@ -86,9 +86,9 @@ export function EstimatedDeliveryTimeline({
           ⚡ Order within{" "}
           <span
             className={`
-            font-semibold text-green-600
-            dark:text-green-400
-          `}
+              font-semibold text-green-600
+              dark:text-green-400
+            `}
           >
             {countdown.hours}h {countdown.minutes}m
           </span>{" "}

@@ -78,9 +78,9 @@ export function LongFormProductPage({
         <div className="border-b bg-muted/30">
           <div
             className={`
-            container px-4 py-6
-            md:px-6
-          `}
+              container px-4 py-6
+              md:px-6
+            `}
           >
             <Breadcrumbs items={breadcrumbTrail} />
             <Link href="/products">
@@ -98,28 +98,28 @@ export function LongFormProductPage({
         {/* Hero */}
         <section
           className={`
-          border-b bg-muted/20 py-12
-          md:py-16
-        `}
+            border-b bg-muted/20 py-12
+            md:py-16
+          `}
         >
           <div
             className={`
-            container px-4
-            md:px-6
-          `}
+              container px-4
+              md:px-6
+            `}
           >
             <div
               className={`
-              grid grid-cols-1 gap-10
-              lg:grid-cols-2 lg:gap-14
-            `}
+                grid grid-cols-1 gap-10
+                lg:grid-cols-2 lg:gap-14
+              `}
             >
               <ProductVariantImageProvider>
                 <div
                   className={`
-                  relative aspect-square overflow-hidden rounded-lg bg-muted
-                  lg:aspect-[4/3]
-                `}
+                    relative aspect-square overflow-hidden rounded-lg bg-muted
+                    lg:aspect-[4/3]
+                  `}
                 >
                   <ProductImageGallery
                     discountPercentage={discountPercentage}
@@ -143,9 +143,9 @@ export function LongFormProductPage({
                   return (
                     <div
                       className={`
-                      mb-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm
-                      text-muted-foreground
-                    `}
+                        mb-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm
+                        text-muted-foreground
+                      `}
                     >
                       {b && (
                         <span>
@@ -168,10 +168,10 @@ export function LongFormProductPage({
                 })()}
                 <h1
                   className={`
-                  text-3xl font-bold tracking-tight
-                  md:text-4xl
-                  lg:text-5xl
-                `}
+                    text-3xl font-bold tracking-tight
+                    md:text-4xl
+                    lg:text-5xl
+                  `}
                 >
                   {product.name}
                 </h1>
@@ -225,9 +225,9 @@ export function LongFormProductPage({
           >
             <div
               className={`
-              container px-4
-              md:px-6
-            `}
+                container px-4
+                md:px-6
+              `}
             >
               <h2
                 className={`
@@ -240,16 +240,16 @@ export function LongFormProductPage({
               </h2>
               <ul
                 className={`
-                grid gap-4
-                sm:grid-cols-2
-                lg:grid-cols-3
-              `}
+                  grid gap-4
+                  sm:grid-cols-2
+                  lg:grid-cols-3
+                `}
               >
                 {product.features.map((feature) => (
                   <li
                     className={`
                       flex items-start gap-3 rounded-lg border bg-card p-4
- text-card-foreground 
+                      text-card-foreground
                     `}
                     key={`feature-${product.id}-${slugify(feature)}`}
                   >
@@ -280,9 +280,9 @@ export function LongFormProductPage({
           >
             <div
               className={`
-              container px-4
-              md:px-6
-            `}
+                container px-4
+                md:px-6
+              `}
             >
               <h2 className="sr-only" id="details-heading">
                 Details
@@ -309,21 +309,17 @@ export function LongFormProductPage({
         {/* CTA again + share */}
         <section
           className={`
-          border-b py-12
-          md:py-16
-        `}
+            border-b py-12
+            md:py-16
+          `}
         >
           <div
             className={`
-            container px-4
-            md:px-6
-          `}
-          >
-            <div
-              className={`
- mx-auto max-w-xl rounded-xl border bg-card p-8 
+              container px-4
+              md:px-6
             `}
-            >
+          >
+            <div className={`mx-auto max-w-xl rounded-xl border bg-card p-8`}>
               <h2 className="mb-4 text-xl font-bold">Ready to order?</h2>
               <ProductVariantImageProvider>
                 <ProductVariantSection

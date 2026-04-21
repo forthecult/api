@@ -4,9 +4,9 @@ export default function ProductDetailLoading() {
       <main className="flex-1 py-10">
         <div
           className={`
-          container mx-auto px-4
-          md:px-6
-        `}
+            container mx-auto px-4
+            md:px-6
+          `}
         >
           {/* Breadcrumb skeleton */}
           <div className="mb-4 flex gap-2">
@@ -21,9 +21,9 @@ export default function ProductDetailLoading() {
           {/* Main grid */}
           <div
             className={`
-            grid grid-cols-1 gap-8
-            md:grid-cols-2
-          `}
+              grid grid-cols-1 gap-8
+              md:grid-cols-2
+            `}
           >
             {/* Image gallery skeleton */}
             <div className="aspect-square animate-pulse rounded-lg bg-muted" />

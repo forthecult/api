@@ -800,7 +800,7 @@ const HOME_LIVING_SUB: CategoryRow[] = [
 ];
 
 /** Other subcategories. Curated collections, pillar-aligned. */
-const OTHER_SUB: CategoryRow[] = [
+const _OTHER_SUB: CategoryRow[] = [
   {
     id: "staff-picks",
     name: "Staff Picks",

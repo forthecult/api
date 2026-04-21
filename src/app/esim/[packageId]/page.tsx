@@ -4,6 +4,15 @@ import { getPublicSiteUrl } from "~/lib/app-url";
 
 import { EsimPackageDetailClient } from "./esim-package-detail-client";
 
+export default async function EsimPackageDetailPage({
+  params,
+}: {
+  params: Promise<{ packageId: string }>;
+}) {
+  const { packageId } = await params;
+  return <EsimPackageDetailClient packageId={packageId} />;
+}
+
 export async function generateMetadata({
   params,
 }: {
@@ -18,13 +27,4 @@ export async function generateMetadata({
     description: "View eSIM data plan details, coverage, and pricing.",
     title: "eSIM Package Details",
   };
-}
-
-export default async function EsimPackageDetailPage({
-  params,
-}: {
-  params: Promise<{ packageId: string }>;
-}) {
-  const { packageId } = await params;
-  return <EsimPackageDetailClient packageId={packageId} />;
 }

@@ -12,7 +12,7 @@ const PHOTOGRAPHER = {
   name: "George J. Patterson",
 };
 
-const LOOKBOOK_IMAGES: {
+const _LOOKBOOK_IMAGES: {
   alt: string;
   description: string;
   size: "large" | "medium" | "small";
@@ -154,17 +154,17 @@ export default async function LookbookPage() {
     <PageTokenGate slug="lookbook">
       <div
         className={`
-        container mx-auto max-w-7xl px-4 py-12
-        sm:px-6 sm:py-16
-        lg:px-8
-      `}
+          container mx-auto max-w-7xl px-4 py-12
+          sm:px-6 sm:py-16
+          lg:px-8
+        `}
       >
         <header className="mb-12 border-b border-border pb-10">
           <h1
             className={`
-            text-3xl font-bold tracking-tight text-foreground
-            sm:text-4xl
-          `}
+              text-3xl font-bold tracking-tight text-foreground
+              sm:text-4xl
+            `}
           >
             Lookbook
           </h1>
@@ -190,17 +190,17 @@ export default async function LookbookPage() {
                 ${
                   img.size === "large"
                     ? `
-                  sm:col-span-2
-                  lg:col-span-2
-                `
+                      sm:col-span-2
+                      lg:col-span-2
+                    `
                     : ""
                 }
                 ${
                   img.size === "medium"
                     ? `
-                  sm:col-span-2
-                  lg:col-span-1
-                `
+                      sm:col-span-2
+                      lg:col-span-1
+                    `
                     : ""
                 }
               `}

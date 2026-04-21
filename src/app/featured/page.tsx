@@ -29,6 +29,14 @@ interface CategoryOption {
   slug: string;
 }
 
+interface PageProps {
+  searchParams: Promise<{
+    page?: string;
+    q?: string;
+    sort?: string;
+  }>;
+}
+
 interface Product {
   category: string;
   hasVariants?: boolean;
@@ -47,38 +55,6 @@ interface ProductsResponse {
   items?: Product[];
   total?: number;
   totalPages?: number;
-}
-
-interface PageProps {
-  searchParams: Promise<{
-    page?: string;
-    q?: string;
-    sort?: string;
-  }>;
-}
-
-async function fetchFeaturedProducts(
-  page: number,
-  sort: string,
-  search: string,
-): Promise<ProductsResponse> {
-  const baseUrl = getServerBaseUrl();
-  const params = new URLSearchParams({
-    category: "featured",
-    limit: "12",
-    page: String(page),
-    sort,
-  });
-  if (search.trim()) params.set("q", search.trim());
-  try {
-    const res = await fetch(`${baseUrl}/api/products?${params}`, {
-      next: { revalidate: 60 },
-    });
-    if (!res.ok) return { categories: [], items: [], total: 0, totalPages: 1 };
-    return (await res.json()) as ProductsResponse;
-  } catch {
-    return { categories: [], items: [], total: 0, totalPages: 1 };
-  }
 }
 
 export default async function FeaturedPage({ searchParams }: PageProps) {
@@ -102,8 +78,9 @@ export default async function FeaturedPage({ searchParams }: PageProps) {
     ...p,
     inStock: p.inStock ?? true,
     rating: p.rating ?? 0,
-    tokenGatePassed: (p as { tokenGatePassed?: boolean }).tokenGatePassed ?? false,
     tokenGated: p.tokenGated ?? false,
+    tokenGatePassed:
+      (p as { tokenGatePassed?: boolean }).tokenGatePassed ?? false,
   }));
   const categories: CategoryOption[] = [
     { name: "All", slug: "all" },
@@ -150,4 +127,28 @@ export default async function FeaturedPage({ searchParams }: PageProps) {
       </Suspense>
     </>
   );
+}
+
+async function fetchFeaturedProducts(
+  page: number,
+  sort: string,
+  search: string,
+): Promise<ProductsResponse> {
+  const baseUrl = getServerBaseUrl();
+  const params = new URLSearchParams({
+    category: "featured",
+    limit: "12",
+    page: String(page),
+    sort,
+  });
+  if (search.trim()) params.set("q", search.trim());
+  try {
+    const res = await fetch(`${baseUrl}/api/products?${params}`, {
+      next: { revalidate: 60 },
+    });
+    if (!res.ok) return { categories: [], items: [], total: 0, totalPages: 1 };
+    return (await res.json()) as ProductsResponse;
+  } catch {
+    return { categories: [], items: [], total: 0, totalPages: 1 };
+  }
 }

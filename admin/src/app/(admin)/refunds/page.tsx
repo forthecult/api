@@ -156,9 +156,9 @@ export default function AdminRefundsPage() {
     return (
       <div
         className={`
-        rounded-lg border border-red-200 bg-red-50 p-4 text-red-800
-        dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
-      `}
+          rounded-lg border border-red-200 bg-red-50 p-4 text-red-800
+          dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
+        `}
       >
         {error}
         <Button
@@ -176,9 +176,9 @@ export default function AdminRefundsPage() {
     <div className="space-y-6">
       <div
         className={`
-        flex flex-col gap-4
-        sm:flex-row sm:items-center sm:justify-between
-      `}
+          flex flex-col gap-4
+          sm:flex-row sm:items-center sm:justify-between
+        `}
       >
         <div className="flex items-center gap-2">
           <Wallet className="h-7 w-7" />
@@ -191,9 +191,9 @@ export default function AdminRefundsPage() {
       <Card>
         <CardHeader
           className={`
-          flex flex-col gap-4
-          sm:flex-row sm:items-center sm:justify-between
-        `}
+            flex flex-col gap-4
+            sm:flex-row sm:items-center sm:justify-between
+          `}
         >
           <CardTitle className="sr-only">Refund request list</CardTitle>
           <div className="flex flex-wrap items-center gap-3">
@@ -260,9 +260,9 @@ export default function AdminRefundsPage() {
           {loading ? (
             <div
               className={`
-              flex min-h-[200px] items-center justify-center
-              text-muted-foreground
-            `}
+                flex min-h-[200px] items-center justify-center
+                text-muted-foreground
+              `}
             >
               Loading…
             </div>
@@ -273,10 +273,10 @@ export default function AdminRefundsPage() {
                   <thead>
                     <tr
                       className={`
-                      border-b border-border bg-muted/50 text-left text-xs
-                      font-semibold tracking-wider text-muted-foreground
-                      uppercase
-                    `}
+                        border-b border-border bg-muted/50 text-left text-xs
+                        font-semibold tracking-wider text-muted-foreground
+                        uppercase
+                      `}
                     >
                       <th
                         className="p-4 font-medium whitespace-nowrap"
@@ -349,8 +349,8 @@ export default function AdminRefundsPage() {
                           >
                             <td
                               className={`
-                              p-4 whitespace-nowrap text-muted-foreground
-                            `}
+                                p-4 whitespace-nowrap text-muted-foreground
+                              `}
                             >
                               {formatDate(row.createdAt)}
                             </td>
@@ -380,8 +380,8 @@ export default function AdminRefundsPage() {
                               {row.order.paymentStatus && (
                                 <span
                                   className={`
-                                  ml-1.5 text-xs text-muted-foreground
-                                `}
+                                    ml-1.5 text-xs text-muted-foreground
+                                  `}
                                 >
                                   (order: {row.order.paymentStatus})
                                 </span>
@@ -430,9 +430,9 @@ export default function AdminRefundsPage() {
               {data.items.length > 0 && data.totalPages > 1 && (
                 <div
                   className={`
-                  mt-4 flex items-center justify-center gap-2 border-t
-                  border-border pt-4
-                `}
+                    mt-4 flex items-center justify-center gap-2 border-t
+                    border-border pt-4
+                  `}
                 >
                   <Button
                     aria-label="Previous page"

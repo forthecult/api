@@ -215,9 +215,11 @@ export function DashboardAiPromptsClient() {
       </div>
 
       <section className="space-y-3">
-        <h2 className={`
-          text-xs font-semibold tracking-wide text-muted-foreground uppercase
-        `}>
+        <h2
+          className={`
+            text-xs font-semibold tracking-wide text-muted-foreground uppercase
+          `}
+        >
           Custom prompt
         </h2>
         <div className="rounded-xl border border-border bg-card p-4">
@@ -250,20 +252,24 @@ export function DashboardAiPromptsClient() {
       </section>
 
       <section className="space-y-3">
-        <h2 className={`
-          text-xs font-semibold tracking-wide text-muted-foreground uppercase
-        `}>
+        <h2
+          className={`
+            text-xs font-semibold tracking-wide text-muted-foreground uppercase
+          `}
+        >
           Contexts (memories)
         </h2>
         <div className="rounded-xl border border-border bg-card p-4">
           <p className="mb-3 text-sm text-muted-foreground">
-            Short notes the model can retrieve (RAG) when relevant. Delete or add
-            anytime.
+            Short notes the model can retrieve (RAG) when relevant. Delete or
+            add anytime.
           </p>
-          <div className={`
-            mb-4 flex flex-col gap-2
-            sm:flex-row sm:items-end
-          `}>
+          <div
+            className={`
+              mb-4 flex flex-col gap-2
+              sm:flex-row sm:items-end
+            `}
+          >
             <div className="min-w-0 flex-1 space-y-1">
               <Label className="text-xs" htmlFor="mem-cat">
                 Category (optional)
@@ -300,7 +306,9 @@ export function DashboardAiPromptsClient() {
           </div>
           <ul className="space-y-2">
             {memories.length === 0 ? (
-              <li className="text-sm text-muted-foreground">No contexts yet.</li>
+              <li className="text-sm text-muted-foreground">
+                No contexts yet.
+              </li>
             ) : (
               memories.map((m) => (
                 <li
@@ -353,13 +361,17 @@ export function DashboardAiPromptsClient() {
                     ) : (
                       <>
                         {m.category ? (
-                          <span className={`
-                            text-xs font-medium text-muted-foreground
-                          `}>
+                          <span
+                            className={`
+                              text-xs font-medium text-muted-foreground
+                            `}
+                          >
                             {m.category}
                           </span>
                         ) : null}
-                        <p className="mt-1 text-sm whitespace-pre-wrap">{m.content}</p>
+                        <p className="mt-1 text-sm whitespace-pre-wrap">
+                          {m.content}
+                        </p>
                       </>
                     )}
                   </div>
@@ -395,15 +407,17 @@ export function DashboardAiPromptsClient() {
       </section>
 
       <section className="space-y-3">
-        <h2 className={`
-          text-xs font-semibold tracking-wide text-muted-foreground uppercase
-        `}>
+        <h2
+          className={`
+            text-xs font-semibold tracking-wide text-muted-foreground uppercase
+          `}
+        >
           RAG documents (your account)
         </h2>
         <div className="rounded-xl border border-border bg-card p-4">
           <p className="mb-3 text-sm text-muted-foreground">
-            Paste text to chunk and embed into your private retrieval index.
-            For <strong>images / vision</strong>, attach files in{" "}
+            Paste text to chunk and embed into your private retrieval index. For{" "}
+            <strong>images / vision</strong>, attach files in{" "}
             <a className="text-primary underline" href="/chat">
               /chat
             </a>{" "}
@@ -453,9 +467,11 @@ export function DashboardAiPromptsClient() {
       </section>
 
       <section className="space-y-3">
-        <h2 className={`
-          text-xs font-semibold tracking-wide text-muted-foreground uppercase
-        `}>
+        <h2
+          className={`
+            text-xs font-semibold tracking-wide text-muted-foreground uppercase
+          `}
+        >
           Project contexts (browser)
         </h2>
         <div className="rounded-xl border border-border bg-card p-4">
@@ -467,9 +483,11 @@ export function DashboardAiPromptsClient() {
             </a>{" "}
             to preserve them across devices.
           </p>
-          <pre className={`
-            max-h-64 overflow-auto rounded-lg bg-muted/50 p-3 text-xs
-          `}>
+          <pre
+            className={`
+              max-h-64 overflow-auto rounded-lg bg-muted/50 p-3 text-xs
+            `}
+          >
             {projectsPreview}
           </pre>
         </div>

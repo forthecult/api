@@ -3,7 +3,7 @@
  * Multiple discounts per tier apply additively (e.g. 20% off shipping + 15% off eSIMs).
  */
 
-import { and, eq, inArray } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 
 import { db } from "~/db";
 import { memberTierDiscountTable } from "~/db/schema";

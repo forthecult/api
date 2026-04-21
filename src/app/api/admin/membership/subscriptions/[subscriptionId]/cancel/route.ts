@@ -7,8 +7,8 @@
 
 import { type NextRequest, NextResponse } from "next/server";
 
-import { adminCancelMembershipSubscription } from "~/lib/admin-cancel-membership-subscription";
 import { adminAuthFailureResponse, getAdminAuth } from "~/lib/admin-api-auth";
+import { adminCancelMembershipSubscription } from "~/lib/admin-cancel-membership-subscription";
 
 export async function POST(
   _request: NextRequest,
@@ -19,12 +19,18 @@ export async function POST(
 
   const { subscriptionId } = await params;
   if (!subscriptionId?.trim()) {
-    return NextResponse.json({ error: "subscriptionId required" }, { status: 400 });
+    return NextResponse.json(
+      { error: "subscriptionId required" },
+      { status: 400 },
+    );
   }
 
   const result = await adminCancelMembershipSubscription(subscriptionId.trim());
   if ("error" in result) {
-    return NextResponse.json({ error: result.error }, { status: result.status });
+    return NextResponse.json(
+      { error: result.error },
+      { status: result.status },
+    );
   }
   return NextResponse.json({ ok: true });
 }

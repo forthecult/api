@@ -8,28 +8,22 @@
  */
 
 import {
+  boolean,
+  index,
+  integer,
   pgTable,
   text,
   timestamp,
-  boolean,
-  integer,
-  index,
 } from "drizzle-orm/pg-core";
 
 export const userTable = pgTable("user", {
-  id: text("id").primaryKey(),
-  name: text("name").notNull(),
+  age: integer("age"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
   email: text("email").notNull().unique(),
   emailVerified: boolean("email_verified").default(false).notNull(),
-  image: text("image"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at")
-    .defaultNow()
-    .$onUpdate(() => /* @__PURE__ */ new Date())
-    .notNull(),
-  twoFactorEnabled: boolean("two_factor_enabled").default(false),
-  age: integer("age"),
   firstName: text("first_name"),
+  id: text("id").primaryKey(),
+  image: text("image"),
   lastName: text("last_name"),
   marketingAiCompanion: boolean("marketing_ai_companion").default(false),
   marketingDiscord: boolean("marketing_discord").default(false),
@@ -37,6 +31,7 @@ export const userTable = pgTable("user", {
   marketingSms: boolean("marketing_sms").default(false),
   marketingTelegram: boolean("marketing_telegram").default(false),
   marketingWebsite: boolean("marketing_website").default(false),
+  name: text("name").notNull(),
   phone: text("phone"),
   receiveMarketing: boolean("receive_marketing").default(false),
   receiveOrderNotificationsViaTelegram: boolean(
@@ -53,19 +48,24 @@ export const userTable = pgTable("user", {
   transactionalSms: boolean("transactional_sms").default(false),
   transactionalTelegram: boolean("transactional_telegram").default(false),
   transactionalWebsite: boolean("transactional_website").default(true),
+  twoFactorEnabled: boolean("two_factor_enabled").default(false),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => /* @__PURE__ */ new Date())
+    .notNull(),
 });
 
 export const sessionTable = pgTable(
   "session",
   {
-    id: text("id").primaryKey(),
-    expiresAt: timestamp("expires_at").notNull(),
-    token: text("token").notNull().unique(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
+    expiresAt: timestamp("expires_at").notNull(),
+    id: text("id").primaryKey(),
+    ipAddress: text("ip_address"),
+    token: text("token").notNull().unique(),
     updatedAt: timestamp("updated_at")
       .$onUpdate(() => /* @__PURE__ */ new Date())
       .notNull(),
-    ipAddress: text("ip_address"),
     userAgent: text("user_agent"),
     userId: text("user_id")
       .notNull()
@@ -77,23 +77,23 @@ export const sessionTable = pgTable(
 export const accountTable = pgTable(
   "account",
   {
-    id: text("id").primaryKey(),
-    accountId: text("account_id").notNull(),
-    providerId: text("provider_id").notNull(),
-    userId: text("user_id")
-      .notNull()
-      .references(() => userTable.id, { onDelete: "cascade" }),
     accessToken: text("access_token"),
-    refreshToken: text("refresh_token"),
-    idToken: text("id_token"),
     accessTokenExpiresAt: timestamp("access_token_expires_at"),
+    accountId: text("account_id").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    id: text("id").primaryKey(),
+    idToken: text("id_token"),
+    password: text("password"),
+    providerId: text("provider_id").notNull(),
+    refreshToken: text("refresh_token"),
     refreshTokenExpiresAt: timestamp("refresh_token_expires_at"),
     scope: text("scope"),
-    password: text("password"),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .$onUpdate(() => /* @__PURE__ */ new Date())
       .notNull(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => userTable.id, { onDelete: "cascade" }),
   },
   (table) => [index("account_userId_idx").on(table.userId)],
 );
@@ -101,15 +101,15 @@ export const accountTable = pgTable(
 export const verificationTable = pgTable(
   "verification",
   {
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    expiresAt: timestamp("expires_at").notNull(),
     id: text("id").primaryKey(),
     identifier: text("identifier").notNull(),
-    value: text("value").notNull(),
-    expiresAt: timestamp("expires_at").notNull(),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()
       .$onUpdate(() => /* @__PURE__ */ new Date())
       .notNull(),
+    value: text("value").notNull(),
   },
   (table) => [index("verification_identifier_idx").on(table.identifier)],
 );
@@ -117,9 +117,9 @@ export const verificationTable = pgTable(
 export const twoFactorTable = pgTable(
   "two_factor",
   {
+    backupCodes: text("backup_codes").notNull(),
     id: text("id").primaryKey(),
     secret: text("secret").notNull(),
-    backupCodes: text("backup_codes").notNull(),
     userId: text("user_id")
       .notNull()
       .references(() => userTable.id, { onDelete: "cascade" }),
@@ -133,19 +133,19 @@ export const twoFactorTable = pgTable(
 export const passkeyTable = pgTable(
   "passkey",
   {
+    aaguid: text("aaguid"),
+    backedUp: boolean("backed_up").notNull(),
+    counter: integer("counter").notNull(),
+    createdAt: timestamp("created_at"),
+    credentialID: text("credential_id").notNull(),
+    deviceType: text("device_type").notNull(),
     id: text("id").primaryKey(),
     name: text("name"),
     publicKey: text("public_key").notNull(),
+    transports: text("transports"),
     userId: text("user_id")
       .notNull()
       .references(() => userTable.id, { onDelete: "cascade" }),
-    credentialID: text("credential_id").notNull(),
-    counter: integer("counter").notNull(),
-    deviceType: text("device_type").notNull(),
-    backedUp: boolean("backed_up").notNull(),
-    transports: text("transports"),
-    createdAt: timestamp("created_at"),
-    aaguid: text("aaguid"),
   },
   (table) => [
     index("passkey_userId_idx").on(table.userId),

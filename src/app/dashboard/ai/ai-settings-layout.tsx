@@ -29,10 +29,12 @@ export function AiSettingsLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   const pathname = usePathname();
   return (
-    <div className={`
-      flex flex-col gap-6
-      lg:flex-row lg:gap-8
-    `}>
+    <div
+      className={`
+        flex flex-col gap-6
+        lg:flex-row lg:gap-8
+      `}
+    >
       <nav
         aria-label="AI settings"
         className={`

@@ -114,9 +114,9 @@ export default function AdminSupportChatPage() {
     return (
       <div
         className={`
-        rounded-lg border border-red-200 bg-red-50 p-4 text-red-800
-        dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
-      `}
+          rounded-lg border border-red-200 bg-red-50 p-4 text-red-800
+          dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
+        `}
       >
         {error}
         <Button
@@ -134,9 +134,9 @@ export default function AdminSupportChatPage() {
     <div className="space-y-6">
       <div
         className={`
-        flex flex-col gap-4
-        sm:flex-row sm:items-center sm:justify-between
-      `}
+          flex flex-col gap-4
+          sm:flex-row sm:items-center sm:justify-between
+        `}
       >
         <div className="flex items-center gap-2">
           <MessageCircle className="h-7 w-7" />
@@ -171,9 +171,9 @@ export default function AdminSupportChatPage() {
           {loading ? (
             <div
               className={`
-              flex min-h-[200px] items-center justify-center
-              text-muted-foreground
-            `}
+                flex min-h-[200px] items-center justify-center
+                text-muted-foreground
+              `}
             >
               Loading…
             </div>
@@ -184,10 +184,10 @@ export default function AdminSupportChatPage() {
                   <thead>
                     <tr
                       className={`
-                      border-b border-border bg-muted/50 text-left text-xs
-                      font-semibold tracking-wider text-muted-foreground
-                      uppercase
-                    `}
+                        border-b border-border bg-muted/50 text-left text-xs
+                        font-semibold tracking-wider text-muted-foreground
+                        uppercase
+                      `}
                     >
                       <th
                         className="p-4 font-medium whitespace-nowrap"
@@ -241,9 +241,9 @@ export default function AdminSupportChatPage() {
                       data.items.map((row) => (
                         <tr
                           className={`
-                          border-b
-                          last:border-0
-                        `}
+                            border-b
+                            last:border-0
+                          `}
                           key={row.id}
                         >
                           <td className="p-4">
@@ -261,9 +261,7 @@ export default function AdminSupportChatPage() {
                                     {row.customer.name || "—"}
                                   </Link>
                                   <span
-                                    className={`
-                                    text-xs text-muted-foreground
-                                  `}
+                                    className={`text-xs text-muted-foreground`}
                                   >
                                     {row.customer.email ?? "—"}
                                   </span>
@@ -283,7 +281,10 @@ export default function AdminSupportChatPage() {
                               className={cn(
                                 "text-xs font-medium",
                                 row.source === "mobile" &&
-                                  "text-blue-600 dark:text-blue-400",
+                                  `
+                                    text-blue-600
+                                    dark:text-blue-400
+                                  `,
                               )}
                             >
                               {row.source === "mobile" ? "Mobile app" : "Web"}
@@ -312,9 +313,9 @@ export default function AdminSupportChatPage() {
                             {row.takenOverBy ? (
                               <span
                                 className={`
-                                text-xs font-medium text-blue-600
-                                dark:text-blue-400
-                              `}
+                                  text-xs font-medium text-blue-600
+                                  dark:text-blue-400
+                                `}
                               >
                                 Human
                               </span>
@@ -326,8 +327,8 @@ export default function AdminSupportChatPage() {
                           </td>
                           <td
                             className={`
-                            p-4 whitespace-nowrap text-muted-foreground
-                          `}
+                              p-4 whitespace-nowrap text-muted-foreground
+                            `}
                           >
                             {formatDate(row.updatedAt)}
                           </td>
@@ -354,8 +355,8 @@ export default function AdminSupportChatPage() {
               {data.items.length > 0 && data.totalPages > 1 && (
                 <div
                   className={`
-                  mt-4 flex items-center justify-center gap-2 border-t pt-4
-                `}
+                    mt-4 flex items-center justify-center gap-2 border-t pt-4
+                  `}
                 >
                   <Button
                     aria-label="Previous page"

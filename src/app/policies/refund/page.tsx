@@ -21,9 +21,9 @@ export default function RefundPolicyPage() {
       <header className="mb-12 border-b border-border pb-10">
         <h1
           className={`
-          text-3xl font-bold tracking-tight text-foreground
-          sm:text-4xl
-        `}
+            text-3xl font-bold tracking-tight text-foreground
+            sm:text-4xl
+          `}
         >
           Refund policy
         </h1>
@@ -40,9 +40,9 @@ export default function RefundPolicyPage() {
       <div className="space-y-10">
         <section
           className={`
-          rounded-lg border border-border bg-card/50 px-5 py-5
-          sm:px-6
-        `}
+            rounded-lg border border-border bg-card/50 px-5 py-5
+            sm:px-6
+          `}
         >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Returns and eligibility
@@ -62,9 +62,9 @@ export default function RefundPolicyPage() {
 
         <section
           className={`
-          rounded-lg border border-border bg-card/50 px-5 py-5
-          sm:px-6
-        `}
+            rounded-lg border border-border bg-card/50 px-5 py-5
+            sm:px-6
+          `}
         >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Damages and issues
@@ -78,9 +78,9 @@ export default function RefundPolicyPage() {
 
         <section
           className={`
-          rounded-lg border border-border bg-card/50 px-5 py-5
-          sm:px-6
-        `}
+            rounded-lg border border-border bg-card/50 px-5 py-5
+            sm:px-6
+          `}
         >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Non-returnable items
@@ -96,9 +96,9 @@ export default function RefundPolicyPage() {
 
         <section
           className={`
-          rounded-lg border border-border bg-card/50 px-5 py-5
-          sm:px-6
-        `}
+            rounded-lg border border-border bg-card/50 px-5 py-5
+            sm:px-6
+          `}
         >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             eSIM refund eligibility
@@ -109,9 +109,9 @@ export default function RefundPolicyPage() {
           </p>
           <ul
             className={`
-            mt-3 list-inside list-disc space-y-2 text-sm leading-relaxed
-            text-muted-foreground
-          `}
+              mt-3 list-inside list-disc space-y-2 text-sm leading-relaxed
+              text-muted-foreground
+            `}
           >
             <li>
               <strong className="font-medium text-foreground">
@@ -167,9 +167,9 @@ export default function RefundPolicyPage() {
 
         <section
           className={`
-          rounded-lg border border-border bg-card/50 px-5 py-5
-          sm:px-6
-        `}
+            rounded-lg border border-border bg-card/50 px-5 py-5
+            sm:px-6
+          `}
         >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Exchanges
@@ -183,9 +183,9 @@ export default function RefundPolicyPage() {
 
         <section
           className={`
-          rounded-lg border border-border bg-card/50 px-5 py-5
-          sm:px-6
-        `}
+            rounded-lg border border-border bg-card/50 px-5 py-5
+            sm:px-6
+          `}
         >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             EU and UK right to cancel (14 days)
@@ -204,9 +204,9 @@ export default function RefundPolicyPage() {
 
         <section
           className={`
-          rounded-lg border border-border bg-card/50 px-5 py-5
-          sm:px-6
-        `}
+            rounded-lg border border-border bg-card/50 px-5 py-5
+            sm:px-6
+          `}
         >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Refunds
@@ -226,9 +226,9 @@ export default function RefundPolicyPage() {
 
         <section
           className={`
-          rounded-lg border border-border bg-card/50 px-5 py-5
-          sm:px-6
-        `}
+            rounded-lg border border-border bg-card/50 px-5 py-5
+            sm:px-6
+          `}
         >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Crypto refunds
@@ -252,9 +252,9 @@ export default function RefundPolicyPage() {
 
         <section
           className={`
-          rounded-lg border border-border bg-card/50 px-5 py-5
-          sm:px-6
-        `}
+            rounded-lg border border-border bg-card/50 px-5 py-5
+            sm:px-6
+          `}
         >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Questions

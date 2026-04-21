@@ -253,10 +253,10 @@ export default function AdminOrdersPage() {
     setDeleting(true);
     try {
       const res = await fetch(`${API_BASE}/api/admin/orders`, {
-        credentials: "include",
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ids: Array.from(selectedIds) }),
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        method: "DELETE",
       });
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { error?: string };
@@ -277,9 +277,9 @@ export default function AdminOrdersPage() {
     return (
       <div
         className={`
-        rounded-lg border border-red-200 bg-red-50 p-4 text-red-800
-        dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
-      `}
+          rounded-lg border border-red-200 bg-red-50 p-4 text-red-800
+          dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
+        `}
       >
         {error}
         <Button
@@ -297,9 +297,9 @@ export default function AdminOrdersPage() {
     <div className="space-y-6">
       <div
         className={`
-        flex flex-col gap-4
-        sm:flex-row sm:items-center sm:justify-between
-      `}
+          flex flex-col gap-4
+          sm:flex-row sm:items-center sm:justify-between
+        `}
       >
         <h2 className="text-2xl font-semibold tracking-tight">Orders</h2>
         <Link
@@ -324,18 +324,18 @@ export default function AdminOrdersPage() {
         <CardHeader className="space-y-4">
           <div
             className={`
-            flex flex-col gap-4
-            sm:flex-row sm:items-center sm:justify-between
-          `}
+              flex flex-col gap-4
+              sm:flex-row sm:items-center sm:justify-between
+            `}
           >
             <CardTitle>Order list</CardTitle>
             <div className="flex w-full max-w-md gap-2">
               <div className="relative flex-1">
                 <Search
                   className={`
-                  absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2
-                  text-muted-foreground
-                `}
+                    absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2
+                    text-muted-foreground
+                  `}
                 />
                 <input
                   className={cn(
@@ -372,24 +372,24 @@ export default function AdminOrdersPage() {
               </Button>
             </div>
           </div>
-            {selectedIds.size > 0 && (
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">
-                  {selectedIds.size} selected
-                </span>
-                <Button
-                  disabled={deleting}
-                  onClick={() => void handleBulkDelete()}
-                  size="sm"
-                  type="button"
-                  variant="destructive"
-                >
-                  <Trash2 className="h-4 w-4" />
-                  Delete selected
-                </Button>
-              </div>
-            )}
-            <div className="flex flex-wrap items-center gap-3">
+          {selectedIds.size > 0 && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">
+                {selectedIds.size} selected
+              </span>
+              <Button
+                disabled={deleting}
+                onClick={() => void handleBulkDelete()}
+                size="sm"
+                type="button"
+                variant="destructive"
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete selected
+              </Button>
+            </div>
+          )}
+          <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-2">
               <span className="text-xs font-medium text-muted-foreground">
                 Sort:
@@ -484,9 +484,9 @@ export default function AdminOrdersPage() {
           {loading ? (
             <div
               className={`
-              flex min-h-[200px] items-center justify-center
-              text-muted-foreground
-            `}
+                flex min-h-[200px] items-center justify-center
+                text-muted-foreground
+              `}
             >
               Loading…
             </div>
@@ -497,10 +497,10 @@ export default function AdminOrdersPage() {
                   <thead>
                     <tr
                       className={`
-                      border-b border-border bg-muted/50 text-left text-xs
-                      font-semibold tracking-wider text-muted-foreground
-                      uppercase
-                    `}
+                        border-b border-border bg-muted/50 text-left text-xs
+                        font-semibold tracking-wider text-muted-foreground
+                        uppercase
+                      `}
                     >
                       {COLUMNS.map((col) => (
                         <th
@@ -527,7 +527,11 @@ export default function AdminOrdersPage() {
                           ) : "sortable" in col && col.sortable ? (
                             <button
                               className={cn(
-                                "inline-flex items-center gap-1 transition-colors hover:text-foreground",
+                                `
+                                  inline-flex items-center gap-1
+                                  transition-colors
+                                  hover:text-foreground
+                                `,
                                 col.key === "total" && "ml-auto",
                               )}
                               onClick={() => handleSortColumn(col.key)}
@@ -553,9 +557,9 @@ export default function AdminOrdersPage() {
                     {data.items.map((order) => (
                       <tr
                         className={`
-                        border-b
-                        last:border-0
-                      `}
+                          border-b
+                          last:border-0
+                        `}
                         key={order.id}
                       >
                         <td className="w-10 p-4">
@@ -641,8 +645,8 @@ export default function AdminOrdersPage() {
 
               <div
                 className={`
-                mt-4 flex items-center justify-center gap-2 border-t pt-4
-              `}
+                  mt-4 flex items-center justify-center gap-2 border-t pt-4
+                `}
               >
                 <Button
                   aria-label="Previous page"

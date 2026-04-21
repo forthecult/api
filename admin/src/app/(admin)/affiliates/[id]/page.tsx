@@ -156,8 +156,8 @@ export default function AdminAffiliateDetailPage() {
     return (
       <div
         className={`
-        flex min-h-[200px] items-center justify-center text-muted-foreground
-      `}
+          flex min-h-[200px] items-center justify-center text-muted-foreground
+        `}
       >
         Loading…
       </div>
@@ -175,9 +175,9 @@ export default function AdminAffiliateDetailPage() {
         </Button>
         <div
           className={`
-          rounded-lg border border-red-200 bg-red-50 p-4 text-red-800
-          dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
-        `}
+            rounded-lg border border-red-200 bg-red-50 p-4 text-red-800
+            dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
+          `}
         >
           {error}
         </div>
@@ -206,9 +206,9 @@ export default function AdminAffiliateDetailPage() {
         <CardContent>
           <dl
             className={`
-            grid gap-2 text-sm
-            sm:grid-cols-2
-          `}
+              grid gap-2 text-sm
+              sm:grid-cols-2
+            `}
           >
             <div>
               <dt className="text-muted-foreground">User</dt>
@@ -267,9 +267,9 @@ export default function AdminAffiliateDetailPage() {
           <form className="space-y-4" onSubmit={handleSave}>
             <div
               className={`
-              grid gap-4
-              sm:grid-cols-2
-            `}
+                grid gap-4
+                sm:grid-cols-2
+              `}
             >
               <div>
                 <label className={labelClass} htmlFor="status">
@@ -306,9 +306,9 @@ export default function AdminAffiliateDetailPage() {
 
             <div
               className={`
-              grid gap-4
-              sm:grid-cols-2
-            `}
+                grid gap-4
+                sm:grid-cols-2
+              `}
             >
               <div>
                 <label className={labelClass} htmlFor="commissionType">
@@ -345,9 +345,9 @@ export default function AdminAffiliateDetailPage() {
 
             <div
               className={`
-              grid gap-4
-              sm:grid-cols-2
-            `}
+                grid gap-4
+                sm:grid-cols-2
+              `}
             >
               <div>
                 <label className={labelClass} htmlFor="customerDiscountType">
@@ -400,9 +400,9 @@ export default function AdminAffiliateDetailPage() {
 
             <div
               className={`
-              grid gap-4
-              sm:grid-cols-2
-            `}
+                grid gap-4
+                sm:grid-cols-2
+              `}
             >
               <div>
                 <label className={labelClass} htmlFor="payoutMethod">

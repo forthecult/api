@@ -10,14 +10,14 @@ export function ProductCardSkeleton() {
     <div className="h-full">
       <Card
         className={`
-        relative flex h-full flex-col overflow-hidden rounded-lg py-0
-      `}
+          relative flex h-full flex-col overflow-hidden rounded-lg py-0
+        `}
       >
         {/* Image placeholder */}
         <div
           className={`
-          relative aspect-square animate-pulse rounded-t-lg bg-muted
-        `}
+            relative aspect-square animate-pulse rounded-t-lg bg-muted
+          `}
         />
 
         <CardContent className="flex min-h-0 flex-1 flex-col p-4 pt-4">
@@ -46,11 +46,11 @@ export function ProductGridSkeleton({ count = 8 }: { count?: number }) {
   return (
     <div
       className={`
-      grid grid-cols-1 gap-6
-      sm:grid-cols-2
-      md:grid-cols-3
-      lg:grid-cols-4
-    `}
+        grid grid-cols-1 gap-6
+        sm:grid-cols-2
+        md:grid-cols-3
+        lg:grid-cols-4
+      `}
     >
       {Array.from({ length: count }).map((_, i) => (
         <ProductCardSkeleton key={i} />

@@ -1,6 +1,5 @@
 "use client";
 
-import { KeyRound } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 

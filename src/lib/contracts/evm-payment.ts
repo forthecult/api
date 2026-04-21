@@ -8,14 +8,7 @@
  * - Transaction verification
  */
 
-import {
-  concat,
-  encodeAbiParameters,
-  keccak256,
-  pad,
-  parseAbiParameters,
-  toHex,
-} from "viem";
+import { concat, keccak256, toHex } from "viem";
 
 // ============================================================================
 // FACTORY DEPLOYMENTS

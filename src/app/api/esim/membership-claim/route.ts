@@ -31,10 +31,10 @@ import {
   ordersTable,
 } from "~/db/schema";
 import { getCurrentUser } from "~/lib/auth";
-import { getAdminGrantedTier } from "~/lib/get-member-tier";
 import { fetchUserStake, getStakingProgramId } from "~/lib/cult-staking";
 import { getEsimPackageDetail } from "~/lib/esim-api";
 import { fulfillEsimOrder } from "~/lib/esim-fulfillment";
+import { getAdminGrantedTier } from "~/lib/get-member-tier";
 import { fetchTokenMarketData } from "~/lib/market-cap";
 import { computeTierPricing } from "~/lib/membership-pricing";
 import { getSolanaRpcUrlServer } from "~/lib/solana-pay";
@@ -48,10 +48,6 @@ import { getActiveToken } from "~/lib/token-config";
 const MIN_CLAIM_TIER = 1;
 
 const TIER_NAMES: Record<number, string> = { 1: "APEX", 2: "PRIME", 3: "BASE" };
-function tierName(tierId: number): string {
-  return TIER_NAMES[tierId] ?? `Tier ${tierId}`;
-}
-
 /**
  * Detect tier by comparing staked token count against the live tier thresholds
  * derived from market cap / staker count.
@@ -66,6 +62,10 @@ function detectTierFromPricing(
     if (stakedTokens >= t.tokensNeeded) return t.tierId;
   }
   return null;
+}
+
+function tierName(tierId: number): string {
+  return TIER_NAMES[tierId] ?? `Tier ${tierId}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -110,9 +110,7 @@ export async function POST(request: Request) {
   const programId = getStakingProgramId();
   const token = getActiveToken();
   const connection =
-    programId != null
-      ? new Connection(getSolanaRpcUrlServer())
-      : null;
+    programId != null ? new Connection(getSolanaRpcUrlServer()) : null;
   const stakeData =
     programId != null && connection
       ? await fetchUserStake(connection, programId, wallet)

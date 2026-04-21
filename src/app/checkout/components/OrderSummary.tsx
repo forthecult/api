@@ -4,9 +4,9 @@ import { CircleHelp, Loader2, Minus, Plus, Trash2 } from "lucide-react";
 import Image from "next/image";
 import * as React from "react";
 
-import { cn } from "~/lib/cn";
 import type { CartItem } from "~/ui/components/cart";
 
+import { cn } from "~/lib/cn";
 import { FiatPrice } from "~/ui/components/FiatPrice";
 import { Button } from "~/ui/primitives/button";
 import {
@@ -34,11 +34,6 @@ const placeholderSrc = "/placeholder.svg";
 /** Minimal blur placeholder to avoid thumbnail flash while loading. */
 const BLUR_DATA_URL =
   "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMAAAQ";
-
-function variantDisplayOnly(name: string, variantLabel: string): string {
-  if (!variantLabel?.trim()) return name;
-  return variantLabel.trim();
-}
 
 export interface OrderSummaryProps {
   appliedCoupon: AppliedCoupon | null;
@@ -91,7 +86,7 @@ export function OrderSummary({
   showDiscountCode,
   subtotal,
   taxCents,
-  tierDiscounts = [],
+  tierDiscounts: _tierDiscounts = [],
   tierDiscountTotalCents = 0,
   total,
 }: OrderSummaryProps) {
@@ -120,8 +115,8 @@ export function OrderSummary({
           >
             <div
               className={`
-              relative h-16 w-16 shrink-0 overflow-hidden rounded-md bg-white
-            `}
+                relative h-16 w-16 shrink-0 overflow-hidden rounded-md bg-white
+              `}
             >
               {item.image?.trim() && !failedImageIds.has(item.id) && (
                 <div
@@ -131,7 +126,6 @@ export function OrderSummary({
                 />
               )}
               <Image
-                key={item.id}
                 alt={item.name}
                 blurDataURL={
                   item.image?.trim() && !failedImageIds.has(item.id)
@@ -147,6 +141,7 @@ export function OrderSummary({
                     : "opacity-100",
                 )}
                 fill
+                key={item.id}
                 onError={() =>
                   setFailedImageIds((prev) => new Set(prev).add(item.id))
                 }
@@ -185,9 +180,7 @@ export function OrderSummary({
               {/* Quantity controls */}
               <div className="mt-1.5 flex items-center gap-1.5">
                 <div
-                  className={`
-                  flex items-center rounded-md border border-border
-                `}
+                  className={`flex items-center rounded-md border border-border`}
                 >
                   <button
                     aria-label={`Decrease quantity of ${item.name}`}
@@ -207,9 +200,9 @@ export function OrderSummary({
                   </button>
                   <span
                     className={`
-                    flex w-7 items-center justify-center text-xs font-medium
-                    tabular-nums
-                  `}
+                      flex w-7 items-center justify-center text-xs font-medium
+                      tabular-nums
+                    `}
                   >
                     {item.quantity}
                   </span>
@@ -373,15 +366,15 @@ export function OrderSummary({
                   <div className="space-y-3 text-sm">
                     <div
                       className={`
-                      flex items-center gap-2 rounded-md bg-blue-50 px-3 py-2
-                      dark:bg-blue-950/30
-                    `}
+                        flex items-center gap-2 rounded-md bg-blue-50 px-3 py-2
+                        dark:bg-blue-950/30
+                      `}
                     >
                       <span
                         className={`
-                        font-medium text-blue-700
-                        dark:text-blue-400
-                      `}
+                          font-medium text-blue-700
+                          dark:text-blue-400
+                        `}
                       >
                         Most orders ship within 1 business day
                       </span>
@@ -390,27 +383,27 @@ export function OrderSummary({
                       <li className="flex items-start gap-2">
                         <span
                           className={`
-                          mt-1 block size-1.5 shrink-0 rounded-full
-                          bg-foreground/40
-                        `}
+                            mt-1 block size-1.5 shrink-0 rounded-full
+                            bg-foreground/40
+                          `}
                         />
                         <strong>Domestic (US):</strong> 2–4 business days
                       </li>
                       <li className="flex items-start gap-2">
                         <span
                           className={`
-                          mt-1 block size-1.5 shrink-0 rounded-full
-                          bg-foreground/40
-                        `}
+                            mt-1 block size-1.5 shrink-0 rounded-full
+                            bg-foreground/40
+                          `}
                         />
                         <strong>International:</strong> 5–14 business days
                       </li>
                       <li className="flex items-start gap-2">
                         <span
                           className={`
-                          mt-1 block size-1.5 shrink-0 rounded-full
-                          bg-foreground/40
-                        `}
+                            mt-1 block size-1.5 shrink-0 rounded-full
+                            bg-foreground/40
+                          `}
                         />
                         Tracking number sent via email once shipped
                       </li>
@@ -447,9 +440,9 @@ export function OrderSummary({
         </div>
         <div
           className={`
-          flex justify-between border-t border-border pt-3 text-base
-          font-semibold
-        `}
+            flex justify-between border-t border-border pt-3 text-base
+            font-semibold
+          `}
         >
           <span>Total</span>
           <span>
@@ -464,4 +457,9 @@ export function OrderSummary({
       </CardContent>
     </Card>
   );
+}
+
+function variantDisplayOnly(name: string, variantLabel: string): string {
+  if (!variantLabel?.trim()) return name;
+  return variantLabel.trim();
 }

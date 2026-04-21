@@ -1,5 +1,9 @@
 /** Compute the end of a billing period from `from` (week / month / year × count). */
-export function addBillingPeriod(from: Date, unit: string, count: number): Date {
+export function addBillingPeriod(
+  from: Date,
+  unit: string,
+  count: number,
+): Date {
   const d = new Date(from.getTime());
   const u = unit.toLowerCase();
   if (u === "week") {

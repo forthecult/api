@@ -8,9 +8,7 @@ const MAX_FILE_BYTES = 2 * 1024 * 1024; // 2MB cap for avatar fetch
 const POLL_MS = 3000;
 const POLL_ATTEMPTS = 20;
 
-export type VirusScanResult =
-  | { ok: true }
-  | { ok: false; error: string };
+export type VirusScanResult = { error: string; ok: false } | { ok: true };
 
 /**
  * Scan a file at the given URL using VirusTotal. Returns { ok: true } if clean or scan skipped;
@@ -26,24 +24,24 @@ export async function scanFileUrl(url: string): Promise<VirusScanResult> {
   let buffer: ArrayBuffer;
   try {
     const res = await fetch(url, {
-      signal: AbortSignal.timeout(15000),
       headers: { Accept: "application/octet-stream" },
+      signal: AbortSignal.timeout(15000),
     });
     if (!res.ok) {
-      return { ok: false, error: `fetch failed: ${res.status}` };
+      return { error: `fetch failed: ${res.status}`, ok: false };
     }
     const contentLength = res.headers.get("content-length");
     if (contentLength && parseInt(contentLength, 10) > MAX_FILE_BYTES) {
-      return { ok: false, error: "file too large to scan" };
+      return { error: "file too large to scan", ok: false };
     }
     buffer = await res.arrayBuffer();
     if (buffer.byteLength > MAX_FILE_BYTES) {
-      return { ok: false, error: "file too large to scan" };
+      return { error: "file too large to scan", ok: false };
     }
   } catch (e) {
     return {
-      ok: false,
       error: e instanceof Error ? e.message : "failed to fetch file",
+      ok: false,
     };
   }
 
@@ -53,16 +51,16 @@ export async function scanFileUrl(url: string): Promise<VirusScanResult> {
   let analysisId: string;
   try {
     const uploadRes = await fetch(`${VT_API}/files`, {
-      method: "POST",
-      headers: { "x-apikey": apiKey },
       body: form,
+      headers: { "x-apikey": apiKey },
+      method: "POST",
       signal: AbortSignal.timeout(30000),
     });
     if (!uploadRes.ok) {
       const errBody = await uploadRes.text();
       return {
-        ok: false,
         error: `VirusTotal upload failed: ${uploadRes.status} ${errBody.slice(0, 200)}`,
+        ok: false,
       };
     }
     const uploadJson = (await uploadRes.json()) as {
@@ -70,12 +68,12 @@ export async function scanFileUrl(url: string): Promise<VirusScanResult> {
     };
     analysisId = uploadJson.data?.id ?? "";
     if (!analysisId) {
-      return { ok: false, error: "VirusTotal returned no analysis id" };
+      return { error: "VirusTotal returned no analysis id", ok: false };
     }
   } catch (e) {
     return {
-      ok: false,
       error: e instanceof Error ? e.message : "VirusTotal request failed",
+      ok: false,
     };
   }
 
@@ -87,13 +85,16 @@ export async function scanFileUrl(url: string): Promise<VirusScanResult> {
         signal: AbortSignal.timeout(10000),
       });
       if (!reportRes.ok) {
-        return { ok: false, error: `VirusTotal report failed: ${reportRes.status}` };
+        return {
+          error: `VirusTotal report failed: ${reportRes.status}`,
+          ok: false,
+        };
       }
       const report = (await reportRes.json()) as {
         data?: {
           attributes?: {
-            status?: string;
             stats?: { malicious?: number; suspicious?: number };
+            status?: string;
           };
         };
       };
@@ -104,7 +105,7 @@ export async function scanFileUrl(url: string): Promise<VirusScanResult> {
       const stats = report.data?.attributes?.stats;
       const malicious = (stats?.malicious ?? 0) + (stats?.suspicious ?? 0);
       if (malicious > 0) {
-        return { ok: false, error: "file flagged as malicious" };
+        return { error: "file flagged as malicious", ok: false };
       }
       return { ok: true };
     } catch {
@@ -112,5 +113,5 @@ export async function scanFileUrl(url: string): Promise<VirusScanResult> {
     }
   }
 
-  return { ok: false, error: "virus scan timed out" };
+  return { error: "virus scan timed out", ok: false };
 }

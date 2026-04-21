@@ -1,6 +1,5 @@
-import { eq } from "drizzle-orm";
-
 import { createId } from "@paralleldrive/cuid2";
+import { eq } from "drizzle-orm";
 
 import { db } from "~/db";
 import { aiAgentTable } from "~/db/schema/ai-chat/tables";
@@ -17,9 +16,9 @@ export async function getOrCreateAiAgent(userId: string) {
   const now = new Date();
   await db.insert(aiAgentTable).values({
     backupMode: "none",
+    createdAt: now,
     id,
     localCacheEncrypted: false,
-    createdAt: now,
     updatedAt: now,
     userId,
     userRagEnabled: true,

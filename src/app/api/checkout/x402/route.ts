@@ -4,7 +4,10 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
 import { orderItemsTable, ordersTable, productsTable } from "~/db/schema";
-import { getAmazonProducts, isAmazonProductApiConfigured } from "~/lib/amazon-product-api";
+import {
+  getAmazonProducts,
+  isAmazonProductApiConfigured,
+} from "~/lib/amazon-product-api";
 import {
   publicApiCorsPreflight,
   withPublicApiCors,
@@ -23,11 +26,23 @@ import { USDC_MINT_MAINNET, usdcAmountFromUsd } from "~/lib/solana-pay";
 const PAYMENT_WINDOW_MS = 60 * 60 * 1000;
 
 const X402_PAY_TO_SOLANA = process.env.X402_PAY_TO_SOLANA_ADDRESS?.trim();
-const X402_FACILITATOR = process.env.X402_FACILITATOR_URL?.trim() || "https://x402.org/facilitator";
+const X402_FACILITATOR =
+  process.env.X402_FACILITATOR_URL?.trim() || "https://x402.org/facilitator";
 
 type CheckoutItem =
-  | { productId: string; quantity: number }
-  | { asin: string; quantity: number };
+  | { asin: string; quantity: number }
+  | { productId: string; quantity: number };
+
+interface OrderItemRow {
+  amazonAsin?: string;
+  amazonProductUrl?: string;
+  imageUrl?: string;
+  name: string;
+  priceCents: number;
+  productId: null | string;
+  quantity: number;
+  source: "amazon" | "store";
+}
 
 interface X402CheckoutBody {
   email: string;
@@ -44,64 +59,23 @@ interface X402CheckoutBody {
   };
 }
 
-type OrderItemRow = {
-  name: string;
-  priceCents: number;
-  quantity: number;
-  productId: string | null;
-  source: "store" | "amazon";
-  amazonAsin?: string;
-  amazonProductUrl?: string;
-  imageUrl?: string;
-};
-
 interface X402PaymentRequirements {
-  x402Version: number;
-  scheme: string;
-  network: string;
-  resource: string;
-  accepts: Array<{
-    maxAmountRequired: string;
+  accepts: {
     amount: string;
-    payTo: string;
     asset: string;
-    maxTimeoutSeconds: number;
     extra?: {
       feePayer?: string;
-      orderId?: string;
       memo?: string;
+      orderId?: string;
     };
-  }>;
-}
-
-function buildX402PaymentRequirements(
-  orderId: string,
-  totalUsd: number,
-  resource: string,
-): X402PaymentRequirements {
-  const payTo = X402_PAY_TO_SOLANA || deriveDepositAddress(orderId);
-  const amountBn = usdcAmountFromUsd(totalUsd);
-  const amountBaseUnits = amountBn.toFixed(0);
-
-  return {
-    x402Version: 1,
-    scheme: "exact",
-    network: "solana",
-    resource,
-    accepts: [
-      {
-        maxAmountRequired: amountBaseUnits,
-        amount: amountBaseUnits,
-        payTo,
-        asset: USDC_MINT_MAINNET,
-        maxTimeoutSeconds: 300,
-        extra: {
-          orderId,
-          memo: `FTC Order: ${orderId}`,
-        },
-      },
-    ],
-  };
+    maxAmountRequired: string;
+    maxTimeoutSeconds: number;
+    payTo: string;
+  }[];
+  network: string;
+  resource: string;
+  scheme: string;
+  x402Version: number;
 }
 
 /**
@@ -113,8 +87,6 @@ function buildX402PaymentRequirements(
  * 2. Agent builds USDC transfer transaction with memo "FTC Order: {orderId}"
  * 3. Agent retries with X-PAYMENT header containing signed transaction
  * 4. Server verifies/settles via facilitator, creates order
- *
- * This enables fully autonomous agent shopping with USDC on Solana.
  */
 export async function OPTIONS() {
   return publicApiCorsPreflight();
@@ -214,19 +186,24 @@ export async function POST(request: NextRequest) {
 
     for (const item of storeItems) {
       const product = productMap.get(item.productId);
-      if (!product || !product.published) continue;
+      if (!product?.published) continue;
       orderItems.push({
         name: product.name,
         priceCents: product.priceCents,
-        quantity: item.quantity,
         productId: product.id,
+        quantity: item.quantity,
         source: "store",
       });
     }
 
     let amazonProductMap = new Map<
       string,
-      { name: string; price: { usd: number }; productUrl: string; imageUrl?: string }
+      {
+        imageUrl?: string;
+        name: string;
+        price: { usd: number };
+        productUrl: string;
+      }
     >();
     if (amazonItems.length > 0 && isAmazonProductApiConfigured()) {
       const asins = [...new Set(amazonItems.map((i) => i.asin.trim()))].slice(
@@ -237,7 +214,12 @@ export async function POST(request: NextRequest) {
       amazonProductMap = new Map(
         amazonProducts.map((p) => [
           p.asin,
-          { name: p.name, price: p.price, productUrl: p.productUrl, imageUrl: p.imageUrl },
+          {
+            imageUrl: p.imageUrl,
+            name: p.name,
+            price: p.price,
+            productUrl: p.productUrl,
+          },
         ]),
       );
       for (const item of amazonItems) {
@@ -245,14 +227,14 @@ export async function POST(request: NextRequest) {
         if (!p) continue;
         const priceCents = Math.round(p.price.usd * 100);
         orderItems.push({
-          name: p.name,
-          priceCents,
-          quantity: item.quantity,
-          productId: null,
-          source: "amazon",
           amazonAsin: item.asin.trim(),
           amazonProductUrl: p.productUrl,
           imageUrl: p.imageUrl,
+          name: p.name,
+          priceCents,
+          productId: null,
+          quantity: item.quantity,
+          source: "amazon",
         });
       }
     }
@@ -298,48 +280,51 @@ export async function POST(request: NextRequest) {
       return withPublicApiCors(
         NextResponse.json(
           {
+            _actions: {
+              documentation: "https://x402.org/docs",
+              next: `Sign a USDC transfer transaction and retry with X-PAYMENT header`,
+            },
+            _x402: paymentRequirements,
             code: "PAYMENT_REQUIRED",
             message: `Payment required: send ${totalUsd.toFixed(2)} USDC to complete order`,
             orderId,
-            totals: {
-              subtotalUsd,
-              shippingUsd: 0,
-              totalUsd,
-            },
             paymentInstructions: {
-              protocol: "x402",
-              network: "solana",
-              token: "USDC",
-              tokenMint: USDC_MINT_MAINNET,
               amount: paymentRequirements.accepts[0]?.amount,
               amountHuman: totalUsd.toFixed(2),
-              payTo: paymentRequirements.accepts[0]?.payTo,
-              memo: `FTC Order: ${orderId}`,
               maxTimeoutSeconds: 300,
+              memo: `FTC Order: ${orderId}`,
+              network: "solana",
+              payTo: paymentRequirements.accepts[0]?.payTo,
+              protocol: "x402",
+              token: "USDC",
+              tokenMint: USDC_MINT_MAINNET,
             },
-            _x402: paymentRequirements,
-            _actions: {
-              next: `Sign a USDC transfer transaction and retry with X-PAYMENT header`,
-              documentation: "https://x402.org/docs",
+            totals: {
+              shippingUsd: 0,
+              subtotalUsd,
+              totalUsd,
             },
           },
           {
-            status: 402,
             headers: {
-              ...getRateLimitHeaders(rateLimitResult, RATE_LIMITS.checkout.limit),
+              ...getRateLimitHeaders(
+                rateLimitResult,
+                RATE_LIMITS.checkout.limit,
+              ),
               "PAYMENT-REQUIRED": paymentRequiredBase64,
               "WWW-Authenticate": `x402 scheme="exact" network="solana"`,
             },
+            status: 402,
           },
         ),
       );
     }
 
-    let paymentPayload: { transaction?: string; signature?: string } = {};
+    let paymentPayload: { signature?: string; transaction?: string } = {};
     try {
       const parsed = JSON.parse(
         Buffer.from(paymentHeader, "base64").toString("utf8"),
-      ) as { transaction?: string; signature?: string };
+      ) as { signature?: string; transaction?: string };
       paymentPayload = parsed;
     } catch {
       return withPublicApiCors(
@@ -355,7 +340,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { transaction: signedTx, signature: txSignature } = paymentPayload;
+    const { signature: txSignature, transaction: signedTx } = paymentPayload;
     if (!signedTx && !txSignature) {
       return withPublicApiCors(
         NextResponse.json(
@@ -376,14 +361,12 @@ export async function POST(request: NextRequest) {
     if (signedTx && !txSignature) {
       try {
         const verifyResponse = await fetch(`${X402_FACILITATOR}/verify`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             paymentPayload: {
-              x402Version: 1,
-              scheme: "exact",
               network: "solana",
               payload: { transaction: signedTx },
+              scheme: "exact",
+              x402Version: 1,
             },
             paymentRequirements: buildX402PaymentRequirements(
               orderId,
@@ -391,11 +374,13 @@ export async function POST(request: NextRequest) {
               resource,
             ).accepts[0],
           }),
+          headers: { "Content-Type": "application/json" },
+          method: "POST",
         });
 
         const verifyResult = (await verifyResponse.json()) as {
-          isValid: boolean;
           invalidReason?: string;
+          isValid: boolean;
         };
         if (!verifyResult.isValid) {
           return withPublicApiCors(
@@ -412,14 +397,12 @@ export async function POST(request: NextRequest) {
         }
 
         const settleResponse = await fetch(`${X402_FACILITATOR}/settle`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             paymentPayload: {
-              x402Version: 1,
-              scheme: "exact",
               network: "solana",
               payload: { transaction: signedTx },
+              scheme: "exact",
+              x402Version: 1,
             },
             paymentRequirements: buildX402PaymentRequirements(
               orderId,
@@ -427,12 +410,14 @@ export async function POST(request: NextRequest) {
               resource,
             ).accepts[0],
           }),
+          headers: { "Content-Type": "application/json" },
+          method: "POST",
         });
 
         const settleResult = (await settleResponse.json()) as {
+          errorReason?: string;
           success: boolean;
           transaction?: string;
-          errorReason?: string;
         };
         if (!settleResult.success) {
           return withPublicApiCors(
@@ -467,7 +452,9 @@ export async function POST(request: NextRequest) {
 
     const now = new Date();
     const depositAddress = deriveDepositAddress(orderId);
-    const expiresAt = new Date(now.getTime() + PAYMENT_WINDOW_MS).toISOString();
+    const _expiresAt = new Date(
+      now.getTime() + PAYMENT_WINDOW_MS,
+    ).toISOString();
 
     const { agent: moltbookAgent } =
       await getOptionalMoltbookAgentFromRequest(request);
@@ -496,6 +483,9 @@ export async function POST(request: NextRequest) {
 
     await db.insert(ordersTable).values({
       createdAt: now,
+      cryptoCurrency: "USDC",
+      cryptoCurrencyNetwork: "Solana",
+      cryptoTxHash: transactionSignature,
       email: email.trim(),
       fulfillmentStatus: "unfulfilled",
       hasAmazonItems,
@@ -504,9 +494,6 @@ export async function POST(request: NextRequest) {
       paymentStatus: "paid",
       shippingFeeCents,
       solanaPayDepositAddress: depositAddress,
-      cryptoTxHash: transactionSignature,
-      cryptoCurrency: "USDC",
-      cryptoCurrencyNetwork: "Solana",
       status: "paid",
       totalCents,
       updatedAt: now,
@@ -543,32 +530,32 @@ export async function POST(request: NextRequest) {
     return withPublicApiCors(
       NextResponse.json(
         {
-          success: true,
+          _actions: {
+            details: `/api/orders/${orderId}`,
+            next: "Order is paid and processing",
+            status: `/api/orders/${orderId}/status`,
+          },
           orderId,
-          status: "paid",
           payment: {
             method: "x402_usdc",
             network: "solana",
             token: "USDC",
             transactionSignature,
           },
+          status: "paid",
+          success: true,
           totals: {
-            subtotalUsd,
             shippingUsd: 0,
+            subtotalUsd,
             totalUsd,
-          },
-          _actions: {
-            next: "Order is paid and processing",
-            status: `/api/orders/${orderId}/status`,
-            details: `/api/orders/${orderId}`,
           },
         },
         {
-          status: 201,
           headers: getRateLimitHeaders(
             rateLimitResult,
             RATE_LIMITS.checkout.limit,
           ),
+          status: 201,
         },
       ),
     );
@@ -586,4 +573,34 @@ export async function POST(request: NextRequest) {
       ),
     );
   }
+}
+
+function buildX402PaymentRequirements(
+  orderId: string,
+  totalUsd: number,
+  resource: string,
+): X402PaymentRequirements {
+  const payTo = X402_PAY_TO_SOLANA || deriveDepositAddress(orderId);
+  const amountBn = usdcAmountFromUsd(totalUsd);
+  const amountBaseUnits = amountBn.toFixed(0);
+
+  return {
+    accepts: [
+      {
+        amount: amountBaseUnits,
+        asset: USDC_MINT_MAINNET,
+        extra: {
+          memo: `FTC Order: ${orderId}`,
+          orderId,
+        },
+        maxAmountRequired: amountBaseUnits,
+        maxTimeoutSeconds: 300,
+        payTo,
+      },
+    ],
+    network: "solana",
+    resource,
+    scheme: "exact",
+    x402Version: 1,
+  };
 }

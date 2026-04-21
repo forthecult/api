@@ -1,16 +1,39 @@
 {
-  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "$schema": "https://unpkg.com/knip@6/schema.json",
   "ignoreExportsUsedInFile": true,
+  "exclude": ["files"],
+  "rules": {
+    "duplicates": "off"
+  },
   "ignore": [
+    "admin/**",
+    "scripts/**",
     "src/ui/primitives/data-table/columns.tsx",
     "src/ui/components/icons/reseui-icons/discord-icon.tsx",
     "src/ui/components/icons/reseui-icons/utils-factory.tsx",
     "src/lib/queries/users.ts"
   ],
+  "ignoreIssues": {
+    "src/app.ts": ["exports"],
+    "src/app/checkout/checkout-shared.ts": ["exports"],
+    "src/app/checkout/prefetch-checkout.ts": ["exports"],
+    "src/app/mocks.ts": ["exports"],
+    "src/lib/**/*.ts": ["exports", "types"],
+    "src/ui/primitives/**/*.tsx": ["exports", "types"],
+    "src/ui/components/layout/page-container.tsx": ["exports"],
+    "src/ui/components/page-header.tsx": ["exports"],
+    "src/ui/components/structured-data.tsx": ["exports"]
+  },
+  "ignoreBinaries": ["psql"],
   "ignoreDependencies": [
-    "tailwindcss-animate",
+    "@solana/client",
+    "@solana/kit",
     "@tanstack/react-form",
+    "@tanstack/react-table",
+    "@tanstack/table-core",
+    "cmdk",
     "nuqs",
-    "zod"
+    "ofetch",
+    "react-day-picker"
   ]
 }

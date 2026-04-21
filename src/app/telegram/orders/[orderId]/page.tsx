@@ -58,14 +58,14 @@ export default function TelegramOrderStatusPage() {
     <div className="flex min-h-screen flex-col pb-24">
       <header
         className={`
-        sticky top-0 z-10 border-b border-[var(--tg-theme-hint-color,#999)]/20
-        bg-[var(--tg-theme-bg-color,#fff)] px-4 py-3
-      `}
+          sticky top-0 z-10 border-b border-[var(--tg-theme-hint-color,#999)]/20
+          bg-[var(--tg-theme-bg-color,#fff)] px-4 py-3
+        `}
       >
         <h1
           className={`
-          text-lg font-semibold text-[var(--tg-theme-text-color,#000)]
-        `}
+            text-lg font-semibold text-[var(--tg-theme-text-color,#000)]
+          `}
         >
           Order status
         </h1>
@@ -76,9 +76,9 @@ export default function TelegramOrderStatusPage() {
           <div className="flex flex-col items-center justify-center py-12">
             <div
               className={`
-              h-8 w-8 animate-spin rounded-full border-2
-              border-[var(--tg-theme-hint-color,#999)] border-t-transparent
-            `}
+                h-8 w-8 animate-spin rounded-full border-2
+                border-[var(--tg-theme-hint-color,#999)] border-t-transparent
+              `}
             />
             <p className="mt-4 text-sm text-[var(--tg-theme-hint-color,#999)]">
               Loading…
@@ -87,15 +87,15 @@ export default function TelegramOrderStatusPage() {
         ) : error ? (
           <div
             className={`
-            rounded-lg border border-red-200 bg-red-50 p-4
-            dark:border-red-800 dark:bg-red-950/30
-          `}
+              rounded-lg border border-red-200 bg-red-50 p-4
+              dark:border-red-800 dark:bg-red-950/30
+            `}
           >
             <p
               className={`
-              text-sm text-red-700
-              dark:text-red-300
-            `}
+                text-sm text-red-700
+                dark:text-red-300
+              `}
             >
               {error}
             </p>
@@ -107,21 +107,21 @@ export default function TelegramOrderStatusPage() {
           <div className="space-y-6">
             <div
               className={`
-              flex items-center gap-3 rounded-lg border
-              border-[var(--tg-theme-hint-color,#999)]/20
-              bg-[var(--tg-theme-secondary-bg-color,#f5f5f5)] p-4
-            `}
+                flex items-center gap-3 rounded-lg border
+                border-[var(--tg-theme-hint-color,#999)]/20
+                bg-[var(--tg-theme-secondary-bg-color,#f5f5f5)] p-4
+              `}
             >
               <Package
                 className={`
-                h-8 w-8 shrink-0 text-[var(--tg-theme-button-color,#3390ec)]
-              `}
+                  h-8 w-8 shrink-0 text-[var(--tg-theme-button-color,#3390ec)]
+                `}
               />
               <div>
                 <p
                   className={`
-                  font-medium text-[var(--tg-theme-text-color,#000)]
-                `}
+                    font-medium text-[var(--tg-theme-text-color,#000)]
+                  `}
                 >
                   {statusLabel[data.status] ?? data.status}
                 </p>

@@ -184,7 +184,7 @@ export function AdminChatPopup() {
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [detail?.messages]);
+  }, []);
 
   const handleSend = useCallback(async () => {
     const text = staffInput.trim();
@@ -303,8 +303,8 @@ export function AdminChatPopup() {
           >
             <div
               className={`
-              flex shrink-0 items-center justify-between border-b px-4 py-3
-            `}
+                flex shrink-0 items-center justify-between border-b px-4 py-3
+              `}
             >
               <h3 className="font-semibold">Support chat</h3>
               <div className="flex items-center gap-2">
@@ -384,18 +384,18 @@ export function AdminChatPopup() {
                 {!selectedId ? (
                   <div
                     className={`
-                    flex flex-1 items-center justify-center text-sm
-                    text-muted-foreground
-                  `}
+                      flex flex-1 items-center justify-center text-sm
+                      text-muted-foreground
+                    `}
                   >
                     Select a conversation
                   </div>
                 ) : detailLoading ? (
                   <div
                     className={`
-                    flex flex-1 items-center justify-center text-sm
-                    text-muted-foreground
-                  `}
+                      flex flex-1 items-center justify-center text-sm
+                      text-muted-foreground
+                    `}
                   >
                     Loading…
                   </div>
@@ -433,7 +433,10 @@ export function AdminChatPopup() {
                                 m.role === "customer"
                                   ? "text-muted-foreground/70"
                                   : m.role === "staff"
-                                    ? "text-blue-700/60 dark:text-blue-300/60"
+                                    ? `
+                                      text-blue-700/60
+                                      dark:text-blue-300/60
+                                    `
                                     : "text-muted-foreground/60",
                               )}
                             >
@@ -490,9 +493,9 @@ export function AdminChatPopup() {
                 ) : (
                   <div
                     className={`
-                    flex flex-1 items-center justify-center text-sm
-                    text-muted-foreground
-                  `}
+                      flex flex-1 items-center justify-center text-sm
+                      text-muted-foreground
+                    `}
                   >
                     Failed to load
                   </div>

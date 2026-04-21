@@ -67,7 +67,8 @@ export async function GET(request: NextRequest) {
       Math.max(
         1,
         Number.parseInt(
-          request.nextUrl.searchParams.get("limit") ?? String(DEFAULT_PAGE_SIZE),
+          request.nextUrl.searchParams.get("limit") ??
+            String(DEFAULT_PAGE_SIZE),
           10,
         ),
       ),
@@ -124,7 +125,9 @@ export async function GET(request: NextRequest) {
     }
 
     // fetch staking data for all wallets
-    const connection = programId ? new Connection(getSolanaRpcUrlServer()) : null;
+    const connection = programId
+      ? new Connection(getSolanaRpcUrlServer())
+      : null;
     const stakingDataByWallet = new Map<
       string,
       {
@@ -153,19 +156,22 @@ export async function GET(request: NextRequest) {
           );
           const lockStatus = stake ? getLockStatus(stake) : null;
           const stakedBalance = stake
-            ? (Number(stake.amount) / 10 ** token.decimals).toFixed(token.decimals)
+            ? (Number(stake.amount) / 10 ** token.decimals).toFixed(
+                token.decimals,
+              )
             : "0";
 
           stakingDataByWallet.set(walletAddress, {
-            lock: stake && lockStatus
-              ? {
-                  durationLabel: lockStatus.durationLabel,
-                  isLocked: lockStatus.isLocked,
-                  secondsRemaining: lockStatus.secondsRemaining,
-                  stakedAt: new Date(stake.lockStart * 1000).toISOString(),
-                  unlocksAt: lockStatus.unlocksAt,
-                }
-              : null,
+            lock:
+              stake && lockStatus
+                ? {
+                    durationLabel: lockStatus.durationLabel,
+                    isLocked: lockStatus.isLocked,
+                    secondsRemaining: lockStatus.secondsRemaining,
+                    stakedAt: new Date(stake.lockStart * 1000).toISOString(),
+                    unlocksAt: lockStatus.unlocksAt,
+                  }
+                : null,
             memberSince: stake?.lockStart
               ? new Date(stake.lockStart * 1000).toISOString()
               : null,
@@ -228,8 +234,12 @@ export async function GET(request: NextRequest) {
       if (tierA !== tierB) return tierA - tierB;
       const walletA = bestWalletByUserId.get(a) ?? "";
       const walletB = bestWalletByUserId.get(b) ?? "";
-      const stakedA = BigInt(stakingDataByWallet.get(walletA)?.stakedBalanceRaw ?? "0");
-      const stakedB = BigInt(stakingDataByWallet.get(walletB)?.stakedBalanceRaw ?? "0");
+      const stakedA = BigInt(
+        stakingDataByWallet.get(walletA)?.stakedBalanceRaw ?? "0",
+      );
+      const stakedB = BigInt(
+        stakingDataByWallet.get(walletB)?.stakedBalanceRaw ?? "0",
+      );
       return stakedB > stakedA ? 1 : stakedB < stakedA ? -1 : 0;
     });
 
@@ -267,7 +277,8 @@ export async function GET(request: NextRequest) {
 
     const orderCountByUserId = new Map<string, number>();
     for (const row of orderCounts) {
-      if (row.userId) orderCountByUserId.set(row.userId, Number(row.count) || 0);
+      if (row.userId)
+        orderCountByUserId.set(row.userId, Number(row.count) || 0);
     }
 
     // build response items (maintain sort order)

@@ -10,11 +10,11 @@ import {
 import { usePaymentMethodSettings } from "~/lib/hooks/use-payment-method-settings";
 
 const SOLANA_ECOSYSTEM_ALTS = new Set([
-  "Solana",
   "CRUST",
   "Pump",
-  "Troll",
   "Seeker (SKR)",
+  "Solana",
+  "Troll",
 ]);
 
 interface SecureCheckoutLineProps {
@@ -53,10 +53,7 @@ export function SecureCheckoutLine({
     solanaItem && otherSolanaEcosystem.length > 0,
   );
 
-  const renderIcon = (
-    icon: PaymentIconItem,
-    key: string,
-  ) => {
+  const renderIcon = (icon: PaymentIconItem, key: string) => {
     const isCard = icon.type === "card";
     return (
       <span
@@ -126,7 +123,10 @@ export function SecureCheckoutLine({
                   {renderIcon(solanaItem, "crypto-solana")}
                   {solanaHover &&
                     otherSolanaEcosystem.map((icon, i) =>
-                      renderIcon(icon, `crypto-solana-ecosystem-${i}-${icon.src}`),
+                      renderIcon(
+                        icon,
+                        `crypto-solana-ecosystem-${i}-${icon.src}`,
+                      ),
                     )}
                 </span>
               )}

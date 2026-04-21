@@ -49,17 +49,6 @@ const COLUMNS = [
   { key: "action", label: "Action" },
 ] as const;
 
-function formatDate(s: null | string): string {
-  if (!s) return "—";
-  const d = new Date(s);
-  return Number.isNaN(d.getTime()) ? s : d.toLocaleDateString();
-}
-
-function isPublished(row: BlogRow): boolean {
-  if (!row.publishedAt) return false;
-  return new Date(row.publishedAt) <= new Date();
-}
-
 export default function AdminBlogPage() {
   const [data, setData] = useState<BlogListResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -71,7 +60,9 @@ export default function AdminBlogPage() {
 
   useEffect(() => {
     const t = setTimeout(() => {
-      setSearch((prev) => (prev === searchInput.trim() ? prev : searchInput.trim()));
+      setSearch((prev) =>
+        prev === searchInput.trim() ? prev : searchInput.trim(),
+      );
       setPage(1);
     }, 350);
     return () => clearTimeout(t);
@@ -117,7 +108,9 @@ export default function AdminBlogPage() {
           method: "DELETE",
         });
         if (!res.ok) {
-          const body = (await res.json().catch(() => ({}))) as { error?: string };
+          const body = (await res.json().catch(() => ({}))) as {
+            error?: string;
+          };
           throw new Error(body.error ?? "Failed to delete");
         }
         setData((prev) =>
@@ -142,12 +135,16 @@ export default function AdminBlogPage() {
     return (
       <div
         className={`
-        rounded-lg border border-red-200 bg-red-50 p-4 text-red-800
-        dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
-      `}
+          rounded-lg border border-red-200 bg-red-50 p-4 text-red-800
+          dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
+        `}
       >
         {error}
-        <Button className="mt-2" onClick={() => void fetchPosts()} type="button">
+        <Button
+          className="mt-2"
+          onClick={() => void fetchPosts()}
+          type="button"
+        >
           Retry
         </Button>
       </div>
@@ -158,9 +155,9 @@ export default function AdminBlogPage() {
     <div className="space-y-6">
       <div
         className={`
-        flex flex-col gap-4
-        sm:flex-row sm:items-center sm:justify-between
-      `}
+          flex flex-col gap-4
+          sm:flex-row sm:items-center sm:justify-between
+        `}
       >
         <h2 className="text-2xl font-semibold tracking-tight">Blog</h2>
         <Link href="/blog/create">
@@ -173,17 +170,17 @@ export default function AdminBlogPage() {
       <Card>
         <CardHeader
           className={`
-          flex flex-col gap-4
-          sm:flex-row sm:items-center sm:justify-between
-        `}
+            flex flex-col gap-4
+            sm:flex-row sm:items-center sm:justify-between
+          `}
         >
           <CardTitle className="sr-only">Blog posts</CardTitle>
           <div className="relative max-w-md flex-1">
             <Search
               className={`
-              absolute top-1/2 left-3 size-4 -translate-y-1/2
-              text-muted-foreground
-            `}
+                absolute top-1/2 left-3 size-4 -translate-y-1/2
+                text-muted-foreground
+              `}
             />
             <input
               aria-label="Search posts"
@@ -226,9 +223,9 @@ export default function AdminBlogPage() {
           {loading ? (
             <div
               className={`
-              flex min-h-[200px] items-center justify-center
-              text-muted-foreground
-            `}
+                flex min-h-[200px] items-center justify-center
+                text-muted-foreground
+              `}
             >
               Loading…
             </div>
@@ -239,13 +236,13 @@ export default function AdminBlogPage() {
                   <thead>
                     <tr
                       className={`
-                      border-b bg-muted/50 text-left text-xs font-semibold
-                      tracking-wider text-muted-foreground uppercase
-                    `}
+                        border-b bg-muted/50 text-left text-xs font-semibold
+                        tracking-wider text-muted-foreground uppercase
+                      `}
                     >
                       {COLUMNS.map((col) => (
                         <th
-                          className="whitespace-nowrap p-4 font-medium"
+                          className="p-4 font-medium whitespace-nowrap"
                           key={col.key}
                           scope="col"
                         >
@@ -269,7 +266,10 @@ export default function AdminBlogPage() {
                     ) : (
                       data.items.map((row) => (
                         <tr
-                          className="border-b last:border-0"
+                          className={`
+                            border-b
+                            last:border-0
+                          `}
                           key={row.id}
                         >
                           <td className="max-w-[200px] truncate p-4 font-medium">
@@ -292,9 +292,9 @@ export default function AdminBlogPage() {
                           <td className="p-4">
                             <div
                               className={`
-                              relative size-10 overflow-hidden rounded-md border
-                              bg-muted
-                            `}
+                                relative size-10 overflow-hidden rounded-md
+                                border bg-muted
+                              `}
                             >
                               {row.coverImageUrl ? (
                                 <Image
@@ -307,9 +307,9 @@ export default function AdminBlogPage() {
                               ) : (
                                 <div
                                   className={`
-                                  flex size-full items-center justify-center
-                                  text-xs text-muted-foreground
-                                `}
+                                    flex size-full items-center justify-center
+                                    text-xs text-muted-foreground
+                                  `}
                                 >
                                   —
                                 </div>
@@ -321,7 +321,10 @@ export default function AdminBlogPage() {
                               className={cn(
                                 "inline-flex items-center gap-1",
                                 isPublished(row)
-                                  ? "text-green-600 dark:text-green-400"
+                                  ? `
+                                    text-green-600
+                                    dark:text-green-400
+                                  `
                                   : "text-muted-foreground",
                               )}
                               title={row.publishedAt ?? "Draft"}
@@ -366,8 +369,8 @@ export default function AdminBlogPage() {
               {data.items.length > 0 && data.totalPages > 1 && (
                 <div
                   className={`
-                  flex items-center justify-center gap-2 border-t p-4
-                `}
+                    flex items-center justify-center gap-2 border-t p-4
+                  `}
                 >
                   <Button
                     aria-label="Previous page"
@@ -404,4 +407,15 @@ export default function AdminBlogPage() {
       </Card>
     </div>
   );
+}
+
+function formatDate(s: null | string): string {
+  if (!s) return "—";
+  const d = new Date(s);
+  return Number.isNaN(d.getTime()) ? s : d.toLocaleDateString();
+}
+
+function isPublished(row: BlogRow): boolean {
+  if (!row.publishedAt) return false;
+  return new Date(row.publishedAt) <= new Date();
 }

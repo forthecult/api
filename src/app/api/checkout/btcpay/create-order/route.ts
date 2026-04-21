@@ -88,8 +88,8 @@ export async function POST(request: NextRequest) {
       if (!verification.ok) {
         return NextResponse.json(
           {
-            error: verification.error,
             code: "WALLET_VERIFICATION_REQUIRED",
+            error: verification.error,
           },
           { status: 400 },
         );

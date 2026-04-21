@@ -14,13 +14,17 @@ import { verifySolanaSignature } from "~/lib/verify-solana-signature";
 const TIER_MESSAGE_PREFIX = "FortheCult tier verification\n";
 const TIER_MESSAGE_MAX_AGE_MS = 5 * 60 * 1000; // 5 minutes
 
-function normalizeSolanaAddress(address: string): string | null {
-  try {
-    return new PublicKey(address.trim()).toBase58();
-  } catch {
-    return null;
-  }
+export interface VerifyWalletForTierParams {
+  userId?: null | string;
+  wallet: string;
+  walletMessage?: null | string;
+  walletSignature?: null | string;
+  walletSignatureBase58?: null | string;
 }
+
+export type VerifyWalletForTierResult =
+  | { error: string; ok: false }
+  | { ok: true };
 
 /**
  * Build the message the client must sign for tier verification.
@@ -33,31 +37,6 @@ export function getTierVerificationMessage(date: Date = new Date()): string {
 }
 
 /**
- * Check that the message matches our format and timestamp is within the allowed window.
- */
-function parseTierMessage(message: string): { valid: boolean; timestamp: number | null } {
-  if (!message.startsWith(TIER_MESSAGE_PREFIX)) {
-    return { valid: false, timestamp: null };
-  }
-  const rest = message.slice(TIER_MESSAGE_PREFIX.length).trim();
-  const date = new Date(rest);
-  const timestamp = Number.isNaN(date.getTime()) ? null : date.getTime();
-  return { valid: timestamp !== null, timestamp };
-}
-
-export type VerifyWalletForTierParams = {
-  wallet: string;
-  userId?: null | string;
-  walletMessage?: null | string;
-  walletSignature?: null | string;
-  walletSignatureBase58?: null | string;
-};
-
-export type VerifyWalletForTierResult =
-  | { ok: true }
-  | { ok: false; error: string };
-
-/**
  * Verify the requester is allowed to use the given wallet for tier discounts.
  * Returns ok: true if (1) user is authenticated and wallet is linked, or (2) valid signed message.
  */
@@ -66,7 +45,7 @@ export async function verifyWalletForTier(
 ): Promise<VerifyWalletForTierResult> {
   const normalized = normalizeSolanaAddress(params.wallet);
   if (!normalized) {
-    return { ok: false, error: "Invalid wallet address" };
+    return { error: "Invalid wallet address", ok: false };
   }
 
   // (1) Authenticated with wallet linked to account
@@ -92,26 +71,27 @@ export async function verifyWalletForTier(
 
   if (!message || !hasSignature) {
     return {
-      ok: false,
       error:
         "Wallet must be linked to your account or verified with a signed message. Include walletMessage and walletSignature (or walletSignatureBase58). Use GET /api/checkout/wallet-verify-message to get the message to sign.",
+      ok: false,
     };
   }
 
-  const { valid, timestamp } = parseTierMessage(message);
+  const { timestamp, valid } = parseTierMessage(message);
   if (!valid || timestamp === null) {
     return {
-      ok: false,
       error:
         "Invalid message format. Use GET /api/checkout/wallet-verify-message to get the message to sign.",
+      ok: false,
     };
   }
 
   const age = Date.now() - timestamp;
   if (age < -60 * 1000 || age > TIER_MESSAGE_MAX_AGE_MS) {
     return {
+      error:
+        "Message expired. Request a new message from GET /api/checkout/wallet-verify-message and sign again.",
       ok: false,
-      error: "Message expired. Request a new message from GET /api/checkout/wallet-verify-message and sign again.",
     };
   }
 
@@ -122,8 +102,32 @@ export async function verifyWalletForTier(
     signatureBase58: params.walletSignatureBase58 ?? undefined,
   });
   if (!validSig) {
-    return { ok: false, error: "Invalid signature for this wallet." };
+    return { error: "Invalid signature for this wallet.", ok: false };
   }
 
   return { ok: true };
+}
+
+function normalizeSolanaAddress(address: string): null | string {
+  try {
+    return new PublicKey(address.trim()).toBase58();
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Check that the message matches our format and timestamp is within the allowed window.
+ */
+function parseTierMessage(message: string): {
+  timestamp: null | number;
+  valid: boolean;
+} {
+  if (!message.startsWith(TIER_MESSAGE_PREFIX)) {
+    return { timestamp: null, valid: false };
+  }
+  const rest = message.slice(TIER_MESSAGE_PREFIX.length).trim();
+  const date = new Date(rest);
+  const timestamp = Number.isNaN(date.getTime()) ? null : date.getTime();
+  return { timestamp, valid: timestamp !== null };
 }

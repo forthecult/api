@@ -367,38 +367,38 @@ export function ethereumAuthPlugin() {
                   const rows = await tx
                     .insert(userTable)
                     .values({
-                      id: userId,
-                      name: "Ethereum User",
+                      createdAt: now,
                       email,
                       emailVerified: true,
-                      createdAt: now,
-                      updatedAt: now,
-                      twoFactorEnabled: false,
-                      role: "user",
+                      id: userId,
                       marketingAiCompanion: false,
                       marketingDiscord: false,
                       marketingEmail: true,
                       marketingSms: false,
                       marketingTelegram: false,
                       marketingWebsite: false,
+                      name: "Ethereum User",
                       receiveMarketing: false,
                       receiveOrderNotificationsViaTelegram: false,
                       receiveSmsMarketing: false,
+                      role: "user",
                       transactionalAiCompanion: false,
                       transactionalDiscord: false,
                       transactionalEmail: true,
                       transactionalSms: false,
                       transactionalTelegram: false,
                       transactionalWebsite: true,
+                      twoFactorEnabled: false,
+                      updatedAt: now,
                     })
                     .returning();
                   await tx.insert(accountTable).values({
-                    id: accountRowId,
                     accountId: addressTrim.toLowerCase(),
-                    providerId: ETHEREUM_PROVIDER_ID,
-                    userId: rows[0].id,
                     createdAt: now,
+                    id: accountRowId,
+                    providerId: ETHEREUM_PROVIDER_ID,
                     updatedAt: now,
+                    userId: rows[0].id,
                   });
                   return rows;
                 });
@@ -443,22 +443,19 @@ export function ethereumAuthPlugin() {
                       .where(
                         and(
                           eq(accountTable.providerId, ETHEREUM_PROVIDER_ID),
-                          eq(
-                            accountTable.accountId,
-                            addressTrim.toLowerCase(),
-                          ),
+                          eq(accountTable.accountId, addressTrim.toLowerCase()),
                         ),
                       )
                       .limit(1);
                     if (!existingAcc[0]) {
                       try {
                         await db.insert(accountTable).values({
-                          id: generateId({ model: "account" }),
                           accountId: addressTrim.toLowerCase(),
-                          providerId: ETHEREUM_PROVIDER_ID,
-                          userId: user.id,
                           createdAt: now,
+                          id: generateId({ model: "account" }),
+                          providerId: ETHEREUM_PROVIDER_ID,
                           updatedAt: now,
+                          userId: user.id,
                         });
                       } catch (linkErr) {
                         if (!isDuplicateAccountError(linkErr)) throw linkErr;
@@ -556,6 +553,16 @@ export function ethereumAuthPlugin() {
   };
 }
 
+function getPublicClient() {
+  if (!_publicClient) {
+    _publicClient = createPublicClient({
+      chain: mainnet,
+      transport: http(),
+    });
+  }
+  return _publicClient;
+}
+
 /** True if this error is a DB unique constraint on account (providerId + accountId). */
 function isDuplicateAccountError(err: unknown): boolean {
   const msg = getFullErrorMessage(err);
@@ -580,14 +587,4 @@ function isDuplicateAccountError(err: unknown): boolean {
   )
     return true;
   return false;
-}
-
-function getPublicClient() {
-  if (!_publicClient) {
-    _publicClient = createPublicClient({
-      chain: mainnet,
-      transport: http(),
-    });
-  }
-  return _publicClient;
 }

@@ -121,14 +121,14 @@ export async function POST(request: NextRequest) {
 
     void onOrderCreated(order.id);
 
-    let printfulOrderId: number | undefined;
+    let _printfulOrderId: number | undefined;
     let printfulError: string | undefined;
     try {
       const hasPrintful = await hasPrintfulItems(order.id);
       if (hasPrintful) {
         const printfulResult = await createAndConfirmPrintfulOrder(order.id);
         if (printfulResult.success)
-          printfulOrderId = printfulResult.printfulOrderId;
+          _printfulOrderId = printfulResult.printfulOrderId;
         else printfulError = printfulResult.error;
       }
     } catch (pfError) {
@@ -136,14 +136,14 @@ export async function POST(request: NextRequest) {
         pfError instanceof Error ? pfError.message : "Unknown error";
     }
 
-    let printifyOrderId: string | undefined;
+    let _printifyOrderId: string | undefined;
     let printifyError: string | undefined;
     try {
       const hasPrintify = await hasPrintifyItems(order.id);
       if (hasPrintify) {
         const printifyResult = await createAndConfirmPrintifyOrder(order.id);
         if (printifyResult.success)
-          printifyOrderId = printifyResult.printifyOrderId;
+          _printifyOrderId = printifyResult.printifyOrderId;
         else printifyError = printifyResult.error;
       }
     } catch (pyError) {

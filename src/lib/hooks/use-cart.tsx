@@ -160,7 +160,6 @@ export function CartProvider({ children }: React.PropsWithChildren) {
       addItem,
       openCart,
       removeItem,
-      setCartOpen,
       updateQuantity,
       clearCart,
       itemCount,

@@ -38,7 +38,7 @@ const SONOFF_CATEGORY_BY_SLUG: Record<string, string> = {
   "sonoff-zigbee-smart-water-valve": "smart-home-valves",
 };
 
-const MINIRIG_MAIN_CATEGORY = "accessories-speakers";
+const _MINIRIG_MAIN_CATEGORY = "accessories-speakers";
 const MINIRIG_SLUGS = ["minirig-4-bluetooth-speaker", "minirig-subwoofer-4"];
 
 async function main() {

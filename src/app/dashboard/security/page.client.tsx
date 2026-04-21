@@ -630,9 +630,7 @@ export function SecurityPageClient() {
 
       {error && (
         <div
-          className={`
-          rounded-md bg-destructive/10 p-4 text-sm text-destructive
-        `}
+          className={`rounded-md bg-destructive/10 p-4 text-sm text-destructive`}
         >
           {error}
         </div>
@@ -640,9 +638,9 @@ export function SecurityPageClient() {
       {message && (
         <div
           className={`
-          rounded-md bg-green-50 p-4 text-sm text-green-700
-          dark:bg-green-950/30 dark:text-green-400
-        `}
+            rounded-md bg-green-50 p-4 text-sm text-green-700
+            dark:bg-green-950/30 dark:text-green-400
+          `}
         >
           {message}
         </div>
@@ -671,8 +669,8 @@ export function SecurityPageClient() {
               {resetError && (
                 <div
                   className={`
-                  rounded-md bg-destructive/10 p-3 text-sm text-destructive
-                `}
+                    rounded-md bg-destructive/10 p-3 text-sm text-destructive
+                  `}
                 >
                   {resetError}
                 </div>
@@ -680,9 +678,9 @@ export function SecurityPageClient() {
               {resetEmailSent && (
                 <div
                   className={`
-                  rounded-md bg-green-50 p-3 text-sm text-green-700
-                  dark:bg-green-950/30 dark:text-green-400
-                `}
+                    rounded-md bg-green-50 p-3 text-sm text-green-700
+                    dark:bg-green-950/30 dark:text-green-400
+                  `}
                 >
                   Check your inbox (and spam) for a link to change your
                   password. The link expires in 1 hour.
@@ -836,9 +834,9 @@ export function SecurityPageClient() {
               getTelegramBotUsername() && (
                 <div
                   className={`
-                  flex h-9 min-w-0 items-center
-                  [&_iframe]:!h-9 [&_iframe]:!min-h-9
-                `}
+                    flex h-9 min-w-0 items-center
+                    [&_iframe]:!h-9 [&_iframe]:!min-h-9
+                  `}
                 >
                   <TelegramLoginWidget
                     botUsername={getTelegramBotUsername()}
@@ -872,8 +870,8 @@ export function SecurityPageClient() {
             {addEmailError && (
               <div
                 className={`
-                rounded-md bg-destructive/10 p-3 text-sm text-destructive
-              `}
+                  rounded-md bg-destructive/10 p-3 text-sm text-destructive
+                `}
               >
                 {addEmailError}
               </div>
@@ -969,8 +967,9 @@ export function SecurityPageClient() {
                 </p>
                 <ul
                   className={`
-                  list-inside list-disc space-y-2 text-sm text-muted-foreground
-                `}
+                    list-inside list-disc space-y-2 text-sm
+                    text-muted-foreground
+                  `}
                 >
                   <li>
                     <strong className="text-foreground">Password:</strong> Enter
@@ -1095,10 +1094,10 @@ export function SecurityPageClient() {
               ) : (
                 <div
                   className={`
-                  flex h-48 w-48 flex-col items-center justify-center gap-2
-                  rounded border border-dashed border-muted-foreground/30
-                  bg-muted/30 text-center text-sm text-muted-foreground
-                `}
+                    flex h-48 w-48 flex-col items-center justify-center gap-2
+                    rounded border border-dashed border-muted-foreground/30
+                    bg-muted/30 text-center text-sm text-muted-foreground
+                  `}
                 >
                   {qrCodeError ? (
                     <span className="px-2">{qrCodeError}</span>
@@ -1116,8 +1115,8 @@ export function SecurityPageClient() {
                   <p className="text-sm font-medium">Manual entry code:</p>
                   <p
                     className={`
-                    mt-2 rounded-md bg-muted p-4 font-mono text-sm break-all
-                  `}
+                      mt-2 rounded-md bg-muted p-4 font-mono text-sm break-all
+                    `}
                   >
                     {secret}
                   </p>
@@ -1188,8 +1187,8 @@ export function SecurityPageClient() {
             {!accounts.some((a) => a.providerId === "credential") ? (
               <p
                 className={`
-                rounded-md bg-muted/50 p-3 text-sm text-muted-foreground
-              `}
+                  rounded-md bg-muted/50 p-3 text-sm text-muted-foreground
+                `}
               >
                 To use authenticator app (OTP) 2FA, add an email and password to
                 your account first (in the section above). You can use security

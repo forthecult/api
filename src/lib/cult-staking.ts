@@ -21,7 +21,10 @@ import {
 } from "@solana/spl-token";
 import { type Connection, PublicKey as PublicKeyClass } from "@solana/web3.js";
 
-import { CULT_MINT_MAINNET, TOKEN_2022_PROGRAM_ID_BASE58 } from "./token-config";
+import {
+  CULT_MINT_MAINNET,
+  TOKEN_2022_PROGRAM_ID_BASE58,
+} from "./token-config";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -53,6 +56,28 @@ const STAKE_ENTRY_DISCRIMINATOR = new Uint8Array([
 // Program ID
 // ---------------------------------------------------------------------------
 
+/** Convert duration to tier */
+export function durationToTier(d: number): LockTier {
+  return d === LOCK_12_MONTHS ? TIER_12_MONTHS : TIER_30_DAYS;
+}
+
+// ---------------------------------------------------------------------------
+// PDAs
+// ---------------------------------------------------------------------------
+
+/** Stake entry PDA: seeds = ["stake", user, mint, lock_tier] */
+export function getStakeEntryPda(
+  programId: PublicKeyClass,
+  user: PublicKeyClass,
+  lockTier: LockTier,
+  mint: PublicKeyClass = new PublicKeyClass(CULT_MINT_MAINNET),
+): [PublicKeyClass, number] {
+  return PublicKeyClass.findProgramAddressSync(
+    [STAKE_SEED, user.toBuffer(), mint.toBuffer(), Buffer.from([lockTier])],
+    programId,
+  );
+}
+
 /**
  * Staking program ID.
  * Set CULT_STAKING_PROGRAM_ID (server) / NEXT_PUBLIC_CULT_STAKING_PROGRAM_ID (client).
@@ -69,34 +94,6 @@ export function getStakingProgramId(): null | PublicKeyClass {
   return new PublicKeyClass(id);
 }
 
-// ---------------------------------------------------------------------------
-// PDAs
-// ---------------------------------------------------------------------------
-
-/** Vault authority PDA: seeds = ["vault_auth", mint] */
-export function getVaultAuthorityPda(
-  programId: PublicKeyClass,
-  mint: PublicKeyClass = new PublicKeyClass(CULT_MINT_MAINNET),
-): [PublicKeyClass, number] {
-  return PublicKeyClass.findProgramAddressSync(
-    [VAULT_AUTH_SEED, mint.toBuffer()],
-    programId,
-  );
-}
-
-/** Stake entry PDA: seeds = ["stake", user, mint, lock_tier] */
-export function getStakeEntryPda(
-  programId: PublicKeyClass,
-  user: PublicKeyClass,
-  lockTier: LockTier,
-  mint: PublicKeyClass = new PublicKeyClass(CULT_MINT_MAINNET),
-): [PublicKeyClass, number] {
-  return PublicKeyClass.findProgramAddressSync(
-    [STAKE_SEED, user.toBuffer(), mint.toBuffer(), Buffer.from([lockTier])],
-    programId,
-  );
-}
-
 /** Get vault ATA address: vault = ATA(mint, vaultAuthority). */
 export function getVaultAta(
   mint: PublicKeyClass,
@@ -111,19 +108,20 @@ export function getVaultAta(
   );
 }
 
+/** Vault authority PDA: seeds = ["vault_auth", mint] */
+export function getVaultAuthorityPda(
+  programId: PublicKeyClass,
+  mint: PublicKeyClass = new PublicKeyClass(CULT_MINT_MAINNET),
+): [PublicKeyClass, number] {
+  return PublicKeyClass.findProgramAddressSync(
+    [VAULT_AUTH_SEED, mint.toBuffer()],
+    programId,
+  );
+}
+
 /** Validate that a duration is one of the two allowed values. */
 export function isValidLockDuration(d: number): d is LockDuration {
   return d === LOCK_30_DAYS || d === LOCK_12_MONTHS;
-}
-
-/** Convert duration to tier */
-export function durationToTier(d: number): LockTier {
-  return d === LOCK_12_MONTHS ? TIER_12_MONTHS : TIER_30_DAYS;
-}
-
-/** Convert tier to duration */
-export function tierToDuration(tier: LockTier): LockDuration {
-  return tier === TIER_12_MONTHS ? LOCK_12_MONTHS : LOCK_30_DAYS;
 }
 
 /** Human-readable label for a lock duration. */
@@ -131,6 +129,11 @@ export function lockDurationLabel(d: number): string {
   if (d === LOCK_30_DAYS) return "30 days";
   if (d === LOCK_12_MONTHS) return "12 months";
   return `${d}s`;
+}
+
+/** Convert tier to duration */
+export function tierToDuration(tier: LockTier): LockDuration {
+  return tier === TIER_12_MONTHS ? LOCK_12_MONTHS : LOCK_30_DAYS;
 }
 
 // ---------------------------------------------------------------------------
@@ -182,142 +185,30 @@ export interface ParsedStakeEntry {
   staker: string;
 }
 
-/** Combined stakes for both tiers */
-export interface UserStakes {
-  tier30Days: null | ParsedStakeEntry;
-  tier12Months: null | ParsedStakeEntry;
-  /** Total staked across both tiers */
-  totalAmount: bigint;
-  /** Whether user has any active (non-withdrawn) stake */
-  hasActiveStake: boolean;
+export interface ParsedStakePool {
+  mint: string;
+  totalStaked: bigint;
+  totalStakers: number;
+  vault: string;
 }
 
 // ---------------------------------------------------------------------------
 // Account parsing
 // ---------------------------------------------------------------------------
 
-/** Parse a StakeEntry account's data buffer. Returns null if invalid. */
-export function parseStakeEntry(data: Buffer): null | ParsedStakeEntry {
-  if (data.length < STAKE_ENTRY_SIZE) return null;
-
-  // verify discriminator
-  const discriminator = data.subarray(
-    OFFSET_DISCRIMINATOR,
-    OFFSET_DISCRIMINATOR + 8,
-  );
-  if (!discriminator.every((b, i) => b === STAKE_ENTRY_DISCRIMINATOR[i])) {
-    return null;
-  }
-
-  const isWithdrawn = data.readUInt8(OFFSET_IS_WITHDRAWN) !== 0;
-
-  return {
-    amount: data.readBigUInt64LE(OFFSET_AMOUNT),
-    isWithdrawn,
-    lockDuration: Number(data.readBigInt64LE(OFFSET_LOCK_DURATION)),
-    lockStart: Number(data.readBigInt64LE(OFFSET_LOCK_START)),
-    lockTier: data.readUInt8(OFFSET_LOCK_TIER) as LockTier,
-    mint: new PublicKeyClass(
-      data.subarray(OFFSET_MINT, OFFSET_MINT + 32),
-    ).toBase58(),
-    staker: new PublicKeyClass(
-      data.subarray(OFFSET_STAKER, OFFSET_STAKER + 32),
-    ).toBase58(),
-  };
+/** Combined stakes for both tiers */
+export interface UserStakes {
+  /** Whether user has any active (non-withdrawn) stake */
+  hasActiveStake: boolean;
+  tier12Months: null | ParsedStakeEntry;
+  tier30Days: null | ParsedStakeEntry;
+  /** Total staked across both tiers */
+  totalAmount: bigint;
 }
 
 // ---------------------------------------------------------------------------
 // Fetch helpers
 // ---------------------------------------------------------------------------
-
-/**
- * Fetch stake entry for a specific tier. Returns null if no stake exists.
- */
-export async function fetchStakeEntry(
-  connection: Connection,
-  programId: null | PublicKeyClass,
-  walletAddress: PublicKeyClass | string,
-  lockTier: LockTier,
-): Promise<null | ParsedStakeEntry> {
-  if (!programId) return null;
-  try {
-    const user =
-      typeof walletAddress === "string"
-        ? new PublicKeyClass(walletAddress)
-        : walletAddress;
-    const [stakeEntryPda] = getStakeEntryPda(programId, user, lockTier);
-    const account = await connection.getAccountInfo(stakeEntryPda);
-    if (!account) return null;
-    const parsed = parseStakeEntry(account.data as Buffer);
-    if (!parsed || parsed.isWithdrawn) return null;
-    return parsed;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Fetch both tier stakes for a wallet.
- */
-export async function fetchUserStakes(
-  connection: Connection,
-  programId: null | PublicKeyClass,
-  walletAddress: PublicKeyClass | string,
-): Promise<UserStakes> {
-  const empty: UserStakes = {
-    tier30Days: null,
-    tier12Months: null,
-    totalAmount: 0n,
-    hasActiveStake: false,
-  };
-
-  if (!programId) return empty;
-
-  const [tier30Days, tier12Months] = await Promise.all([
-    fetchStakeEntry(connection, programId, walletAddress, TIER_30_DAYS),
-    fetchStakeEntry(connection, programId, walletAddress, TIER_12_MONTHS),
-  ]);
-
-  const amount30 = tier30Days?.amount ?? 0n;
-  const amount12 = tier12Months?.amount ?? 0n;
-
-  return {
-    tier30Days,
-    tier12Months,
-    totalAmount: amount30 + amount12,
-    hasActiveStake: tier30Days !== null || tier12Months !== null,
-  };
-}
-
-/**
- * Fetch total staked amount across both tiers.
- * Returns 0n if no stakes or program not configured.
- */
-export async function fetchStakedBalance(
-  connection: Connection,
-  programId: null | PublicKeyClass,
-  walletAddress: PublicKeyClass | string,
-): Promise<bigint> {
-  const stakes = await fetchUserStakes(connection, programId, walletAddress);
-  return stakes.totalAmount;
-}
-
-/**
- * Legacy compatibility: Fetch user stake (returns the stake with longer lock or higher amount).
- * Used by code that expects a single stake per user.
- */
-export async function fetchUserStake(
-  connection: Connection,
-  programId: null | PublicKeyClass,
-  walletAddress: PublicKeyClass | string,
-): Promise<null | ParsedStakeEntry> {
-  const stakes = await fetchUserStakes(connection, programId, walletAddress);
-
-  // prefer 12-month stake if exists, otherwise 30-day
-  if (stakes.tier12Months) return stakes.tier12Months;
-  if (stakes.tier30Days) return stakes.tier30Days;
-  return null;
-}
 
 /**
  * Fetch all active stakers. Used for staker count display.
@@ -327,13 +218,13 @@ export async function fetchAllStakers(
   connection: Connection,
   programId: null | PublicKeyClass,
 ): Promise<
-  Array<{
+  {
     amount: bigint;
     lockDuration: number;
     lockTier: LockTier;
     owner: string;
     stakedAt: number;
-  }>
+  }[]
 > {
   if (!programId) return [];
   try {
@@ -369,46 +260,6 @@ export async function fetchAllStakers(
 }
 
 /**
- * Get unique staker count (each wallet counted once even if they have both tier stakes).
- */
-export async function fetchStakerCount(
-  connection: Connection,
-  programId: null | PublicKeyClass,
-): Promise<number> {
-  const stakers = await fetchAllStakers(connection, programId);
-  const uniqueWallets = new Set(stakers.map((s) => s.owner));
-  return uniqueWallets.size;
-}
-
-// ---------------------------------------------------------------------------
-// Lock status helpers
-// ---------------------------------------------------------------------------
-
-/** Compute lock status from a parsed stake entry. */
-export function getLockStatus(stake: ParsedStakeEntry): LockStatus {
-  const nowSec = Math.floor(Date.now() / 1000);
-  const unlocksAtSec = stake.lockStart + stake.lockDuration;
-  const remaining = Math.max(0, unlocksAtSec - nowSec);
-  return {
-    durationLabel: lockDurationLabel(stake.lockDuration),
-    isLocked: remaining > 0,
-    secondsRemaining: remaining,
-    unlocksAt: new Date(unlocksAtSec * 1000).toISOString(),
-  };
-}
-
-// ---------------------------------------------------------------------------
-// Pool stats compatibility (no pool account in native program)
-// ---------------------------------------------------------------------------
-
-export interface ParsedStakePool {
-  mint: string;
-  totalStaked: bigint;
-  totalStakers: number;
-  vault: string;
-}
-
-/**
  * Fetch pool-like stats by scanning all stake accounts.
  * Note: The native program doesn't have a pool account, so we derive stats
  * by scanning all stake entries.
@@ -440,6 +291,128 @@ export async function fetchPoolStats(
   }
 }
 
+/**
+ * Fetch total staked amount across both tiers.
+ * Returns 0n if no stakes or program not configured.
+ */
+export async function fetchStakedBalance(
+  connection: Connection,
+  programId: null | PublicKeyClass,
+  walletAddress: PublicKeyClass | string,
+): Promise<bigint> {
+  const stakes = await fetchUserStakes(connection, programId, walletAddress);
+  return stakes.totalAmount;
+}
+
+/**
+ * Fetch stake entry for a specific tier. Returns null if no stake exists.
+ */
+export async function fetchStakeEntry(
+  connection: Connection,
+  programId: null | PublicKeyClass,
+  walletAddress: PublicKeyClass | string,
+  lockTier: LockTier,
+): Promise<null | ParsedStakeEntry> {
+  if (!programId) return null;
+  try {
+    const user =
+      typeof walletAddress === "string"
+        ? new PublicKeyClass(walletAddress)
+        : walletAddress;
+    const [stakeEntryPda] = getStakeEntryPda(programId, user, lockTier);
+    const account = await connection.getAccountInfo(stakeEntryPda);
+    if (!account) return null;
+    const parsed = parseStakeEntry(account.data as Buffer);
+    if (!parsed || parsed.isWithdrawn) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Get unique staker count (each wallet counted once even if they have both tier stakes).
+ */
+export async function fetchStakerCount(
+  connection: Connection,
+  programId: null | PublicKeyClass,
+): Promise<number> {
+  const stakers = await fetchAllStakers(connection, programId);
+  const uniqueWallets = new Set(stakers.map((s) => s.owner));
+  return uniqueWallets.size;
+}
+
+/**
+ * Legacy compatibility: Fetch user stake (returns the stake with longer lock or higher amount).
+ * Used by code that expects a single stake per user.
+ */
+export async function fetchUserStake(
+  connection: Connection,
+  programId: null | PublicKeyClass,
+  walletAddress: PublicKeyClass | string,
+): Promise<null | ParsedStakeEntry> {
+  const stakes = await fetchUserStakes(connection, programId, walletAddress);
+
+  // prefer 12-month stake if exists, otherwise 30-day
+  if (stakes.tier12Months) return stakes.tier12Months;
+  if (stakes.tier30Days) return stakes.tier30Days;
+  return null;
+}
+
+// ---------------------------------------------------------------------------
+// Lock status helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Fetch both tier stakes for a wallet.
+ */
+export async function fetchUserStakes(
+  connection: Connection,
+  programId: null | PublicKeyClass,
+  walletAddress: PublicKeyClass | string,
+): Promise<UserStakes> {
+  const empty: UserStakes = {
+    hasActiveStake: false,
+    tier12Months: null,
+    tier30Days: null,
+    totalAmount: 0n,
+  };
+
+  if (!programId) return empty;
+
+  const [tier30Days, tier12Months] = await Promise.all([
+    fetchStakeEntry(connection, programId, walletAddress, TIER_30_DAYS),
+    fetchStakeEntry(connection, programId, walletAddress, TIER_12_MONTHS),
+  ]);
+
+  const amount30 = tier30Days?.amount ?? 0n;
+  const amount12 = tier12Months?.amount ?? 0n;
+
+  return {
+    hasActiveStake: tier30Days !== null || tier12Months !== null,
+    tier12Months,
+    tier30Days,
+    totalAmount: amount30 + amount12,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Pool stats compatibility (no pool account in native program)
+// ---------------------------------------------------------------------------
+
+/** Compute lock status from a parsed stake entry. */
+export function getLockStatus(stake: ParsedStakeEntry): LockStatus {
+  const nowSec = Math.floor(Date.now() / 1000);
+  const unlocksAtSec = stake.lockStart + stake.lockDuration;
+  const remaining = Math.max(0, unlocksAtSec - nowSec);
+  return {
+    durationLabel: lockDurationLabel(stake.lockDuration),
+    isLocked: remaining > 0,
+    secondsRemaining: remaining,
+    unlocksAt: new Date(unlocksAtSec * 1000).toISOString(),
+  };
+}
+
 // keep the old pool PDA function for compatibility, but it's not used by native program
 export function getPoolPda(
   programId: PublicKeyClass,
@@ -456,4 +429,34 @@ export function getUserStakePda(
 ): [PublicKeyClass, number] {
   // default to tier 0 (30 days) for backwards compatibility
   return getStakeEntryPda(programId, user, TIER_30_DAYS);
+}
+
+/** Parse a StakeEntry account's data buffer. Returns null if invalid. */
+export function parseStakeEntry(data: Buffer): null | ParsedStakeEntry {
+  if (data.length < STAKE_ENTRY_SIZE) return null;
+
+  // verify discriminator
+  const discriminator = data.subarray(
+    OFFSET_DISCRIMINATOR,
+    OFFSET_DISCRIMINATOR + 8,
+  );
+  if (!discriminator.every((b, i) => b === STAKE_ENTRY_DISCRIMINATOR[i])) {
+    return null;
+  }
+
+  const isWithdrawn = data.readUInt8(OFFSET_IS_WITHDRAWN) !== 0;
+
+  return {
+    amount: data.readBigUInt64LE(OFFSET_AMOUNT),
+    isWithdrawn,
+    lockDuration: Number(data.readBigInt64LE(OFFSET_LOCK_DURATION)),
+    lockStart: Number(data.readBigInt64LE(OFFSET_LOCK_START)),
+    lockTier: data.readUInt8(OFFSET_LOCK_TIER) as LockTier,
+    mint: new PublicKeyClass(
+      data.subarray(OFFSET_MINT, OFFSET_MINT + 32),
+    ).toBase58(),
+    staker: new PublicKeyClass(
+      data.subarray(OFFSET_STAKER, OFFSET_STAKER + 32),
+    ).toBase58(),
+  };
 }

@@ -15,6 +15,7 @@
  * - If user is NOT logged in: creates a new wallet-based account and returns a session token
  */
 
+import { createId } from "@paralleldrive/cuid2";
 import { and, eq } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
@@ -27,7 +28,6 @@ import {
   userTable,
 } from "~/db/schema";
 import { getCurrentUser } from "~/lib/auth";
-import { createId } from "@paralleldrive/cuid2";
 
 const SOLANA_PROVIDER_ID = "solana";
 const SESSION_MAX_AGE_DAYS = 7;
@@ -100,12 +100,12 @@ export async function POST(request: Request) {
 
       const now = new Date();
       await db.insert(accountTable).values({
-        id: createId(),
         accountId: wallet,
-        providerId: SOLANA_PROVIDER_ID,
-        userId: user.id,
         createdAt: now,
+        id: createId(),
+        providerId: SOLANA_PROVIDER_ID,
         updatedAt: now,
+        userId: user.id,
       });
 
       return NextResponse.json({ linked: true });
@@ -117,25 +117,27 @@ export async function POST(request: Request) {
       const userId = existingAccount[0].userId;
       const sessionToken = createId();
       const now = new Date();
-      const expiresAt = new Date(Date.now() + SESSION_MAX_AGE_DAYS * 24 * 60 * 60 * 1000);
+      const expiresAt = new Date(
+        Date.now() + SESSION_MAX_AGE_DAYS * 24 * 60 * 60 * 1000,
+      );
 
       await db.insert(sessionTable).values({
-        id: createId(),
-        userId,
-        token: sessionToken,
-        expiresAt,
         createdAt: now,
+        expiresAt,
+        id: createId(),
+        token: sessionToken,
         updatedAt: now,
+        userId,
       });
 
       // set session cookie
       const cookieStore = await cookies();
       cookieStore.set("better-auth.session_token", sessionToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        path: "/",
         maxAge: SESSION_MAX_AGE_DAYS * 24 * 60 * 60,
+        path: "/",
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production",
       });
 
       return NextResponse.json({ linked: true, signedIn: true });
@@ -144,53 +146,55 @@ export async function POST(request: Request) {
     // wallet doesn't have an account - create one
     const now = new Date();
     const userId = createId();
-    const shortWallet = `${wallet.slice(0, 4)}...${wallet.slice(-4)}`;
+    const _shortWallet = `${wallet.slice(0, 4)}...${wallet.slice(-4)}`;
     const placeholderEmail = `solana_${wallet.slice(0, 8)}@wallet.local`;
 
     // create user
     await db.insert(userTable).values({
-      id: userId,
-      name: `Solana User`,
+      createdAt: now,
       email: placeholderEmail,
       emailVerified: false,
-      createdAt: now,
+      id: userId,
+      name: `Solana User`,
       updatedAt: now,
     });
 
     // create solana account link
     await db.insert(accountTable).values({
-      id: createId(),
       accountId: wallet,
-      providerId: SOLANA_PROVIDER_ID,
-      userId,
       createdAt: now,
+      id: createId(),
+      providerId: SOLANA_PROVIDER_ID,
       updatedAt: now,
+      userId,
     });
 
     // create session
     const sessionToken = createId();
-    const expiresAt = new Date(Date.now() + SESSION_MAX_AGE_DAYS * 24 * 60 * 60 * 1000);
+    const expiresAt = new Date(
+      Date.now() + SESSION_MAX_AGE_DAYS * 24 * 60 * 60 * 1000,
+    );
 
     await db.insert(sessionTable).values({
-      id: createId(),
-      userId,
-      token: sessionToken,
-      expiresAt,
       createdAt: now,
+      expiresAt,
+      id: createId(),
+      token: sessionToken,
       updatedAt: now,
+      userId,
     });
 
     // set session cookie
     const cookieStore = await cookies();
     cookieStore.set("better-auth.session_token", sessionToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/",
       maxAge: SESSION_MAX_AGE_DAYS * 24 * 60 * 60,
+      path: "/",
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
     });
 
-    return NextResponse.json({ linked: true, signedIn: true, created: true });
+    return NextResponse.json({ created: true, linked: true, signedIn: true });
   } catch (err) {
     console.error("[link-solana-wallet] Error:", err);
 

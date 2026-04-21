@@ -5,11 +5,11 @@ import {
   type TokenGateResourceType,
   walletPassesTokenGates,
 } from "~/lib/token-gate";
-import { verifySolanaSignature } from "~/lib/verify-solana-signature";
 import {
   buildTokenGateSetCookie,
   COOKIE_NAME as TOKEN_GATE_COOKIE_NAME,
 } from "~/lib/token-gate-cookie";
+import { verifySolanaSignature } from "~/lib/verify-solana-signature";
 
 const MESSAGE_PREFIX = "Sign to prove wallet ownership for token gate:\n";
 const CHALLENGE_MAX_AGE_MS = 5 * 60 * 1000; // 5 minutes

@@ -8,10 +8,7 @@ import { and, asc, eq, inArray } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
 import { db } from "~/db";
-import {
-  subscriptionOfferTable,
-  subscriptionPlanTable,
-} from "~/db/schema";
+import { subscriptionOfferTable, subscriptionPlanTable } from "~/db/schema";
 
 export async function GET() {
   try {
@@ -50,6 +47,7 @@ export async function GET() {
         metadata: o.metadata,
         name: o.name,
         plans: (planByOffer.get(o.id) ?? []).map((p) => ({
+          cryptoProductId: p.cryptoProductId,
           currency: p.currency,
           displayName: p.displayName,
           id: p.id,
@@ -59,7 +57,6 @@ export async function GET() {
           payPaypal: p.payPaypal,
           payStripe: p.payStripe,
           priceCents: p.priceCents,
-          cryptoProductId: p.cryptoProductId,
         })),
         productId: o.productId,
         slug: o.slug,

@@ -21,7 +21,10 @@ import { getStripe } from "~/lib/stripe";
 export async function POST(request: NextRequest) {
   const session = await auth.api.getSession({ headers: request.headers });
   if (!session?.user?.id || !session.user.email) {
-    return NextResponse.json({ error: "Sign in to subscribe" }, { status: 401 });
+    return NextResponse.json(
+      { error: "Sign in to subscribe" },
+      { status: 401 },
+    );
   }
 
   const body = (await request.json()) as {

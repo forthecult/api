@@ -19,7 +19,8 @@ interface OpenConnectWalletModalContextValue {
 export function openConnectWalletModal(options?: {
   intent?: "add-wallet" | "connect";
 }): void {
-  openIntentRef.current = options?.intent === "add-wallet" ? "add-wallet" : "connect";
+  openIntentRef.current =
+    options?.intent === "add-wallet" ? "add-wallet" : "connect";
   if (typeof window !== "undefined") {
     window.dispatchEvent(new CustomEvent(OPEN_CONNECT_WALLET_MODAL));
   }

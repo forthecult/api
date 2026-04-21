@@ -167,9 +167,9 @@ export default function AdminProductsReviewsPage() {
     return (
       <div
         className={`
-        rounded-lg border border-red-200 bg-red-50 p-4 text-red-800
-        dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
-      `}
+          rounded-lg border border-red-200 bg-red-50 p-4 text-red-800
+          dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
+        `}
       >
         {error}
         <Button
@@ -195,9 +195,9 @@ export default function AdminProductsReviewsPage() {
           {loading ? (
             <div
               className={`
-              flex min-h-[200px] items-center justify-center
-              text-muted-foreground
-            `}
+                flex min-h-[200px] items-center justify-center
+                text-muted-foreground
+              `}
             >
               Loading…
             </div>
@@ -208,10 +208,10 @@ export default function AdminProductsReviewsPage() {
                   <thead>
                     <tr
                       className={`
-                      border-b border-border bg-muted/50 text-left text-xs
-                      font-semibold tracking-wider text-muted-foreground
-                      uppercase
-                    `}
+                        border-b border-border bg-muted/50 text-left text-xs
+                        font-semibold tracking-wider text-muted-foreground
+                        uppercase
+                      `}
                     >
                       {COLUMNS.map((col) => (
                         <th
@@ -248,22 +248,21 @@ export default function AdminProductsReviewsPage() {
                       data.items.map((review) => (
                         <tr
                           className={`
-                          border-b
-                          last:border-0
-                        `}
+                            border-b
+                            last:border-0
+                          `}
                           key={review.id}
                         >
                           <td className="p-4">
                             <div className="flex items-center gap-3">
                               <div
                                 className={`
-                                relative flex h-10 w-10 shrink-0 items-center
-                                justify-center overflow-hidden rounded-md border
-                                bg-muted
-                              `}
+                                  relative flex h-10 w-10 shrink-0 items-center
+                                  justify-center overflow-hidden rounded-md
+                                  border bg-muted
+                                `}
                               >
                                 {review.productImageUrl ? (
-                                  // eslint-disable-next-line @next/next/no-img-element
                                   <img
                                     alt=""
                                     className="size-full object-cover"
@@ -273,9 +272,7 @@ export default function AdminProductsReviewsPage() {
                                   />
                                 ) : (
                                   <span
-                                    className={`
-                                    text-xs text-muted-foreground
-                                  `}
+                                    className={`text-xs text-muted-foreground`}
                                   >
                                     —
                                   </span>
@@ -327,15 +324,15 @@ export default function AdminProductsReviewsPage() {
                           </td>
                           <td
                             className={`
-                            max-w-[160px] truncate p-4 text-muted-foreground
-                          `}
+                              max-w-[160px] truncate p-4 text-muted-foreground
+                            `}
                           >
                             {review.title ?? "—"}
                           </td>
                           <td
                             className={`
-                            max-w-[280px] truncate p-4 text-muted-foreground
-                          `}
+                              max-w-[280px] truncate p-4 text-muted-foreground
+                            `}
                           >
                             {review.comment}
                           </td>
@@ -391,8 +388,8 @@ export default function AdminProductsReviewsPage() {
               {data.items.length > 0 && (
                 <div
                   className={`
-                  mt-4 flex items-center justify-center gap-2 border-t pt-4
-                `}
+                    mt-4 flex items-center justify-center gap-2 border-t pt-4
+                  `}
                 >
                   <Button
                     aria-label="Previous page"

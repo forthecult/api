@@ -29,7 +29,7 @@ export function verifyOrderTrackToken(orderId: string, token: string): boolean {
   const sigBuf = base64UrlDecode(sigB64);
   if (!expiryBuf || !sigBuf) return false;
   const expiry = parseInt(expiryBuf.toString("utf8"), 10);
-  if (isNaN(expiry) || Date.now() > expiry) return false;
+  if (Number.isNaN(expiry) || Date.now() > expiry) return false;
   const payload = `${orderId}:${expiry}`;
   const expected = createHmac("sha256", ORDER_TRACK_SECRET)
     .update(payload)

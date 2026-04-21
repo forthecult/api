@@ -9,16 +9,16 @@ import { buildEmailHtml, plainTextToHtml } from "~/lib/email-layout";
 import { getNotificationTemplate } from "~/lib/notification-templates";
 
 export interface SendOrderConfirmationEmailParams {
-  orderId: string;
   /** When true, body and CTA direct to eSIM dashboard to activate eSIM. */
   isEsimOrder?: boolean;
+  orderId: string;
   to: string;
 }
 
 export async function sendOrderConfirmationEmail(
   params: SendOrderConfirmationEmailParams,
 ): Promise<void> {
-  const { orderId, isEsimOrder, to } = params;
+  const { isEsimOrder, orderId, to } = params;
   const shortId = orderId.slice(0, 8);
   const template = getNotificationTemplate("order_placed");
   const subject = template.emailSubject ?? "Order confirmed";
@@ -61,7 +61,7 @@ export async function sendOrderConfirmationEmail(
         from,
         html,
         subject,
-        text: body + `\n\n${ctaLabel}: ${ctaUrl}`,
+        text: `${body}\n\n${ctaLabel}: ${ctaUrl}`,
         to,
       });
     } catch (err) {

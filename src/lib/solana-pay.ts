@@ -41,8 +41,7 @@ export const SOLUNA_MINT_MAINNET =
 export const SKR_MINT_MAINNET = "SKRbvo6Gf7GondiT3BbTfuRDPqLWei4j2Qy2NPGZhW3";
 
 /** CULT Token-2022 on Solana. CA: 6jCCBeaJD63L62c496VrV4HVPLJF5N3WyTWRwPappump */
-export const CULT_MINT_MAINNET =
-  "6jCCBeaJD63L62c496VrV4HVPLJF5N3WyTWRwPappump";
+export const CULT_MINT_MAINNET = "6jCCBeaJD63L62c496VrV4HVPLJF5N3WyTWRwPappump";
 
 export function getSolanaPayLabel(): string {
   return typeof process.env.NEXT_PUBLIC_SOLANA_PAY_LABEL === "string"

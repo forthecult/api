@@ -21,14 +21,14 @@ export default function TelegramCartPage() {
     <div className="flex min-h-screen flex-col pb-24">
       <header
         className={`
-        sticky top-0 z-10 border-b border-[var(--tg-theme-hint-color,#999)]/20
-        bg-[var(--tg-theme-bg-color,#fff)] px-4 py-3
-      `}
+          sticky top-0 z-10 border-b border-[var(--tg-theme-hint-color,#999)]/20
+          bg-[var(--tg-theme-bg-color,#fff)] px-4 py-3
+        `}
       >
         <h1
           className={`
-          text-lg font-semibold text-[var(--tg-theme-text-color,#000)]
-        `}
+            text-lg font-semibold text-[var(--tg-theme-text-color,#000)]
+          `}
         >
           Your Cart
         </h1>
@@ -39,20 +39,18 @@ export default function TelegramCartPage() {
           <div className="flex flex-col items-center justify-center py-12">
             <div
               className={`
-              mb-4 flex h-20 w-20 items-center justify-center rounded-full
-              bg-[var(--tg-theme-secondary-bg-color,#eee)]
-            `}
+                mb-4 flex h-20 w-20 items-center justify-center rounded-full
+                bg-[var(--tg-theme-secondary-bg-color,#eee)]
+              `}
             >
               <ShoppingCart
-                className={`
-                h-10 w-10 text-[var(--tg-theme-hint-color,#999)]
-              `}
+                className={`h-10 w-10 text-[var(--tg-theme-hint-color,#999)]`}
               />
             </div>
             <p
               className={`
-              mb-6 text-center text-[var(--tg-theme-text-color,#000)]
-            `}
+                mb-6 text-center text-[var(--tg-theme-text-color,#000)]
+              `}
             >
               Your cart is empty.
             </p>
@@ -77,8 +75,9 @@ export default function TelegramCartPage() {
                 >
                   <div
                     className={`
-                    relative h-20 w-20 shrink-0 overflow-hidden rounded bg-white
-                  `}
+                      relative h-20 w-20 shrink-0 overflow-hidden rounded
+                      bg-white
+                    `}
                   >
                     {failedImageIds.has(item.id) || !item.image?.trim() ? (
                       <Image
@@ -111,9 +110,9 @@ export default function TelegramCartPage() {
                     <div className="flex items-start justify-between gap-2">
                       <span
                         className={`
-                        line-clamp-2 text-sm font-medium
-                        text-[var(--tg-theme-text-color,#000)]
-                      `}
+                          line-clamp-2 text-sm font-medium
+                          text-[var(--tg-theme-text-color,#000)]
+                        `}
                       >
                         {item.name}
                       </span>
@@ -132,21 +131,19 @@ export default function TelegramCartPage() {
                     </div>
                     <p
                       className={`
-                      mt-0.5 text-xs text-[var(--tg-theme-hint-color,#999)]
-                    `}
+                        mt-0.5 text-xs text-[var(--tg-theme-hint-color,#999)]
+                      `}
                     >
                       {item.category}
                     </p>
                     <div
-                      className={`
-                      mt-2 flex items-center justify-between gap-2
-                    `}
+                      className={`mt-2 flex items-center justify-between gap-2`}
                     >
                       <div
                         className={`
-                        flex items-center rounded border
-                        border-[var(--tg-theme-hint-color,#999)]/30
-                      `}
+                          flex items-center rounded border
+                          border-[var(--tg-theme-hint-color,#999)]/30
+                        `}
                       >
                         <button
                           className={`
@@ -163,9 +160,9 @@ export default function TelegramCartPage() {
                         </button>
                         <span
                           className={`
-                          flex h-7 w-7 items-center justify-center text-xs
-                          font-medium
-                        `}
+                            flex h-7 w-7 items-center justify-center text-xs
+                            font-medium
+                          `}
                         >
                           {item.quantity}
                         </span>
@@ -181,9 +178,9 @@ export default function TelegramCartPage() {
                       </div>
                       <span
                         className={`
-                        shrink-0 text-sm font-medium
-                        text-[var(--tg-theme-text-color,#000)]
-                      `}
+                          shrink-0 text-sm font-medium
+                          text-[var(--tg-theme-text-color,#000)]
+                        `}
                       >
                         <FiatPrice usdAmount={item.price * item.quantity} />
                       </span>
@@ -195,14 +192,14 @@ export default function TelegramCartPage() {
 
             <div
               className={`
-              mt-8 border-t border-[var(--tg-theme-hint-color,#999)]/20 pt-6
-            `}
+                mt-8 border-t border-[var(--tg-theme-hint-color,#999)]/20 pt-6
+              `}
             >
               <div
                 className={`
-                mb-4 flex items-center justify-between
-                text-[var(--tg-theme-text-color,#000)]
-              `}
+                  mb-4 flex items-center justify-between
+                  text-[var(--tg-theme-text-color,#000)]
+                `}
               >
                 <span className="text-sm text-[var(--tg-theme-hint-color,#999)]">
                   Subtotal

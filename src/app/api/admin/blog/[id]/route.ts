@@ -5,27 +5,35 @@ import { db } from "~/db";
 import { blogPostTable } from "~/db/schema";
 import { adminAuthFailureResponse, getAdminAuth } from "~/lib/admin-api-auth";
 
-function parseTags(value: null | string | undefined): string[] {
-  if (value == null || value === "") return [];
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
   try {
-    const parsed = JSON.parse(value) as unknown;
-    return Array.isArray(parsed)
-      ? (parsed as string[]).filter((t) => typeof t === "string")
-      : [];
-  } catch {
-    return [];
+    const authResult = await getAdminAuth(_request);
+    if (!authResult?.ok) return adminAuthFailureResponse(authResult);
+
+    const { id } = await params;
+    const [deleted] = await db
+      .delete(blogPostTable)
+      .where(eq(blogPostTable.id, id))
+      .returning({ id: blogPostTable.id });
+
+    if (!deleted) {
+      return NextResponse.json(
+        { error: "Blog post not found" },
+        { status: 404 },
+      );
+    }
+
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    console.error("Admin blog delete error:", err);
+    return NextResponse.json(
+      { error: "Failed to delete blog post" },
+      { status: 500 },
+    );
   }
-}
-
-function serializeTags(tags: null | string[] | undefined): null | string {
-  if (!Array.isArray(tags) || tags.length === 0) return null;
-  const cleaned = tags.filter((t) => typeof t === "string" && t.trim());
-  return cleaned.length > 0 ? JSON.stringify(cleaned) : null;
-}
-
-function parseDateTime(s: string): Date | null {
-  const d = new Date(s);
-  return Number.isNaN(d.getTime()) ? null : d;
 }
 
 export async function GET(
@@ -90,14 +98,17 @@ export async function PATCH(
     if (typeof body.title === "string") updates.title = body.title.trim();
     if (typeof body.slug === "string")
       updates.slug = body.slug.trim().toLowerCase().replace(/\s+/g, "-");
-    if (body.summary !== undefined) updates.summary = body.summary?.trim() ?? null;
+    if (body.summary !== undefined)
+      updates.summary = body.summary?.trim() ?? null;
     if (typeof body.body === "string") updates.body = body.body;
     if (body.coverImageUrl !== undefined)
       updates.coverImageUrl = body.coverImageUrl?.trim() ?? null;
-    if (body.authorId !== undefined) updates.authorId = body.authorId?.trim() || null;
+    if (body.authorId !== undefined)
+      updates.authorId = body.authorId?.trim() || null;
     if (body.authorDisplayName !== undefined)
       updates.authorDisplayName = body.authorDisplayName?.trim() ?? null;
-    if (body.metaTitle !== undefined) updates.metaTitle = body.metaTitle?.trim() ?? null;
+    if (body.metaTitle !== undefined)
+      updates.metaTitle = body.metaTitle?.trim() ?? null;
     if (body.metaDescription !== undefined)
       updates.metaDescription = body.metaDescription?.trim() ?? null;
     if (body.tags !== undefined) updates.tags = serializeTags(body.tags);
@@ -132,33 +143,25 @@ export async function PATCH(
   }
 }
 
-export async function DELETE(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+function parseDateTime(s: string): Date | null {
+  const d = new Date(s);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function parseTags(value: null | string | undefined): string[] {
+  if (value == null || value === "") return [];
   try {
-    const authResult = await getAdminAuth(_request);
-    if (!authResult?.ok) return adminAuthFailureResponse(authResult);
-
-    const { id } = await params;
-    const [deleted] = await db
-      .delete(blogPostTable)
-      .where(eq(blogPostTable.id, id))
-      .returning({ id: blogPostTable.id });
-
-    if (!deleted) {
-      return NextResponse.json(
-        { error: "Blog post not found" },
-        { status: 404 },
-      );
-    }
-
-    return NextResponse.json({ ok: true });
-  } catch (err) {
-    console.error("Admin blog delete error:", err);
-    return NextResponse.json(
-      { error: "Failed to delete blog post" },
-      { status: 500 },
-    );
+    const parsed = JSON.parse(value) as unknown;
+    return Array.isArray(parsed)
+      ? (parsed as string[]).filter((t) => typeof t === "string")
+      : [];
+  } catch {
+    return [];
   }
+}
+
+function serializeTags(tags: null | string[] | undefined): null | string {
+  if (!Array.isArray(tags) || tags.length === 0) return null;
+  const cleaned = tags.filter((t) => typeof t === "string" && t.trim());
+  return cleaned.length > 0 ? JSON.stringify(cleaned) : null;
 }

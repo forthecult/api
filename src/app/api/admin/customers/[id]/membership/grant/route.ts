@@ -16,60 +16,9 @@ import { adminMembershipGrantTable } from "~/db/schema";
 import { adminAuthFailureResponse, getAdminAuth } from "~/lib/admin-api-auth";
 
 const DURATION_MS: Record<string, number> = {
-  "30d": 30 * 24 * 60 * 60 * 1000,
   "1y": 365 * 24 * 60 * 60 * 1000,
+  "30d": 30 * 24 * 60 * 60 * 1000,
 };
-
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
-  const authResult = await getAdminAuth(request);
-  if (!authResult?.ok) return adminAuthFailureResponse(authResult);
-
-  const { id: userId } = await params;
-  let body: { duration?: string; tier?: number };
-  try {
-    body = (await request.json()) as typeof body;
-  } catch {
-    return NextResponse.json(
-      { error: "Invalid JSON body" },
-      { status: 400 },
-    );
-  }
-
-  const duration = body.duration === "1y" ? "1y" : "30d";
-  const tier =
-    typeof body.tier === "number" && body.tier >= 1 && body.tier <= 3
-      ? body.tier
-      : 3;
-
-  const now = new Date();
-  const expiresAt = new Date(now.getTime() + (DURATION_MS[duration] ?? DURATION_MS["30d"]));
-
-  await db
-    .insert(adminMembershipGrantTable)
-    .values({
-      userId,
-      tier,
-      expiresAt,
-      createdAt: now,
-      updatedAt: now,
-    })
-    .onConflictDoUpdate({
-      target: adminMembershipGrantTable.userId,
-      set: {
-        tier,
-        expiresAt,
-        updatedAt: now,
-      },
-    });
-
-  return NextResponse.json({
-    expiresAt: expiresAt.toISOString(),
-    tier,
-  });
-}
 
 export async function DELETE(
   _request: NextRequest,
@@ -85,4 +34,54 @@ export async function DELETE(
     .where(eq(adminMembershipGrantTable.userId, userId));
 
   return NextResponse.json({ removed: true });
+}
+
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const authResult = await getAdminAuth(request);
+  if (!authResult?.ok) return adminAuthFailureResponse(authResult);
+
+  const { id: userId } = await params;
+  let body: { duration?: string; tier?: number };
+  try {
+    body = (await request.json()) as typeof body;
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+
+  const duration = body.duration === "1y" ? "1y" : "30d";
+  const tier =
+    typeof body.tier === "number" && body.tier >= 1 && body.tier <= 3
+      ? body.tier
+      : 3;
+
+  const now = new Date();
+  const expiresAt = new Date(
+    now.getTime() + (DURATION_MS[duration] ?? DURATION_MS["30d"]),
+  );
+
+  await db
+    .insert(adminMembershipGrantTable)
+    .values({
+      createdAt: now,
+      expiresAt,
+      tier,
+      updatedAt: now,
+      userId,
+    })
+    .onConflictDoUpdate({
+      set: {
+        expiresAt,
+        tier,
+        updatedAt: now,
+      },
+      target: adminMembershipGrantTable.userId,
+    });
+
+  return NextResponse.json({
+    expiresAt: expiresAt.toISOString(),
+    tier,
+  });
 }

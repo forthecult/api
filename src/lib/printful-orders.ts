@@ -14,10 +14,7 @@ import {
   productsTable,
   productVariantsTable,
 } from "~/db/schema";
-import {
-  onOrderStatusUpdate,
-  type OrderStatusKind,
-} from "~/lib/create-user-notification";
+import { onOrderStatusUpdate } from "~/lib/create-user-notification";
 import {
   confirmPrintfulOrder,
   createPrintfulOrder,
@@ -381,7 +378,7 @@ export async function getPrintfulOrderItems(orderId: string): Promise<
 
     // If no variant or variant doesn't have external ID, try to get from product
     // (This is a fallback - ideally all Printful products have variant-level IDs)
-    if (!catalogVariantId || isNaN(catalogVariantId)) {
+    if (!catalogVariantId || Number.isNaN(catalogVariantId)) {
       const product = products.find((p) => p.id === item.productId);
       if (product?.externalId) {
         // Note: This is the catalog_product_id, not variant.
@@ -394,7 +391,7 @@ export async function getPrintfulOrderItems(orderId: string): Promise<
       }
     }
 
-    if (!catalogVariantId || isNaN(catalogVariantId)) {
+    if (!catalogVariantId || Number.isNaN(catalogVariantId)) {
       console.warn(
         `Skipping order item ${item.id}: no valid catalog_variant_id`,
       );

@@ -1,18 +1,21 @@
 "use client";
 
 import { getAssociatedTokenAddressSync } from "@solana/spl-token";
-import { useSolanaConnection, useSolanaWallet } from "~/app/checkout/crypto/solana-wallet-stub";
 import {
   type Connection,
+  PublicKey,
   type RpcResponseAndContext,
   type TokenAmount,
-  PublicKey,
 } from "@solana/web3.js";
 import { ArrowDown } from "lucide-react";
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
+import {
+  useSolanaConnection,
+  useSolanaWallet,
+} from "~/app/checkout/crypto/solana-wallet-stub";
 import { useStakeTransaction } from "~/hooks/use-stake-transaction";
 import {
   buildSwapCultToSol,
@@ -20,7 +23,10 @@ import {
   estimateCultFromSol,
   estimateSolFromCult,
 } from "~/lib/pump-swap-cult";
-import { CULT_MINT_MAINNET, TOKEN_2022_PROGRAM_ID_BASE58 } from "~/lib/token-config";
+import {
+  CULT_MINT_MAINNET,
+  TOKEN_2022_PROGRAM_ID_BASE58,
+} from "~/lib/token-config";
 import { Button } from "~/ui/primitives/button";
 import { Input } from "~/ui/primitives/input";
 
@@ -29,7 +35,7 @@ const CULT_DECIMALS = 6;
 export function CultSwapBlock() {
   const { connection } = useSolanaConnection();
   const { publicKey, sendTransaction } = useSolanaWallet();
-  const { openConnectModal, wallet: connectedWallet } = useStakeTransaction();
+  const { openConnectModal, wallet: _connectedWallet } = useStakeTransaction();
   const wallet = publicKey?.toBase58() ?? null;
   const conn = connection as Connection | undefined;
   const pk = publicKey ? new PublicKey(publicKey.toBase58()) : null;
@@ -40,7 +46,9 @@ export function CultSwapBlock() {
   pkRef.current = pk;
 
   const [tokenSymbol, setTokenSymbol] = useState("CULT");
-  const [swapDirection, setSwapDirection] = useState<"solToCult" | "cultToSol">("solToCult");
+  const [swapDirection, setSwapDirection] = useState<"cultToSol" | "solToCult">(
+    "solToCult",
+  );
   const [solBalanceLamports, setSolBalanceLamports] = useState<number>(0);
   const [solAmount, setSolAmount] = useState("");
   const [cultAmount, setCultAmount] = useState("");
@@ -48,7 +56,7 @@ export function CultSwapBlock() {
   const [estimatedSol, setEstimatedSol] = useState<null | string>(null);
   const [estimateLoading, setEstimateLoading] = useState(false);
   const [swapPending, setSwapPending] = useState(false);
-  const [cultBalance, setCultBalance] = useState<string | null>(null);
+  const [cultBalance, setCultBalance] = useState<null | string>(null);
   const [cultBalanceLoading, setCultBalanceLoading] = useState(false);
 
   const solBalanceSol = solBalanceLamports / 1e9;
@@ -58,11 +66,14 @@ export function CultSwapBlock() {
     fetch("/api/governance/token-price")
       .then((r) => (r.ok ? r.json() : null))
       .then((raw: unknown) => {
-        const data = raw as { data?: { token?: { symbol?: string } } } | null;
-        if (!cancelled && data?.data?.token?.symbol) setTokenSymbol(data.data.token.symbol);
+        const data = raw as null | { data?: { token?: { symbol?: string } } };
+        if (!cancelled && data?.data?.token?.symbol)
+          setTokenSymbol(data.data.token.symbol);
       })
       .catch(() => {});
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -71,12 +82,17 @@ export function CultSwapBlock() {
       return;
     }
     let cancelled = false;
-    conn.getBalance(pk).then((bal) => {
-      if (!cancelled) setSolBalanceLamports(bal);
-    }).catch(() => {
-      if (!cancelled) setSolBalanceLamports(0);
-    });
-    return () => { cancelled = true; };
+    conn
+      .getBalance(pk)
+      .then((bal) => {
+        if (!cancelled) setSolBalanceLamports(bal);
+      })
+      .catch(() => {
+        if (!cancelled) setSolBalanceLamports(0);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [pk, conn]);
 
   useEffect(() => {
@@ -101,7 +117,7 @@ export function CultSwapBlock() {
             setCultBalanceLoading(false);
           }
           return;
-        };
+        }
         const ata = getAssociatedTokenAddressSync(
           mint,
           pk,
@@ -110,7 +126,8 @@ export function CultSwapBlock() {
         );
         conn
           .getTokenAccountBalance(ata)
-          .then((raw: unknown) => { const info = raw as RpcResponseAndContext<TokenAmount>;
+          .then((raw: unknown) => {
+            const info = raw as RpcResponseAndContext<TokenAmount>;
             if (cancelled) return;
             const v = info.value;
             const balance =
@@ -125,7 +142,9 @@ export function CultSwapBlock() {
           .catch(() => tryNext(i + 1));
       };
       tryNext(0);
-      return () => { cancelled = true; };
+      return () => {
+        cancelled = true;
+      };
     }
     let cancelled = false;
     fetch(`/api/governance/wallet-balance?wallet=${encodeURIComponent(wallet)}`)
@@ -140,7 +159,9 @@ export function CultSwapBlock() {
       .finally(() => {
         if (!cancelled) setCultBalanceLoading(false);
       });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [wallet]);
 
   useEffect(() => {
@@ -160,7 +181,7 @@ export function CultSwapBlock() {
     }
     let cancelled = false;
     setEstimateLoading(true);
-    const setResult = (est: string | null) => {
+    const setResult = (est: null | string) => {
       if (!cancelled) {
         setEstimatedCult(est);
         setEstimateLoading(false);
@@ -171,7 +192,7 @@ export function CultSwapBlock() {
     )
       .then((r) => (r.ok ? r.json() : null))
       .then((raw: unknown) => {
-        const data = raw as { cultAmount?: string } | null;
+        const data = raw as null | { cultAmount?: string };
         return data?.cultAmount ?? null;
       })
       .catch(() => null);
@@ -184,24 +205,28 @@ export function CultSwapBlock() {
     const priceFallbackPromise = fetch("/api/crypto/prices")
       .then((r) => (r.ok ? r.json() : null))
       .then((raw: unknown) => {
-        const data = raw as { CULT?: number; SOL?: number } | null;
+        const data = raw as null | { CULT?: number; SOL?: number };
         if (!data?.SOL || !data?.CULT || data.CULT <= 0) return null;
         const cultAmount = (solAmountNum * data.SOL) / data.CULT;
         return cultAmount.toFixed(6);
       })
       .catch(() => null);
-    void Promise.all([apiPromise, clientPromise]).then(([apiVal, clientVal]) => {
-      if (cancelled) return;
-      const val = apiVal ?? clientVal ?? null;
-      if (val != null) {
-        setResult(val);
-        return;
-      }
-      void priceFallbackPromise.then((priceVal) => {
-        if (!cancelled) setResult(priceVal ?? null);
-      });
-    });
-    return () => { cancelled = true; };
+    void Promise.all([apiPromise, clientPromise]).then(
+      ([apiVal, clientVal]) => {
+        if (cancelled) return;
+        const val = apiVal ?? clientVal ?? null;
+        if (val != null) {
+          setResult(val);
+          return;
+        }
+        void priceFallbackPromise.then((priceVal) => {
+          if (!cancelled) setResult(priceVal ?? null);
+        });
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
   }, [solAmount, conn, swapDirection]);
 
   useEffect(() => {
@@ -221,7 +246,7 @@ export function CultSwapBlock() {
     }
     let cancelled = false;
     setEstimateLoading(true);
-    const setResult = (est: string | null) => {
+    const setResult = (est: null | string) => {
       if (!cancelled) {
         setEstimatedSol(est);
         setEstimateLoading(false);
@@ -232,7 +257,7 @@ export function CultSwapBlock() {
     )
       .then((r) => (r.ok ? r.json() : null))
       .then((raw: unknown) => {
-        const data = raw as { solAmount?: string } | null;
+        const data = raw as null | { solAmount?: string };
         return data?.solAmount ?? null;
       })
       .catch(() => null);
@@ -245,24 +270,28 @@ export function CultSwapBlock() {
     const priceFallbackPromise = fetch("/api/crypto/prices")
       .then((r) => (r.ok ? r.json() : null))
       .then((raw: unknown) => {
-        const data = raw as { CULT?: number; SOL?: number } | null;
+        const data = raw as null | { CULT?: number; SOL?: number };
         if (!data?.SOL || !data?.CULT || data.SOL <= 0) return null;
         const solAmount = (n * data.CULT) / data.SOL;
         return solAmount.toFixed(6);
       })
       .catch(() => null);
-    void Promise.all([apiPromise, clientPromise]).then(([apiVal, clientVal]) => {
-      if (cancelled) return;
-      const val = apiVal ?? clientVal ?? null;
-      if (val != null) {
-        setResult(val);
-        return;
-      }
-      void priceFallbackPromise.then((priceVal) => {
-        if (!cancelled) setResult(priceVal ?? null);
-      });
-    });
-    return () => { cancelled = true; };
+    void Promise.all([apiPromise, clientPromise]).then(
+      ([apiVal, clientVal]) => {
+        if (cancelled) return;
+        const val = apiVal ?? clientVal ?? null;
+        if (val != null) {
+          setResult(val);
+          return;
+        }
+        void priceFallbackPromise.then((priceVal) => {
+          if (!cancelled) setResult(priceVal ?? null);
+        });
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
   }, [cultAmount, conn, swapDirection]);
 
   const handleSwapSolToCult = useCallback(async () => {
@@ -280,14 +309,16 @@ export function CultSwapBlock() {
         preflightCommitment: "confirmed",
         skipPreflight: false,
       });
-      toast.success("Swap submitted: " + sig.slice(0, 8) + "…");
+      toast.success(`Swap submitted: ${sig.slice(0, 8)}…`);
       setSolAmount("");
       setEstimatedCult(null);
       setTimeout(() => {
-        fetch(`/api/governance/wallet-balance?wallet=${encodeURIComponent(pk.toBase58())}`)
+        fetch(
+          `/api/governance/wallet-balance?wallet=${encodeURIComponent(pk.toBase58())}`,
+        )
           .then((r) => r.json())
           .then((raw: unknown) => {
-        const d = raw as { balance?: string };
+            const d = raw as { balance?: string };
             setCultBalance(d.balance ?? "0");
           })
           .catch(() => {});
@@ -313,14 +344,16 @@ export function CultSwapBlock() {
         preflightCommitment: "confirmed",
         skipPreflight: false,
       });
-      toast.success("Swap submitted: " + sig.slice(0, 8) + "…");
+      toast.success(`Swap submitted: ${sig.slice(0, 8)}…`);
       setCultAmount("");
       setEstimatedSol(null);
       setTimeout(() => {
-        fetch(`/api/governance/wallet-balance?wallet=${encodeURIComponent(pk.toBase58())}`)
+        fetch(
+          `/api/governance/wallet-balance?wallet=${encodeURIComponent(pk.toBase58())}`,
+        )
           .then((r) => r.json())
           .then((raw: unknown) => {
-        const d = raw as { balance?: string };
+            const d = raw as { balance?: string };
             setCultBalance(d.balance ?? "0");
           })
           .catch(() => {});
@@ -341,17 +374,34 @@ export function CultSwapBlock() {
 
   return (
     <section
-      className="py-16 md:py-20"
+      className={`
+        py-16
+        md:py-20
+      `}
       id="swap"
     >
       <div className="mx-auto max-w-xl">
-        <h2 className="font-display text-2xl font-semibold text-foreground md:text-3xl">
+        <h2
+          className={`
+            font-display text-2xl font-semibold text-foreground
+            md:text-3xl
+          `}
+        >
           CULT Swap
         </h2>
- <div className="mt-6 overflow-hidden rounded-2xl border border-border bg-card ">
+        <div
+          className={`
+            mt-6 overflow-hidden rounded-2xl border border-border bg-card
+          `}
+        >
           <div className="space-y-3 p-6">
             <div className="rounded-xl border border-border bg-muted/20 p-4">
-              <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              <p
+                className={`
+                  mb-2 text-xs font-medium tracking-wider text-muted-foreground
+                  uppercase
+                `}
+              >
                 Sell
               </p>
               <div className="flex items-center gap-2">
@@ -368,15 +418,30 @@ export function CultSwapBlock() {
                   type="number"
                   value={swapDirection === "solToCult" ? solAmount : cultAmount}
                 />
-                <div className="flex min-w-[100px] items-center justify-end gap-2 rounded-lg border border-border bg-background px-3 py-2 font-medium">
+                <div
+                  className={`
+                    flex min-w-[100px] items-center justify-end gap-2 rounded-lg
+                    border border-border bg-background px-3 py-2 font-medium
+                  `}
+                >
                   {swapDirection === "solToCult" ? (
                     <>
-                      <Image alt="SOL" height={24} src="/crypto/solana/solanaLogoMark.svg" width={24} />
+                      <Image
+                        alt="SOL"
+                        height={24}
+                        src="/crypto/solana/solanaLogoMark.svg"
+                        width={24}
+                      />
                       SOL
                     </>
                   ) : (
                     <>
-                      <Image alt={tokenSymbol} height={24} src="/crypto/cult/cult-logo.svg" width={24} />
+                      <Image
+                        alt={tokenSymbol}
+                        height={24}
+                        src="/crypto/cult/cult-logo.svg"
+                        width={24}
+                      />
                       {tokenSymbol}
                     </>
                   )}
@@ -396,13 +461,18 @@ export function CultSwapBlock() {
               <div className="mt-2 flex flex-wrap gap-2">
                 {swapDirection === "solToCult" ? (
                   <>
-                    <Button onClick={() => setSolAmount("")} size="sm" type="button" variant="secondary">
+                    <Button
+                      onClick={() => setSolAmount("")}
+                      size="sm"
+                      type="button"
+                      variant="secondary"
+                    >
                       Reset
                     </Button>
                     {[0.1, 0.5, 1].map((n) => (
                       <Button
-                        key={n}
                         disabled={!publicKey || solBalanceSol < n}
+                        key={n}
                         onClick={() => setSolAmount(String(n))}
                         size="sm"
                         type="button"
@@ -413,7 +483,11 @@ export function CultSwapBlock() {
                     ))}
                     {publicKey && solBalanceSol > 0.01 && (
                       <Button
-                        onClick={() => setSolAmount(Math.max(0, solBalanceSol - 0.01).toFixed(6))}
+                        onClick={() =>
+                          setSolAmount(
+                            Math.max(0, solBalanceSol - 0.01).toFixed(6),
+                          )
+                        }
                         size="sm"
                         type="button"
                         variant="secondary"
@@ -424,17 +498,22 @@ export function CultSwapBlock() {
                   </>
                 ) : (
                   <>
-                    <Button onClick={() => setCultAmount("")} size="sm" type="button" variant="secondary">
+                    <Button
+                      onClick={() => setCultAmount("")}
+                      size="sm"
+                      type="button"
+                      variant="secondary"
+                    >
                       Reset
                     </Button>
                     {[25, 50, 75, 100].map((pct) => (
                       <Button
-                        key={pct}
                         disabled={
                           !wallet ||
                           cultBalance == null ||
                           Number(cultBalance) <= 0
                         }
+                        key={pct}
                         onClick={() => {
                           const bal = Number(cultBalance);
                           if (!Number.isFinite(bal) || bal <= 0) return;
@@ -467,30 +546,55 @@ export function CultSwapBlock() {
             </div>
 
             <div className="rounded-xl border border-border bg-muted/20 p-4">
-              <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              <p
+                className={`
+                  mb-2 text-xs font-medium tracking-wider text-muted-foreground
+                  uppercase
+                `}
+              >
                 Buy
               </p>
               <div className="flex items-center gap-2">
-                <div className="font-mono flex-1 rounded-md border border-border bg-muted/30 px-3 py-2 text-lg text-foreground">
+                <div
+                  className={`
+                    flex-1 rounded-md border border-border bg-muted/30 px-3 py-2
+                    font-mono text-lg text-foreground
+                  `}
+                >
                   {estimateLoading
                     ? "…"
                     : swapDirection === "solToCult"
                       ? solAmount.trim() && Number.parseFloat(solAmount) > 0
-                        ? estimatedCult ?? "—"
+                        ? (estimatedCult ?? "—")
                         : "0"
                       : cultAmount.trim() && Number.parseFloat(cultAmount) > 0
-                        ? estimatedSol ?? "—"
+                        ? (estimatedSol ?? "—")
                         : "0"}
                 </div>
-                <div className="flex min-w-[100px] items-center justify-end gap-2 rounded-lg border border-border bg-background px-3 py-2 font-medium">
+                <div
+                  className={`
+                    flex min-w-[100px] items-center justify-end gap-2 rounded-lg
+                    border border-border bg-background px-3 py-2 font-medium
+                  `}
+                >
                   {swapDirection === "solToCult" ? (
                     <>
-                      <Image alt={tokenSymbol} height={24} src="/crypto/cult/cult-logo.svg" width={24} />
+                      <Image
+                        alt={tokenSymbol}
+                        height={24}
+                        src="/crypto/cult/cult-logo.svg"
+                        width={24}
+                      />
                       {tokenSymbol}
                     </>
                   ) : (
                     <>
-                      <Image alt="SOL" height={24} src="/crypto/solana/solanaLogoMark.svg" width={24} />
+                      <Image
+                        alt="SOL"
+                        height={24}
+                        src="/crypto/solana/solanaLogoMark.svg"
+                        width={24}
+                      />
                       SOL
                     </>
                   )}
@@ -513,10 +617,12 @@ export function CultSwapBlock() {
               className="w-full"
               disabled={
                 swapPending ||
-                !!(publicKey &&
+                !!(
+                  publicKey &&
                   (swapDirection === "solToCult"
                     ? !solAmount.trim() || Number.parseFloat(solAmount) <= 0
-                    : !cultAmount.trim() || Number.parseFloat(cultAmount) <= 0))
+                    : !cultAmount.trim() || Number.parseFloat(cultAmount) <= 0)
+                )
               }
               onClick={() => {
                 if (!publicKey || !sendTransaction) {

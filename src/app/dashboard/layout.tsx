@@ -24,9 +24,7 @@ export default async function DashboardLayout({
     <DashboardWalletLinkProvider>
       {/* UploadThing SSR plugin scoped to dashboard — file uploads only happen here */}
       <NextSSRPlugin routerConfig={extractRouterConfig(ourFileRouter)} />
-      <DashboardLayoutClient>
-        {children}
-      </DashboardLayoutClient>
+      <DashboardLayoutClient>{children}</DashboardLayoutClient>
     </DashboardWalletLinkProvider>
   );
 }

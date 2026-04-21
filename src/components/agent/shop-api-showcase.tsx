@@ -49,7 +49,12 @@ export function ShopApiShowcase({ apiBaseUrl }: ShopApiShowcaseProps) {
     <section className="py-16">
       <div className="mx-auto max-w-4xl px-4">
         <div className="mb-8 text-center">
-          <h2 className="font-heading mb-3 text-3xl font-bold tracking-tight sm:text-4xl">
+          <h2
+            className={`
+              font-heading mb-3 text-3xl font-bold tracking-tight
+              sm:text-4xl
+            `}
+          >
             SHOP API
           </h2>
           <p className="mx-auto max-w-xl text-muted-foreground">
@@ -69,7 +74,8 @@ export function ShopApiShowcase({ apiBaseUrl }: ShopApiShowcaseProps) {
           </span>
           <code
             className={`
-              flex-1 max-w-md rounded-md border border-border bg-muted px-4 py-2 font-mono text-sm
+              max-w-md flex-1 rounded-md border border-border bg-muted px-4 py-2
+              font-mono text-sm
               sm:max-w-lg
             `}
           >
@@ -89,11 +95,17 @@ export function ShopApiShowcase({ apiBaseUrl }: ShopApiShowcaseProps) {
           </Button>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div
+          className={`
+            grid gap-6
+            lg:grid-cols-2
+          `}
+        >
           <div className="overflow-hidden rounded-lg border border-border">
             <div
               className={`
-                flex items-center justify-between border-b border-border bg-emerald-700 px-4 py-2
+                flex items-center justify-between border-b border-border
+                bg-emerald-700 px-4 py-2
               `}
             >
               <span className="font-mono text-sm font-semibold text-white">
@@ -101,7 +113,8 @@ export function ShopApiShowcase({ apiBaseUrl }: ShopApiShowcaseProps) {
               </span>
               <Button
                 className={`
-                  h-7 border-emerald-500 bg-transparent text-emerald-100 hover:bg-emerald-600
+                  h-7 border-emerald-500 bg-transparent text-emerald-100
+                  hover:bg-emerald-600
                 `}
                 onClick={() => handleCopy(REQUEST_EXAMPLE, "request")}
                 size="sm"
@@ -119,8 +132,8 @@ export function ShopApiShowcase({ apiBaseUrl }: ShopApiShowcaseProps) {
             </div>
             <pre
               className={`
-                overflow-x-auto bg-emerald-900 p-4 font-mono text-sm leading-relaxed
-                text-emerald-100
+                overflow-x-auto bg-emerald-900 p-4 font-mono text-sm
+                leading-relaxed text-emerald-100
               `}
             >
               {REQUEST_EXAMPLE}
@@ -130,7 +143,8 @@ export function ShopApiShowcase({ apiBaseUrl }: ShopApiShowcaseProps) {
           <div className="overflow-hidden rounded-lg border border-border">
             <div
               className={`
-                flex items-center justify-between border-b border-border bg-emerald-700 px-4 py-2
+                flex items-center justify-between border-b border-border
+                bg-emerald-700 px-4 py-2
               `}
             >
               <span className="font-mono text-sm font-semibold text-white">
@@ -139,8 +153,8 @@ export function ShopApiShowcase({ apiBaseUrl }: ShopApiShowcaseProps) {
             </div>
             <pre
               className={`
-                overflow-x-auto bg-emerald-900 p-4 font-mono text-sm leading-relaxed
-                text-emerald-100
+                overflow-x-auto bg-emerald-900 p-4 font-mono text-sm
+                leading-relaxed text-emerald-100
               `}
             >
               {RESPONSE_EXAMPLE}
@@ -151,7 +165,8 @@ export function ShopApiShowcase({ apiBaseUrl }: ShopApiShowcaseProps) {
         <div className="mt-6 text-center">
           <a
             className={`
-              font-medium text-primary underline-offset-4 hover:underline
+              font-medium text-primary underline-offset-4
+              hover:underline
             `}
             href="/api/docs"
           >

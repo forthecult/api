@@ -1,11 +1,11 @@
 /** Local project knowledge: files (with extracted text when possible) and cloud links. */
 
 export type CloudProvider =
-  | "google"
   | "dropbox"
+  | "google"
   | "microsoft"
-  | "proton"
-  | "other";
+  | "other"
+  | "proton";
 
 export type ProjectKnowledgeItem =
   | {
@@ -32,30 +32,30 @@ const STORAGE_KEY = "ftc-ai-project-knowledge-v1";
 
 /** Blocked extensions (executables, installers, risky types). */
 const BLOCKED_EXT = new Set([
-  "exe",
-  "dll",
-  "msi",
+  "apk",
+  "app",
   "bat",
+  "cjs",
   "cmd",
   "com",
-  "scr",
-  "app",
   "deb",
-  "rpm",
+  "dll",
   "dmg",
-  "pkg",
-  "apk",
+  "dylib",
+  "exe",
   "ipa",
   "jar",
-  "sh",
-  "ps1",
-  "vbs",
   "js",
   "mjs",
-  "cjs",
-  "wasm",
-  "dylib",
+  "msi",
+  "pkg",
+  "ps1",
+  "rpm",
+  "scr",
+  "sh",
   "so",
+  "vbs",
+  "wasm",
 ]);
 
 /**
@@ -63,100 +63,37 @@ const BLOCKED_EXT = new Set([
  * Binary office/PDF are allowed; text may be extracted in-browser when possible.
  */
 const ALLOWED_EXT = new Set([
-  "pdf",
+  "csv",
   "doc",
   "docx",
   "dot",
   "dotx",
-  "xls",
-  "xlsx",
-  "xlsm",
-  "csv",
-  "tsv",
+  "epub",
+  "htm",
+  "html",
+  "json",
+  "log",
+  "markdown",
+  "md",
+  "odp",
+  "ods",
+  "odt",
+  "pdf",
   "ppt",
   "pptx",
-  "odt",
-  "ods",
-  "odp",
   "rtf",
+  "tex",
+  "tsv",
   "txt",
-  "md",
-  "markdown",
-  "html",
-  "htm",
+  "xls",
+  "xlsm",
+  "xlsx",
   "xml",
-  "json",
   "yaml",
   "yml",
-  "log",
-  "tex",
-  "epub",
 ]);
 
 const MAX_TEXT_CHARS = 120_000;
-
-function extension(filename: string): string {
-  const i = filename.lastIndexOf(".");
-  if (i < 0) return "";
-  return filename.slice(i + 1).toLowerCase();
-}
-
-export function isKnowledgeFileAllowed(file: File): boolean {
-  const ext = extension(file.name);
-  if (ext && BLOCKED_EXT.has(ext)) return false;
-  if (ext && ALLOWED_EXT.has(ext)) return true;
-  const t = file.type.toLowerCase();
-  if (t.startsWith("text/")) return true;
-  if (
-    t === "application/json" ||
-    t === "application/xml" ||
-    t.includes("csv") ||
-    t.includes("pdf") ||
-    t.includes("wordprocessingml") ||
-    t.includes("msword") ||
-    t.includes("spreadsheetml") ||
-    t.includes("presentationml")
-  ) {
-    return true;
-  }
-  return false;
-}
-
-function loadStore(): Record<string, ProjectKnowledgeItem[]> {
-  if (typeof window === "undefined") return {};
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return {};
-    const parsed = JSON.parse(raw) as unknown;
-    if (!parsed || typeof parsed !== "object") return {};
-    return parsed as Record<string, ProjectKnowledgeItem[]>;
-  } catch {
-    return {};
-  }
-}
-
-function saveStore(store: Record<string, ProjectKnowledgeItem[]>): void {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
-  } catch {
-    /* ignore */
-  }
-}
-
-export function loadProjectKnowledge(projectId: string): ProjectKnowledgeItem[] {
-  const s = loadStore();
-  const list = s[projectId];
-  return Array.isArray(list) ? list : [];
-}
-
-export function saveProjectKnowledge(
-  projectId: string,
-  items: ProjectKnowledgeItem[],
-): void {
-  const s = loadStore();
-  s[projectId] = items;
-  saveStore(s);
-}
 
 /** Best-effort text extraction for browser-readable formats. */
 export async function extractKnowledgeText(
@@ -226,6 +163,69 @@ export async function extractKnowledgeText(
   return { needsExtraction: true, text: null };
 }
 
+export function guessProviderFromUrl(url: string): CloudProvider {
+  const u = url.toLowerCase();
+  if (u.includes("drive.google.com") || u.includes("docs.google.com"))
+    return "google";
+  if (u.includes("dropbox.com")) return "dropbox";
+  if (
+    u.includes("sharepoint.com") ||
+    u.includes("onedrive.live.com") ||
+    u.includes("1drv.ms")
+  ) {
+    return "microsoft";
+  }
+  if (u.includes("proton.me") || u.includes("protonmail.com")) return "proton";
+  return "other";
+}
+
+export function isKnowledgeFileAllowed(file: File): boolean {
+  const ext = extension(file.name);
+  if (ext && BLOCKED_EXT.has(ext)) return false;
+  if (ext && ALLOWED_EXT.has(ext)) return true;
+  const t = file.type.toLowerCase();
+  if (t.startsWith("text/")) return true;
+  if (
+    t === "application/json" ||
+    t === "application/xml" ||
+    t.includes("csv") ||
+    t.includes("pdf") ||
+    t.includes("wordprocessingml") ||
+    t.includes("msword") ||
+    t.includes("spreadsheetml") ||
+    t.includes("presentationml")
+  ) {
+    return true;
+  }
+  return false;
+}
+
+export function isValidHttpUrl(url: string): boolean {
+  try {
+    const u = new URL(url);
+    return u.protocol === "https:" || u.protocol === "http:";
+  } catch {
+    return false;
+  }
+}
+
+export function loadProjectKnowledge(
+  projectId: string,
+): ProjectKnowledgeItem[] {
+  const s = loadStore();
+  const list = s[projectId];
+  return Array.isArray(list) ? list : [];
+}
+
+export function saveProjectKnowledge(
+  projectId: string,
+  items: ProjectKnowledgeItem[],
+): void {
+  const s = loadStore();
+  s[projectId] = items;
+  saveStore(s);
+}
+
 export function serializeKnowledgeForPrompt(
   items: ProjectKnowledgeItem[],
 ): string {
@@ -251,12 +251,31 @@ export function serializeKnowledgeForPrompt(
   return parts.join("\n\n");
 }
 
+function extension(filename: string): string {
+  const i = filename.lastIndexOf(".");
+  if (i < 0) return "";
+  return filename.slice(i + 1).toLowerCase();
+}
+
+function loadStore(): Record<string, ProjectKnowledgeItem[]> {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as unknown;
+    if (!parsed || typeof parsed !== "object") return {};
+    return parsed as Record<string, ProjectKnowledgeItem[]>;
+  } catch {
+    return {};
+  }
+}
+
 function providerLabel(p: CloudProvider): string {
   switch (p) {
-    case "google":
-      return "Google Drive";
     case "dropbox":
       return "Dropbox";
+    case "google":
+      return "Google Drive";
     case "microsoft":
       return "Microsoft OneDrive";
     case "proton":
@@ -266,27 +285,10 @@ function providerLabel(p: CloudProvider): string {
   }
 }
 
-export function guessProviderFromUrl(url: string): CloudProvider {
-  const u = url.toLowerCase();
-  if (u.includes("drive.google.com") || u.includes("docs.google.com"))
-    return "google";
-  if (u.includes("dropbox.com")) return "dropbox";
-  if (
-    u.includes("sharepoint.com") ||
-    u.includes("onedrive.live.com") ||
-    u.includes("1drv.ms")
-  ) {
-    return "microsoft";
-  }
-  if (u.includes("proton.me") || u.includes("protonmail.com")) return "proton";
-  return "other";
-}
-
-export function isValidHttpUrl(url: string): boolean {
+function saveStore(store: Record<string, ProjectKnowledgeItem[]>): void {
   try {
-    const u = new URL(url);
-    return u.protocol === "https:" || u.protocol === "http:";
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
   } catch {
-    return false;
+    /* ignore */
   }
 }

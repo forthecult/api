@@ -36,7 +36,10 @@ export const metadata: Metadata = {
 
 function No() {
   return (
-    <span className="inline-flex justify-center text-muted-foreground" title="No">
+    <span
+      className="inline-flex justify-center text-muted-foreground"
+      title="No"
+    >
       <X aria-hidden className="h-5 w-5" />
       <span className="sr-only">No</span>
     </span>
@@ -169,10 +172,10 @@ export default function AiLandingPage() {
 
       <section
         className={`
-        container mx-auto max-w-7xl px-4 py-16
-        sm:px-6 sm:py-20
-        lg:px-8
-      `}
+          container mx-auto max-w-7xl px-4 py-16
+          sm:px-6 sm:py-20
+          lg:px-8
+        `}
       >
         <div className="mx-auto max-w-2xl text-center">
           <h2
@@ -186,17 +189,16 @@ export default function AiLandingPage() {
             Three capabilities that separate Culture AI from a generic chat box.
           </p>
         </div>
-        <ul className={`
-          mt-12 grid gap-6
-          md:grid-cols-3
-        `}>
+        <ul
+          className={`
+            mt-12 grid gap-6
+            md:grid-cols-3
+          `}
+        >
           <li
             className={cn(
- "rounded-xl border border-border bg-card/70 p-6 ",
-              `
-                transition-shadow
- 
-              `,
+              "rounded-xl border border-border bg-card/70 p-6",
+              `transition-shadow`,
             )}
           >
             <h3 className="font-heading text-lg font-semibold text-foreground">
@@ -209,11 +211,8 @@ export default function AiLandingPage() {
           </li>
           <li
             className={cn(
- "rounded-xl border border-border bg-card/70 p-6 ",
-              `
-                transition-shadow
- 
-              `,
+              "rounded-xl border border-border bg-card/70 p-6",
+              `transition-shadow`,
             )}
           >
             <h3 className="font-heading text-lg font-semibold text-foreground">
@@ -226,11 +225,8 @@ export default function AiLandingPage() {
           </li>
           <li
             className={cn(
- "rounded-xl border border-border bg-card/70 p-6 ",
-              `
-                transition-shadow
- 
-              `,
+              "rounded-xl border border-border bg-card/70 p-6",
+              `transition-shadow`,
             )}
           >
             <h3 className="font-heading text-lg font-semibold text-foreground">
@@ -254,10 +250,10 @@ export default function AiLandingPage() {
       >
         <div
           className={`
-          container mx-auto max-w-7xl px-4
-          sm:px-6
-          lg:px-8
-        `}
+            container mx-auto max-w-7xl px-4
+            sm:px-6
+            lg:px-8
+          `}
         >
           <div className="mx-auto max-w-2xl text-center">
             <h2
@@ -370,7 +366,6 @@ export default function AiLandingPage() {
                     <Yes />
                   </TableCell>
                 </TableRow>
-
               </TableBody>
             </Table>
             <p className="mt-4 text-center text-xs text-muted-foreground">
@@ -383,10 +378,10 @@ export default function AiLandingPage() {
 
       <section
         className={`
-        container mx-auto max-w-7xl px-4 py-16
-        sm:px-6 sm:py-20
-        lg:px-8
-      `}
+          container mx-auto max-w-7xl px-4 py-16
+          sm:px-6 sm:py-20
+          lg:px-8
+        `}
       >
         <div className="mx-auto max-w-2xl text-center">
           <h2
@@ -398,26 +393,28 @@ export default function AiLandingPage() {
           </h2>
           <p className="mt-3 text-muted-foreground">
             The prices below are for the{" "}
-            <span className="text-foreground font-medium">
+            <span className="font-medium text-foreground">
               standalone Culture AI subscription
             </span>{" "}
             product. You open the product page, choose monthly or annual billing
             there, add to cart, and check out—same as any other subscription
             item.{" "}
-            <span className="text-foreground font-medium">
+            <span className="font-medium text-foreground">
               Membership pricing is separate
             </span>{" "}
             (shipping, eSIM, staking perks) and is shown on the membership page.
           </p>
         </div>
-        <div className={`
-          mt-10 grid gap-6
-          lg:grid-cols-2
-        `}>
+        <div
+          className={`
+            mt-10 grid gap-6
+            lg:grid-cols-2
+          `}
+        >
           <div
             className={cn(
               "flex flex-col rounded-xl border border-border bg-card/80 p-6",
- "",
+              "",
             )}
           >
             <h3 className="font-heading text-lg font-semibold text-foreground">
@@ -434,11 +431,13 @@ export default function AiLandingPage() {
               <span className="text-muted-foreground">/month</span>
             </p>
             <p className="mt-2 text-sm text-muted-foreground">
-              Subscribe to Culture AI on its own. Use the product page to add the
-              monthly plan to your cart and complete checkout.
+              Subscribe to Culture AI on its own. Use the product page to add
+              the monthly plan to your cart and complete checkout.
             </p>
             <Button asChild className="mt-6 w-full">
-              <Link href={cultureAiProductHref}>Unlock Culture AI in the store</Link>
+              <Link href={cultureAiProductHref}>
+                Unlock Culture AI in the store
+              </Link>
             </Button>
             <p
               className={cn(
@@ -456,7 +455,7 @@ export default function AiLandingPage() {
                 relative flex flex-col rounded-xl border-2 border-primary
                 bg-card
               `,
- "p-6 ",
+              "p-6",
             )}
           >
             <span
@@ -485,11 +484,13 @@ export default function AiLandingPage() {
             </p>
             <p className="mt-2 text-sm text-muted-foreground">
               Effective rate when you pay annually (billed once per year on the
-              product). Select the annual option on the product page, then add to
-              cart.
+              product). Select the annual option on the product page, then add
+              to cart.
             </p>
             <Button asChild className="mt-6 w-full">
-              <Link href={cultureAiProductHref}>Unlock Culture AI in the store</Link>
+              <Link href={cultureAiProductHref}>
+                Unlock Culture AI in the store
+              </Link>
             </Button>
             <p
               className={cn(
@@ -514,9 +515,9 @@ export default function AiLandingPage() {
           <p className="mt-2 text-sm text-muted-foreground">
             Membership tiers cover shipping discounts, eSIM benefits, staking
             perks, and more. Those prices are{" "}
-            <span className="text-foreground font-medium">not</span> the $12.99 /
-            $9.99 Culture AI subscription rates above. If Culture AI is bundled
-            with your tier, you will see that on the membership page.
+            <span className="font-medium text-foreground">not</span> the $12.99
+            / $9.99 Culture AI subscription rates above. If Culture AI is
+            bundled with your tier, you will see that on the membership page.
           </p>
           <Button asChild className="mt-4" variant="outline">
             <Link href="/membership">View membership pricing</Link>
@@ -534,10 +535,10 @@ export default function AiLandingPage() {
       >
         <div
           className={`
-          container mx-auto max-w-7xl px-4
-          sm:px-6
-          lg:px-8
-        `}
+            container mx-auto max-w-7xl px-4
+            sm:px-6
+            lg:px-8
+          `}
         >
           <h2
             className={cn(
@@ -551,7 +552,7 @@ export default function AiLandingPage() {
             {faqItems.map((item) => (
               <details
                 className={cn(
- "group rounded-lg border border-border bg-card/80 ",
+                  "group rounded-lg border border-border bg-card/80",
                   "open:bg-card",
                 )}
                 key={item.q}
@@ -578,10 +579,12 @@ export default function AiLandingPage() {
                     )}
                   />
                 </summary>
-                <p className={`
-                  border-t border-border px-5 pt-0 pb-4 text-sm leading-relaxed
-                  text-muted-foreground
-                `}>
+                <p
+                  className={`
+                    border-t border-border px-5 pt-0 pb-4 text-sm
+                    leading-relaxed text-muted-foreground
+                  `}
+                >
                   {item.a}
                 </p>
               </details>
@@ -605,10 +608,10 @@ export default function AiLandingPage() {
 
       <section
         className={`
-        container mx-auto max-w-7xl px-4 pb-20 text-center
-        sm:px-6
-        lg:px-8
-      `}
+          container mx-auto max-w-7xl px-4 pb-20 text-center
+          sm:px-6
+          lg:px-8
+        `}
       >
         <h2 className="font-heading text-2xl font-bold text-foreground">
           Ready when you are

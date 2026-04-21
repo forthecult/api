@@ -88,8 +88,8 @@ export function PersonalAiWidgetPanel() {
           characterSlug,
           temperature,
           topP,
-          webSearchEnabled: webEnabled,
           urlScrapingEnabled,
+          webSearchEnabled: webEnabled,
         },
         credentials: "include",
         headers: { "x-ai-guest-id": guestId },
@@ -170,9 +170,11 @@ export function PersonalAiWidgetPanel() {
           );
         })}
         {busy ? (
-          <p className={`
-            flex items-center gap-2 px-1 text-xs text-muted-foreground
-          `}>
+          <p
+            className={`
+              flex items-center gap-2 px-1 text-xs text-muted-foreground
+            `}
+          >
             <Loader2 aria-hidden className="h-3.5 w-3.5 animate-spin" />
             Thinking…
           </p>
@@ -220,11 +222,7 @@ export function PersonalAiWidgetPanel() {
                 Stop
               </Button>
             ) : null}
-            <Button
-              disabled={busy || !input.trim()}
-              size="sm"
-              type="submit"
-            >
+            <Button disabled={busy || !input.trim()} size="sm" type="submit">
               Send
             </Button>
           </div>
@@ -250,9 +248,7 @@ function getOrCreateGuestId(): string {
   return id;
 }
 
-function messageText(m: {
-  parts?: { text?: string; type: string }[];
-}): string {
+function messageText(m: { parts?: { text?: string; type: string }[] }): string {
   if (!m.parts?.length) return "";
   return m.parts
     .filter((p) => p.type === "text")

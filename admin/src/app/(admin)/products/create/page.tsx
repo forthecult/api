@@ -1,15 +1,6 @@
 "use client";
 
-import {
-  ChevronDown,
-  ChevronUp,
-  GripVertical,
-  ImageIcon,
-  Plus,
-  Trash2,
-  Upload,
-  X,
-} from "lucide-react";
+import { GripVertical, ImageIcon, Plus, Trash2, Upload, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -189,7 +180,7 @@ export default function AdminProductsCreatePage() {
       const el = continentCheckboxRefs.current[i];
       if (el) el.indeterminate = isContinentPartiallySelected(i);
     });
-  }, [availableCountrySet, isContinentPartiallySelected]);
+  }, [isContinentPartiallySelected]);
 
   const fetchCategories = useCallback(async () => {
     try {
@@ -547,6 +538,11 @@ export default function AdminProductsCreatePage() {
       tokenGates,
       availableCountryCodes,
       router,
+      shipsFromRegion.trim,
+      shipsFromPostalCode.trim,
+      shipsFromDisplay.trim,
+      shipsFromCountry.trim,
+      shipsFromCity.trim,
     ],
   );
 
@@ -570,9 +566,9 @@ export default function AdminProductsCreatePage() {
       {error && (
         <div
           className={`
-          rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800
-          dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
-        `}
+            rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800
+            dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
+          `}
         >
           {error}
         </div>
@@ -587,9 +583,9 @@ export default function AdminProductsCreatePage() {
           <CardContent className="space-y-4">
             <div
               className={`
-              grid gap-4
-              sm:grid-cols-2
-            `}
+                grid gap-4
+                sm:grid-cols-2
+              `}
             >
               <div className="space-y-2">
                 <label className={labelClass} htmlFor="name">
@@ -674,9 +670,9 @@ export default function AdminProductsCreatePage() {
           <CardContent className="space-y-4">
             <div
               className={`
-              grid gap-4
-              sm:grid-cols-3
-            `}
+                grid gap-4
+                sm:grid-cols-3
+              `}
             >
               <div className="space-y-2">
                 <label className={labelClass} htmlFor="priceCents">
@@ -766,9 +762,9 @@ export default function AdminProductsCreatePage() {
           <CardContent className="space-y-4">
             <div
               className={`
-              grid gap-4
-              sm:grid-cols-2
-            `}
+                grid gap-4
+                sm:grid-cols-2
+              `}
             >
               <div className="space-y-2">
                 <label className={labelClass} htmlFor="sku">
@@ -888,9 +884,9 @@ export default function AdminProductsCreatePage() {
             )}
             <div
               className={`
-              grid gap-4
-              sm:grid-cols-2
-            `}
+                grid gap-4
+                sm:grid-cols-2
+              `}
             >
               <div className="space-y-2">
                 <label className={labelClass} htmlFor="hsCode">
@@ -931,9 +927,9 @@ export default function AdminProductsCreatePage() {
                 </p>
                 <div
                   className={`
-                  grid gap-3
-                  sm:grid-cols-2
-                `}
+                    grid gap-3
+                    sm:grid-cols-2
+                  `}
                 >
                   <div className="sm:col-span-2">
                     <label
@@ -1066,11 +1062,11 @@ export default function AdminProductsCreatePage() {
               {imageUrl && (
                 <div
                   className={`
-                  relative mt-2 size-24 overflow-hidden rounded-md border
-                  bg-muted
-                `}
+                    relative mt-2 size-24 overflow-hidden rounded-md border
+                    bg-muted
+                  `}
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  {}
                   <img
                     alt=""
                     className="size-full object-cover"
@@ -1116,7 +1112,7 @@ export default function AdminProductsCreatePage() {
                       title="Click to expand"
                       type="button"
                     >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      {}
                       <img
                         alt=""
                         className="size-full object-cover"
@@ -1182,9 +1178,9 @@ export default function AdminProductsCreatePage() {
           <CardContent className="space-y-4">
             <div
               className={`
-              grid gap-4
-              sm:grid-cols-2
-            `}
+                grid gap-4
+                sm:grid-cols-2
+              `}
             >
               <div>
                 <BrandSelect
@@ -1259,9 +1255,7 @@ export default function AdminProductsCreatePage() {
                       {!opt.isExpanded ? (
                         <div className="flex items-center gap-3 p-3">
                           <GripVertical
-                            className={`
-                            h-4 w-4 shrink-0 text-muted-foreground
-                          `}
+                            className={`h-4 w-4 shrink-0 text-muted-foreground`}
                           />
                           <div className="flex-1">
                             <div className="text-sm font-medium">
@@ -1298,15 +1292,13 @@ export default function AdminProductsCreatePage() {
                           <div className="flex items-start gap-3">
                             <GripVertical
                               className={`
-                              mt-2.5 h-4 w-4 shrink-0 text-muted-foreground
-                            `}
+                                mt-2.5 h-4 w-4 shrink-0 text-muted-foreground
+                              `}
                             />
                             <div className="flex-1 space-y-3">
                               <div>
                                 <label
-                                  className={`
-                                  mb-1 block text-sm font-medium
-                                `}
+                                  className={`mb-1 block text-sm font-medium`}
                                 >
                                   Option name
                                 </label>
@@ -1339,9 +1331,7 @@ export default function AdminProductsCreatePage() {
 
                               <div>
                                 <label
-                                  className={`
-                                  mb-1 block text-sm font-medium
-                                `}
+                                  className={`mb-1 block text-sm font-medium`}
                                 >
                                   Option values
                                 </label>
@@ -1395,8 +1385,8 @@ export default function AdminProductsCreatePage() {
 
                               <div
                                 className={`
-                                flex items-center justify-between pt-2
-                              `}
+                                  flex items-center justify-between pt-2
+                                `}
                               >
                                 <Button
                                   onClick={() => {
@@ -1447,8 +1437,8 @@ export default function AdminProductsCreatePage() {
                       <h4 className="font-medium">Variants</h4>
                       <div
                         className={`
-                        flex items-center gap-2 text-sm text-muted-foreground
-                      `}
+                          flex items-center gap-2 text-sm text-muted-foreground
+                        `}
                       >
                         <span>Select</span>
                         <button
@@ -1499,9 +1489,9 @@ export default function AdminProductsCreatePage() {
                           {variants.map((v, vi) => (
                             <tr
                               className={`
-                              border-b
-                              last:border-0
-                            `}
+                                border-b
+                                last:border-0
+                              `}
                               key={vi}
                             >
                               <td className="p-2">
@@ -1514,10 +1504,10 @@ export default function AdminProductsCreatePage() {
                                 <div className="flex items-center gap-3">
                                   <div
                                     className={`
-                                    flex h-10 w-10 shrink-0 items-center
-                                    justify-center overflow-hidden rounded
-                                    border border-dashed bg-muted/30
-                                  `}
+                                      flex h-10 w-10 shrink-0 items-center
+                                      justify-center overflow-hidden rounded
+                                      border border-dashed bg-muted/30
+                                    `}
                                   >
                                     {v.imageUrl ? (
                                       <button
@@ -1547,8 +1537,8 @@ export default function AdminProductsCreatePage() {
                                     ) : (
                                       <ImageIcon
                                         className={`
-                                        h-4 w-4 text-muted-foreground
-                                      `}
+                                          h-4 w-4 text-muted-foreground
+                                        `}
                                       />
                                     )}
                                   </div>
@@ -1675,7 +1665,7 @@ export default function AdminProductsCreatePage() {
               className="relative max-h-[90vh] max-w-[90vw]"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
+              {}
               <img
                 alt="Expanded view"
                 className={`
@@ -1692,13 +1682,13 @@ export default function AdminProductsCreatePage() {
         {editingVariantIndex !== null && variants[editingVariantIndex] && (
           <div
             className={`
-            fixed inset-0 z-50 flex items-center justify-center bg-black/50
-          `}
+              fixed inset-0 z-50 flex items-center justify-center bg-black/50
+            `}
           >
             <div
               className={`
-              w-full max-w-md rounded-lg bg-background p-6 shadow-lg
-            `}
+                w-full max-w-md rounded-lg bg-background p-6 shadow-lg
+              `}
             >
               <h3 className="mb-4 text-lg font-semibold">
                 Edit Variant:{" "}
@@ -1819,10 +1809,10 @@ export default function AdminProductsCreatePage() {
                 </label>
                 <div
                   className={`
-                  grid grid-cols-2 gap-x-4 gap-y-1
-                  sm:grid-cols-3
-                  md:grid-cols-4
-                `}
+                    grid grid-cols-2 gap-x-4 gap-y-1
+                    sm:grid-cols-3
+                    md:grid-cols-4
+                  `}
                 >
                   {entry.countries.map((country) => {
                     const noShip = isShippingExcluded(country.code);

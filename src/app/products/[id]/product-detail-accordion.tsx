@@ -9,6 +9,8 @@ import { cn } from "~/lib/cn";
 import { usePaymentMethodSettings } from "~/lib/hooks/use-payment-method-settings";
 import { sanitizeProductDescription } from "~/lib/sanitize-product-description";
 
+import { ProductShippingEstimateForm } from "./product-shipping-estimate-form";
+
 const BASE_ITEMS = [
   { id: "description", label: "Description" },
   { id: "delivery", label: "Delivery" },
@@ -51,9 +53,8 @@ const DELIVERY_COPY = (
     </p>
     <p className="mb-3">
       We ship to most countries. Our shipping prices vary depending on your
-      location and what products you&apos;re purchasing. The best way to
-      calculate shipping is to add the products to your cart and use the
-      Shipping Estimator on the cart page.
+      location and what products you&apos;re purchasing. Use the estimate tool
+      below, or review totals in your cart at checkout.
     </p>
     <p className="mb-3">
       In general, US orders range between $2-20 in shipping and Non-US orders
@@ -103,9 +104,9 @@ const RETURNS_COPY = (
       or visiting our{" "}
       <Link
         className={`
-        underline
-        hover:no-underline
-      `}
+          underline
+          hover:no-underline
+        `}
         href="/contact"
       >
         Contact Us Page
@@ -171,6 +172,18 @@ export function ProductDetailAccordion({
           <div className="pb-4 text-sm text-muted-foreground">
             {DELIVERY_COPY}
             {isApparelCategory(category) && DELIVERY_APPAREL_EXTRA}
+            <div
+              className={`
+                mt-6 space-y-2 border-t border-border/60 pt-4 text-sm
+                text-muted-foreground
+              `}
+            >
+              <p>
+                Rates combine our store shipping rules with live quotes from
+                fulfillment partners when your item is produced on demand.
+              </p>
+              <ProductShippingEstimateForm />
+            </div>
           </div>
         );
       case "description":
@@ -189,9 +202,7 @@ export function ProductDetailAccordion({
         }
         return (
           <div
-            className={`
-            pb-4 text-sm whitespace-pre-wrap text-muted-foreground
-          `}
+            className={`pb-4 text-sm whitespace-pre-wrap text-muted-foreground`}
           >
             {description || "No description available."}
           </div>
@@ -276,9 +287,9 @@ export function ProductDetailAccordion({
         return (
           <div
             className={`
-            border-b border-border
-            last:border-b-0
-          `}
+              border-b border-border
+              last:border-b-0
+            `}
             key={item.id}
           >
             <button
@@ -350,7 +361,7 @@ function renderSizeChartData(
           measurements.every(
             (m) => m.values.length === measurements[0]?.values.length,
           ) &&
-          measurements.every((m, i) =>
+          measurements.every((m, _i) =>
             m.values.every(
               (v, j) => v.size === measurements[0]?.values[j]?.size,
             ),
@@ -433,15 +444,15 @@ function renderSizeChartData(
                     <tr className="bg-muted/60">
                       <th
                         className={`
-                        px-3 py-2 text-left font-semibold text-foreground
-                      `}
+                          px-3 py-2 text-left font-semibold text-foreground
+                        `}
                       >
                         Size
                       </th>
                       <th
                         className={`
-                        px-3 py-2 text-left font-semibold text-foreground
-                      `}
+                          px-3 py-2 text-left font-semibold text-foreground
+                        `}
                       >
                         {m.type_label}
                       </th>

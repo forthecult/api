@@ -1,15 +1,11 @@
 import "server-only";
-
 import { and, eq } from "drizzle-orm";
 
 import { db } from "~/db";
-import {
-  subscriptionInstanceTable,
-  subscriptionOfferTable,
-} from "~/db/schema";
+import { subscriptionInstanceTable, subscriptionOfferTable } from "~/db/schema";
+import { MEMBERSHIP_OFFER_SLUG } from "~/lib/membership-subscription-catalog";
 import { cancelPayPalSubscription } from "~/lib/paypal-billing";
 import { getStripeIfConfigured } from "~/lib/stripe";
-import { MEMBERSHIP_OFFER_SLUG } from "~/lib/membership-subscription-catalog";
 
 /**
  * Admin-only: cancel a membership `subscription_instance` row and the provider
@@ -17,7 +13,7 @@ import { MEMBERSHIP_OFFER_SLUG } from "~/lib/membership-subscription-catalog";
  */
 export async function adminCancelMembershipSubscription(
   subscriptionInstanceId: string,
-): Promise<{ ok: true } | { error: string; status: number }> {
+): Promise<{ error: string; status: number } | { ok: true }> {
   const [row] = await db
     .select({
       billingProvider: subscriptionInstanceTable.billingProvider,

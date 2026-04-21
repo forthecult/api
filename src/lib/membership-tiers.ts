@@ -210,10 +210,10 @@ export interface SubscriptionPrice {
   annualPriceId: string | undefined;
   /** Annual cost in USD (monthly * 12 * (1 - discount)). */
   annualUsd: number;
-  /** Monthly cost in USD. */
-  monthlyUsd: number;
   /** Stripe Price ID for monthly billing. Falls back to dynamic creation if env var absent. */
   monthlyPriceId: string | undefined;
+  /** Monthly cost in USD. */
+  monthlyUsd: number;
   /** PayPal billing plan id (`P-...`) for annual billing. */
   paypalAnnualPlanId: string | undefined;
   /** PayPal billing plan id for monthly billing. */

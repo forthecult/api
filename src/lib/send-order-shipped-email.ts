@@ -57,7 +57,7 @@ export async function sendOrderShippedEmail(
         from,
         html,
         subject,
-        text: body + `\n\nView order status: ${orderStatusUrl}`,
+        text: `${body}\n\nView order status: ${orderStatusUrl}`,
         to,
       });
     } catch (err) {

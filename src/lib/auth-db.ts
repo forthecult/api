@@ -27,7 +27,7 @@ async function main() {
     // Find the start of the line (include preceding newlines)
     let start = relationsIdx;
     while (start > 0 && content[start - 1] === "\n") start--;
-    content = content.slice(0, start).replace(/\n+$/, "") + "\n";
+    content = `${content.slice(0, start).replace(/\n+$/, "")}\n`;
   }
   // Remove the relations import (no longer needed)
   content = content.replace(

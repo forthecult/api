@@ -111,8 +111,8 @@ export function WishlistPageClient() {
         </div>
         <div
           className={`
-          flex min-h-[200px] items-center justify-center text-muted-foreground
-        `}
+            flex min-h-[200px] items-center justify-center text-muted-foreground
+          `}
         >
           <Loader2 aria-hidden className="h-8 w-8 animate-spin" />
         </div>
@@ -130,9 +130,7 @@ export function WishlistPageClient() {
       {items.length === 0 ? (
         <Card>
           <CardContent
-            className={`
-            flex flex-col items-center justify-center py-12
-          `}
+            className={`flex flex-col items-center justify-center py-12`}
           >
             <p className="text-muted-foreground">Your wishlist is empty.</p>
             <Button asChild className="mt-4" variant="outline">
@@ -143,11 +141,10 @@ export function WishlistPageClient() {
       ) : (
         <ul
           className={`
-          grid gap-4
-          sm:grid-cols-2
-          lg:grid-cols-3
-        `}
-          role="list"
+            grid gap-4
+            sm:grid-cols-2
+            lg:grid-cols-3
+          `}
         >
           {items.map((item) => (
             <li className="min-w-0" key={item.productId}>
@@ -163,8 +160,8 @@ export function WishlistPageClient() {
                   >
                     <div
                       className={`
-                      relative h-48 w-full shrink-0 overflow-hidden bg-muted
-                    `}
+                        relative h-48 w-full shrink-0 overflow-hidden bg-muted
+                      `}
                     >
                       {item.product.imageUrl ? (
                         <Image
@@ -177,9 +174,9 @@ export function WishlistPageClient() {
                       ) : (
                         <span
                           className={`
-                          flex size-full items-center justify-center
-                          text-muted-foreground
-                        `}
+                            flex size-full items-center justify-center
+                            text-muted-foreground
+                          `}
                         >
                           No image
                         </span>

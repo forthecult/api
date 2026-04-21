@@ -1,13 +1,17 @@
 {
-  "typescript.tsdk": "node_modules\\typescript\\lib",
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "editor.defaultFormatter": "biomejs.biome",
   "editor.formatOnSave": true,
   "editor.codeActionsOnSave": {
     "source.fixAll": "explicit",
     "source.organizeImports": "never"
   },
-  "editor.defaultFormatter": "biomejs.biome",
-  "[markdown]": { "editor.defaultFormatter": "DavidAnson.vscode-markdownlint" },
-  "markdownlint.config": { "MD033": false },
+  "[markdown]": {
+    "editor.defaultFormatter": "DavidAnson.vscode-markdownlint"
+  },
+  "markdownlint.config": {
+    "MD033": false
+  },
   "eslint.rules.customizations": [
     { "rule": "readable-tailwind/*", "severity": "off" },
     { "rule": "perfectionist/*", "severity": "off" }

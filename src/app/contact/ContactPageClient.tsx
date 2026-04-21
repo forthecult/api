@@ -10,7 +10,7 @@ import { Input } from "~/ui/primitives/input";
 import { Label } from "~/ui/primitives/label";
 
 const inputClass =
- "flex min-h-9 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 placeholder:text-muted-foreground disabled:opacity-50";
+  "flex min-h-9 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 placeholder:text-muted-foreground disabled:opacity-50";
 
 export function ContactPageClient({ pgpPublicKey }: { pgpPublicKey: string }) {
   const [name, setName] = useState("");
@@ -75,9 +75,9 @@ export function ContactPageClient({ pgpPublicKey }: { pgpPublicKey: string }) {
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div
               className={`
-              grid gap-2
-              sm:grid-cols-2
-            `}
+                grid gap-2
+                sm:grid-cols-2
+              `}
             >
               <div className="space-y-2">
                 <Label htmlFor="contact-name">Name</Label>
@@ -131,9 +131,9 @@ export function ContactPageClient({ pgpPublicKey }: { pgpPublicKey: string }) {
             {status === "success" && (
               <p
                 className={`
-                rounded-md bg-green-50 p-3 text-sm text-green-800
-                dark:bg-green-950/30 dark:text-green-400
-              `}
+                  rounded-md bg-green-50 p-3 text-sm text-green-800
+                  dark:bg-green-950/30 dark:text-green-400
+                `}
               >
                 Message sent. We&apos;ll be in touch soon.
               </p>
@@ -141,8 +141,8 @@ export function ContactPageClient({ pgpPublicKey }: { pgpPublicKey: string }) {
             {status === "error" && errorMessage && (
               <p
                 className={`
-                rounded-md bg-destructive/10 p-3 text-sm text-destructive
-              `}
+                  rounded-md bg-destructive/10 p-3 text-sm text-destructive
+                `}
               >
                 {errorMessage}
               </p>
@@ -156,15 +156,15 @@ export function ContactPageClient({ pgpPublicKey }: { pgpPublicKey: string }) {
 
       <Card
         className={`
-        overflow-hidden rounded-lg border border-border bg-card/50 shadow-none
-      `}
+          overflow-hidden rounded-lg border border-border bg-card/50 shadow-none
+        `}
       >
         <CardHeader className="space-y-1 pb-4">
           <CardTitle
             className={`
-            flex items-center gap-2 text-lg font-semibold tracking-tight
-            text-foreground
-          `}
+              flex items-center gap-2 text-lg font-semibold tracking-tight
+              text-foreground
+            `}
           >
             <KeyRound aria-hidden className="size-5 shrink-0 text-primary" />
             PGP public key
@@ -201,9 +201,9 @@ export function ContactPageClient({ pgpPublicKey }: { pgpPublicKey: string }) {
           ) : (
             <p
               className={`
-              rounded-md border border-dashed border-border bg-muted/20 p-4
-              text-sm text-muted-foreground
-            `}
+                rounded-md border border-dashed border-border bg-muted/20 p-4
+                text-sm text-muted-foreground
+              `}
             >
               No PGP key is configured yet. Add{" "}
               <code className="rounded bg-muted px-1">

@@ -28,6 +28,14 @@ const TIER_NAMES: Record<number, string> = {
   3: "BASE",
 };
 
+export interface SubscriptionListResponse {
+  items: SubscriptionRow[];
+  limit: number;
+  page: number;
+  totalCount: number;
+  totalPages: number;
+}
+
 export interface SubscriptionRow {
   billingProvider: string;
   cancelAtPeriodEnd: boolean;
@@ -41,14 +49,6 @@ export interface SubscriptionRow {
   tier: number;
   tierName: string;
   userId: string;
-}
-
-export interface SubscriptionListResponse {
-  items: SubscriptionRow[];
-  limit: number;
-  page: number;
-  totalCount: number;
-  totalPages: number;
 }
 
 export async function GET(request: NextRequest) {
@@ -66,7 +66,8 @@ export async function GET(request: NextRequest) {
       Math.max(
         1,
         Number.parseInt(
-          request.nextUrl.searchParams.get("limit") ?? String(DEFAULT_PAGE_SIZE),
+          request.nextUrl.searchParams.get("limit") ??
+            String(DEFAULT_PAGE_SIZE),
           10,
         ),
       ),
@@ -138,10 +139,13 @@ export async function GET(request: NextRequest) {
       .offset(offset);
 
     const items: SubscriptionRow[] = rows.map((r) => {
-      const m = r.planMetadata as { membershipTier?: number; billingInterval?: string } | null;
-      const tier =
-        typeof m?.membershipTier === "number" ? m.membershipTier : 0;
-      const interval = typeof m?.billingInterval === "string" ? m.billingInterval : "";
+      const m = r.planMetadata as null | {
+        billingInterval?: string;
+        membershipTier?: number;
+      };
+      const tier = typeof m?.membershipTier === "number" ? m.membershipTier : 0;
+      const interval =
+        typeof m?.billingInterval === "string" ? m.billingInterval : "";
       return {
         billingProvider: r.billingProvider,
         cancelAtPeriodEnd: r.cancelAtPeriodEnd,

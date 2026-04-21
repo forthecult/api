@@ -458,8 +458,8 @@ export default function AdminOrderDetailsPage() {
     return (
       <div
         className={`
-        flex min-h-[200px] items-center justify-center text-muted-foreground
-      `}
+          flex min-h-[200px] items-center justify-center text-muted-foreground
+        `}
       >
         <Loader2 aria-hidden className="h-8 w-8 animate-spin" />
       </div>
@@ -480,9 +480,9 @@ export default function AdminOrderDetailsPage() {
         </Link>
         <div
           className={`
-          rounded-lg border border-red-200 bg-red-50 p-4 text-red-800
-          dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
-        `}
+            rounded-lg border border-red-200 bg-red-50 p-4 text-red-800
+            dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
+          `}
         >
           {error}
         </div>
@@ -524,9 +524,9 @@ export default function AdminOrderDetailsPage() {
     <div className="space-y-6">
       <div
         className={`
-        flex flex-col gap-4
-        sm:flex-row sm:items-center sm:justify-between
-      `}
+          flex flex-col gap-4
+          sm:flex-row sm:items-center sm:justify-between
+        `}
       >
         <div className="flex items-center gap-4">
           <Link
@@ -577,9 +577,9 @@ export default function AdminOrderDetailsPage() {
       {error && (
         <div
           className={`
-          rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800
-          dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
-        `}
+            rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800
+            dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
+          `}
         >
           {error}
         </div>
@@ -779,9 +779,9 @@ export default function AdminOrderDetailsPage() {
           {productResults.length > 0 && (
             <ul
               className={`
-              max-h-48 space-y-1 overflow-y-auto rounded-md border border-border
-              p-2
-            `}
+                max-h-48 space-y-1 overflow-y-auto rounded-md border
+                border-border p-2
+              `}
             >
               {productResults.map((p) => (
                 <li
@@ -845,9 +845,9 @@ export default function AdminOrderDetailsPage() {
                 <thead>
                   <tr
                     className={`
-                    border-b border-border text-left text-xs font-medium
-                    text-muted-foreground
-                  `}
+                      border-b border-border text-left text-xs font-medium
+                      text-muted-foreground
+                    `}
                   >
                     <th className="pr-4 pb-2">Product</th>
                     <th className="pr-4 pb-2">Variant</th>
@@ -872,12 +872,11 @@ export default function AdminOrderDetailsPage() {
                         <div className="flex items-center gap-2">
                           <div
                             className={`
-                            relative flex h-10 w-10 shrink-0 overflow-hidden
-                            rounded border bg-muted
-                          `}
+                              relative flex h-10 w-10 shrink-0 overflow-hidden
+                              rounded border bg-muted
+                            `}
                           >
                             {item.imageUrl ? (
-                              // eslint-disable-next-line @next/next/no-img-element
                               <img
                                 alt=""
                                 className="size-full object-cover"
@@ -888,9 +887,9 @@ export default function AdminOrderDetailsPage() {
                             ) : (
                               <span
                                 className={`
-                                flex size-full items-center justify-center
-                                text-xs text-muted-foreground
-                              `}
+                                  flex size-full items-center justify-center
+                                  text-xs text-muted-foreground
+                                `}
                               >
                                 —
                               </span>
@@ -953,9 +952,9 @@ export default function AdminOrderDetailsPage() {
       {/* Shipping address + Shipping/taxes side by side (50% each) */}
       <div
         className={`
-        grid grid-cols-1 gap-6
-        lg:grid-cols-2
-      `}
+          grid grid-cols-1 gap-6
+          lg:grid-cols-2
+        `}
       >
         <Card>
           <CardHeader>
@@ -1004,10 +1003,9 @@ export default function AdminOrderDetailsPage() {
                     absolute z-10 mt-1 max-h-48 w-full overflow-auto rounded-md
                     border border-input bg-background py-1 shadow-md
                   `}
-                  role="listbox"
                 >
                   {addressFindResults.map((item) => (
-                    <li key={item.Id} role="option">
+                    <li key={item.Id}>
                       <button
                         className={`
                           w-full px-3 py-2 text-left text-sm
@@ -1262,8 +1260,8 @@ export default function AdminOrderDetailsPage() {
           </div>
           <div
             className={`
-            flex justify-between border-t border-border pt-4 font-medium
-          `}
+              flex justify-between border-t border-border pt-4 font-medium
+            `}
           >
             <span>Total</span>
             <span className="tabular-nums">{formatCents(totalCents)}</span>
@@ -1430,8 +1428,8 @@ export default function AdminOrderDetailsPage() {
                   <div className="mt-2 border-t pt-2">
                     <p
                       className={`
-                      mb-1 text-xs font-medium text-muted-foreground
-                    `}
+                        mb-1 text-xs font-medium text-muted-foreground
+                      `}
                     >
                       Tracking events
                     </p>
@@ -1444,9 +1442,7 @@ export default function AdminOrderDetailsPage() {
                       ).map((ev, i) => (
                         <li className="flex items-start gap-2 text-xs" key={i}>
                           <span
-                            className={`
-                            whitespace-nowrap text-muted-foreground
-                          `}
+                            className={`whitespace-nowrap text-muted-foreground`}
                           >
                             {new Date(ev.triggered_at).toLocaleDateString()}
                           </span>
@@ -1527,9 +1523,9 @@ export default function AdminOrderDetailsPage() {
             {order.printfulCosts.totalCents != null && (
               <div
                 className={`
-                flex justify-between border-t border-border pt-2 text-sm
-                font-medium
-              `}
+                  flex justify-between border-t border-border pt-2 text-sm
+                  font-medium
+                `}
               >
                 <span>Your Margin</span>
                 <span className="tabular-nums">

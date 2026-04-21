@@ -55,7 +55,7 @@ async function main() {
     from,
     to,
     subject: "[Test] Order confirmed – email template preview",
-    text: body + `\n\nView order status: ${orderStatusUrl}`,
+    text: `${body}\n\nView order status: ${orderStatusUrl}`,
     html,
   });
 

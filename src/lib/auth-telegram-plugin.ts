@@ -151,24 +151,24 @@ export function telegramAuthPlugin() {
                 const rows = await tx
                   .insert(userTable)
                   .values({
-                    id: userId,
-                    name,
+                    createdAt: date,
                     email,
                     emailVerified: true,
                     firstName: body.first_name,
-                    lastName: body.last_name ?? null,
+                    id: userId,
                     image: body.photo_url ?? null,
-                    createdAt: date,
+                    lastName: body.last_name ?? null,
+                    name,
                     updatedAt: date,
                   })
                   .returning();
                 await tx.insert(accountTable).values({
-                  id: newAccountId,
                   accountId,
-                  providerId: TELEGRAM_PROVIDER_ID,
-                  userId: rows[0].id,
                   createdAt: date,
+                  id: newAccountId,
+                  providerId: TELEGRAM_PROVIDER_ID,
                   updatedAt: date,
+                  userId: rows[0].id,
                 });
                 return rows;
               });

@@ -14,41 +14,7 @@ function getApiBase(): string {
     : "https://api-m.paypal.com";
 }
 
-let cachedToken: { expiresAt: number; token: string } | null = null;
-
-async function getAccessToken(): Promise<string> {
-  const id = process.env.PAYPAL_CLIENT_ID;
-  const secret = process.env.PAYPAL_CLIENT_SECRET;
-  if (!id || !secret) {
-    throw new Error("PAYPAL_CLIENT_ID or PAYPAL_CLIENT_SECRET not set");
-  }
-  const now = Date.now() / 1000;
-  if (cachedToken && cachedToken.expiresAt > now + 60) {
-    return cachedToken.token;
-  }
-  const auth = Buffer.from(`${id}:${secret}`).toString("base64");
-  const res = await fetch(`${getApiBase()}/v1/oauth2/token`, {
-    body: "grant_type=client_credentials",
-    headers: {
-      Authorization: `Basic ${auth}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    method: "POST",
-  });
-  if (!res.ok) {
-    const t = await res.text();
-    throw new Error(`PayPal token failed: ${res.status} ${t}`);
-  }
-  const data = (await res.json()) as {
-    access_token: string;
-    expires_in: number;
-  };
-  cachedToken = {
-    expiresAt: now + data.expires_in,
-    token: data.access_token,
-  };
-  return data.access_token;
-}
+let cachedToken: null | { expiresAt: number; token: string } = null;
 
 export interface CreatePayPalSubscriptionParams {
   cancelUrl: string;
@@ -59,9 +25,32 @@ export interface CreatePayPalSubscriptionParams {
 }
 
 export interface CreatePayPalSubscriptionResult {
-  subscriptionId: string;
   /** Redirect the buyer here to approve the billing agreement. */
   approvalUrl: string;
+  subscriptionId: string;
+}
+
+/** Cancels an active PayPal billing subscription (stops future billing). */
+export async function cancelPayPalSubscription(
+  subscriptionId: string,
+  reason = "Requested by merchant",
+): Promise<void> {
+  const token = await getAccessToken();
+  const res = await fetch(
+    `${getApiBase()}/v1/billing/subscriptions/${encodeURIComponent(subscriptionId)}/cancel`,
+    {
+      body: JSON.stringify({ reason }),
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      method: "POST",
+    },
+  );
+  if (!res.ok) {
+    const t = await res.text();
+    throw new Error(`PayPal cancel subscription failed: ${res.status} ${t}`);
+  }
 }
 
 /**
@@ -159,37 +148,18 @@ export async function verifyPayPalWebhookSignature(
   }
 
   const token = await getAccessToken();
-  const res = await fetch(`${getApiBase()}/v1/notifications/verify-webhook-signature`, {
-    body: JSON.stringify({
-      auth_algo: authAlgo,
-      cert_url: certUrl,
-      transmission_id: transmissionId,
-      transmission_sig: transmissionSig,
-      transmission_time: transmissionTime,
-      webhook_event: webhookEvent,
-      webhook_id: webhookId,
-    }),
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    method: "POST",
-  });
-  if (!res.ok) return false;
-  const data = (await res.json()) as { verification_status?: string };
-  return data.verification_status === "SUCCESS";
-}
-
-/** Cancels an active PayPal billing subscription (stops future billing). */
-export async function cancelPayPalSubscription(
-  subscriptionId: string,
-  reason = "Requested by merchant",
-): Promise<void> {
-  const token = await getAccessToken();
   const res = await fetch(
-    `${getApiBase()}/v1/billing/subscriptions/${encodeURIComponent(subscriptionId)}/cancel`,
+    `${getApiBase()}/v1/notifications/verify-webhook-signature`,
     {
-      body: JSON.stringify({ reason }),
+      body: JSON.stringify({
+        auth_algo: authAlgo,
+        cert_url: certUrl,
+        transmission_id: transmissionId,
+        transmission_sig: transmissionSig,
+        transmission_time: transmissionTime,
+        webhook_event: webhookEvent,
+        webhook_id: webhookId,
+      }),
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
@@ -197,8 +167,41 @@ export async function cancelPayPalSubscription(
       method: "POST",
     },
   );
+  if (!res.ok) return false;
+  const data = (await res.json()) as { verification_status?: string };
+  return data.verification_status === "SUCCESS";
+}
+
+async function getAccessToken(): Promise<string> {
+  const id = process.env.PAYPAL_CLIENT_ID;
+  const secret = process.env.PAYPAL_CLIENT_SECRET;
+  if (!id || !secret) {
+    throw new Error("PAYPAL_CLIENT_ID or PAYPAL_CLIENT_SECRET not set");
+  }
+  const now = Date.now() / 1000;
+  if (cachedToken && cachedToken.expiresAt > now + 60) {
+    return cachedToken.token;
+  }
+  const auth = Buffer.from(`${id}:${secret}`).toString("base64");
+  const res = await fetch(`${getApiBase()}/v1/oauth2/token`, {
+    body: "grant_type=client_credentials",
+    headers: {
+      Authorization: `Basic ${auth}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    method: "POST",
+  });
   if (!res.ok) {
     const t = await res.text();
-    throw new Error(`PayPal cancel subscription failed: ${res.status} ${t}`);
+    throw new Error(`PayPal token failed: ${res.status} ${t}`);
   }
+  const data = (await res.json()) as {
+    access_token: string;
+    expires_in: number;
+  };
+  cachedToken = {
+    expiresAt: now + data.expires_in,
+    token: data.access_token,
+  };
+  return data.access_token;
 }

@@ -12,16 +12,16 @@ const ProfileViewClient = dynamic(
         <Skeleton className="h-8 w-48" />
         <div
           className={`
-          grid gap-6
-          lg:grid-cols-3
-        `}
+            grid gap-6
+            lg:grid-cols-3
+          `}
         >
           <Skeleton className="h-48 rounded-lg" />
           <div
             className={`
-            grid grid-cols-2 gap-4
-            sm:grid-cols-4
-          `}
+              grid grid-cols-2 gap-4
+              sm:grid-cols-4
+            `}
           >
             <Skeleton className="h-24 rounded-lg" />
             <Skeleton className="h-24 rounded-lg" />
@@ -46,23 +46,23 @@ const EditProfilePageClient = dynamic(
           <Skeleton className="h-24 w-24 rounded-full" />
           <div
             className={`
-            grid w-full gap-4
-            sm:grid-cols-2
-          `}
+              grid w-full gap-4
+              sm:grid-cols-2
+            `}
           >
             <Skeleton className="h-16 w-full" />
             <Skeleton className="h-16 w-full" />
             <Skeleton
               className={`
-              h-16 w-full
-              sm:col-span-2
-            `}
+                h-16 w-full
+                sm:col-span-2
+              `}
             />
             <Skeleton
               className={`
-              h-16 w-full
-              sm:col-span-2
-            `}
+                h-16 w-full
+                sm:col-span-2
+              `}
             />
           </div>
         </div>

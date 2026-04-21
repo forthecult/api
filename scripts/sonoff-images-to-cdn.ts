@@ -282,7 +282,7 @@ async function main() {
             "  Uploaded:",
             spec.title,
             "→",
-            cdnUrl.slice(0, 50) + "...",
+            `${cdnUrl.slice(0, 50)}...`,
           );
         }
       }

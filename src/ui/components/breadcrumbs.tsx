@@ -18,8 +18,8 @@ export function Breadcrumbs({ items, lastIsCurrentPage = true }: Props) {
     <nav aria-label="Breadcrumb" className="mb-6">
       <ol
         className={`
-        flex flex-wrap items-center gap-1.5 text-sm text-muted-foreground
-      `}
+          flex flex-wrap items-center gap-1.5 text-sm text-muted-foreground
+        `}
       >
         {items.map((item, i) => {
           const isLast = i === items.length - 1;
@@ -34,9 +34,9 @@ export function Breadcrumbs({ items, lastIsCurrentPage = true }: Props) {
               {isCurrent ? (
                 <span
                   className={`
-                  max-w-[200px] truncate font-medium text-foreground
-                  md:max-w-none
-                `}
+                    max-w-[200px] truncate font-medium text-foreground
+                    md:max-w-none
+                  `}
                 >
                   {item.name}
                 </span>

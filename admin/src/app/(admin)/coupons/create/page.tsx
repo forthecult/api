@@ -275,9 +275,6 @@ export default function AdminDiscountCreatePage() {
       maxUses,
       maxUsesPerCustomer,
       maxUsesPerCustomerType,
-      tokenHolderChain,
-      tokenHolderTokenAddress,
-      tokenHolderMinBalance,
       rulePaymentMethodKey,
       categoryIds,
       productIds,
@@ -291,6 +288,7 @@ export default function AdminDiscountCreatePage() {
       ruleOrderTotalMin,
       ruleOrderTotalMax,
       router,
+      label.trim,
     ],
   );
 
@@ -328,9 +326,9 @@ export default function AdminDiscountCreatePage() {
       {error && (
         <div
           className={`
-          rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800
-          dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
-        `}
+            rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800
+            dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
+          `}
         >
           {error}
         </div>
@@ -361,9 +359,9 @@ export default function AdminDiscountCreatePage() {
             </div>
             <div
               className={`
-              grid gap-4
-              sm:grid-cols-2
-            `}
+                grid gap-4
+                sm:grid-cols-2
+              `}
             >
               <div className="space-y-2">
                 <label className={labelClass}>Apply</label>
@@ -421,9 +419,9 @@ export default function AdminDiscountCreatePage() {
             </div>
             <div
               className={`
-              grid gap-4
-              sm:grid-cols-2
-            `}
+                grid gap-4
+                sm:grid-cols-2
+              `}
             >
               <div className="space-y-2">
                 <label className={labelClass} htmlFor="discountKind">
@@ -455,9 +453,9 @@ export default function AdminDiscountCreatePage() {
             </div>
             <div
               className={`
-              grid gap-4
-              sm:grid-cols-2
-            `}
+                grid gap-4
+                sm:grid-cols-2
+              `}
             >
               <div className="space-y-2">
                 <label className={labelClass} htmlFor="dateStart">
@@ -495,9 +493,9 @@ export default function AdminDiscountCreatePage() {
               discountKind === "free_shipping") && (
               <div
                 className={`
-                grid gap-4
-                sm:grid-cols-2
-              `}
+                  grid gap-4
+                  sm:grid-cols-2
+                `}
               >
                 <div className="space-y-2">
                   <label className={labelClass}>Amount type</label>
@@ -559,9 +557,9 @@ export default function AdminDiscountCreatePage() {
             {discountKind === "buy_x_get_y" && (
               <div
                 className={`
-                grid gap-4
-                sm:grid-cols-2
-              `}
+                  grid gap-4
+                  sm:grid-cols-2
+                `}
               >
                 <div className="space-y-2">
                   <label className={labelClass} htmlFor="buyQuantity">
@@ -648,9 +646,9 @@ export default function AdminDiscountCreatePage() {
               </p>
               <div
                 className={`
-                rounded-md border border-border bg-muted/50 p-3 text-sm
-                text-muted-foreground
-              `}
+                  rounded-md border border-border bg-muted/50 p-3 text-sm
+                  text-muted-foreground
+                `}
               >
                 <p className="mb-2 font-medium text-foreground">
                   Cart must contain (optional)
@@ -697,10 +695,10 @@ export default function AdminDiscountCreatePage() {
               </div>
               <div
                 className={`
-                grid gap-4
-                sm:grid-cols-2
-                md:grid-cols-4
-              `}
+                  grid gap-4
+                  sm:grid-cols-2
+                  md:grid-cols-4
+                `}
               >
                 <div className="space-y-2">
                   <label className={labelClass} htmlFor="ruleSubtotalMin">
@@ -765,10 +763,10 @@ export default function AdminDiscountCreatePage() {
               </div>
               <div
                 className={`
-                grid gap-4
-                sm:grid-cols-2
-                md:grid-cols-4
-              `}
+                  grid gap-4
+                  sm:grid-cols-2
+                  md:grid-cols-4
+                `}
               >
                 <div className="space-y-2">
                   <label className={labelClass} htmlFor="ruleProductCountMin">
@@ -851,9 +849,9 @@ export default function AdminDiscountCreatePage() {
           <CardContent className="space-y-4">
             <div
               className={`
-              grid gap-4
-              sm:grid-cols-2
-            `}
+                grid gap-4
+                sm:grid-cols-2
+              `}
             >
               <div className="space-y-2">
                 <label className={labelClass} htmlFor="maxUses">
@@ -923,9 +921,9 @@ export default function AdminDiscountCreatePage() {
           <CardContent className="space-y-4">
             <div
               className={`
-              grid gap-4
-              sm:grid-cols-2
-            `}
+                grid gap-4
+                sm:grid-cols-2
+              `}
             >
               <div className="space-y-2">
                 <label className={labelClass} htmlFor="tokenHolderChain">
@@ -976,8 +974,8 @@ export default function AdminDiscountCreatePage() {
           <CardHeader>
             <CardTitle>Categories</CardTitle>
             <p className="text-sm text-muted-foreground">
-              Categories this discount applies to. Select &quot;All categories&quot;
-              or pick specific categories.
+              Categories this discount applies to. Select &quot;All
+              categories&quot; or pick specific categories.
             </p>
           </CardHeader>
           <CardContent className="space-y-3">

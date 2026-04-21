@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+
 import { whenIdle } from "~/lib/when-idle";
 
 export type CryptoCode =
@@ -18,7 +19,7 @@ export type CryptoCode =
   | "XAU"
   | "XMR";
 
-const COINGECKO_IDS: Record<
+const _COINGECKO_IDS: Record<
   Exclude<
     CryptoCode,
     "CRUST" | "CULT" | "PUMP" | "SKR" | "TROLL" | "XAG" | "XAU"

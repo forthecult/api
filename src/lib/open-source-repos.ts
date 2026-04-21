@@ -46,8 +46,7 @@ export function getOpenSourceLinks(): Record<
       label: "Mobile",
     },
     smartContracts: {
-      description:
-        "On-chain programs, token logic, and integration contracts.",
+      description: "On-chain programs, token logic, and integration contracts.",
       extended:
         "Money-moving code deserves the same scrutiny as the storefront. Programs for staking, rewards, and checkout integrations are published so wallets and auditors can verify invariants.",
       highlights: [

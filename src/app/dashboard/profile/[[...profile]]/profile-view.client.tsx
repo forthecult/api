@@ -1,12 +1,11 @@
 "use client";
 
 import { getAssociatedTokenAddressSync } from "@solana/spl-token";
-import { useSolanaConnection, useSolanaWallet } from "~/app/checkout/crypto/solana-wallet-stub";
 import {
   type Connection,
+  PublicKey,
   type RpcResponseAndContext,
   type TokenAmount,
-  PublicKey,
 } from "@solana/web3.js";
 import {
   ArrowRight,
@@ -22,10 +21,14 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
 import {
+  useSolanaConnection,
+  useSolanaWallet,
+} from "~/app/checkout/crypto/solana-wallet-stub";
+import { listUserAccounts, useCurrentUserOrRedirect } from "~/lib/auth-client";
+import {
   CULT_MINT_MAINNET,
   TOKEN_2022_PROGRAM_ID_BASE58,
 } from "~/lib/token-config";
-import { listUserAccounts, useCurrentUserOrRedirect } from "~/lib/auth-client";
 import { Badge } from "~/ui/primitives/badge";
 import { Card, CardContent } from "~/ui/primitives/card";
 
@@ -34,6 +37,19 @@ interface OrderStats {
   awaitingDelivery: number;
   awaitingPayment: number;
   awaitingShipment: number;
+}
+
+/** format CULT balance: full digits when large, decimals when small so we don't show 0 for dust */
+function formatCultBalance(value: string): string {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "0";
+  if (n >= 1) return n.toLocaleString(undefined, { maximumFractionDigits: 0 });
+  if (n > 0)
+    return n.toLocaleString(undefined, {
+      maximumFractionDigits: 6,
+      minimumFractionDigits: 1,
+    });
+  return "0";
 }
 
 /** Only show real emails; hide wallet placeholders (e.g. solana_xxx@wallet.local) */
@@ -47,15 +63,6 @@ function showRealEmail(email: null | string | undefined): string {
   )
     return "—";
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(t) ? email : "—";
-}
-
-/** format CULT balance: full digits when large, decimals when small so we don't show 0 for dust */
-function formatCultBalance(value: string): string {
-  const n = Number(value);
-  if (!Number.isFinite(n)) return "0";
-  if (n >= 1) return n.toLocaleString(undefined, { maximumFractionDigits: 0 });
-  if (n > 0) return n.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 6 });
-  return "0";
 }
 
 const defaultOrderStats: OrderStats = {
@@ -92,11 +99,13 @@ export function ProfileViewClient() {
   const connectedWallet = publicKey?.toBase58() ?? null;
 
   // linked Solana wallet from user's account (for when wallet adapter isn't connected)
-  const [linkedSolanaWallet, setLinkedSolanaWallet] = useState<string | null>(null);
+  const [linkedSolanaWallet, setLinkedSolanaWallet] = useState<null | string>(
+    null,
+  );
 
   // effective wallet: prefer connected wallet, fall back to linked wallet
   const wallet = connectedWallet ?? linkedSolanaWallet;
-  
+
   const [profile, setProfile] = useState<null | {
     email: string;
     firstName: string;
@@ -106,10 +115,14 @@ export function ProfileViewClient() {
     phone: string;
   }>(null);
   const [orderStats, setOrderStats] = useState<OrderStats>(defaultOrderStats);
-  const [walletCultBalance, setWalletCultBalance] = useState<string | null>(null);
+  const [walletCultBalance, setWalletCultBalance] = useState<null | string>(
+    null,
+  );
   const [walletBalanceLoading, setWalletBalanceLoading] = useState(false);
   const [walletBalanceError, setWalletBalanceError] = useState(false);
-  const [stakedCultBalance, setStakedCultBalance] = useState<string | null>(null);
+  const [stakedCultBalance, setStakedCultBalance] = useState<null | string>(
+    null,
+  );
   const [membership, setMembership] = useState<MembershipInfo | null>(null);
   const [membershipLoading, setMembershipLoading] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -121,7 +134,7 @@ export function ProfileViewClient() {
       return;
     }
     let cancelled = false;
-    
+
     // try multiple methods to find the wallet
     const findWallet = async () => {
       // method 1: use listUserAccounts
@@ -130,7 +143,7 @@ export function ProfileViewClient() {
         if (!cancelled && !res.error) {
           const solana = (res.data ?? []).find(
             (a: { providerId?: string }) => a.providerId === "solana",
-          ) as { accountId: string } | undefined;
+          ) as undefined | { accountId: string };
           if (solana?.accountId) {
             setLinkedSolanaWallet(solana.accountId);
             return;
@@ -139,13 +152,17 @@ export function ProfileViewClient() {
       } catch {
         // continue to fallback
       }
-      
+
       // method 2: try the user wallet API
       try {
-        const res = await fetch("/api/user/wallets", { credentials: "include" });
+        const res = await fetch("/api/user/wallets", {
+          credentials: "include",
+        });
         if (!cancelled && res.ok) {
-          const data = await res.json() as { wallets?: { address: string; blockchain: string }[] };
-          const solana = data.wallets?.find(w => w.blockchain === "solana");
+          const data = (await res.json()) as {
+            wallets?: { address: string; blockchain: string }[];
+          };
+          const solana = data.wallets?.find((w) => w.blockchain === "solana");
           if (solana?.address) {
             setLinkedSolanaWallet(solana.address);
             return;
@@ -154,12 +171,14 @@ export function ProfileViewClient() {
       } catch {
         // continue
       }
-      
+
       if (!cancelled) setLinkedSolanaWallet(null);
     };
-    
+
     void findWallet();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [user?.id]);
 
   const fetchWalletBalance = useCallback(() => {
@@ -173,7 +192,7 @@ export function ProfileViewClient() {
 
     // always use same RPC as the app (matches Phantom when connected); works for both connected and linked wallet
     if (connection) {
-      let cancelled = false;
+      const cancelled = false;
       const mint = new PublicKey(CULT_MINT_MAINNET);
       const owner = new PublicKey(wallet);
       const programs = [
@@ -196,7 +215,8 @@ export function ProfileViewClient() {
         );
         connection
           .getTokenAccountBalance(ata)
-          .then((raw: unknown) => { const info = raw as RpcResponseAndContext<TokenAmount>;
+          .then((raw: unknown) => {
+            const info = raw as RpcResponseAndContext<TokenAmount>;
             if (cancelled) return;
             const v = info.value;
             const balance =
@@ -215,9 +235,7 @@ export function ProfileViewClient() {
       return;
     }
 
-    fetch(
-      `/api/governance/wallet-balance?wallet=${encodeURIComponent(wallet)}`,
-    )
+    fetch(`/api/governance/wallet-balance?wallet=${encodeURIComponent(wallet)}`)
       .then((r) => {
         if (!r.ok) {
           setWalletBalanceError(true);
@@ -249,36 +267,34 @@ export function ProfileViewClient() {
       return;
     }
     setMembershipLoading(true);
-    fetch(
-      `/api/governance/staked-balance?wallet=${encodeURIComponent(wallet)}`,
-    )
+    fetch(`/api/governance/staked-balance?wallet=${encodeURIComponent(wallet)}`)
       .then((r) => r.json())
-      .then((raw: unknown) => { const stakingData = raw as {
+      .then((raw: unknown) => {
+        const stakingData = raw as {
           lock?: null | { isLocked?: boolean; unlocksAt?: string };
           memberTier?: null | number;
           stakedBalance?: string;
         };
-          setStakedCultBalance(stakingData.stakedBalance ?? "0");
-          const tierId = stakingData.memberTier;
-          if (tierId != null) {
-            const visual = TIER_VISUALS[tierId] ?? TIER_VISUALS[3];
-            if (visual) {
-              setMembership({
-                accent: visual.accent,
-                icon: visual.icon,
-                isLocked: stakingData.lock?.isLocked ?? false,
-                tierId,
-                tierName: visual.name,
-                unlocksAt: stakingData.lock?.unlocksAt ?? null,
-              });
-            } else {
-              setMembership(null);
-            }
+        setStakedCultBalance(stakingData.stakedBalance ?? "0");
+        const tierId = stakingData.memberTier;
+        if (tierId != null) {
+          const visual = TIER_VISUALS[tierId] ?? TIER_VISUALS[3];
+          if (visual) {
+            setMembership({
+              accent: visual.accent,
+              icon: visual.icon,
+              isLocked: stakingData.lock?.isLocked ?? false,
+              tierId,
+              tierName: visual.name,
+              unlocksAt: stakingData.lock?.unlocksAt ?? null,
+            });
           } else {
             setMembership(null);
           }
-        },
-      )
+        } else {
+          setMembership(null);
+        }
+      })
       .catch((e) => {
         console.error("[profile] Error fetching staked balance:", e);
         setMembership(null);
@@ -370,22 +386,20 @@ export function ProfileViewClient() {
 
       <div
         className={`
-        grid gap-6
-        lg:grid-cols-6
-      `}
+          grid gap-6
+          lg:grid-cols-6
+        `}
       >
         {/* User summary card – takes half the row so it can expand to the right */}
         <Card className="lg:col-span-3">
           <CardContent
-            className={`
-            flex flex-row items-center gap-4 py-3 pr-4 pl-3
-          `}
+            className={`flex flex-row items-center gap-4 py-3 pr-4 pl-3`}
           >
             <div
               className={`
-              relative size-14 shrink-0 overflow-hidden rounded-full border-2
-              border-border bg-muted
-            `}
+                relative size-14 shrink-0 overflow-hidden rounded-full border-2
+                border-border bg-muted
+              `}
             >
               {profile?.image ? (
                 <Image
@@ -398,9 +412,9 @@ export function ProfileViewClient() {
               ) : (
                 <span
                   className={`
-                  flex size-full items-center justify-center text-lg
-                  font-semibold text-muted-foreground
-                `}
+                    flex size-full items-center justify-center text-lg
+                    font-semibold text-muted-foreground
+                  `}
                 >
                   {(
                     profile?.firstName?.[0] ??
@@ -436,7 +450,10 @@ export function ProfileViewClient() {
                       </span>
                       {(walletBalanceError || !walletBalanceLoading) && (
                         <button
-                          className="inline-flex text-primary hover:underline"
+                          className={`
+                            inline-flex text-primary
+                            hover:underline
+                          `}
                           onClick={() => fetchWalletBalance()}
                           type="button"
                         >
@@ -446,13 +463,14 @@ export function ProfileViewClient() {
                       )}
                     </p>
                     {stakedCultBalance != null && (
-                      <p>
-                        Staked: {formatCultBalance(stakedCultBalance)} CULT
-                      </p>
+                      <p>Staked: {formatCultBalance(stakedCultBalance)} CULT</p>
                     )}
                   </>
                 ) : (
-                  <p>No wallet linked. Connect or link a wallet to see CULT balance.</p>
+                  <p>
+                    No wallet linked. Connect or link a wallet to see CULT
+                    balance.
+                  </p>
                 )}
               </div>
             </div>
@@ -490,16 +508,16 @@ export function ProfileViewClient() {
         {/* Order status cards */}
         <div
           className={`
-          grid grid-cols-2 gap-4
-          sm:grid-cols-4
-          lg:col-span-3
-        `}
+            grid grid-cols-2 gap-4
+            sm:grid-cols-4
+            lg:col-span-3
+          `}
         >
           <Card>
             <CardContent
               className={`
-              flex flex-col items-center justify-center p-4 text-center
-            `}
+                flex flex-col items-center justify-center p-4 text-center
+              `}
             >
               <span className="text-2xl font-bold text-foreground tabular-nums">
                 {orderStats.all}
@@ -510,8 +528,8 @@ export function ProfileViewClient() {
           <Card>
             <CardContent
               className={`
-              flex flex-col items-center justify-center p-4 text-center
-            `}
+                flex flex-col items-center justify-center p-4 text-center
+              `}
             >
               <span className="text-2xl font-bold text-foreground tabular-nums">
                 {String(orderStats.awaitingPayment).padStart(2, "0")}
@@ -524,8 +542,8 @@ export function ProfileViewClient() {
           <Card>
             <CardContent
               className={`
-              flex flex-col items-center justify-center p-4 text-center
-            `}
+                flex flex-col items-center justify-center p-4 text-center
+              `}
             >
               <span className="text-2xl font-bold text-foreground tabular-nums">
                 {String(orderStats.awaitingShipment).padStart(2, "0")}
@@ -538,8 +556,8 @@ export function ProfileViewClient() {
           <Card>
             <CardContent
               className={`
-              flex flex-col items-center justify-center p-4 text-center
-            `}
+                flex flex-col items-center justify-center p-4 text-center
+              `}
             >
               <span className="text-2xl font-bold text-foreground tabular-nums">
                 {String(orderStats.awaitingDelivery).padStart(2, "0")}
@@ -565,17 +583,17 @@ export function ProfileViewClient() {
           <CardContent className="p-0">
             <div
               className={`
-              grid grid-cols-2 gap-x-4 gap-y-2 px-4 py-3
-              sm:grid-cols-3
-              md:grid-cols-6 md:gap-x-6 md:px-5
-            `}
+                grid grid-cols-2 gap-x-4 gap-y-2 px-4 py-3
+                sm:grid-cols-3
+                md:grid-cols-6 md:gap-x-6 md:px-5
+              `}
             >
               <div className="flex flex-col gap-0.5">
                 <span
                   className={`
-                  text-xs font-medium tracking-wider text-muted-foreground
-                  uppercase
-                `}
+                    text-xs font-medium tracking-wider text-muted-foreground
+                    uppercase
+                  `}
                 >
                   First Name
                 </span>
@@ -586,9 +604,9 @@ export function ProfileViewClient() {
               <div className="flex flex-col gap-0.5">
                 <span
                   className={`
-                  text-xs font-medium tracking-wider text-muted-foreground
-                  uppercase
-                `}
+                    text-xs font-medium tracking-wider text-muted-foreground
+                    uppercase
+                  `}
                 >
                   Last Name
                 </span>
@@ -599,9 +617,9 @@ export function ProfileViewClient() {
               <div className="flex flex-col gap-0.5">
                 <span
                   className={`
-                  text-xs font-medium tracking-wider text-muted-foreground
-                  uppercase
-                `}
+                    text-xs font-medium tracking-wider text-muted-foreground
+                    uppercase
+                  `}
                 >
                   Email
                 </span>
@@ -612,9 +630,9 @@ export function ProfileViewClient() {
               <div className="flex flex-col gap-0.5">
                 <span
                   className={`
-                  text-xs font-medium tracking-wider text-muted-foreground
-                  uppercase
-                `}
+                    text-xs font-medium tracking-wider text-muted-foreground
+                    uppercase
+                  `}
                 >
                   Phone
                 </span>
@@ -625,9 +643,9 @@ export function ProfileViewClient() {
               <div className="flex flex-col gap-0.5">
                 <span
                   className={`
-                  text-xs font-medium tracking-wider text-muted-foreground
-                  uppercase
-                `}
+                    text-xs font-medium tracking-wider text-muted-foreground
+                    uppercase
+                  `}
                 >
                   Birth date
                 </span>
@@ -635,10 +653,10 @@ export function ProfileViewClient() {
               </div>
               <div
                 className={`
-                col-span-2 flex items-center justify-end text-muted-foreground
-                sm:col-span-1
-                md:col-span-1 md:justify-end
-              `}
+                  col-span-2 flex items-center justify-end text-muted-foreground
+                  sm:col-span-1
+                  md:col-span-1 md:justify-end
+                `}
               >
                 <span className="text-sm">Edit</span>
                 <ChevronRight aria-hidden className="ml-1 h-4 w-4 shrink-0" />
@@ -650,4 +668,3 @@ export function ProfileViewClient() {
     </div>
   );
 }
-

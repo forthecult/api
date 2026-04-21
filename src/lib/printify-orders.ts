@@ -14,10 +14,7 @@ import {
   productsTable,
   productVariantsTable,
 } from "~/db/schema";
-import {
-  onOrderStatusUpdate,
-  type OrderStatusKind,
-} from "~/lib/create-user-notification";
+import { onOrderStatusUpdate } from "~/lib/create-user-notification";
 import {
   calculatePrintifyOrderShipping,
   cancelPrintifyOrder as cancelPrintifyOrderApi,
@@ -451,7 +448,7 @@ export async function getPrintifyOrderItems(orderId: string): Promise<
       }
     }
 
-    if (!printifyVariantId || isNaN(printifyVariantId)) {
+    if (!printifyVariantId || Number.isNaN(printifyVariantId)) {
       console.warn(
         `Skipping order item ${item.id}: Printify product without valid variant ID`,
       );

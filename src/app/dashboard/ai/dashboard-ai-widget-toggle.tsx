@@ -14,9 +14,7 @@ export function DashboardAiWidgetToggle() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [enabled, setEnabled] = useState(true);
-  const [jsonSettings, setJsonSettings] = useState<Record<string, unknown>>(
-    {},
-  );
+  const [jsonSettings, setJsonSettings] = useState<Record<string, unknown>>({});
 
   const load = useCallback(async () => {
     if (!userId) return;

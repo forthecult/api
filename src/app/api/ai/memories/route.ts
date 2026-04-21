@@ -1,11 +1,10 @@
+import { createId } from "@paralleldrive/cuid2";
 import { desc, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
-import { createId } from "@paralleldrive/cuid2";
-
-import { auth } from "~/lib/auth";
 import { db } from "~/db";
 import { aiMemoryTable } from "~/db/schema/ai-chat/tables";
+import { auth } from "~/lib/auth";
 
 export async function GET(request: Request) {
   const session = await auth.api.getSession({ headers: request.headers });

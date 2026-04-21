@@ -89,7 +89,7 @@ export default function AdminSupportChatDetailPage() {
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [conv?.messages]);
+  }, []);
 
   const handleTakeover = useCallback(async () => {
     if (!id) return;
@@ -182,9 +182,9 @@ export default function AdminSupportChatDetailPage() {
     return (
       <div
         className={`
-        rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-800
-        dark:bg-amber-900/20 dark:text-amber-200
-      `}
+          rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-800
+          dark:bg-amber-900/20 dark:text-amber-200
+        `}
       >
         Missing conversation id.
         <Link className="ml-2 underline" href="/support-chat">
@@ -199,9 +199,9 @@ export default function AdminSupportChatDetailPage() {
       <div className="space-y-4">
         <div
           className={`
-          rounded-lg border border-red-200 bg-red-50 p-4 text-red-800
-          dark:bg-red-800 dark:bg-red-950/30 dark:text-red-200
-        `}
+            rounded-lg border border-red-200 bg-red-50 p-4 text-red-800
+            dark:bg-red-800 dark:bg-red-950/30 dark:text-red-200
+          `}
         >
           {error}
           <Button
@@ -229,8 +229,8 @@ export default function AdminSupportChatDetailPage() {
     return (
       <div
         className={`
-        flex min-h-[200px] items-center justify-center text-muted-foreground
-      `}
+          flex min-h-[200px] items-center justify-center text-muted-foreground
+        `}
       >
         Loading…
       </div>
@@ -262,7 +262,10 @@ export default function AdminSupportChatDetailPage() {
             className={cn(
               "text-sm font-medium",
               conv.source === "mobile" &&
-                "text-blue-600 dark:text-blue-400",
+                `
+                  text-blue-600
+                  dark:text-blue-400
+                `,
             )}
             title="Where the customer is chatting from"
           >
@@ -320,9 +323,10 @@ export default function AdminSupportChatDetailPage() {
         {conv.takenOverBy && (
           <span
             className={`
-            rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-800
-            dark:bg-blue-900/40 dark:text-blue-200
-          `}
+              rounded-full bg-blue-100 px-3 py-1 text-sm font-medium
+              text-blue-800
+              dark:bg-blue-900/40 dark:text-blue-200
+            `}
           >
             You are replying as staff
           </span>
@@ -332,9 +336,9 @@ export default function AdminSupportChatDetailPage() {
       {error && (
         <div
           className={`
-          rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800
-          dark:bg-red-950/30 dark:text-red-200
-        `}
+            rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800
+            dark:bg-red-950/30 dark:text-red-200
+          `}
         >
           {error}
         </div>
@@ -342,9 +346,9 @@ export default function AdminSupportChatDetailPage() {
 
       <div
         className={`
-        grid gap-6
-        lg:grid-cols-3
-      `}
+          grid gap-6
+          lg:grid-cols-3
+        `}
       >
         <div className="lg:col-span-2">
           <Card>
@@ -354,9 +358,9 @@ export default function AdminSupportChatDetailPage() {
             <CardContent className="space-y-4">
               <div
                 className={`
-                max-h-[400px] space-y-3 overflow-y-auto rounded-md border
-                bg-muted/30 p-3
-              `}
+                  max-h-[400px] space-y-3 overflow-y-auto rounded-md border
+                  bg-muted/30 p-3
+                `}
               >
                 {conv.messages.length === 0 ? (
                   <p className="text-sm text-muted-foreground">

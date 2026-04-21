@@ -21,8 +21,8 @@ export default function LoginPage() {
       fallback={
         <div
           className={`
-          flex min-h-[50vh] items-center justify-center text-muted-foreground
-        `}
+            flex min-h-[50vh] items-center justify-center text-muted-foreground
+          `}
         >
           Loading…
         </div>

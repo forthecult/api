@@ -182,9 +182,9 @@ export default function AdminSupportTicketDetailPage() {
     return (
       <div
         className={`
-        rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-800
-        dark:bg-amber-900/20 dark:text-amber-200
-      `}
+          rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-800
+          dark:bg-amber-900/20 dark:text-amber-200
+        `}
       >
         Missing ticket id.
         <Link className="ml-2 underline" href="/support-tickets">
@@ -199,9 +199,9 @@ export default function AdminSupportTicketDetailPage() {
       <div className="space-y-4">
         <div
           className={`
-          rounded-lg border border-red-200 bg-red-50 p-4 text-red-800
-          dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
-        `}
+            rounded-lg border border-red-200 bg-red-50 p-4 text-red-800
+            dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
+          `}
         >
           {error}
           <Button
@@ -229,8 +229,8 @@ export default function AdminSupportTicketDetailPage() {
     return (
       <div
         className={`
-        flex min-h-[200px] items-center justify-center text-muted-foreground
-      `}
+          flex min-h-[200px] items-center justify-center text-muted-foreground
+        `}
       >
         Loading…
       </div>
@@ -267,8 +267,8 @@ export default function AdminSupportTicketDetailPage() {
           <CardTitle className="text-lg">{ticket.subject}</CardTitle>
           <div
             className={`
-            flex flex-wrap items-center gap-2 text-sm text-muted-foreground
-          `}
+              flex flex-wrap items-center gap-2 text-sm text-muted-foreground
+            `}
           >
             <span className="flex items-center gap-2">
               <label className="sr-only" htmlFor="ticket-status">
@@ -337,9 +337,9 @@ export default function AdminSupportTicketDetailPage() {
               </h3>
               <div
                 className={`
-                max-h-[400px] space-y-2 overflow-y-auto rounded-md border
-                bg-muted/20 p-3
-              `}
+                  max-h-[400px] space-y-2 overflow-y-auto rounded-md border
+                  bg-muted/20 p-3
+                `}
               >
                 {(ticket.messages ?? []).map((msg) => (
                   <div
@@ -377,8 +377,8 @@ export default function AdminSupportTicketDetailPage() {
               </h3>
               <p
                 className={`
-                rounded-md border bg-muted/30 p-4 text-sm whitespace-pre-wrap
-              `}
+                  rounded-md border bg-muted/30 p-4 text-sm whitespace-pre-wrap
+                `}
               >
                 {ticket.message}
               </p>

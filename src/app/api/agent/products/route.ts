@@ -1,10 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 
-import {
-  DEFAULT_SEARCH_LIMIT,
-  MAX_SEARCH_LIMIT,
-  runProductSearch,
-} from "~/lib/product-search";
+import { DEFAULT_SEARCH_LIMIT, runProductSearch } from "~/lib/product-search";
 import {
   checkRateLimit,
   getClientIp,

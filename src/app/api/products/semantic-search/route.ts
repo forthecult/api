@@ -1,15 +1,12 @@
 import { type NextRequest, NextResponse } from "next/server";
 
+import type { ProductSearchResultItem } from "~/lib/product-search";
+
 import {
   isAmazonProductApiConfigured,
   searchAmazonProducts,
 } from "~/lib/amazon-product-api";
-import {
-  DEFAULT_SEARCH_LIMIT,
-  MAX_SEARCH_LIMIT,
-  runProductSearch,
-} from "~/lib/product-search";
-import type { ProductSearchResultItem } from "~/lib/product-search";
+import { DEFAULT_SEARCH_LIMIT, runProductSearch } from "~/lib/product-search";
 import {
   checkRateLimit,
   getClientIp,
@@ -20,26 +17,7 @@ import {
 
 const SEMANTIC_MAX_LIMIT = 50;
 
-type SourceFilter = "all" | "store" | "amazon";
-
-function parseSource(s: string | null | undefined): SourceFilter {
-  if (s === "store" || s === "amazon" || s === "all") return s;
-  return "all";
-}
-
-function mapAmazonToSearchItem(
-  p: { asin: string; name: string; price: { usd: number }; imageUrl?: string; inStock: boolean; productUrl: string },
-): ProductSearchResultItem & { source: "marketplace"; productUrl: string } {
-  return {
-    id: p.asin,
-    name: p.name,
-    price: { crypto: {}, usd: p.price.usd },
-    imageUrl: p.imageUrl,
-    inStock: p.inStock,
-    source: "marketplace",
-    productUrl: p.productUrl,
-  };
-}
+type SourceFilter = "all" | "amazon" | "store";
 
 /**
  * Natural-language product search for AI agents.
@@ -106,9 +84,9 @@ export async function POST(request: NextRequest) {
         : null,
       wantAmazon && amazonConfigured
         ? searchAmazonProducts({
-            query: query || rawQuery,
             limit: Math.min(10, halfLimit),
             page: 1,
+            query: query || rawQuery,
           }).catch((err) => {
             console.warn("Marketplace semantic search failed:", err);
             return { products: [], totalResultCount: 0 };
@@ -117,22 +95,32 @@ export async function POST(request: NextRequest) {
     ]);
 
     if (source === "store" || (source === "all" && !amazonConfigured)) {
-      const result = storeResult ?? { limit, offset: 0, products: [], total: 0 };
+      const result = storeResult ?? {
+        limit,
+        offset: 0,
+        products: [],
+        total: 0,
+      };
       return NextResponse.json(
-        { ...result, _parsed: { priceMax, priceMin, query: query || rawQuery } },
+        {
+          ...result,
+          _parsed: { priceMax, priceMin, query: query || rawQuery },
+        },
         { headers: getRateLimitHeaders(rl, RATE_LIMITS.search.limit) },
       );
     }
 
     if (source === "amazon" && amazonConfigured) {
-      const products = (amazonResult?.products ?? []).map(mapAmazonToSearchItem);
+      const products = (amazonResult?.products ?? []).map(
+        mapAmazonToSearchItem,
+      );
       return NextResponse.json(
         {
+          _parsed: { priceMax, priceMin, query: query || rawQuery },
           limit,
           offset: 0,
           products,
           total: amazonResult?.totalResultCount ?? products.length,
-          _parsed: { priceMax, priceMin, query: query || rawQuery },
         },
         { headers: getRateLimitHeaders(rl, RATE_LIMITS.search.limit) },
       );
@@ -142,17 +130,20 @@ export async function POST(request: NextRequest) {
       ...p,
       source: "store" as const,
     }));
-    const amazonProducts = (amazonResult?.products ?? []).map(mapAmazonToSearchItem);
+    const amazonProducts = (amazonResult?.products ?? []).map(
+      mapAmazonToSearchItem,
+    );
     const merged = [...storeProducts, ...amazonProducts].slice(0, limit);
-    const total = (storeResult?.total ?? 0) + (amazonResult?.totalResultCount ?? 0);
+    const total =
+      (storeResult?.total ?? 0) + (amazonResult?.totalResultCount ?? 0);
 
     return NextResponse.json(
       {
+        _parsed: { priceMax, priceMin, query: query || rawQuery },
         limit,
         offset: 0,
         products: merged,
         total,
-        _parsed: { priceMax, priceMin, query: query || rawQuery },
       },
       {
         headers: getRateLimitHeaders(rl, RATE_LIMITS.search.limit),
@@ -170,6 +161,25 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
+}
+
+function mapAmazonToSearchItem(p: {
+  asin: string;
+  imageUrl?: string;
+  inStock: boolean;
+  name: string;
+  price: { usd: number };
+  productUrl: string;
+}): ProductSearchResultItem & { productUrl: string; source: "marketplace" } {
+  return {
+    id: p.asin,
+    imageUrl: p.imageUrl,
+    inStock: p.inStock,
+    name: p.name,
+    price: { crypto: {}, usd: p.price.usd },
+    productUrl: p.productUrl,
+    source: "marketplace",
+  };
 }
 
 /** Parse natural language into query text and optional price range (USD). */
@@ -199,4 +209,9 @@ function parseSemanticQuery(q: string): {
   }
 
   return { priceMax, priceMin, query };
+}
+
+function parseSource(s: null | string | undefined): SourceFilter {
+  if (s === "store" || s === "amazon" || s === "all") return s;
+  return "all";
 }

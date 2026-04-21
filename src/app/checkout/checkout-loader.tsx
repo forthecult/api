@@ -13,9 +13,9 @@ const CheckoutClient = dynamic(
         <Skeleton className="h-64 w-full" />
         <div
           className={`
-          grid gap-6
-          md:grid-cols-2
-        `}
+            grid gap-6
+            md:grid-cols-2
+          `}
         >
           <Skeleton className="h-96 w-full" />
           <Skeleton className="h-64 w-full" />

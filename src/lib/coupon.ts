@@ -506,7 +506,9 @@ function computeDiscountFromCoupon(
    */
   qualifyingSubtotalCents?: number,
 ): { discountCents: number; freeShipping: boolean } {
-  const discountKind = (coupon.discountKind ?? "amount_off_order").toLowerCase();
+  const discountKind = (
+    coupon.discountKind ?? "amount_off_order"
+  ).toLowerCase();
   const discountType = (coupon.discountType ?? "percent").toLowerCase();
   const discountValue = Number(coupon.discountValue) || 0;
   const freeShipping = discountKind === "free_shipping";

@@ -31,8 +31,7 @@ export async function generateMessagingAgentReply(options: {
   userId: string;
   userText: string;
 }): Promise<
-  | { error: string; ok: false; status?: number }
-  | { ok: true; text: string }
+  { error: string; ok: false; status?: number } | { ok: true; text: string }
 > {
   const userText = options.userText.trim();
   if (!userText) return { error: "empty", ok: false };
@@ -42,9 +41,7 @@ export async function generateMessagingAgentReply(options: {
   if (agent.veniceApiKey?.trim()) veniceApiKey = agent.veniceApiKey.trim();
   const agentCharacter = agent.characterSlug?.trim() ?? null;
   const characterSlug =
-    agentCharacter ??
-    process.env.VENICE_DEFAULT_CHARACTER?.trim() ??
-    "default";
+    agentCharacter ?? process.env.VENICE_DEFAULT_CHARACTER?.trim() ?? "default";
 
   const member = await isMember(options.userId);
   const identifier = resolveGuestIdentifier({

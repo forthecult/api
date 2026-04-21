@@ -94,7 +94,9 @@ async function main() {
   });
 
   if (dryRun) {
-    console.log("\n[DRY_RUN] Transaction built. Set DRY_RUN=false or unset to send.");
+    console.log(
+      "\n[DRY_RUN] Transaction built. Set DRY_RUN=false or unset to send.",
+    );
     return;
   }
 

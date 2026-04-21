@@ -14,7 +14,12 @@ const BLOCKED_HOST_SUFFIXES = [
   "::1",
 ] as const;
 
-const BLOCKED_HOST_PATTERNS = [/^169\.254\./, /^10\./, /^172\.(1[6-9]|2[0-9]|3[0-1])\./, /^192\.168\./] as const;
+const BLOCKED_HOST_PATTERNS = [
+  /^169\.254\./,
+  /^10\./,
+  /^172\.(1[6-9]|2[0-9]|3[0-1])\./,
+  /^192\.168\./,
+] as const;
 
 const BLOCKED_HOST_SUBSTRINGS = [
   ".local",

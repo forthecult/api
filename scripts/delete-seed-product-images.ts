@@ -7,7 +7,7 @@
 
 import "dotenv/config";
 
-import { eq, inArray } from "drizzle-orm";
+import { inArray } from "drizzle-orm";
 
 import { db } from "../src/db";
 import {

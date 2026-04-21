@@ -1,6 +1,5 @@
-import { createHash } from "node:crypto";
-
 import { and, eq } from "drizzle-orm";
+import { createHash } from "node:crypto";
 
 import { db } from "~/db";
 import {
@@ -8,38 +7,6 @@ import {
   aiGuestUsageTable,
 } from "~/db/schema/ai-chat/tables";
 import { getMemberTierForUser } from "~/lib/get-member-tier";
-
-export function hashGuestToken(guestId: string): string {
-  return createHash("sha256").update(`ai-guest:${guestId}`).digest("hex");
-}
-
-export function resolveGuestIdentifier(options: {
-  guestId: null | string;
-  userId: null | string;
-}): string {
-  if (options.userId) return `u:${options.userId}`;
-  if (options.guestId?.trim())
-    return `g:${hashGuestToken(options.guestId.trim())}`;
-  return `anon:${hashGuestToken("unknown")}`;
-}
-
-export async function isMember(userId: null | string): Promise<boolean> {
-  if (!userId) return false;
-  const tier = await getMemberTierForUser(userId);
-  return tier != null;
-}
-
-export async function getMaxFreeMessagesForCharacter(
-  characterSlug: string,
-): Promise<number> {
-  const row = await db
-    .select()
-    .from(aiCharacterQuotaTable)
-    .where(eq(aiCharacterQuotaTable.characterSlug, characterSlug))
-    .limit(1);
-  if (row[0]?.enabled === false) return 1;
-  return row[0]?.maxFreeMessagesNonMember ?? 1;
-}
 
 export async function checkGuestQuota(
   characterSlug: string,
@@ -58,6 +25,22 @@ export async function checkGuestQuota(
     .limit(1);
   const used = existing[0]?.messagesUsed ?? 0;
   return { allowed: used < max, max, used };
+}
+
+export async function getMaxFreeMessagesForCharacter(
+  characterSlug: string,
+): Promise<number> {
+  const row = await db
+    .select()
+    .from(aiCharacterQuotaTable)
+    .where(eq(aiCharacterQuotaTable.characterSlug, characterSlug))
+    .limit(1);
+  if (row[0]?.enabled === false) return 1;
+  return row[0]?.maxFreeMessagesNonMember ?? 1;
+}
+
+export function hashGuestToken(guestId: string): string {
+  return createHash("sha256").update(`ai-guest:${guestId}`).digest("hex");
 }
 
 export async function incrementGuestUsage(
@@ -96,4 +79,20 @@ export async function incrementGuestUsage(
         eq(aiGuestUsageTable.characterSlug, characterSlug),
       ),
     );
+}
+
+export async function isMember(userId: null | string): Promise<boolean> {
+  if (!userId) return false;
+  const tier = await getMemberTierForUser(userId);
+  return tier != null;
+}
+
+export function resolveGuestIdentifier(options: {
+  guestId: null | string;
+  userId: null | string;
+}): string {
+  if (options.userId) return `u:${options.userId}`;
+  if (options.guestId?.trim())
+    return `g:${hashGuestToken(options.guestId.trim())}`;
+  return `anon:${hashGuestToken("unknown")}`;
 }

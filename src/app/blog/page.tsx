@@ -30,9 +30,20 @@ export default async function BlogPage() {
   const posts = await getPublishedBlogPosts(30);
 
   return (
-    <div className="container mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
+    <div
+      className={`
+        container mx-auto max-w-7xl px-4 py-12
+        sm:px-6 sm:py-16
+        lg:px-8
+      `}
+    >
       <header className="mb-12 border-b border-border pb-10">
-        <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+        <h1
+          className={`
+            text-3xl font-bold tracking-tight text-foreground
+            sm:text-4xl
+          `}
+        >
           Blog
         </h1>
         <p className="mt-2 text-muted-foreground">
@@ -43,44 +54,74 @@ export default async function BlogPage() {
       {posts.length === 0 ? (
         <p className="text-muted-foreground">No posts yet. Check back soon.</p>
       ) : (
-        <ul className="grid gap-8 sm:grid-cols-2">
+        <ul
+          className={`
+            grid gap-8
+            sm:grid-cols-2
+          `}
+        >
           {posts.map((post) => (
             <li key={post.id}>
               <Link
- className="group block overflow-hidden rounded-lg border border-border bg-card "
+                className={`
+                  group block overflow-hidden rounded-lg border border-border
+                  bg-card
+                `}
                 href={`/blog/${post.slug}`}
               >
-                <div className="relative aspect-video w-full overflow-hidden bg-muted">
+                <div
+                  className={`
+                    relative aspect-video w-full overflow-hidden bg-muted
+                  `}
+                >
                   {post.coverImageUrl ? (
                     <Image
                       alt=""
-                      className="object-cover transition-transform group-hover:scale-105"
+                      className={`
+                        object-cover transition-transform
+                        group-hover:scale-105
+                      `}
                       fill
                       sizes="(max-width: 640px) 100vw, 50vw"
                       src={post.coverImageUrl}
                     />
                   ) : (
-                    <div className="flex size-full items-center justify-center text-muted-foreground">
+                    <div
+                      className={`
+                        flex size-full items-center justify-center
+                        text-muted-foreground
+                      `}
+                    >
                       —
                     </div>
                   )}
                 </div>
                 <div className="p-4">
-                  <h2 className="font-semibold text-foreground group-hover:underline">
+                  <h2
+                    className={`
+                      font-semibold text-foreground
+                      group-hover:underline
+                    `}
+                  >
                     {post.title}
                   </h2>
                   {post.summary ? (
-                    <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+                    <p
+                      className={`
+                        mt-1 line-clamp-2 text-sm text-muted-foreground
+                      `}
+                    >
                       {post.summary}
                     </p>
                   ) : null}
-                  <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                  <div
+                    className={`
+                      mt-2 flex flex-wrap items-center gap-2 text-xs
+                      text-muted-foreground
+                    `}
+                  >
                     {post.publishedAt && (
-                      <time
-                        dateTime={
-                          new Date(post.publishedAt).toISOString()
-                        }
-                      >
+                      <time dateTime={new Date(post.publishedAt).toISOString()}>
                         {new Date(post.publishedAt).toLocaleDateString()}
                       </time>
                     )}

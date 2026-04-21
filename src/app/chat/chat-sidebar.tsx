@@ -127,10 +127,12 @@ export function ChatSidebar({
           flex h-full shrink-0 flex-col border-r border-border bg-muted/20
           transition-[width]
         `,
-        collapsed ? "w-[56px]" : `
-          w-[min(100%,280px)]
-          sm:w-[280px]
-        `,
+        collapsed
+          ? "w-[56px]"
+          : `
+            w-[min(100%,280px)]
+            sm:w-[280px]
+          `,
       )}
     >
       <div
@@ -176,15 +178,20 @@ export function ChatSidebar({
       <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-2">
         <div>
           {!collapsed ? (
-            <p className={`
-              mb-1.5 px-1 text-sm font-semibold tracking-wider
-              text-muted-foreground uppercase
-            `}>
+            <p
+              className={`
+                mb-1.5 px-1 text-sm font-semibold tracking-wider
+                text-muted-foreground uppercase
+              `}
+            >
               Chat
             </p>
           ) : null}
           <Button
-            className={cn("w-full justify-start gap-2 text-base", collapsed && "px-2")}
+            className={cn(
+              "w-full justify-start gap-2 text-base",
+              collapsed && `px-2`,
+            )}
             onClick={onNewChat}
             title="New chat"
             type="button"
@@ -206,8 +213,8 @@ export function ChatSidebar({
               <p
                 className={cn(
                   `
-                    text-sm font-semibold tracking-wider
-                    text-muted-foreground uppercase
+                    text-sm font-semibold tracking-wider text-muted-foreground
+                    uppercase
                   `,
                   mainView === "projects" && "text-primary",
                 )}
@@ -262,7 +269,8 @@ export function ChatSidebar({
           ) : (
             <ul className="space-y-0.5">
               {projects.map((p) => {
-                const active = selectedProjectId === p.id && mainView === "chat";
+                const active =
+                  selectedProjectId === p.id && mainView === "chat";
                 return (
                   <li key={p.id}>
                     <button
@@ -285,7 +293,9 @@ export function ChatSidebar({
                     >
                       <Folder className="h-4 w-4 shrink-0 opacity-80" />
                       {!collapsed ? (
-                        <span className="min-w-0 flex-1 truncate">{p.name}</span>
+                        <span className="min-w-0 flex-1 truncate">
+                          {p.name}
+                        </span>
                       ) : null}
                     </button>
                   </li>
@@ -297,10 +307,12 @@ export function ChatSidebar({
 
         {selectedProjectId && !collapsed ? (
           <div>
-            <p className={`
-              mb-1.5 px-1 text-sm font-semibold tracking-wider
-              text-muted-foreground uppercase
-            `}>
+            <p
+              className={`
+                mb-1.5 px-1 text-sm font-semibold tracking-wider
+                text-muted-foreground uppercase
+              `}
+            >
               Chats in project
             </p>
             {filteredProjectChats.length === 0 ? (
@@ -329,10 +341,12 @@ export function ChatSidebar({
 
         <div>
           {!collapsed ? (
-            <p className={`
-              mb-1.5 px-1 text-sm font-semibold tracking-wider
-              text-muted-foreground uppercase
-            `}>
+            <p
+              className={`
+                mb-1.5 px-1 text-sm font-semibold tracking-wider
+                text-muted-foreground uppercase
+              `}
+            >
               Characters
             </p>
           ) : (
@@ -406,10 +420,12 @@ export function ChatSidebar({
           >
             <Clock className="h-4 w-4 text-muted-foreground" />
             {!collapsed ? (
-              <p className={`
-                text-sm font-semibold tracking-wider text-muted-foreground
-                uppercase
-              `}>
+              <p
+                className={`
+                  text-sm font-semibold tracking-wider text-muted-foreground
+                  uppercase
+                `}
+              >
                 History
               </p>
             ) : null}
@@ -444,7 +460,12 @@ export function ChatSidebar({
 
       {!collapsed ? (
         <div className="border-t border-border p-2">
-          <Button asChild className="w-full text-sm" size="default" variant="ghost">
+          <Button
+            asChild
+            className="w-full text-sm"
+            size="default"
+            variant="ghost"
+          >
             <Link href="/dashboard/ai">Account &amp; memory</Link>
           </Button>
         </div>
@@ -514,11 +535,13 @@ function SessionRow({
           )}
         </button>
         {!collapsed ? (
-          <div className={`
-            flex shrink-0 flex-col gap-0.5 opacity-0 transition-opacity
-            group-hover:opacity-100
-            focus-within:opacity-100
-          `}>
+          <div
+            className={`
+              flex shrink-0 flex-col gap-0.5 opacity-0 transition-opacity
+              group-hover:opacity-100
+              focus-within:opacity-100
+            `}
+          >
             <Button
               className="h-6 w-6 p-0"
               onClick={(e) => {

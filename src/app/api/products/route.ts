@@ -1,14 +1,4 @@
-import {
-  and,
-  asc,
-  desc,
-  eq,
-  ilike,
-  inArray,
-  isNull,
-  notInArray,
-  sql,
-} from "drizzle-orm";
+import { and, asc, desc, eq, ilike, inArray, sql } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
@@ -105,7 +95,8 @@ export async function GET(request: NextRequest) {
 
     let categorySlugToFilter = subcategory || category;
     // URL-friendly alias: "featured" → "__featured__" (products in featured categories)
-    if (categorySlugToFilter === "featured") categorySlugToFilter = "__featured__";
+    if (categorySlugToFilter === "featured")
+      categorySlugToFilter = "__featured__";
 
     // For manual sort we need the sortOrder from the junction table, keyed by productId.
     // Fetched separately and wrapped in try-catch so the feature degrades gracefully
@@ -239,11 +230,8 @@ export async function GET(request: NextRequest) {
     }
 
     // Category id for the requested slug (used to treat product gate as passed when category gate is passed and product requirement is weaker).
-    let categoryIdForRequest: string | null = null;
-    if (
-      categorySlugToFilter &&
-      categorySlugToFilter !== "__featured__"
-    ) {
+    let categoryIdForRequest: null | string = null;
+    if (categorySlugToFilter && categorySlugToFilter !== "__featured__") {
       const [catRow] = await db
         .select({ id: categoriesTable.id })
         .from(categoriesTable)
@@ -549,8 +537,7 @@ export async function GET(request: NextRequest) {
         item.tokenGated &&
         hasValidTokenGateCookie(tgCookieValue, "product", item.slug ?? item.id);
       const categorySatisfiesProduct =
-        item.tokenGated &&
-        productSatisfiedByCategoryIds.has(item.id);
+        item.tokenGated && productSatisfiedByCategoryIds.has(item.id);
       const tokenGatePassed =
         (productCookiePassed ?? false) || (categorySatisfiesProduct ?? false);
       return { ...item, tokenGatePassed };

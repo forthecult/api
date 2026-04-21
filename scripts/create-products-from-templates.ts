@@ -16,7 +16,6 @@ import "dotenv/config";
 import {
   createSyncProduct,
   fetchProductTemplates,
-  fetchTemplateVariantPrintfiles,
   type PrintfulProductTemplateItem,
 } from "../src/lib/printful";
 
@@ -45,7 +44,7 @@ function upgradeTitleForCulture(title: string): string {
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
     .join(" ");
   if (titleCased.length <= 60) return titleCased;
-  return titleCased.slice(0, 57) + "...";
+  return `${titleCased.slice(0, 57)}...`;
 }
 
 /** Build SEO-friendly product description from title (for store/Printful). */
@@ -164,7 +163,7 @@ async function main() {
       const metaDesc =
         description.length <= 155
           ? description
-          : description.slice(0, 152) + "...";
+          : `${description.slice(0, 152)}...`;
       suggestedSeo.push({
         templateId: tpl.id,
         title: cultureTitle,

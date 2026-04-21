@@ -8,7 +8,6 @@ import {
   resolveGuestIdentifier,
 } from "~/lib/ai/access-control";
 import { extractLastUserText } from "~/lib/ai/extract-user-text";
-import { normalizeVeniceSampling } from "~/lib/ai/venice-sampling";
 import { messagesHaveUserImage } from "~/lib/ai/messages-utils";
 import { buildAgentSystemPrompt } from "~/lib/ai/prompt-assembler";
 import { getOrCreateAiAgent } from "~/lib/ai/user-agent";
@@ -19,6 +18,7 @@ import {
   defaultVisionChatModelId,
   getServerVeniceApiKey,
 } from "~/lib/ai/venice";
+import { normalizeVeniceSampling } from "~/lib/ai/venice-sampling";
 import { auth } from "~/lib/auth";
 
 export const maxDuration = 120;
@@ -128,7 +128,9 @@ export async function POST(request: Request) {
   }
 
   const useVision = messagesHaveUserImage(messages);
-  const baseModel = useVision ? defaultVisionChatModelId() : defaultChatModelId();
+  const baseModel = useVision
+    ? defaultVisionChatModelId()
+    : defaultChatModelId();
   const slugForModel = characterSlug === "default" ? null : characterSlug;
   const modelId = buildVeniceModelId(baseModel, {
     characterSlug: slugForModel,

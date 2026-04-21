@@ -115,9 +115,9 @@ export function TokenGatesList({
                 </div>
                 <div
                   className={`
-                  grid gap-3
-                  sm:grid-cols-2
-                `}
+                    grid gap-3
+                    sm:grid-cols-2
+                  `}
                 >
                   <div className="space-y-1">
                     <label className={labelClass}>Token symbol</label>
@@ -151,9 +151,9 @@ export function TokenGatesList({
                   </div>
                   <div
                     className={`
-                    space-y-1
-                    sm:col-span-2
-                  `}
+                      space-y-1
+                      sm:col-span-2
+                    `}
                   >
                     <label className={labelClass}>Network</label>
                     <select
@@ -175,9 +175,9 @@ export function TokenGatesList({
                   </div>
                   <div
                     className={`
-                    space-y-1
-                    sm:col-span-2
-                  `}
+                      space-y-1
+                      sm:col-span-2
+                    `}
                   >
                     <label className={labelClass}>
                       Contract / mint address (optional)

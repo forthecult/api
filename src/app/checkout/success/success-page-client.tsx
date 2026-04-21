@@ -48,7 +48,7 @@ interface OrderDetails {
   items: {
     name: string;
     priceUsd?: number;
-    productId?: string | null;
+    productId?: null | string;
     quantity: number;
     subtotalUsd?: number;
   }[];
@@ -174,7 +174,7 @@ export function SuccessPageClient() {
             items: (data.items ?? []).map((i) => ({
               name: i.name,
               priceUsd: i.priceUsd,
-              productId: (i as { productId?: string | null }).productId,
+              productId: (i as { productId?: null | string }).productId,
               quantity: i.quantity,
               subtotalUsd: i.subtotalUsd,
             })),
@@ -240,32 +240,33 @@ export function SuccessPageClient() {
   return (
     <div
       className={`
-      container mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8
-      sm:py-16
-    `}
+        container mx-auto max-w-7xl px-4 py-12
+        sm:px-6 sm:py-16
+        lg:px-8
+      `}
     >
       {/* ───── Hero: Success confirmation ───── */}
       <div className="flex flex-col items-center text-center">
         <div
           className={`
-          mb-5 flex size-16 items-center justify-center rounded-full
-          bg-green-500/15
-          sm:size-20
-        `}
+            mb-5 flex size-16 items-center justify-center rounded-full
+            bg-green-500/15
+            sm:size-20
+          `}
         >
           <Check
             className={`
-            size-8 text-green-600
-            sm:size-10
-            dark:text-green-400
-          `}
+              size-8 text-green-600
+              sm:size-10
+              dark:text-green-400
+            `}
           />
         </div>
         <h1
           className={`
-          text-2xl font-bold tracking-tight
-          sm:text-3xl
-        `}
+            text-2xl font-bold tracking-tight
+            sm:text-3xl
+          `}
         >
           Order confirmed!
         </h1>
@@ -277,25 +278,25 @@ export function SuccessPageClient() {
         {canSeePII && hasRealEmail && order?.email && (
           <div
             className={`
-            mt-5 w-full max-w-md rounded-lg border border-green-200
-            bg-green-50/50 px-4 py-3 text-left
-            dark:border-green-900/50 dark:bg-green-950/20
-          `}
+              mt-5 w-full max-w-md rounded-lg border border-green-200
+              bg-green-50/50 px-4 py-3 text-left
+              dark:border-green-900/50 dark:bg-green-950/20
+            `}
           >
             <div
               className={`
-              flex items-start gap-2.5 text-sm text-green-700
-              dark:text-green-400
-            `}
+                flex items-start gap-2.5 text-sm text-green-700
+                dark:text-green-400
+              `}
             >
               <Check aria-hidden className="mt-0.5 size-4 shrink-0" />
               <div>
                 <p className="font-medium">Confirmation email sent</p>
                 <p
                   className={`
-                  mt-0.5 text-green-600/80
-                  dark:text-green-400/70
-                `}
+                    mt-0.5 text-green-600/80
+                    dark:text-green-400/70
+                  `}
                 >
                   {isDigitalOnlyOrder ? (
                     <>
@@ -320,9 +321,9 @@ export function SuccessPageClient() {
         {canSeePII && !hasRealEmail && (
           <div
             className={`
-            mt-5 w-full max-w-md rounded-lg border border-border bg-muted/50
-            px-4 py-3 text-left
-          `}
+              mt-5 w-full max-w-md rounded-lg border border-border bg-muted/50
+              px-4 py-3 text-left
+            `}
           >
             <p className="text-sm text-muted-foreground">
               {user?.id ? (
@@ -351,9 +352,9 @@ export function SuccessPageClient() {
         {!canSeePII && (
           <div
             className={`
-            mt-5 w-full max-w-md rounded-lg border border-border bg-muted/50
-            px-4 py-3 text-left
-          `}
+              mt-5 w-full max-w-md rounded-lg border border-border bg-muted/50
+              px-4 py-3 text-left
+            `}
           >
             <p className="text-sm text-muted-foreground">
               Order details have been sent to the buyer&apos;s email. Sign in to
@@ -367,9 +368,9 @@ export function SuccessPageClient() {
       {order && order.items.length > 0 && (
         <div
           className={`
-          mt-10 rounded-xl border border-border bg-card p-5
-          sm:p-6
-        `}
+            mt-10 rounded-xl border border-border bg-card p-5
+            sm:p-6
+          `}
         >
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold">Order details</h2>
@@ -394,8 +395,9 @@ export function SuccessPageClient() {
                 <div className="flex items-center gap-3">
                   <div
                     className={`
-                    flex size-10 items-center justify-center rounded-md bg-muted
-                  `}
+                      flex size-10 items-center justify-center rounded-md
+                      bg-muted
+                    `}
                   >
                     <Package
                       aria-hidden
@@ -431,18 +433,18 @@ export function SuccessPageClient() {
           {/* Meta: payment, date, shipping */}
           <div
             className={`
-            mt-5 grid gap-4
-            sm:grid-cols-2
-            lg:grid-cols-3
-          `}
+              mt-5 grid gap-4
+              sm:grid-cols-2
+              lg:grid-cols-3
+            `}
           >
             {order.paymentMethod && (
               <div className="rounded-lg bg-muted/50 px-3 py-2.5">
                 <p
                   className={`
-                  text-xs font-medium tracking-wider text-muted-foreground
-                  uppercase
-                `}
+                    text-xs font-medium tracking-wider text-muted-foreground
+                    uppercase
+                  `}
                 >
                   Payment
                 </p>
@@ -458,9 +460,9 @@ export function SuccessPageClient() {
               <div className="rounded-lg bg-muted/50 px-3 py-2.5">
                 <p
                   className={`
-                  text-xs font-medium tracking-wider text-muted-foreground
-                  uppercase
-                `}
+                    text-xs font-medium tracking-wider text-muted-foreground
+                    uppercase
+                  `}
                 >
                   Date
                 </p>
@@ -476,15 +478,18 @@ export function SuccessPageClient() {
               <div className="rounded-lg bg-muted/50 px-3 py-2.5">
                 <p
                   className={`
-                  text-xs font-medium tracking-wider text-muted-foreground
-                  uppercase
-                `}
+                    text-xs font-medium tracking-wider text-muted-foreground
+                    uppercase
+                  `}
                 >
                   Redeem now
                 </p>
                 <p className="mt-0.5 text-sm">
                   <Link
-                    className="font-medium text-primary underline underline-offset-2 hover:no-underline"
+                    className={`
+                      font-medium text-primary underline underline-offset-2
+                      hover:no-underline
+                    `}
                     href="/dashboard/esim"
                   >
                     Your eSIM is ready — import it in your dashboard
@@ -495,9 +500,9 @@ export function SuccessPageClient() {
               <div className="rounded-lg bg-muted/50 px-3 py-2.5">
                 <p
                   className={`
-                  text-xs font-medium tracking-wider text-muted-foreground
-                  uppercase
-                `}
+                    text-xs font-medium tracking-wider text-muted-foreground
+                    uppercase
+                  `}
                 >
                   Estimated delivery
                 </p>
@@ -515,9 +520,9 @@ export function SuccessPageClient() {
             <div className="mt-5 border-t border-border pt-4">
               <p
                 className={`
-                text-xs font-medium tracking-wider text-muted-foreground
-                uppercase
-              `}
+                  text-xs font-medium tracking-wider text-muted-foreground
+                  uppercase
+                `}
               >
                 Shipping to
               </p>
@@ -532,9 +537,9 @@ export function SuccessPageClient() {
             <div className="mt-5 border-t border-border pt-4">
               <p
                 className={`
-                text-xs font-medium tracking-wider text-muted-foreground
-                uppercase
-              `}
+                  text-xs font-medium tracking-wider text-muted-foreground
+                  uppercase
+                `}
               >
                 Shipping to
               </p>
@@ -550,9 +555,9 @@ export function SuccessPageClient() {
       {!order && displayOrderId && (
         <div
           className={`
-          mt-10 rounded-xl border border-border bg-card p-5
-          sm:p-6
-        `}
+            mt-10 rounded-xl border border-border bg-card p-5
+            sm:p-6
+          `}
         >
           <h2 className="text-lg font-semibold">Order details</h2>
           <p className="mt-2 text-sm text-muted-foreground">
@@ -565,9 +570,9 @@ export function SuccessPageClient() {
       {!order && !displayOrderId && (
         <div
           className={`
-          mt-10 rounded-xl border border-border bg-card p-5
-          sm:p-6
-        `}
+            mt-10 rounded-xl border border-border bg-card p-5
+            sm:p-6
+          `}
         >
           <h2 className="text-lg font-semibold">Order details</h2>
           <p className="mt-2 text-sm text-muted-foreground">
@@ -582,16 +587,18 @@ export function SuccessPageClient() {
         <div className="mt-10 space-y-8">
           {/* Account creation for guests (first visit with real email) */}
           {isFirstVisit && (
-            <CreateAccountCard email={hasRealEmail ? order?.email : undefined} />
+            <CreateAccountCard
+              email={hasRealEmail ? order?.email : undefined}
+            />
           )}
 
           {/* Notification / marketing consent — show for first visit or authenticated owner */}
           {(order?.orderId ?? orderIdParam) && (
             <div
               className={`
-              rounded-xl border border-border bg-card p-5
-              sm:p-6
-            `}
+                rounded-xl border border-border bg-card p-5
+                sm:p-6
+              `}
             >
               <MarketingConsent
                 email={hasRealEmail ? order?.email : undefined}
@@ -606,14 +613,17 @@ export function SuccessPageClient() {
       {/* ───── Actions ───── */}
       <div
         className={`
-        mt-10 flex flex-col items-center gap-4
-        sm:flex-row sm:flex-wrap sm:justify-center
-      `}
+          mt-10 flex flex-col items-center gap-4
+          sm:flex-row sm:flex-wrap sm:justify-center
+        `}
       >
         {isDigitalOnlyOrder && (
           <Button
             asChild
-            className="w-full sm:w-auto"
+            className={`
+              w-full
+              sm:w-auto
+            `}
             size="lg"
           >
             <Link href="/dashboard/esim">
@@ -625,9 +635,9 @@ export function SuccessPageClient() {
         <Button
           asChild
           className={`
-          w-full
-          sm:w-auto
-        `}
+            w-full
+            sm:w-auto
+          `}
           size="lg"
           variant={isDigitalOnlyOrder ? "outline" : undefined}
         >
@@ -639,9 +649,9 @@ export function SuccessPageClient() {
         <Button
           asChild
           className={`
-          w-full
-          sm:w-auto
-        `}
+            w-full
+            sm:w-auto
+          `}
           size="lg"
           variant="outline"
         >
@@ -652,8 +662,8 @@ export function SuccessPageClient() {
       {/* ───── Share & referral ───── */}
       <div
         className={`
-        mt-10 flex flex-col items-center border-t border-border pt-8
-      `}
+          mt-10 flex flex-col items-center border-t border-border pt-8
+        `}
       >
         <p className="text-sm font-medium text-muted-foreground">
           Share your purchase
@@ -733,9 +743,9 @@ function CreateAccountCard({ email }: { email?: string }) {
   return (
     <div
       className={`
-      rounded-xl border border-border bg-card p-5
-      sm:p-6
-    `}
+        rounded-xl border border-border bg-card p-5
+        sm:p-6
+      `}
     >
       <CreateAccountViaEmail email={email} />
     </div>
@@ -756,15 +766,15 @@ function CreateAccountViaEmail({ email }: { email?: string }) {
     return (
       <div
         className={`
-        rounded-lg border border-green-200 bg-green-50/50 px-4 py-3
-        dark:border-green-900/50 dark:bg-green-950/20
-      `}
+          rounded-lg border border-green-200 bg-green-50/50 px-4 py-3
+          dark:border-green-900/50 dark:bg-green-950/20
+        `}
       >
         <div
           className={`
-          flex items-center gap-2 text-sm text-green-700
-          dark:text-green-400
-        `}
+            flex items-center gap-2 text-sm text-green-700
+            dark:text-green-400
+          `}
         >
           <Check aria-hidden className="size-4 shrink-0" />
           <span className="font-medium">
@@ -794,7 +804,7 @@ function CreateAccountViaEmail({ email }: { email?: string }) {
           setError("");
           try {
             // Create account with a random password; user will set their own via the reset link
-            const tempPassword = crypto.randomUUID() + "Aa1!";
+            const tempPassword = `${crypto.randomUUID()}Aa1!`;
             const result = await signUp.email({
               email,
               name: email.split("@")[0] ?? "",
@@ -906,9 +916,9 @@ function MarketingConsent({
     return (
       <div
         className={`
-        flex items-center gap-2 text-sm text-green-600
-        dark:text-green-400
-      `}
+          flex items-center gap-2 text-sm text-green-600
+          dark:text-green-400
+        `}
       >
         <Check className="size-4" />
         <span>Preferences saved</span>
