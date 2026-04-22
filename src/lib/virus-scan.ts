@@ -1,7 +1,7 @@
 /**
  * Virus scan for uploaded files via VirusTotal API v3.
- * VIRUSTOTAL_API_KEY is REQUIRED in production (assertVirusTotalConfigured
- * throws on boot if missing); in dev it's optional — missing key → skip scan.
+ * VIRUSTOTAL_API_KEY is REQUIRED in production unless ALLOW_UNSCANNED_UPLOADS=1.
+ * in dev, missing key skips scanning.
  */
 
 const VT_API = "https://www.virustotal.com/api/v3";
@@ -38,7 +38,7 @@ export function assertVirusTotalConfigured(): void {
 /**
  * Scan a file at the given URL using VirusTotal. Returns { ok: true } if clean or scan skipped;
  * { ok: false, error } if malicious or scan failed.
- * Skips scan when VIRUSTOTAL_API_KEY is not set (dev only; prod boot fails via assertVirusTotalConfigured).
+ * Skips scan when VIRUSTOTAL_API_KEY is not set unless production enforcement is active.
  */
 export async function scanFileUrl(
   url: string,
