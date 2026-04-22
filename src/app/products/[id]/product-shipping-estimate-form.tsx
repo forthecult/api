@@ -166,7 +166,7 @@ export function ProductShippingEstimateForm({
         Estimate shipping
       </h4>
       <p className="text-xs text-muted-foreground">
-        Final shipping rates may change based your cart and promotions.
+        Final shipping rates may change based on multiple items in your cart and promotions.
       </p>
       <div
         className={`
