@@ -274,6 +274,7 @@ const config = {
       "@base-org/account": wagmiStub,
       "@coinbase/wallet-sdk": wagmiStub,
       "@gemini-wallet/core": wagmiStub,
+      "@metamask/connect-evm": wagmiStub,
       "@walletconnect/ethereum-provider": resolveWalletConnect(),
       // @wagmi/core tempo connectors use dynamic import('accounts'); webpack must resolve the optional peer.
       accounts: wagmiStub,

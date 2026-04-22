@@ -8,6 +8,7 @@ const VT_API = "https://www.virustotal.com/api/v3";
 const DEFAULT_MAX_FILE_BYTES = 4 * 1024 * 1024; // 4MB – matches the image uploader cap
 const POLL_MS = 3000;
 const POLL_ATTEMPTS = 20;
+const ALLOW_UNSCANNED_UPLOADS = process.env.ALLOW_UNSCANNED_UPLOADS === "1";
 
 export type VirusScanResult = { error: string; ok: false } | { ok: true };
 
@@ -23,7 +24,11 @@ interface ScanOptions {
  */
 export function assertVirusTotalConfigured(): void {
   const apiKey = process.env.VIRUSTOTAL_API_KEY?.trim();
-  if (process.env.NODE_ENV === "production" && !apiKey) {
+  if (
+    process.env.NODE_ENV === "production" &&
+    !apiKey &&
+    !ALLOW_UNSCANNED_UPLOADS
+  ) {
     throw new Error(
       "VIRUSTOTAL_API_KEY is required in production — uploads must be virus-scanned.",
     );
@@ -41,6 +46,9 @@ export async function scanFileUrl(
 ): Promise<VirusScanResult> {
   const apiKey = process.env.VIRUSTOTAL_API_KEY?.trim();
   if (!apiKey) {
+    if (process.env.NODE_ENV === "production" && !ALLOW_UNSCANNED_UPLOADS) {
+      return { error: "virus scan is not configured", ok: false };
+    }
     return { ok: true };
   }
   const MAX_FILE_BYTES = options.maxBytes ?? DEFAULT_MAX_FILE_BYTES;
