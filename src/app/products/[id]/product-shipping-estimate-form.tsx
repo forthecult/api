@@ -133,7 +133,7 @@ export function ProductShippingEstimateForm({
       setCanShip(data.canShipToCountry !== false);
       setUnavailable(
         Array.isArray(data.unavailableProducts) &&
-          data.unavailableProducts.length > 0,
+        data.unavailableProducts.length > 0,
       );
       setFulfillmentError(
         data.fulfillmentError != null && data.fulfillmentError !== ""
@@ -166,8 +166,7 @@ export function ProductShippingEstimateForm({
         Estimate shipping
       </h4>
       <p className="text-xs text-muted-foreground">
-        Estimates use the same rules as checkout. Final cost may change with
-        your full address or promotions.
+        Final shipping rates may change based your cart and promotions.
       </p>
       <div
         className={`

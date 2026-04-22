@@ -53,21 +53,9 @@ const DELIVERY_COPY = (
     </p>
     <p className="mb-3">
       We ship to most countries. Our shipping prices vary depending on your
-      location and what products you&apos;re purchasing. Use the estimate tool
+      location and what products you are purchasing. Use the estimate tool
       below, or review totals in your cart at checkout.
     </p>
-    <p className="mb-3">
-      In general, US orders range between $2-20 in shipping and Non-US orders
-      range between $2 - $45.
-    </p>
-    <p className="mb-3 font-medium">Example shipping prices:</p>
-    <ul className="mb-3 list-inside list-disc space-y-1">
-      <li>Tees - $2.50 - US, $5.50 Non-US</li>
-      <li>Poker Chips - $0.50 - US, $0.75 Non-US</li>
-      <li>Hardware Wallets - $7 - US, $11 - Non-US</li>
-      <li>Trinkets - $1.50 - US, $2.50 - Non-US</li>
-      <li>Alpaca Socks - $5 - US, $10-18 Non-US</li>
-    </ul>
   </>
 );
 
@@ -183,10 +171,6 @@ export function ProductDetailAccordion({
                 text-muted-foreground
               `}
             >
-              <p>
-                Rates combine our store shipping rules with live quotes from
-                fulfillment partners when your item is produced on demand.
-              </p>
               <ProductShippingEstimateForm
                 availableCountryCodes={availableCountryCodes}
                 productId={productId}
