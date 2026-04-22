@@ -17,14 +17,13 @@ import { ProductShippingEstimateProvider } from "~/app/products/[id]/product-shi
 import { ProductVariantImageProvider } from "~/app/products/[id]/product-variant-image-context";
 import { ProductVariantSection } from "~/app/products/[id]/product-variant-section";
 import { RelatedProductsSection } from "~/app/products/[id]/related-products-section";
-import { ProductViewAnalytics } from "~/lib/analytics/product-view-analytics";
 import { ProductsClient } from "~/app/products/products-client";
+import { ProductViewAnalytics } from "~/lib/analytics/product-view-analytics";
 import {
   getPublicSiteUrl,
   getServerBaseUrl,
   shouldNoindexForAgent,
 } from "~/lib/app-url";
-import { buildHreflangLanguages } from "~/lib/hreflang";
 import {
   getCategoryBySlug,
   getCategoryParent,
@@ -32,6 +31,7 @@ import {
   getProductBreadcrumbTrail,
   getSubcategories,
 } from "~/lib/categories";
+import { buildHreflangLanguages } from "~/lib/hreflang";
 import { getProductBySlugOrId } from "~/lib/product-by-slug";
 import {
   mapProductBySlugResultToPageProduct,
@@ -50,8 +50,8 @@ import {
 } from "~/lib/token-gate";
 import { COOKIE_NAME, hasValidTokenGateCookie } from "~/lib/token-gate-cookie";
 import { Breadcrumbs } from "~/ui/components/breadcrumbs";
-import { ProductFaqSection } from "~/ui/components/product-faq-section";
 import { ProductBrandModel } from "~/ui/components/product-brand-model";
+import { ProductFaqSection } from "~/ui/components/product-faq-section";
 import {
   BreadcrumbStructuredData,
   CollectionPageStructuredData,
@@ -487,9 +487,9 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
                 <ProductVariantImageProvider>
                   <div
                     className={`
-                    grid grid-cols-1 gap-8
-                    md:grid-cols-2
-                  `}
+                      grid grid-cols-1 gap-8
+                      md:grid-cols-2
+                    `}
                   >
                     <ProductImageGallery
                       discountPercentage={discountPercentage}
@@ -514,15 +514,15 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
                                 {range(5).map((i) => (
                                   <Star
                                     className={`
-                                    h-5 w-5
-                                    ${
-                                      i < Math.floor(product.rating)
-                                        ? "fill-primary text-primary"
-                                        : i < product.rating
-                                          ? "fill-primary/50 text-primary"
-                                          : "text-muted-foreground"
-                                    }
-                                  `}
+                                      h-5 w-5
+                                      ${
+                                        i < Math.floor(product.rating)
+                                          ? "fill-primary text-primary"
+                                          : i < product.rating
+                                            ? "fill-primary/50 text-primary"
+                                            : "text-muted-foreground"
+                                      }
+                                    `}
                                     key={`star-${i}`}
                                   />
                                 ))}
@@ -534,7 +534,11 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
                           )}
                         </div>
                         <div className="mb-2">
-                          <p className="text-lg font-medium text-muted-foreground">
+                          <p
+                            className={`
+                            text-lg font-medium text-muted-foreground
+                          `}
+                          >
                             {product.category}
                           </p>
                         </div>
@@ -552,9 +556,9 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
                               >
                                 <span
                                   className={`
-                                  mt-1 mr-2 h-2 w-2 shrink-0 rounded-full
-                                  bg-primary
-                                `}
+                                    mt-1 mr-2 h-2 w-2 shrink-0 rounded-full
+                                    bg-primary
+                                  `}
                                 />
                                 <span>{feature}</span>
                               </li>

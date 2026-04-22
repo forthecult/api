@@ -21,9 +21,9 @@ export interface PageProduct {
   color?: null | string;
   continueSellingWhenOutOfStock?: boolean;
   description: string;
-  features: string[];
   /** Optional FAQ (DB `faq_json`) for PDP + JSON-LD. */
   faq?: ProductFaqItem[];
+  features: string[];
   /** Primary gender derived from variants (null when variants disagree). */
   gender?: null | string;
   /** Google Merchant taxonomy path, e.g. "Apparel & Accessories > Clothing > Tops". */
@@ -57,19 +57,19 @@ export interface PageProduct {
   priceValidUntil?: null | string;
   /** Aggregate rating computed from visible reviews in `product_review`. */
   rating: number;
-  /** Recent visible reviews for JSON-LD `review`. */
-  reviews?: ProductRatingSummary["recent"];
   /** Total visible review count (from `product_review`). */
   reviewCount?: number;
-  shipsFrom?: null | string;
-  /** ISO 3166-1 alpha-2 country the product ships from. */
-  shipsFromCountry?: null | string;
+  /** Recent visible reviews for JSON-LD `review`. */
+  reviews?: ProductRatingSummary["recent"];
   /** Package height (cm). Separate from the physical product size. */
   shippingHeightCm?: null | number;
   /** Package length (cm). */
   shippingLengthCm?: null | number;
   /** Package width (cm). */
   shippingWidthCm?: null | number;
+  shipsFrom?: null | string;
+  /** ISO 3166-1 alpha-2 country the product ships from. */
+  shipsFromCountry?: null | string;
   /** Primary size derived from variants (null when variants disagree). */
   size?: null | string;
   sizeChart?: null | {
@@ -115,8 +115,8 @@ export function mapProductBySlugResultToPageProduct(
     color: data.color ?? undefined,
     continueSellingWhenOutOfStock: data.continueSellingWhenOutOfStock ?? false,
     description: data.description ?? "",
-    features: data.features ?? [],
     faq: data.faq,
+    features: data.features ?? [],
     gender: data.gender ?? undefined,
     // Product-level override wins over the main category's Merchant taxonomy.
     googleProductCategory:
@@ -148,11 +148,11 @@ export function mapProductBySlugResultToPageProduct(
     rating: data.rating?.average ?? 0,
     reviewCount: data.rating?.count ?? 0,
     reviews: data.rating?.recent,
-    shipsFrom: data.shipsFrom ?? null,
-    shipsFromCountry: data.shipsFromCountry ?? undefined,
     shippingHeightCm: data.shippingHeightCm ?? undefined,
     shippingLengthCm: data.shippingLengthCm ?? undefined,
     shippingWidthCm: data.shippingWidthCm ?? undefined,
+    shipsFrom: data.shipsFrom ?? null,
+    shipsFromCountry: data.shipsFromCountry ?? undefined,
     size: data.size ?? undefined,
     sizeChart: data.sizeChart ?? undefined,
     slug: data.slug,

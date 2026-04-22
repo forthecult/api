@@ -94,7 +94,9 @@ export function useStakeTransaction(options: UseStakeTransactionOptions = {}) {
           headers: { "Content-Type": "application/json" },
           method: "POST",
         })
-          .then((res) => res.json().then((raw) => ({ raw, status: res.status })))
+          .then((res) =>
+            res.json().then((raw) => ({ raw, status: res.status })),
+          )
           .then(({ raw, status }) => {
             const data = raw as {
               alreadyLinked?: boolean;
@@ -129,7 +131,13 @@ export function useStakeTransaction(options: UseStakeTransactionOptions = {}) {
         setStakePending(false);
       }
     },
-    [wallet, sendTransaction, connection, options.onStakeSuccess],
+    [
+      wallet,
+      sendTransaction,
+      connection,
+      options.onStakeSuccess,
+      openConnectModal,
+    ],
   );
 
   // auto-execute pending stake when wallet connects

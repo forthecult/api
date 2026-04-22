@@ -20,7 +20,11 @@ export function ProductFaqSection({
         {items.map((faq, i) => (
           <div key={`${faq.question}-${i}`}>
             <dt className="font-medium text-foreground">{faq.question}</dt>
-            <dd className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">
+            <dd
+              className={`
+              mt-2 text-sm whitespace-pre-wrap text-muted-foreground
+            `}
+            >
               {faq.answer}
             </dd>
           </div>

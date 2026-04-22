@@ -3,7 +3,7 @@
  * Hides the default Swagger top bar (branding / promo strip).
  */
 .api-docs-wrapper .swagger-ui .topbar {
-  display: none !important;
+  display: none;
 }
 
 .api-docs-wrapper .swagger-ui .wrapper {

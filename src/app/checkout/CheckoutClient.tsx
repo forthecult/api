@@ -13,8 +13,8 @@ import {
 } from "react";
 
 import { useSolanaWallet } from "~/app/checkout/crypto/solana-wallet-stub";
-import { trackBeginCheckout } from "~/lib/analytics/ecommerce";
 import { getAffiliateCodeFromDocument } from "~/lib/affiliate-tracking";
+import { trackBeginCheckout } from "~/lib/analytics/ecommerce";
 import { useCurrentUser } from "~/lib/auth-client";
 import { useCart } from "~/lib/hooks/use-cart";
 import {

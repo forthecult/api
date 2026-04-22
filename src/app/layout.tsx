@@ -6,8 +6,8 @@ import { Suspense } from "react";
 
 import { SEO_CONFIG } from "~/app";
 import { LazySolanaWalletProvider } from "~/app/checkout/crypto/lazy-solana-wallet-provider";
-import { getPublicSiteUrl, isAgentSubdomain } from "~/lib/app-url";
 import { AnalyticsProvider } from "~/lib/analytics/analytics-provider";
+import { getPublicSiteUrl, isAgentSubdomain } from "~/lib/app-url";
 import { CartProvider } from "~/lib/hooks/use-cart";
 import { CountryCurrencyProvider } from "~/lib/hooks/use-country-currency";
 import "~/css/globals.css";

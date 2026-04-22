@@ -15,7 +15,6 @@ function storefrontApiOrigin(): null | string {
 const main = storefrontApiOrigin();
 
 const nextConfig = {
-  turbopack: { root: process.cwd() },
   async rewrites() {
     if (process.env.NEXT_PUBLIC_ADMIN_API_RELATIVE === "0") return [];
     if (!main) return [];
@@ -26,6 +25,7 @@ const nextConfig = {
       },
     ];
   },
+  turbopack: { root: process.cwd() },
 } satisfies NextConfig;
 
 export default nextConfig;

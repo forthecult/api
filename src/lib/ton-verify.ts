@@ -16,31 +16,6 @@ const TON_API_BASE = "https://toncenter.com/api/v2";
 const LOOKUP_LIMIT = 40;
 const MAX_TX_AGE_SEC = 60 * 60 * 6; // 6h — user has that long from order create to pay
 
-interface TonCenterTx {
-  in_msg?: {
-    destination?: string;
-    message?: string; // base64 by default
-    msg_data?: {
-      "@type"?: string;
-      body?: string;
-      text?: string;
-    };
-    source?: string;
-    value?: string; // nanotons as decimal string
-  };
-  transaction_id?: {
-    hash?: string;
-    lt?: string;
-  };
-  utime?: number;
-}
-
-interface TonCenterResponse {
-  error?: string;
-  ok?: boolean;
-  result?: TonCenterTx[];
-}
-
 export interface TonVerifyParams {
   /** expected amount in nanotons (order.cryptoAmount converted at create-order time). */
   expectedNanotons: bigint;
@@ -62,6 +37,31 @@ export interface TonVerifyResult {
   ok: boolean;
   /** ton center transaction hash we matched. */
   txHash?: string;
+  utime?: number;
+}
+
+interface TonCenterResponse {
+  error?: string;
+  ok?: boolean;
+  result?: TonCenterTx[];
+}
+
+interface TonCenterTx {
+  in_msg?: {
+    destination?: string;
+    message?: string; // base64 by default
+    msg_data?: {
+      "@type"?: string;
+      body?: string;
+      text?: string;
+    };
+    source?: string;
+    value?: string; // nanotons as decimal string
+  };
+  transaction_id?: {
+    hash?: string;
+    lt?: string;
+  };
   utime?: number;
 }
 
@@ -162,15 +162,6 @@ function addressesMatch(a: string | undefined, b: string): boolean {
   return norm(a) === norm(b);
 }
 
-function parseNanotons(value: string | undefined): bigint | null {
-  if (!value) return null;
-  try {
-    return BigInt(value);
-  } catch {
-    return null;
-  }
-}
-
 function extractComment(inMsg: NonNullable<TonCenterTx["in_msg"]>): string {
   // ton center returns comments as either raw `message` (base64) or under
   // `msg_data.text`. try both; prefer decoded text.
@@ -186,6 +177,15 @@ function extractComment(inMsg: NonNullable<TonCenterTx["in_msg"]>): string {
     return tryDecodeBase64(inMsg.message) ?? inMsg.message;
   }
   return "";
+}
+
+function parseNanotons(value: string | undefined): bigint | null {
+  if (!value) return null;
+  try {
+    return BigInt(value);
+  } catch {
+    return null;
+  }
 }
 
 function tryDecodeBase64(raw: string): null | string {

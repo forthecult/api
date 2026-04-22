@@ -1,59 +1,9 @@
 /**
- * Privacy-first storefront analytics (PostHog, opt-in via `NEXT_PUBLIC_POSTHOG_KEY`).
+ * Privacy-first storefront analytics (PostHog via reverse proxy by default; opt-in via `NEXT_PUBLIC_POSTHOG_KEY`).
  * Event names mirror common eCommerce funnels for dashboards — not Google Analytics.
  */
 
 import posthog from "posthog-js";
-
-function enabled(): boolean {
-  return Boolean(process.env.NEXT_PUBLIC_POSTHOG_KEY?.trim());
-}
-
-function capture(
-  event: string,
-  properties?: Record<string, unknown>,
-): void {
-  if (typeof window === "undefined" || !enabled()) return;
-  try {
-    posthog.capture(event, properties);
-  } catch {
-    // ignore
-  }
-}
-
-export function trackViewItem(payload: {
-  currency?: string;
-  price: number;
-  productId: string;
-  productName: string;
-  variantId?: string;
-}): void {
-  capture("view_item", {
-    currency: (payload.currency ?? "USD").toUpperCase(),
-    items: [
-      {
-        item_id: payload.productId,
-        item_name: payload.productName,
-        item_variant: payload.variantId,
-        price: payload.price,
-        quantity: 1,
-      },
-    ],
-    value: payload.price,
-  });
-}
-
-export function trackViewItemList(payload: {
-  itemCount: number;
-  listId?: string;
-  listName: string;
-}): void {
-  capture("view_item_list", {
-    item_list_id: payload.listId ?? payload.listName,
-    item_list_name: payload.listName,
-    items_count: payload.itemCount,
-  });
-}
 
 export function trackAddToCart(payload: {
   currency?: string;
@@ -104,25 +54,72 @@ export function trackBeginCheckout(payload: {
 
 export function trackPurchase(payload: {
   currency?: string;
-  orderId: string;
   items: {
     priceUsd?: number;
     productId?: null | string;
     quantity: number;
     title: string;
   }[];
+  orderId: string;
   valueUsd: number;
 }): void {
   capture("purchase", {
     currency: (payload.currency ?? "USD").toUpperCase(),
-    order_id: payload.orderId,
     items: payload.items.map((i) => ({
       item_id: i.productId ?? undefined,
       item_name: i.title,
       price: i.priceUsd,
       quantity: i.quantity,
     })),
+    order_id: payload.orderId,
     transaction_id: payload.orderId,
     value: payload.valueUsd,
   });
+}
+
+export function trackViewItem(payload: {
+  currency?: string;
+  price: number;
+  productId: string;
+  productName: string;
+  variantId?: string;
+}): void {
+  capture("view_item", {
+    currency: (payload.currency ?? "USD").toUpperCase(),
+    items: [
+      {
+        item_id: payload.productId,
+        item_name: payload.productName,
+        item_variant: payload.variantId,
+        price: payload.price,
+        quantity: 1,
+      },
+    ],
+    value: payload.price,
+  });
+}
+
+export function trackViewItemList(payload: {
+  itemCount: number;
+  listId?: string;
+  listName: string;
+}): void {
+  capture("view_item_list", {
+    item_list_id: payload.listId ?? payload.listName,
+    item_list_name: payload.listName,
+    items_count: payload.itemCount,
+  });
+}
+
+function capture(event: string, properties?: Record<string, unknown>): void {
+  if (typeof window === "undefined" || !enabled()) return;
+  try {
+    posthog.capture(event, properties);
+  } catch {
+    // ignore
+  }
+}
+
+function enabled(): boolean {
+  return Boolean(process.env.NEXT_PUBLIC_POSTHOG_KEY?.trim());
 }

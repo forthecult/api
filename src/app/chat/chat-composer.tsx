@@ -43,7 +43,7 @@ export function ChatComposer({
 
   useEffect(() => {
     autoGrow();
-  }, [autoGrow, input]);
+  }, [autoGrow]);
 
   const submitIfNotEmpty = useCallback(() => {
     const text = input.trim();

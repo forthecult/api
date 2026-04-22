@@ -5,9 +5,9 @@ import { getPublicSiteUrl } from "~/lib/app-url";
  * Until locale-prefixed routes exist (`NEXT_PUBLIC_LOCALE_PREFIX=1`), every
  * locale maps to the same URL so crawlers never hit missing `/es/...` paths.
  */
-export function buildHreflangLanguages(pathWithLeadingSlash: string): {
-  [locale: string]: string;
-} {
+export function buildHreflangLanguages(
+  pathWithLeadingSlash: string,
+): Record<string, string> {
   const base = getPublicSiteUrl().replace(/\/$/, "");
   const path = pathWithLeadingSlash.startsWith("/")
     ? pathWithLeadingSlash

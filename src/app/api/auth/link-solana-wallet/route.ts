@@ -21,10 +21,7 @@ import { and, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
 import { db } from "~/db";
-import {
-  accountTable,
-  solanaWalletStakeClaimedTable,
-} from "~/db/schema";
+import { accountTable, solanaWalletStakeClaimedTable } from "~/db/schema";
 import { getCurrentUser } from "~/lib/auth";
 
 const SOLANA_PROVIDER_ID = "solana";

@@ -80,7 +80,8 @@ export async function POST(request: NextRequest) {
       // auth landed a smaller amount, do NOT mark the order paid — leave it
       // pending so ops can investigate. stripe's amount & currency are trusted
       // because we already verified the event signature above.
-      const capturedCents = paymentIntent.amount_received ?? paymentIntent.amount ?? 0;
+      const capturedCents =
+        paymentIntent.amount_received ?? paymentIntent.amount ?? 0;
       if (!Number.isFinite(capturedCents) || capturedCents < order.totalCents) {
         console.error(
           `[stripe webhook] amount mismatch for order ${orderId}: captured ${capturedCents}, expected ${order.totalCents}. leaving order pending.`,

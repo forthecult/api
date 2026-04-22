@@ -490,6 +490,29 @@ function findVariant(
 
 const MAX_VARIANT_INFER_COMBOS = 4096;
 
+/** Build a single display label for a variant (e.g. "Black / M" or "iPhone 16 Pro"). */
+function getVariantDisplayLabel(v: ProductVariantOption): string {
+  if (v.label?.trim()) return v.label.trim();
+  const parts = [v.color, v.size, v.gender]
+    .filter(Boolean)
+    .map((s) => s!.trim());
+  return parts.join(" / ") || "";
+}
+
+/** Set of non-empty variant field values. Splits combined values like "Charcoal Heather / L" so they match UI selections. */
+function getVariantValueSet(v: ProductVariantOption): Set<string> {
+  const parts: string[] = [];
+  for (const raw of [v.color, v.size, v.gender, v.label]) {
+    if (raw == null || String(raw).trim() === "") continue;
+    const s = String(raw).trim();
+    for (const p of s.split(/\s*\/\s*/)) {
+      const t = p.trim();
+      if (t) parts.push(t);
+    }
+  }
+  return new Set(parts);
+}
+
 /**
  * Derive per-option selections that resolve to `variantId` (for `?variant=` deep links).
  * Bounded combinatorial search — skips when option cartesian product is huge.
@@ -510,7 +533,7 @@ function inferSelectionsForVariant(
   });
 
   const multiIndices = optionDefinitions
-    .map((opt, idx) => ({ opt, idx }))
+    .map((opt, idx) => ({ idx, opt }))
     .filter(({ opt }) => (opt.values ?? []).filter(Boolean).length > 1)
     .map(({ idx }) => idx);
 
@@ -535,29 +558,6 @@ function inferSelectionsForVariant(
   }
 
   return dfs(0) ? { ...selected } : null;
-}
-
-/** Build a single display label for a variant (e.g. "Black / M" or "iPhone 16 Pro"). */
-function getVariantDisplayLabel(v: ProductVariantOption): string {
-  if (v.label?.trim()) return v.label.trim();
-  const parts = [v.color, v.size, v.gender]
-    .filter(Boolean)
-    .map((s) => s!.trim());
-  return parts.join(" / ") || "";
-}
-
-/** Set of non-empty variant field values. Splits combined values like "Charcoal Heather / L" so they match UI selections. */
-function getVariantValueSet(v: ProductVariantOption): Set<string> {
-  const parts: string[] = [];
-  for (const raw of [v.color, v.size, v.gender, v.label]) {
-    if (raw == null || String(raw).trim() === "") continue;
-    const s = String(raw).trim();
-    for (const p of s.split(/\s*\/\s*/)) {
-      const t = p.trim();
-      if (t) parts.push(t);
-    }
-  }
-  return new Set(parts);
 }
 
 function PhoneModelDropdowns({

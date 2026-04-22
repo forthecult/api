@@ -14,13 +14,6 @@
  *  - https://developers.google.com/search/docs/appearance/structured-data/product
  */
 
-interface ShippingRateOpts {
-  /** Override the currency code used on the shipping rate. Defaults to the offer currency. */
-  currency?: string;
-  /** Default flat shipping fee (in major units, e.g. dollars) used for the fallback country. */
-  flatShippingFee?: number;
-}
-
 interface ShippingDetailsOpts {
   /** Destination country codes (ISO 3166-1 alpha-2). Empty/undefined → worldwide fallback. */
   availableCountryCodes?: string[];
@@ -32,6 +25,13 @@ interface ShippingDetailsOpts {
   /** Transit days range. */
   transitDaysMax?: null | number;
   transitDaysMin?: null | number;
+}
+
+interface ShippingRateOpts {
+  /** Override the currency code used on the shipping rate. Defaults to the offer currency. */
+  currency?: string;
+  /** Default flat shipping fee (in major units, e.g. dollars) used for the fallback country. */
+  flatShippingFee?: number;
 }
 
 /** Default flat shipping fee used when no per-country rate is known. Keep conservative; real rates come from `/api/cart/estimate`. */
@@ -50,8 +50,7 @@ export function buildDefaultMerchantReturnPolicy(siteUrl: string) {
     refundType: "https://schema.org/FullRefund",
     returnFees: "https://schema.org/FreeReturn",
     returnMethod: "https://schema.org/ReturnByMail",
-    returnPolicyCategory:
-      "https://schema.org/MerchantReturnFiniteReturnWindow",
+    returnPolicyCategory: "https://schema.org/MerchantReturnFiniteReturnWindow",
   };
 }
 
@@ -115,9 +114,7 @@ export function buildDefaultOfferShippingDetails(
 }
 
 /** Google Merchant item condition mapped to schema.org URL form. */
-export function itemConditionUrl(
-  condition: null | string | undefined,
-): string {
+export function itemConditionUrl(condition: null | string | undefined): string {
   switch ((condition ?? "new").toLowerCase()) {
     case "damaged": {
       return "https://schema.org/DamagedCondition";

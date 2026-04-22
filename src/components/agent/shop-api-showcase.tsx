@@ -85,8 +85,8 @@ export function ShopApiShowcase({ apiBaseUrl }: ShopApiShowcaseProps) {
           </span>
           <code
             className={`
-              min-w-0 max-w-full flex-1 break-all rounded-md border border-border
-              bg-muted px-4 py-2 font-mono text-sm
+              max-w-full min-w-0 flex-1 rounded-md border border-border bg-muted
+              px-4 py-2 font-mono text-sm break-all
             `}
           >
             {endpoint}
@@ -142,8 +142,8 @@ export function ShopApiShowcase({ apiBaseUrl }: ShopApiShowcaseProps) {
             </div>
             <pre
               className={`
-                whitespace-pre-wrap break-words bg-emerald-900 p-4 font-mono
-                text-sm leading-relaxed text-emerald-100
+                bg-emerald-900 p-4 font-mono text-sm leading-relaxed break-words
+                whitespace-pre-wrap text-emerald-100
               `}
             >
               {REQUEST_EXAMPLE}
@@ -163,8 +163,8 @@ export function ShopApiShowcase({ apiBaseUrl }: ShopApiShowcaseProps) {
             </div>
             <pre
               className={`
-                whitespace-pre-wrap break-words bg-emerald-900 p-4 font-mono
-                text-sm leading-relaxed text-emerald-100
+                bg-emerald-900 p-4 font-mono text-sm leading-relaxed break-words
+                whitespace-pre-wrap text-emerald-100
               `}
             >
               {RESPONSE_EXAMPLE}

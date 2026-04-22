@@ -21,6 +21,15 @@ export const createOrderSchema = z.object({
   affiliateCode: z.string().trim().max(64).optional(),
   // Discount (coupon) code — applied at checkout; backend validates and records redemption
   couponCode: z.string().trim().max(64).optional(),
+  // purely advisory: the client-displayed crypto amount (e.g. "0.05") for the
+  // selected token. the server recomputes from a trusted price feed and persists
+  // its own value as `crypto_amount`; this field is only used to flag UI drift.
+  cryptoAmount: z
+    .string()
+    .trim()
+    .regex(/^\d+(\.\d+)?$/)
+    .max(40)
+    .optional(),
   email: z
     .string()
     .min(1, "Email is required")
@@ -66,15 +75,6 @@ export const createOrderSchema = z.object({
       "seeker",
       "cult",
     ])
-    .optional(),
-  // purely advisory: the client-displayed crypto amount (e.g. "0.05") for the
-  // selected token. the server recomputes from a trusted price feed and persists
-  // its own value as `crypto_amount`; this field is only used to flag UI drift.
-  cryptoAmount: z
-    .string()
-    .trim()
-    .regex(/^\d+(\.\d+)?$/)
-    .max(40)
     .optional(),
   totalCents: z.number().int().nonnegative("Total must be non-negative"),
   userId: z.string().nullable().optional(),

@@ -18,14 +18,14 @@ import { userTable } from "../users/tables";
 export const productsTable = pgTable(
   "product",
   {
+    /** Google Merchant: product age group ("newborn" | "infant" | "toddler" | "kids" | "adult"). */
+    ageGroup: text("age_group"),
     // POD AI/creator: product created via POD bulk or AI flow
     aiGenerated: boolean("ai_generated").default(false),
     /** ASIN for Amazon-sourced products (source: "amazon"). */
     amazonAsin: text("amazon_asin"),
     /** Last time Amazon price was refreshed (for cache invalidation). */
     amazonPriceRefreshedAt: timestamp("amazon_price_refreshed_at"),
-    /** Google Merchant: product age group ("newborn" | "infant" | "toddler" | "kids" | "adult"). */
-    ageGroup: text("age_group"),
     barcode: text("barcode"),
     brand: text("brand"),
     compareAtPriceCents: integer("compare_at_price_cents"),
@@ -37,13 +37,13 @@ export const productsTable = pgTable(
     createdAt: timestamp("created_at").notNull(),
     description: text("description"),
     externalId: text("external_id"), // printful: catalog_product_id / printify: blueprint_id
-    /** Bullet-point features (JSON array of strings). Shown on product page; details go in description. */
-    featuresJson: text("features_json"),
     /**
      * Optional PDP FAQ: JSON array of `{ "question": string, "answer": string }`.
      * Rendered as an on-page FAQ block + FAQPage JSON-LD when non-empty.
      */
     faqJson: text("faq_json"),
+    /** Bullet-point features (JSON array of strings). Shown on product page; details go in description. */
+    featuresJson: text("features_json"),
     /** Google Merchant product category path, e.g. "Apparel & Accessories > Clothing > Tops" (taxonomy: https://www.google.com/basepages/producttype/taxonomy-with-ids.en-US.txt). */
     googleProductCategory: text("google_product_category"),
     /** GPSR (EU General Product Safety Regulation) compliance data — JSON from Printify /gpsr.json. */
@@ -115,18 +115,18 @@ export const productsTable = pgTable(
     quantity: integer("quantity"), // simple product inventory when trackQuantity
     /** Admin-only: product has been optimized for SEO / content / copy. */
     seoOptimized: boolean("seo_optimized").notNull().default(false),
-    shipsFromCity: text("ships_from_city"),
-    shipsFromCountry: text("ships_from_country"), // ISO 2-letter or country name
-    // Ships from: full address (when set) or composed from city/region/postal/country for display and shipping-time estimates
-    shipsFromDisplay: text("ships_from_display"), // optional freeform full address
-    shipsFromPostalCode: text("ships_from_postal_code"),
-    shipsFromRegion: text("ships_from_region"), // state / province / region
     /** Package height (cm) used for shipping quotes and Merchant feed. Distinct from product size: box ≠ item. */
     shippingHeightCm: integer("shipping_height_cm"),
     /** Package length (cm) used for shipping quotes and Merchant feed. */
     shippingLengthCm: integer("shipping_length_cm"),
     /** Package width (cm) used for shipping quotes and Merchant feed. */
     shippingWidthCm: integer("shipping_width_cm"),
+    shipsFromCity: text("ships_from_city"),
+    shipsFromCountry: text("ships_from_country"), // ISO 2-letter or country name
+    // Ships from: full address (when set) or composed from city/region/postal/country for display and shipping-time estimates
+    shipsFromDisplay: text("ships_from_display"), // optional freeform full address
+    shipsFromPostalCode: text("ships_from_postal_code"),
+    shipsFromRegion: text("ships_from_region"), // state / province / region
     sizeGuideJson: text("size_guide_json"),
     sku: text("sku"),
     slug: text("slug").unique(),

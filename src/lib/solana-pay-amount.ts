@@ -106,7 +106,9 @@ export async function computeExpectedSolanaCryptoAmount({
     }
   }
 
-  return warning ? { decimals, serverAmount, warning } : { decimals, serverAmount };
+  return warning
+    ? { decimals, serverAmount, warning }
+    : { decimals, serverAmount };
 }
 
 function formatFixed(value: number, decimals: number): string {

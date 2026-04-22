@@ -6,6 +6,63 @@ import {
   itemConditionUrl,
 } from "~/lib/merchant-policies";
 
+export interface CollectionListItem {
+  /** Optional image URL for the list item. */
+  image?: string;
+  /** When set with `priceCurrency` and `inStock`, embeds a stable Offer on the nested Product. */
+  inStock?: boolean;
+  /** Product display name (used for `ListItem.name`). */
+  name?: string;
+  price?: number;
+  priceCurrency?: string;
+  /** Absolute or relative URL to the product detail page. */
+  url: string;
+}
+
+export interface FAQItem {
+  answer: string;
+  question: string;
+}
+
+interface BreadcrumbItem {
+  name: string;
+  url: string;
+}
+
+interface BreadcrumbStructuredDataProps {
+  items: BreadcrumbItem[];
+}
+
+interface CollectionPageStructuredDataProps {
+  description: string;
+  /** Ordered items rendered on the page; emitted as `ItemList.itemListElement` so Google can match the collection to Merchant listings. */
+  items?: CollectionListItem[];
+  name: string;
+  numberOfItems?: number;
+  url: string;
+}
+
+interface FAQStructuredDataProps {
+  items: FAQItem[];
+}
+
+interface OfferContext {
+  conditionUrl: string;
+  currency: string;
+  inStockUrl: string;
+  priceValidUntil?: null | string;
+  productUrl: string;
+  returnPolicy: Record<string, unknown>;
+  shippingDetails: Record<string, unknown>;
+}
+
+interface ProductPageJsonLdProps {
+  breadcrumbItems: BreadcrumbItem[];
+  /** When non-empty, adds an FAQPage node to `@graph` (must match visible FAQ copy). */
+  faqItems?: FAQItem[];
+  product: ProductStructuredDataProps["product"];
+}
+
 /** One visible review, used to emit schema.org/Review on the Product. */
 interface ProductReviewInput {
   /** Display name for the reviewer (first name or anonymized label). */
@@ -19,110 +76,6 @@ interface ProductReviewInput {
   rating: number;
   /** Optional review title. */
   title: null | string;
-}
-
-/**
- * Per-variant identifiers + dimensions, mirroring `productVariantsTable`.
- * Emitted via `hasVariant` when a product has multiple variants so Google
- * can match each SKU to its own color/size/material/gender/GTIN.
- */
-interface ProductVariantInput {
-  color?: null | string;
-  gender?: null | string;
-  gtin?: null | string;
-  id: string;
-  imageUrl?: null | string;
-  material?: null | string;
-  mpn?: null | string;
-  /** Price in the product's currency (integer cents). */
-  priceCents: number;
-  size?: null | string;
-  sku?: null | string;
-}
-
-interface BreadcrumbItem {
-  name: string;
-  url: string;
-}
-
-/** Resolve relative URLs (e.g. `/foo`) against the public site origin. */
-function absoluteUrlForStructuredData(raw: string): string {
-  const t = raw.trim();
-  if (!t) return `${getPublicSiteUrl().replace(/\/$/, "")}/`;
-  try {
-    if (/^https?:\/\//i.test(t)) return new URL(t).href;
-    const site = `${getPublicSiteUrl().replace(/\/$/, "")}/`;
-    const path = t.startsWith("/") ? t.slice(1) : t;
-    return new URL(path, site).href;
-  } catch {
-    return t;
-  }
-}
-
-function absoluteProductImageUrl(raw: string): string {
-  const t = raw.trim();
-  if (!t) return t;
-  if (/^https?:\/\//i.test(t)) return t;
-  return absoluteUrlForStructuredData(t);
-}
-
-/**
- * Breadcrumb `ListItem.item` as a `WebPage` Thing (not a bare URL string) so
- * Google Search Console can reliably associate each crumb with a name/URL pair
- * (reduces "N/A" in the Breadcrumbs enhancement table).
- *
- * @see https://developers.google.com/search/docs/appearance/structured-data/breadcrumb
- */
-function buildBreadcrumbListItemElements(items: BreadcrumbItem[]) {
-  return items.map((item, index) => {
-    const url = absoluteUrlForStructuredData(item.url);
-    return {
-      "@type": "ListItem",
-      item: {
-        "@type": "WebPage",
-        "@id": url,
-        name: item.name,
-        url,
-      },
-      name: item.name,
-      position: index + 1,
-    };
-  });
-}
-
-interface BreadcrumbStructuredDataProps {
-  items: BreadcrumbItem[];
-}
-
-export interface CollectionListItem {
-  /** Absolute or relative URL to the product detail page. */
-  url: string;
-  /** Product display name (used for `ListItem.name`). */
-  name?: string;
-  /** Optional image URL for the list item. */
-  image?: string;
-  /** When set with `priceCurrency` and `inStock`, embeds a stable Offer on the nested Product. */
-  inStock?: boolean;
-  price?: number;
-  priceCurrency?: string;
-}
-
-interface CollectionPageStructuredDataProps {
-  description: string;
-  /** Ordered items rendered on the page; emitted as `ItemList.itemListElement` so Google can match the collection to Merchant listings. */
-  items?: CollectionListItem[];
-  name: string;
-  numberOfItems?: number;
-  url: string;
-}
-
-export interface FAQItem {
-  answer: string;
-  question: string;
-}
-
-interface FAQStructuredDataProps {
-  items: FAQItem[];
 }
 
 /**
@@ -194,38 +147,23 @@ interface ProductStructuredDataProps {
   };
 }
 
-interface ProductPageJsonLdProps {
-  breadcrumbItems: BreadcrumbItem[];
-  /** When non-empty, adds an FAQPage node to `@graph` (must match visible FAQ copy). */
-  faqItems?: FAQItem[];
-  product: ProductStructuredDataProps["product"];
-}
-
-function productCanonicalUrl(
-  product: ProductStructuredDataProps["product"],
-): string {
-  const site = getPublicSiteUrl().replace(/\/$/, "");
-  const pathRaw = product.canonicalPath?.trim();
-  if (pathRaw) {
-    const path = pathRaw.startsWith("/") ? pathRaw : `/${pathRaw}`;
-    try {
-      return new URL(path, `${site}/`).href;
-    } catch {
-      return `${site}${path}`;
-    }
-  }
-  const slug = (product.slug ?? product.id).trim().replace(/^\/+/, "");
-  return `${site}/${slug}`;
-}
-
-function JsonLdScript({ data }: { data: unknown }) {
-  return (
-    <script
-      // biome-ignore lint/security/noDangerouslySetInnerHtml: json-ld must be inline; payload is built server-side and safeJsonLd-escaped
-      dangerouslySetInnerHTML={{ __html: safeJsonLd(data) }}
-      type="application/ld+json"
-    />
-  );
+/**
+ * Per-variant identifiers + dimensions, mirroring `productVariantsTable`.
+ * Emitted via `hasVariant` when a product has multiple variants so Google
+ * can match each SKU to its own color/size/material/gender/GTIN.
+ */
+interface ProductVariantInput {
+  color?: null | string;
+  gender?: null | string;
+  gtin?: null | string;
+  id: string;
+  imageUrl?: null | string;
+  material?: null | string;
+  mpn?: null | string;
+  /** Price in the product's currency (integer cents). */
+  priceCents: number;
+  size?: null | string;
+  sku?: null | string;
 }
 
 /**
@@ -267,8 +205,8 @@ export function BreadcrumbStructuredData({
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     ...(lastAbs ? { "@id": `${lastAbs}#breadcrumb` } : {}),
-    numberOfItems: items.length,
     itemListElement: buildBreadcrumbListItemElements(items),
+    numberOfItems: items.length,
   };
 
   return <JsonLdScript data={structuredData} />;
@@ -358,6 +296,30 @@ export function FAQStructuredData({ items }: FAQStructuredDataProps) {
 }
 
 /**
+ * Organization structured data for the entire site.
+ * Include in root layout or footer.
+ */
+export function OrganizationStructuredData() {
+  const siteUrl = getPublicSiteUrl();
+
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    contactPoint: {
+      "@type": "ContactPoint",
+      contactType: "customer service",
+      url: `${siteUrl}/contact`,
+    },
+    description: SEO_CONFIG.description,
+    logo: SEO_CONFIG.brandLogoUrl ?? `${siteUrl}/logo.png`,
+    name: SEO_CONFIG.name,
+    url: siteUrl,
+  };
+
+  return <JsonLdScript data={structuredData} />;
+}
+
+/**
  * Organization + WebSite in one tag (fewer innerHTML sites for Biome).
  */
 export function OrganizationWebSiteJsonLd() {
@@ -397,43 +359,6 @@ export function OrganizationWebSiteJsonLd() {
   );
 }
 
-/**
- * Organization structured data for the entire site.
- * Include in root layout or footer.
- */
-export function OrganizationStructuredData() {
-  const siteUrl = getPublicSiteUrl();
-
-  const structuredData = {
-    "@context": "https://schema.org",
-    "@type": "Organization",
-    contactPoint: {
-      "@type": "ContactPoint",
-      contactType: "customer service",
-      url: `${siteUrl}/contact`,
-    },
-    description: SEO_CONFIG.description,
-    logo: SEO_CONFIG.brandLogoUrl ?? `${siteUrl}/logo.png`,
-    name: SEO_CONFIG.name,
-    url: siteUrl,
-  };
-
-  return <JsonLdScript data={structuredData} />;
-}
-
-/**
- * JSON-LD structured data for product pages (SEO).
- * Renders as a script tag that search engines parse.
- */
-export function ProductStructuredData({ product }: ProductStructuredDataProps) {
-  const structuredData = {
-    "@context": "https://schema.org",
-    ...productJsonLdNode(product),
-  };
-
-  return <JsonLdScript data={structuredData} />;
-}
-
 /** Product + breadcrumb JSON-LD in a single script (one innerHTML instead of two). */
 export function ProductPageJsonLd({
   breadcrumbItems,
@@ -447,16 +372,16 @@ export function ProductPageJsonLd({
   const graph: unknown[] = [
     productJsonLdNode(product),
     {
-      "@type": "WebPage",
       "@id": productUrl,
+      "@type": "WebPage",
       breadcrumb: { "@id": breadcrumbNodeId },
       mainEntity: { "@id": productNodeId },
       name: product.name,
       url: productUrl,
     },
     {
-      "@type": "BreadcrumbList",
       "@id": breadcrumbNodeId,
+      "@type": "BreadcrumbList",
       itemListElement: buildBreadcrumbListItemElements(breadcrumbItems),
       numberOfItems: breadcrumbItems.length,
     },
@@ -482,6 +407,282 @@ export function ProductPageJsonLd({
       data={{ "@context": "https://schema.org", "@graph": graph }}
     />
   );
+}
+
+/**
+ * JSON-LD structured data for product pages (SEO).
+ * Renders as a script tag that search engines parse.
+ */
+export function ProductStructuredData({ product }: ProductStructuredDataProps) {
+  const structuredData = {
+    "@context": "https://schema.org",
+    ...productJsonLdNode(product),
+  };
+
+  return <JsonLdScript data={structuredData} />;
+}
+
+/**
+ * WebSite structured data for sitelinks search box.
+ */
+export function WebSiteStructuredData() {
+  const siteUrl = getPublicSiteUrl();
+
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: SEO_CONFIG.name,
+    potentialAction: {
+      "@type": "SearchAction",
+      "query-input": "required name=search_term_string",
+      target: {
+        "@type": "EntryPoint",
+        urlTemplate: `${siteUrl}/products?search={search_term_string}`,
+      },
+    },
+    url: siteUrl,
+  };
+
+  return <JsonLdScript data={structuredData} />;
+}
+
+function absoluteProductImageUrl(raw: string): string {
+  const t = raw.trim();
+  if (!t) return t;
+  if (/^https?:\/\//i.test(t)) return t;
+  return absoluteUrlForStructuredData(t);
+}
+
+/** Resolve relative URLs (e.g. `/foo`) against the public site origin. */
+function absoluteUrlForStructuredData(raw: string): string {
+  const t = raw.trim();
+  if (!t) return `${getPublicSiteUrl().replace(/\/$/, "")}/`;
+  try {
+    if (/^https?:\/\//i.test(t)) return new URL(t).href;
+    const site = `${getPublicSiteUrl().replace(/\/$/, "")}/`;
+    const path = t.startsWith("/") ? t.slice(1) : t;
+    return new URL(path, site).href;
+  } catch {
+    return t;
+  }
+}
+
+function applyGtin(
+  node: Record<string, unknown>,
+  raw: null | string | undefined,
+) {
+  const gtin = raw?.trim();
+  if (!gtin) return;
+  node.gtin = gtin;
+  if (gtin.length === 8) node.gtin8 = gtin;
+  else if (gtin.length === 12) node.gtin12 = gtin;
+  else if (gtin.length === 13) node.gtin13 = gtin;
+  else if (gtin.length === 14) node.gtin14 = gtin;
+}
+
+function buildAggregateOffer(
+  ctx: OfferContext & {
+    parentSku: string;
+    topLevelPrice: number;
+    variants: ProductVariantInput[];
+  },
+) {
+  const prices = ctx.variants.map((v) => v.priceCents / 100);
+  const lowPrice = Math.min(...prices);
+  const highPrice = Math.max(...prices);
+  const offers: Record<string, unknown> = {
+    "@type": "AggregateOffer",
+    availability: ctx.inStockUrl,
+    hasMerchantReturnPolicy: ctx.returnPolicy,
+    highPrice,
+    itemCondition: ctx.conditionUrl,
+    lowPrice,
+    offerCount: ctx.variants.length,
+    // Each child Offer carries its own variant url + sku/gtin/mpn so Merchant
+    // treats variants as distinct listings (blue-S ≠ red-M) rather than one URL.
+    offers: ctx.variants.map((v) =>
+      buildSingleOffer({
+        ...ctx,
+        offerUrl: variantUrl(ctx.productUrl, v.id),
+        price: v.priceCents / 100,
+        variantGtin: v.gtin,
+        variantMpn: v.mpn,
+        variantSku: variantSkuFor(ctx.parentSku, v),
+      }),
+    ),
+    priceCurrency: ctx.currency,
+    seller: sellerNode(),
+    shippingDetails: ctx.shippingDetails,
+    url: ctx.productUrl,
+  };
+  if (ctx.priceValidUntil) offers.priceValidUntil = ctx.priceValidUntil;
+  return offers;
+}
+
+function buildAudience(partial: {
+  ageGroup?: null | string;
+  gender?: null | string;
+}) {
+  const gender = partial.gender?.trim();
+  const ageGroup = partial.ageGroup?.trim();
+  if (!gender && !ageGroup) return null;
+  const audience: Record<string, unknown> = { "@type": "PeopleAudience" };
+  if (gender) audience.suggestedGender = gender.toLowerCase();
+  if (ageGroup) audience.suggestedAgeGroup = ageGroup.toLowerCase();
+  return audience;
+}
+
+/**
+ * Breadcrumb `ListItem.item` as a `WebPage` Thing (not a bare URL string) so
+ * Google Search Console can reliably associate each crumb with a name/URL pair
+ * (reduces "N/A" in the Breadcrumbs enhancement table).
+ *
+ * @see https://developers.google.com/search/docs/appearance/structured-data/breadcrumb
+ */
+function buildBreadcrumbListItemElements(items: BreadcrumbItem[]) {
+  return items.map((item, index) => {
+    const url = absoluteUrlForStructuredData(item.url);
+    return {
+      "@type": "ListItem",
+      item: {
+        "@id": url,
+        "@type": "WebPage",
+        name: item.name,
+        url,
+      },
+      name: item.name,
+      position: index + 1,
+    };
+  });
+}
+
+/** Build a single Offer. Optional variant context lets each variant carry its own IDs. */
+function buildSingleOffer(
+  ctx: OfferContext & {
+    offerUrl?: string;
+    price: number;
+    variantGtin?: null | string;
+    variantMpn?: null | string;
+    variantSku?: null | string;
+  },
+) {
+  const offer: Record<string, unknown> = {
+    "@type": "Offer",
+    availability: ctx.inStockUrl,
+    hasMerchantReturnPolicy: ctx.returnPolicy,
+    itemCondition: ctx.conditionUrl,
+    price: ctx.price,
+    priceCurrency: ctx.currency,
+    priceSpecification: {
+      "@type": "UnitPriceSpecification",
+      price: ctx.price,
+      priceCurrency: ctx.currency,
+    },
+    seller: sellerNode(),
+    shippingDetails: ctx.shippingDetails,
+    url: ctx.offerUrl ?? ctx.productUrl,
+  };
+  if (ctx.priceValidUntil) offer.priceValidUntil = ctx.priceValidUntil;
+  if (ctx.variantSku?.trim()) offer.sku = ctx.variantSku.trim();
+  if (ctx.variantMpn?.trim()) offer.mpn = ctx.variantMpn.trim();
+  applyGtin(offer, ctx.variantGtin);
+  return offer;
+}
+
+function buildVariantProduct(args: {
+  conditionUrl: string;
+  currency: string;
+  inStockUrl: string;
+  parentSku: string;
+  priceValidUntil?: null | string;
+  productUrl: string;
+  returnPolicy: Record<string, unknown>;
+  shippingDetails: Record<string, unknown>;
+  variant: ProductVariantInput;
+}) {
+  const { variant } = args;
+  const sku = variantSkuFor(args.parentSku, variant);
+  const offerUrl = variantUrl(args.productUrl, variant.id);
+  const node: Record<string, unknown> = {
+    "@type": "Product",
+    inProductGroupWithID: args.parentSku,
+    offers: buildSingleOffer({
+      conditionUrl: args.conditionUrl,
+      currency: args.currency,
+      inStockUrl: args.inStockUrl,
+      offerUrl,
+      price: variant.priceCents / 100,
+      priceValidUntil: args.priceValidUntil,
+      productUrl: args.productUrl,
+      returnPolicy: args.returnPolicy,
+      shippingDetails: args.shippingDetails,
+      variantGtin: variant.gtin,
+      variantMpn: variant.mpn,
+      variantSku: sku,
+    }),
+    productID: sku,
+    sku,
+    url: offerUrl,
+  };
+  applyGtin(node, variant.gtin);
+  if (variant.mpn?.trim()) node.mpn = variant.mpn.trim();
+  if (variant.color?.trim()) node.color = variant.color.trim();
+  if (variant.size?.trim()) node.size = variant.size.trim();
+  if (variant.material?.trim()) node.material = variant.material.trim();
+  if (variant.imageUrl?.trim()) {
+    node.image = absoluteProductImageUrl(variant.imageUrl.trim());
+  }
+  const audience = buildAudience({
+    ageGroup: null,
+    gender: variant.gender ?? null,
+  });
+  if (audience) node.audience = audience;
+  return node;
+}
+
+/**
+ * Emits schema.org URLs for the axes that differ across variants.
+ * Helps Google Merchant render the variant selector with the correct dimensions.
+ */
+function computeVariesBy(variants: ProductVariantInput[]): string[] {
+  const axes: string[] = [];
+  const has = (key: keyof ProductVariantInput) =>
+    variants.some((v) => {
+      const raw = v[key];
+      return typeof raw === "string" && raw.trim().length > 0;
+    });
+  if (has("color")) axes.push("https://schema.org/color");
+  if (has("size")) axes.push("https://schema.org/size");
+  if (has("material")) axes.push("https://schema.org/material");
+  if (has("gender")) axes.push("https://schema.org/suggestedGender");
+  return axes;
+}
+
+function JsonLdScript({ data }: { data: unknown }) {
+  return (
+    <script
+      // biome-ignore lint/security/noDangerouslySetInnerHtml: json-ld must be inline; payload is built server-side and safeJsonLd-escaped
+      dangerouslySetInnerHTML={{ __html: safeJsonLd(data) }}
+      type="application/ld+json"
+    />
+  );
+}
+
+function productCanonicalUrl(
+  product: ProductStructuredDataProps["product"],
+): string {
+  const site = getPublicSiteUrl().replace(/\/$/, "");
+  const pathRaw = product.canonicalPath?.trim();
+  if (pathRaw) {
+    const path = pathRaw.startsWith("/") ? pathRaw : `/${pathRaw}`;
+    try {
+      return new URL(path, `${site}/`).href;
+    } catch {
+      return `${site}${path}`;
+    }
+  }
+  const slug = (product.slug ?? product.id).trim().replace(/^\/+/, "");
+  return `${site}/${slug}`;
 }
 
 /** Build a single Product JSON-LD node with the full Merchant-friendly field set. */
@@ -542,8 +743,8 @@ function productJsonLdNode(product: ProductStructuredDataProps["product"]) {
       : primaryImage;
 
   const node: Record<string, unknown> = {
-    "@type": "Product",
     "@id": `${productUrl}#product`,
+    "@type": "Product",
     description: product.description,
     image: imageLd,
     name: product.name,
@@ -639,147 +840,17 @@ function productJsonLdNode(product: ProductStructuredDataProps["product"]) {
   return node;
 }
 
-interface OfferContext {
-  conditionUrl: string;
-  currency: string;
-  inStockUrl: string;
-  priceValidUntil?: null | string;
-  productUrl: string;
-  returnPolicy: Record<string, unknown>;
-  shippingDetails: Record<string, unknown>;
+/** Safely serialize JSON-LD data, escaping </script> to prevent injection. */
+function safeJsonLd(data: unknown): string {
+  return JSON.stringify(data).replace(/</g, "\\u003c");
 }
 
-/**
- * Produces a variant-specific landing URL by appending `?variant=<id>`.
- * Each variant must have a distinct `Offer.url` or Google Merchant will
- * de-duplicate SKUs that point at the same page.
- */
-function variantUrl(productUrl: string, variantId: string): string {
-  const sep = productUrl.includes("?") ? "&" : "?";
-  return `${productUrl}${sep}variant=${encodeURIComponent(variantId)}`;
-}
-
-/** Build a single Offer. Optional variant context lets each variant carry its own IDs. */
-function buildSingleOffer(
-  ctx: OfferContext & {
-    offerUrl?: string;
-    price: number;
-    variantGtin?: null | string;
-    variantMpn?: null | string;
-    variantSku?: null | string;
-  },
-) {
-  const offer: Record<string, unknown> = {
-    "@type": "Offer",
-    availability: ctx.inStockUrl,
-    hasMerchantReturnPolicy: ctx.returnPolicy,
-    itemCondition: ctx.conditionUrl,
-    price: ctx.price,
-    priceCurrency: ctx.currency,
-    priceSpecification: {
-      "@type": "UnitPriceSpecification",
-      price: ctx.price,
-      priceCurrency: ctx.currency,
-    },
-    seller: sellerNode(),
-    shippingDetails: ctx.shippingDetails,
-    url: ctx.offerUrl ?? ctx.productUrl,
+function sellerNode() {
+  return {
+    "@type": "Organization",
+    name: SEO_CONFIG.name,
+    url: getPublicSiteUrl(),
   };
-  if (ctx.priceValidUntil) offer.priceValidUntil = ctx.priceValidUntil;
-  if (ctx.variantSku?.trim()) offer.sku = ctx.variantSku.trim();
-  if (ctx.variantMpn?.trim()) offer.mpn = ctx.variantMpn.trim();
-  applyGtin(offer, ctx.variantGtin);
-  return offer;
-}
-
-function buildAggregateOffer(
-  ctx: OfferContext & {
-    parentSku: string;
-    topLevelPrice: number;
-    variants: ProductVariantInput[];
-  },
-) {
-  const prices = ctx.variants.map((v) => v.priceCents / 100);
-  const lowPrice = Math.min(...prices);
-  const highPrice = Math.max(...prices);
-  const offers: Record<string, unknown> = {
-    "@type": "AggregateOffer",
-    availability: ctx.inStockUrl,
-    hasMerchantReturnPolicy: ctx.returnPolicy,
-    highPrice,
-    itemCondition: ctx.conditionUrl,
-    lowPrice,
-    offerCount: ctx.variants.length,
-    // Each child Offer carries its own variant url + sku/gtin/mpn so Merchant
-    // treats variants as distinct listings (blue-S ≠ red-M) rather than one URL.
-    offers: ctx.variants.map((v) =>
-      buildSingleOffer({
-        ...ctx,
-        offerUrl: variantUrl(ctx.productUrl, v.id),
-        price: v.priceCents / 100,
-        variantGtin: v.gtin,
-        variantMpn: v.mpn,
-        variantSku: variantSkuFor(ctx.parentSku, v),
-      }),
-    ),
-    priceCurrency: ctx.currency,
-    seller: sellerNode(),
-    shippingDetails: ctx.shippingDetails,
-    url: ctx.productUrl,
-  };
-  if (ctx.priceValidUntil) offers.priceValidUntil = ctx.priceValidUntil;
-  return offers;
-}
-
-function buildVariantProduct(args: {
-  conditionUrl: string;
-  currency: string;
-  inStockUrl: string;
-  parentSku: string;
-  priceValidUntil?: null | string;
-  productUrl: string;
-  returnPolicy: Record<string, unknown>;
-  shippingDetails: Record<string, unknown>;
-  variant: ProductVariantInput;
-}) {
-  const { variant } = args;
-  const sku = variantSkuFor(args.parentSku, variant);
-  const offerUrl = variantUrl(args.productUrl, variant.id);
-  const node: Record<string, unknown> = {
-    "@type": "Product",
-    inProductGroupWithID: args.parentSku,
-    offers: buildSingleOffer({
-      conditionUrl: args.conditionUrl,
-      currency: args.currency,
-      inStockUrl: args.inStockUrl,
-      offerUrl,
-      price: variant.priceCents / 100,
-      priceValidUntil: args.priceValidUntil,
-      productUrl: args.productUrl,
-      returnPolicy: args.returnPolicy,
-      shippingDetails: args.shippingDetails,
-      variantGtin: variant.gtin,
-      variantMpn: variant.mpn,
-      variantSku: sku,
-    }),
-    productID: sku,
-    sku,
-    url: offerUrl,
-  };
-  applyGtin(node, variant.gtin);
-  if (variant.mpn?.trim()) node.mpn = variant.mpn.trim();
-  if (variant.color?.trim()) node.color = variant.color.trim();
-  if (variant.size?.trim()) node.size = variant.size.trim();
-  if (variant.material?.trim()) node.material = variant.material.trim();
-  if (variant.imageUrl?.trim()) {
-    node.image = absoluteProductImageUrl(variant.imageUrl.trim());
-  }
-  const audience = buildAudience({
-    ageGroup: null,
-    gender: variant.gender ?? null,
-  });
-  if (audience) node.audience = audience;
-  return node;
 }
 
 /**
@@ -795,82 +866,11 @@ function variantSkuFor(
 }
 
 /**
- * Emits schema.org URLs for the axes that differ across variants.
- * Helps Google Merchant render the variant selector with the correct dimensions.
+ * Produces a variant-specific landing URL by appending `?variant=<id>`.
+ * Each variant must have a distinct `Offer.url` or Google Merchant will
+ * de-duplicate SKUs that point at the same page.
  */
-function computeVariesBy(variants: ProductVariantInput[]): string[] {
-  const axes: string[] = [];
-  const has = (key: keyof ProductVariantInput) =>
-    variants.some((v) => {
-      const raw = v[key];
-      return typeof raw === "string" && raw.trim().length > 0;
-    });
-  if (has("color")) axes.push("https://schema.org/color");
-  if (has("size")) axes.push("https://schema.org/size");
-  if (has("material")) axes.push("https://schema.org/material");
-  if (has("gender")) axes.push("https://schema.org/suggestedGender");
-  return axes;
-}
-
-function sellerNode() {
-  return {
-    "@type": "Organization",
-    name: SEO_CONFIG.name,
-    url: getPublicSiteUrl(),
-  };
-}
-
-function applyGtin(
-  node: Record<string, unknown>,
-  raw: null | string | undefined,
-) {
-  const gtin = raw?.trim();
-  if (!gtin) return;
-  node.gtin = gtin;
-  if (gtin.length === 8) node.gtin8 = gtin;
-  else if (gtin.length === 12) node.gtin12 = gtin;
-  else if (gtin.length === 13) node.gtin13 = gtin;
-  else if (gtin.length === 14) node.gtin14 = gtin;
-}
-
-function buildAudience(partial: {
-  ageGroup?: null | string;
-  gender?: null | string;
-}) {
-  const gender = partial.gender?.trim();
-  const ageGroup = partial.ageGroup?.trim();
-  if (!gender && !ageGroup) return null;
-  const audience: Record<string, unknown> = { "@type": "PeopleAudience" };
-  if (gender) audience.suggestedGender = gender.toLowerCase();
-  if (ageGroup) audience.suggestedAgeGroup = ageGroup.toLowerCase();
-  return audience;
-}
-
-/**
- * WebSite structured data for sitelinks search box.
- */
-export function WebSiteStructuredData() {
-  const siteUrl = getPublicSiteUrl();
-
-  const structuredData = {
-    "@context": "https://schema.org",
-    "@type": "WebSite",
-    name: SEO_CONFIG.name,
-    potentialAction: {
-      "@type": "SearchAction",
-      "query-input": "required name=search_term_string",
-      target: {
-        "@type": "EntryPoint",
-        urlTemplate: `${siteUrl}/products?search={search_term_string}`,
-      },
-    },
-    url: siteUrl,
-  };
-
-  return <JsonLdScript data={structuredData} />;
-}
-
-/** Safely serialize JSON-LD data, escaping </script> to prevent injection. */
-function safeJsonLd(data: unknown): string {
-  return JSON.stringify(data).replace(/</g, "\\u003c");
+function variantUrl(productUrl: string, variantId: string): string {
+  const sep = productUrl.includes("?") ? "&" : "?";
+  return `${productUrl}${sep}variant=${encodeURIComponent(variantId)}`;
 }

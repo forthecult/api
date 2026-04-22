@@ -1,11 +1,10 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-
-import Image from "next/image";
 
 import { SEO_CONFIG } from "~/app";
 import { cn } from "~/lib/cn";

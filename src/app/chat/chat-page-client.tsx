@@ -137,8 +137,6 @@ export function ChatPageClient() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [atBottom, setAtBottom] = useState(true);
 
-
-
   useEffect(() => {
     // eslint-disable-next-line @eslint-react/set-state-in-effect -- localStorage-backed guest id
     setGuestId(getOrCreateGuestId());
@@ -409,8 +407,11 @@ export function ChatPageClient() {
     stop,
   } = chatSession;
 
-  const { loadingId: ttsLoadingId, speak: speakAssistant, stop: stopTts } =
-    useVeniceTts();
+  const {
+    loadingId: ttsLoadingId,
+    speak: speakAssistant,
+    stop: stopTts,
+  } = useVeniceTts();
 
   const handleSubmit = useCallback(
     (text: string) => {
@@ -499,7 +500,16 @@ export function ChatPageClient() {
       };
       setSessions([row, ...next]);
     },
-    [clearError, forgetConversationCreated, selectedProjectId, sessionId, sessions, setMessages, setSessionId, userId],
+    [
+      clearError,
+      forgetConversationCreated,
+      selectedProjectId,
+      sessionId,
+      sessions,
+      setMessages,
+      setSessionId,
+      userId,
+    ],
   );
 
   const startSpeech = () => {
@@ -605,7 +615,12 @@ export function ChatPageClient() {
   const handleImages = async (files: FileList) => {
     const MAX_FILES = 4;
     const MAX_SIZE = 4 * 1024 * 1024;
-    const ALLOWED = new Set(["image/gif", "image/jpeg", "image/png", "image/webp"]);
+    const ALLOWED = new Set([
+      "image/gif",
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+    ]);
     const valid: File[] = [];
     for (const f of Array.from(files).slice(0, MAX_FILES)) {
       if (!ALLOWED.has(f.type)) {
@@ -739,201 +754,199 @@ export function ChatPageClient() {
           `}
         >
           <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-              <header
-                className={`
+            <header
+              className={`
                   flex shrink-0 items-center justify-between gap-2 border-b
                   border-border px-4 py-2
                 `}
-              >
-                <div className="min-w-0 flex-1">
-                  {selectedProject ? (
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Button
-                        className="shrink-0 gap-1 px-2"
-                        onClick={() => {
-                          setSelectedProjectId(null);
-                          setMainView("projects");
-                        }}
-                        size="sm"
-                        type="button"
-                        variant="ghost"
-                      >
-                        <ChevronLeft aria-hidden className="h-4 w-4" />
-                        All projects
-                      </Button>
-                      <div className="min-w-0">
-                        <h1
-                          className={`
-                            truncate text-lg font-semibold tracking-tight
-                          `}
-                        >
-                          {selectedProject.name}
-                        </h1>
-                        <p className="truncate text-xs text-muted-foreground">
-                          Project chat
-                        </p>
-                      </div>
-                    </div>
-                  ) : (
-                    <div>
-                      <h1
-                        className={`
-                          truncate text-lg font-semibold tracking-tight
-                        `}
-                      >
-                        Chat
-                      </h1>
-                    </div>
-                  )}
-                </div>
-                <div className="flex shrink-0 items-center gap-1">
-                  {selectedProject ? (
+            >
+              <div className="min-w-0 flex-1">
+                {selectedProject ? (
+                  <div className="flex flex-wrap items-center gap-2">
                     <Button
-                      className={cn(
-                        !projectSettingsPanelCollapsed && "lg:hidden",
-                      )}
+                      className="shrink-0 gap-1 px-2"
                       onClick={() => {
-                        if (
-                          typeof window !== "undefined" &&
-                          window.matchMedia("(min-width: 1024px)").matches
-                        ) {
-                          setProjectSettingsPanelCollapsed(false);
-                        } else {
-                          setProjectSettingsDialogOpen(true);
-                        }
+                        setSelectedProjectId(null);
+                        setMainView("projects");
                       }}
                       size="sm"
                       type="button"
-                      variant="outline"
+                      variant="ghost"
                     >
-                      Project settings
+                      <ChevronLeft aria-hidden className="h-4 w-4" />
+                      All projects
                     </Button>
-                  ) : null}
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button size="icon" type="button" variant="ghost">
-                        <Settings2 aria-hidden className="h-4 w-4" />
-                        <span className="sr-only">Model settings</span>
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent align="end" className="w-80">
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="min-w-0">
-                            <p className="text-sm font-medium">
-                              Search the entire internet
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              Hint the model to use web search when supported.
-                            </p>
-                          </div>
-                          <Switch
-                            checked={webEnabled}
-                            onCheckedChange={setWebEnabled}
-                          />
-                        </div>
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="min-w-0">
-                            <p className="text-sm font-medium">
-                              Extract content from URLs in your messages
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              Hint the model to fetch or quote page content.
-                            </p>
-                          </div>
-                          <Switch
-                            checked={urlScrapingEnabled}
-                            onCheckedChange={setUrlScrapingEnabled}
-                          />
-                        </div>
-                        <div
-                          className={`space-y-4 border-t border-border/60 pt-3`}
-                        >
-                          <p className="text-sm font-medium">Advanced</p>
-                          <div className="space-y-2">
-                            <Label className="text-xs">
-                              Temperature: {temperature.toFixed(2)}
-                            </Label>
-                            <Slider
-                              max={2}
-                              min={0}
-                              onValueChange={(v) => setTemperature(v[0] ?? 0.7)}
-                              step={0.05}
-                              value={[temperature]}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label className="text-xs">
-                              Top P: {topP.toFixed(2)}
-                            </Label>
-                            <Slider
-                              max={1}
-                              min={0.05}
-                              onValueChange={(v) => setTopP(v[0] ?? 0.95)}
-                              step={0.05}
-                              value={[topP]}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
+                    <div className="min-w-0">
+                      <h1
+                        className={`
+                            truncate text-lg font-semibold tracking-tight
+                          `}
+                      >
+                        {selectedProject.name}
+                      </h1>
+                      <p className="truncate text-xs text-muted-foreground">
+                        Project chat
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <h1
+                      className={`
+                          truncate text-lg font-semibold tracking-tight
+                        `}
+                    >
+                      Chat
+                    </h1>
+                  </div>
+                )}
+              </div>
+              <div className="flex shrink-0 items-center gap-1">
+                {selectedProject ? (
                   <Button
-                    onClick={newChat}
+                    className={cn(
+                      !projectSettingsPanelCollapsed && "lg:hidden",
+                    )}
+                    onClick={() => {
+                      if (
+                        typeof window !== "undefined" &&
+                        window.matchMedia("(min-width: 1024px)").matches
+                      ) {
+                        setProjectSettingsPanelCollapsed(false);
+                      } else {
+                        setProjectSettingsDialogOpen(true);
+                      }
+                    }}
                     size="sm"
                     type="button"
                     variant="outline"
                   >
-                    <Plus aria-hidden className="mr-1 h-4 w-4" />
-                    New
+                    Project settings
                   </Button>
-                  {userId ? (
-                    <Button asChild size="sm" variant="outline">
-                      <Link href="/dashboard/ai">Account</Link>
+                ) : null}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button size="icon" type="button" variant="ghost">
+                      <Settings2 aria-hidden className="h-4 w-4" />
+                      <span className="sr-only">Model settings</span>
                     </Button>
-                  ) : (
-                    <Button asChild size="sm" variant="outline">
-                      <Link href="/login">Sign in</Link>
-                    </Button>
-                  )}
-                </div>
-              </header>
+                  </PopoverTrigger>
+                  <PopoverContent align="end" className="w-80">
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium">
+                            Search the entire internet
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Hint the model to use web search when supported.
+                          </p>
+                        </div>
+                        <Switch
+                          checked={webEnabled}
+                          onCheckedChange={setWebEnabled}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium">
+                            Extract content from URLs in your messages
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Hint the model to fetch or quote page content.
+                          </p>
+                        </div>
+                        <Switch
+                          checked={urlScrapingEnabled}
+                          onCheckedChange={setUrlScrapingEnabled}
+                        />
+                      </div>
+                      <div
+                        className={`space-y-4 border-t border-border/60 pt-3`}
+                      >
+                        <p className="text-sm font-medium">Advanced</p>
+                        <div className="space-y-2">
+                          <Label className="text-xs">
+                            Temperature: {temperature.toFixed(2)}
+                          </Label>
+                          <Slider
+                            max={2}
+                            min={0}
+                            onValueChange={(v) => setTemperature(v[0] ?? 0.7)}
+                            step={0.05}
+                            value={[temperature]}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs">
+                            Top P: {topP.toFixed(2)}
+                          </Label>
+                          <Slider
+                            max={1}
+                            min={0.05}
+                            onValueChange={(v) => setTopP(v[0] ?? 0.95)}
+                            step={0.05}
+                            value={[topP]}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+                <Button
+                  onClick={newChat}
+                  size="sm"
+                  type="button"
+                  variant="outline"
+                >
+                  <Plus aria-hidden className="mr-1 h-4 w-4" />
+                  New
+                </Button>
+                {userId ? (
+                  <Button asChild size="sm" variant="outline">
+                    <Link href="/dashboard/ai">Account</Link>
+                  </Button>
+                ) : (
+                  <Button asChild size="sm" variant="outline">
+                    <Link href="/login">Sign in</Link>
+                  </Button>
+                )}
+              </div>
+            </header>
 
-              {error ? (
-                <div
-                  className={`
+            {error ? (
+              <div
+                className={`
                     mx-4 mt-2 rounded-lg border border-destructive/40
                     bg-destructive/10 px-4 py-3 text-sm text-destructive
                   `}
-                  role="alert"
-                >
-                  <div
-                    className={`
+                role="alert"
+              >
+                <div
+                  className={`
                       flex flex-wrap items-start justify-between gap-2
                     `}
-                  >
-                    <p className="min-w-0 flex-1 font-medium">
-                      {error.message}
-                    </p>
-                    <Button
-                      className="shrink-0"
-                      onClick={() => clearError()}
-                      size="sm"
-                      type="button"
-                      variant="outline"
-                    >
-                      Dismiss
-                    </Button>
-                  </div>
-                </div>
-              ) : null}
-
-              <div className="relative min-h-0 flex-1">
-                <div
-                  className={`absolute inset-0 overflow-y-auto px-4 py-6`}
-                  onScroll={onScrollMessages}
-                  ref={scrollRef}
                 >
+                  <p className="min-w-0 flex-1 font-medium">{error.message}</p>
+                  <Button
+                    className="shrink-0"
+                    onClick={() => clearError()}
+                    size="sm"
+                    type="button"
+                    variant="outline"
+                  >
+                    Dismiss
+                  </Button>
+                </div>
+              </div>
+            ) : null}
+
+            <div className="relative min-h-0 flex-1">
+              <div
+                className={`absolute inset-0 overflow-y-auto px-4 py-6`}
+                onScroll={onScrollMessages}
+                ref={scrollRef}
+              >
                 <div className="mx-auto flex max-w-3xl flex-col gap-4">
                   {messages.length === 0 ? (
                     <div
@@ -997,8 +1010,7 @@ export function ChatPageClient() {
                               <Button
                                 className="h-7 px-2 text-xs"
                                 disabled={
-                                  (Boolean(busy) &&
-                                    m.id === lastAssistantId) ||
+                                  (Boolean(busy) && m.id === lastAssistantId) ||
                                   (ttsLoadingId != null &&
                                     ttsLoadingId !== m.id)
                                 }
@@ -1072,33 +1084,33 @@ export function ChatPageClient() {
                     </div>
                   ) : null}
                 </div>
-                </div>
-                {messages.length > 0 && !atBottom ? (
-                  <Button
-                    aria-label="Scroll to latest"
-                    className={`
+              </div>
+              {messages.length > 0 && !atBottom ? (
+                <Button
+                  aria-label="Scroll to latest"
+                  className={`
                       absolute right-4 bottom-4 z-10 h-9 w-9 rounded-full
                       shadow-md
                     `}
-                    onClick={scrollToBottom}
-                    size="icon"
-                    type="button"
-                    variant="secondary"
-                  >
-                    <ArrowDown aria-hidden className="h-4 w-4" />
-                  </Button>
-                ) : null}
-              </div>
+                  onClick={scrollToBottom}
+                  size="icon"
+                  type="button"
+                  variant="secondary"
+                >
+                  <ArrowDown aria-hidden className="h-4 w-4" />
+                </Button>
+              ) : null}
+            </div>
 
-              <ChatComposer
-                busy={busy}
-                input={input}
-                onImagePicked={(files) => void handleImages(files)}
-                onInputChange={setInput}
-                onStartSpeech={startSpeech}
-                onStop={stop}
-                onSubmit={handleSubmit}
-              />
+            <ChatComposer
+              busy={busy}
+              input={input}
+              onImagePicked={(files) => void handleImages(files)}
+              onInputChange={setInput}
+              onStartSpeech={startSpeech}
+              onStop={stop}
+              onSubmit={handleSubmit}
+            />
           </div>
           {selectedProject && !projectSettingsPanelCollapsed ? (
             <div

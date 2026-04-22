@@ -29,29 +29,6 @@ const MAX_REVIEWS_FOR_JSONLD = 5;
 
 const AMAZON_PRICE_CACHE_MS = 15 * 60 * 1000; // 15 minutes
 
-/** Aggregated rating for a product, computed from visible reviews in `product_review`. */
-export interface ProductRatingSummary {
-  /** Average rating across all counted reviews (1–5). */
-  average: number;
-  /** Total number of visible reviews. */
-  count: number;
-  /** Up to N most recent visible reviews for JSON-LD `review` emission. */
-  recent: {
-    author: string;
-    body: null | string;
-    createdAt: string;
-    id: string;
-    rating: number;
-    title: null | string;
-  }[];
-}
-
-/** Optional PDP FAQ + FAQ JSON-LD (`products.faq_json`). */
-export interface ProductFaqItem {
-  answer: string;
-  question: string;
-}
-
 export interface ProductBySlugResult {
   /** Google Merchant age group. */
   ageGroup?: null | string;
@@ -67,10 +44,10 @@ export interface ProductBySlugResult {
   /** When true, product can be purchased regardless of stock (POD/made-to-order). */
   continueSellingWhenOutOfStock: boolean;
   description?: string;
-  /** Bullet-point features for product page. */
-  features?: string[];
   /** Optional FAQ for PDP section + FAQPage JSON-LD. */
   faq?: ProductFaqItem[];
+  /** Bullet-point features for product page. */
+  features?: string[];
   /** Primary gender derived from variants (when uniform or single-variant). */
   gender?: null | string;
   /** Google Merchant product taxonomy path. */
@@ -82,13 +59,13 @@ export interface ProductBySlugResult {
   handlingDaysMin?: null | number;
   hasVariants: boolean;
   id: string;
-  /** Google Merchant condition. */
-  itemCondition?: null | string;
   /** Per-image alt text (same order as images). Used for gallery SEO when set. */
   imageAlts?: (null | string)[];
   images?: string[];
   imageUrl?: string;
   inStock: boolean;
+  /** Google Merchant condition. */
+  itemCondition?: null | string;
   mainImageAlt?: null | string;
   /** Primary material derived from variants (when uniform or single-variant). */
   material?: null | string;
@@ -107,16 +84,16 @@ export interface ProductBySlugResult {
   priceValidUntil?: null | string;
   /** Aggregate review summary for JSON-LD. Empty `count` → no rating emitted. */
   rating: ProductRatingSummary;
-  /** Ships from: full display string or composed from city/region/postal/country. Used for display and future shipping-time estimates. */
-  shipsFrom?: string;
-  /** ISO 3166-1 alpha-2 country the product ships from. */
-  shipsFromCountry?: null | string;
   /** Package height (cm). Separate from the physical product size. */
   shippingHeightCm?: null | number;
   /** Package length (cm). */
   shippingLengthCm?: null | number;
   /** Package width (cm). */
   shippingWidthCm?: null | number;
+  /** Ships from: full display string or composed from city/region/postal/country. Used for display and future shipping-time estimates. */
+  shipsFrom?: string;
+  /** ISO 3166-1 alpha-2 country the product ships from. */
+  shipsFromCountry?: null | string;
   /** Primary size derived from variants (when uniform or single-variant). */
   size?: null | string;
   /** When product has brand+model and a size chart exists, for accordion "Size Guide". */
@@ -136,6 +113,29 @@ export interface ProductBySlugResult {
   variants?: ProductVariantSummary[];
   /** Product weight in grams (doubles as shipping weight by default). */
   weightGrams?: null | number;
+}
+
+/** Optional PDP FAQ + FAQ JSON-LD (`products.faq_json`). */
+export interface ProductFaqItem {
+  answer: string;
+  question: string;
+}
+
+/** Aggregated rating for a product, computed from visible reviews in `product_review`. */
+export interface ProductRatingSummary {
+  /** Average rating across all counted reviews (1–5). */
+  average: number;
+  /** Total number of visible reviews. */
+  count: number;
+  /** Up to N most recent visible reviews for JSON-LD `review` emission. */
+  recent: {
+    author: string;
+    body: null | string;
+    createdAt: string;
+    id: string;
+    rating: number;
+    title: null | string;
+  }[];
 }
 
 export interface ProductVariantSummary {
@@ -199,14 +199,14 @@ export async function getProductBySlugOrId(
       priceValidUntil: productsTable.priceValidUntil,
       published: productsTable.published,
       quantity: productsTable.quantity,
+      shippingHeightCm: productsTable.shippingHeightCm,
+      shippingLengthCm: productsTable.shippingLengthCm,
+      shippingWidthCm: productsTable.shippingWidthCm,
       shipsFromCity: productsTable.shipsFromCity,
       shipsFromCountry: productsTable.shipsFromCountry,
       shipsFromDisplay: productsTable.shipsFromDisplay,
       shipsFromPostalCode: productsTable.shipsFromPostalCode,
       shipsFromRegion: productsTable.shipsFromRegion,
-      shippingHeightCm: productsTable.shippingHeightCm,
-      shippingLengthCm: productsTable.shippingLengthCm,
-      shippingWidthCm: productsTable.shippingWidthCm,
       slug: productsTable.slug,
       source: productsTable.source,
       // Stock management fields
@@ -567,7 +567,7 @@ export async function getProductBySlugOrId(
     }
   }
 
-  let faq: ProductFaqItem[] = [];
+  const faq: ProductFaqItem[] = [];
   if (product.faqJson) {
     try {
       const parsed = JSON.parse(product.faqJson) as unknown;
@@ -635,8 +635,8 @@ export async function getProductBySlugOrId(
     compareAtPriceCents: product.compareAtPriceCents ?? undefined,
     continueSellingWhenOutOfStock,
     description: product.description ?? undefined,
-    features: features.length > 0 ? features : undefined,
     faq: faq.length > 0 ? faq : undefined,
+    features: features.length > 0 ? features : undefined,
     gender: derivedGender,
     googleProductCategory: product.googleProductCategory ?? undefined,
     gtin: product.gtin ?? undefined,
@@ -662,11 +662,11 @@ export async function getProductBySlugOrId(
     price: { crypto: {}, usd: basePriceUsd },
     priceValidUntil: priceValidUntilIso ?? undefined,
     rating,
-    shipsFrom,
-    shipsFromCountry: product.shipsFromCountry ?? undefined,
     shippingHeightCm: product.shippingHeightCm ?? undefined,
     shippingLengthCm: product.shippingLengthCm ?? undefined,
     shippingWidthCm: product.shippingWidthCm ?? undefined,
+    shipsFrom,
+    shipsFromCountry: product.shipsFromCountry ?? undefined,
     size: derivedSize,
     sizeChart: sizeChart ?? undefined,
     slug: product.slug ?? undefined,
@@ -677,28 +677,6 @@ export async function getProductBySlugOrId(
     variants,
     weightGrams: product.weightGrams ?? undefined,
   };
-}
-
-/**
- * Returns the single non-empty value from a list when every entry agrees, else null.
- * Used to promote a uniform variant dimension (color/size/material/gender) up to
- * the top-level schema.org/Product without hiding the fact that variants differ.
- */
-function uniqueOrNull(
-  values: (string | undefined)[] | undefined,
-): null | string {
-  if (!values || values.length === 0) return null;
-  let seen: null | string = null;
-  for (const raw of values) {
-    const v = raw?.trim();
-    if (!v) continue;
-    if (seen === null) {
-      seen = v;
-    } else if (seen !== v) {
-      return null;
-    }
-  }
-  return seen;
 }
 
 /**
@@ -794,4 +772,26 @@ function mergeOptionDefinitionsByName(
       values: isSize ? sortClothingSizes([...values]) : [...values].sort(),
     };
   });
+}
+
+/**
+ * Returns the single non-empty value from a list when every entry agrees, else null.
+ * Used to promote a uniform variant dimension (color/size/material/gender) up to
+ * the top-level schema.org/Product without hiding the fact that variants differ.
+ */
+function uniqueOrNull(
+  values: (string | undefined)[] | undefined,
+): null | string {
+  if (!values || values.length === 0) return null;
+  let seen: null | string = null;
+  for (const raw of values) {
+    const v = raw?.trim();
+    if (!v) continue;
+    if (seen === null) {
+      seen = v;
+    } else if (seen !== v) {
+      return null;
+    }
+  }
+  return seen;
 }

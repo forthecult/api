@@ -1,5 +1,4 @@
 import "server-only";
-
 import { and, eq } from "drizzle-orm";
 
 import { db } from "~/db";
@@ -7,42 +6,7 @@ import { productsTable, productVariantsTable } from "~/db/schema";
 import { getPublicSiteUrl } from "~/lib/app-url";
 import { stripHtmlForMeta } from "~/lib/sanitize-product-description";
 
-function escapeXml(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&apos;");
-}
-
-function formatPriceUsd(cents: number): string {
-  const v = Math.max(0, cents) / 100;
-  return `${v.toFixed(2)} USD`;
-}
-
-function googleAvailability(args: {
-  continueSellingWhenOutOfStock: boolean;
-  simpleQty?: null | number;
-  trackQuantity: boolean;
-  variantStock?: null | number;
-}): "in stock" | "out of stock" {
-  if (args.continueSellingWhenOutOfStock) return "in stock";
-  if (args.variantStock != null) {
-    return (args.variantStock ?? 0) > 0 ? "in stock" : "out of stock";
-  }
-  if (!args.trackQuantity) return "in stock";
-  return (args.simpleQty ?? 0) > 0 ? "in stock" : "out of stock";
-}
-
-function googleCondition(raw: null | string | undefined): string {
-  const c = raw?.trim().toLowerCase() ?? "new";
-  if (c === "used") return "used";
-  if (c === "refurbished") return "refurbished";
-  return "new";
-}
-
-type FeedRow = {
+interface FeedRow {
   brand: null | string;
   continueSelling: boolean;
   description: null | string;
@@ -64,7 +28,7 @@ type FeedRow = {
   variantPriceCents: null | number;
   variantSku: null | string;
   variantStock: null | number;
-};
+}
 
 /**
  * RSS 2.0 + `g:` namespace feed aligned with Google Merchant Center product data.
@@ -106,7 +70,10 @@ export async function buildGoogleMerchantFeedXml(): Promise<string> {
       and(eq(productsTable.published, true), eq(productsTable.hidden, false)),
     );
 
-  const byProduct = new Map<string, { product: FeedRow; variants: FeedRow[] }>();
+  const byProduct = new Map<
+    string,
+    { product: FeedRow; variants: FeedRow[] }
+  >();
 
   for (const r of rows as FeedRow[]) {
     const existing = byProduct.get(r.id);
@@ -160,7 +127,9 @@ export async function buildGoogleMerchantFeedXml(): Promise<string> {
       const mpnXml = args.mpn?.trim()
         ? `<g:mpn>${escapeXml(args.mpn.trim())}</g:mpn>`
         : "";
-      const imgXml = imageLink ? `<g:image_link>${imageLink}</g:image_link>` : "";
+      const imgXml = imageLink
+        ? `<g:image_link>${imageLink}</g:image_link>`
+        : "";
       const hasIdentifier = Boolean(args.gtin?.trim() || args.mpn?.trim());
       itemsXml.push(`<item>
   <g:id>${escapeXml(args.id)}</g:id>
@@ -186,7 +155,8 @@ export async function buildGoogleMerchantFeedXml(): Promise<string> {
         const vid = v.variantId!;
         const priceCents = v.variantPriceCents ?? p.priceCents;
         const sku =
-          v.variantSku?.trim() || `${(p.slug ?? p.id).replace(/\//g, "-")}-${vid}`;
+          v.variantSku?.trim() ||
+          `${(p.slug ?? p.id).replace(/\//g, "-")}-${vid}`;
         const link = `${linkBase}?variant=${encodeURIComponent(vid)}`;
         const availability = googleAvailability({
           continueSellingWhenOutOfStock: p.continueSelling,
@@ -231,4 +201,39 @@ export async function buildGoogleMerchantFeedXml(): Promise<string> {
 ${itemsXml.join("\n")}
   </channel>
 </rss>`;
+}
+
+function escapeXml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
+function formatPriceUsd(cents: number): string {
+  const v = Math.max(0, cents) / 100;
+  return `${v.toFixed(2)} USD`;
+}
+
+function googleAvailability(args: {
+  continueSellingWhenOutOfStock: boolean;
+  simpleQty?: null | number;
+  trackQuantity: boolean;
+  variantStock?: null | number;
+}): "in stock" | "out of stock" {
+  if (args.continueSellingWhenOutOfStock) return "in stock";
+  if (args.variantStock != null) {
+    return (args.variantStock ?? 0) > 0 ? "in stock" : "out of stock";
+  }
+  if (!args.trackQuantity) return "in stock";
+  return (args.simpleQty ?? 0) > 0 ? "in stock" : "out of stock";
+}
+
+function googleCondition(raw: null | string | undefined): string {
+  const c = raw?.trim().toLowerCase() ?? "new";
+  if (c === "used") return "used";
+  if (c === "refurbished") return "refurbished";
+  return "new";
 }

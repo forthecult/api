@@ -54,7 +54,9 @@ export function useLocalStorageState<T>(
         /* ignore quota / disabled storage */
       }
       latestRef.current = resolved;
-      window.dispatchEvent(new CustomEvent(SYNTHETIC_EVENT, { detail: { key } }));
+      window.dispatchEvent(
+        new CustomEvent(SYNTHETIC_EVENT, { detail: { key } }),
+      );
     },
     [key],
   );

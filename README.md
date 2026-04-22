@@ -11,7 +11,7 @@
 3. 🔒 **auth**: [better-auth](https://better-auth.com)
 4. 🎬 **anims**: [animejs](https://animejs.com)
 5. 📦 **storage**: [uploadthing](https://uploadthing.com)
-6. 📊 **analytics**: [vercel](https://vercel.com/docs/analytics)
+6. 📊 **analytics**: [posthog](https://posthog.com/docs/libraries/js) (optional; ingest defaults to a [railway reverse proxy](https://posthog.com/docs/advanced/proxy/railway) — see `webapp/.env.example`)
 7. 🧬 **db**: [drizzle-orm](https://orm.drizzle.team) ([pg](https://neon.tech/postgresql/tutorial)) + [neon](https://neon.tech)/(🤔🔜)[supabase](https://supabase.com)
 8. 🏗️ **dx**: [eslint](https://eslint.org) + [biome](https://biomejs.dev) + [knip](https://knip.dev)
 9. 📝 **forms**: [react-form](https://tanstack.com/form) _(🔜 w.i.p)_ + [arktype](https://arktype.io)

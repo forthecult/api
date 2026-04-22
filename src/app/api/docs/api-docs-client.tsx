@@ -40,8 +40,8 @@ export default function ApiDocsClient() {
       `}
     >
       <SwaggerUI
-        defaultModelsExpandDepth={1}
         defaultModelExpandDepth={2}
+        defaultModelsExpandDepth={1}
         displayOperationId
         docExpansion="list"
         filter

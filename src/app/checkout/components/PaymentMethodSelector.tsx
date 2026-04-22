@@ -48,6 +48,7 @@ import {
 
 import type { OrderPayload } from "../checkout-shared";
 import type { ShippingAddressFormRef } from "./ShippingAddressForm";
+import type { StripeCardPaymentRef } from "./StripeCardPayment";
 
 import {
   CRYPTO_LOGO_SRC,
@@ -74,7 +75,6 @@ import {
 } from "./BillingAddressForm";
 import { ExpressCheckout } from "./ExpressCheckout";
 import { PolicyPopup } from "./PolicyPopup";
-import type { StripeCardPaymentRef } from "./StripeCardPayment";
 
 // modal dialog: lives in its own chunk and only downloads when the user
 // actually starts a solana pay flow (click → state change → mount). saves

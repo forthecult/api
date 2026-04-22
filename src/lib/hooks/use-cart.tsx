@@ -2,8 +2,9 @@
 
 import * as React from "react";
 
-import { trackAddToCart } from "~/lib/analytics/ecommerce";
 import type { CartItem } from "~/ui/components/cart";
+
+import { trackAddToCart } from "~/lib/analytics/ecommerce";
 
 /* -------------------------------------------------------------------------- */
 /*                                   Types                                    */

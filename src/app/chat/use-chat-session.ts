@@ -376,9 +376,12 @@ export function useChatSession(
     [sessionId, setMessages],
   );
 
-  const deleteAssistantMessage = useCallback((messageId: string) => {
-    setMessages((prev) => prev.filter((m) => m.id !== messageId));
-  }, [setMessages]);
+  const deleteAssistantMessage = useCallback(
+    (messageId: string) => {
+      setMessages((prev) => prev.filter((m) => m.id !== messageId));
+    },
+    [setMessages],
+  );
 
   const forgetConversationCreated = useCallback((conversationId: string) => {
     createdConversationIdsRef.current.delete(conversationId);

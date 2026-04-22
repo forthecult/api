@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 
 import { Star } from "lucide-react";
-import { Suspense } from "react";
 import { cookies, headers } from "next/headers";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 
 import { SEO_CONFIG } from "~/app";
+import { ProductViewAnalytics } from "~/lib/analytics/product-view-analytics";
 import {
   getPublicSiteUrl,
   getServerBaseUrl,
@@ -14,7 +15,6 @@ import {
 } from "~/lib/app-url";
 import { getProductBreadcrumbTrail } from "~/lib/categories";
 import { buildHreflangLanguages } from "~/lib/hreflang";
-import { ProductViewAnalytics } from "~/lib/analytics/product-view-analytics";
 import { getProductBySlugOrId } from "~/lib/product-by-slug";
 import {
   mapProductBySlugResultToPageProduct,
@@ -32,8 +32,8 @@ import {
 } from "~/lib/token-gate";
 import { COOKIE_NAME, hasValidTokenGateCookie } from "~/lib/token-gate-cookie";
 import { Breadcrumbs } from "~/ui/components/breadcrumbs";
-import { ProductFaqSection } from "~/ui/components/product-faq-section";
 import { ProductBrandModel } from "~/ui/components/product-brand-model";
+import { ProductFaqSection } from "~/ui/components/product-faq-section";
 import { ProductPageJsonLd } from "~/ui/components/structured-data";
 import { TokenGateGuard } from "~/ui/components/token-gate/TokenGateGuard";
 import { Button } from "~/ui/primitives/button";
@@ -298,9 +298,9 @@ export default async function ProductDetailPage({ params }: PageProps) {
               <ProductVariantImageProvider>
                 <div
                   className={`
-                  grid grid-cols-1 gap-8
-                  md:grid-cols-2
-                `}
+                    grid grid-cols-1 gap-8
+                    md:grid-cols-2
+                  `}
                 >
                   <ProductImageGallery
                     discountPercentage={discountPercentage}
@@ -329,15 +329,15 @@ export default async function ProductDetailPage({ params }: PageProps) {
                               {range(5).map((i) => (
                                 <Star
                                   className={`
-                                  h-5 w-5
-                                  ${
-                                    i < Math.floor(product.rating)
-                                      ? "fill-primary text-primary"
-                                      : i < product.rating
-                                        ? "fill-primary/50 text-primary"
-                                        : "text-muted-foreground"
-                                  }
-                                `}
+                                    h-5 w-5
+                                    ${
+                                      i < Math.floor(product.rating)
+                                        ? "fill-primary text-primary"
+                                        : i < product.rating
+                                          ? "fill-primary/50 text-primary"
+                                          : "text-muted-foreground"
+                                    }
+                                  `}
                                   key={`star-${i}`}
                                 />
                               ))}
@@ -371,9 +371,9 @@ export default async function ProductDetailPage({ params }: PageProps) {
                             >
                               <span
                                 className={`
-                                mt-1 mr-2 h-2 w-2 shrink-0 rounded-full
-                                bg-primary
-                              `}
+                                  mt-1 mr-2 h-2 w-2 shrink-0 rounded-full
+                                  bg-primary
+                                `}
                               />
                               <span>{feature}</span>
                             </li>
