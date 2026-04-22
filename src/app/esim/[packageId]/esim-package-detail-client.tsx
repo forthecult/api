@@ -1059,7 +1059,14 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
                                 }
                               >
                                 {logo && (
-                                  <img alt="" className="h-4 w-4" src={logo} />
+                                  <Image
+                                    alt=""
+                                    className="h-4 w-4"
+                                    height={16}
+                                    src={logo}
+                                    unoptimized={logo.startsWith("http")}
+                                    width={16}
+                                  />
                                 )}
                                 {opt.label}
                               </Button>
@@ -1130,10 +1137,13 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
                                     }
                                   >
                                     {logo && (
-                                      <img
+                                      <Image
                                         alt=""
                                         className="h-4 w-4"
+                                        height={16}
                                         src={logo}
+                                        unoptimized={logo.startsWith("http")}
+                                        width={16}
                                       />
                                     )}
                                     {opt.label}

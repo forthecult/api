@@ -25,7 +25,10 @@ import {
   resolveAutomaticCouponForCheckout,
   resolveCouponForCheckout,
 } from "~/lib/coupon";
-import { getEsimPackageDetail } from "~/lib/esim-api";
+import {
+  getEsimPackageDetail,
+  getEsimPackageDetailWithRetry,
+} from "~/lib/esim-api";
 import { getMemberTierForWallet } from "~/lib/get-member-tier";
 import { resolveTierDiscountsForCheckout } from "~/lib/tier-discount";
 
@@ -126,11 +129,25 @@ export interface ValidatedOrderItem {
 // ---------------------------------------------------------------------------
 
 /**
+ * Thrown by {@link postOrderBookkeeping} / {@link createOrderTransaction}
+ * when a coupon redemption insert fails its atomic maxUses guard — the
+ * discount was already applied to the order total and any caller that
+ * already persisted the order must roll it back before surfacing this.
+ */
+export class CouponExhaustedError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "CouponExhaustedError";
+  }
+}
+
+/**
  * Build a JSON error body from a caught exception, consistent with the
  * existing pattern in every create-order route.
  */
 export function buildOrderErrorMessage(err: unknown): string {
   if (!(err instanceof Error)) return "Failed to create order";
+  if (err instanceof CouponExhaustedError) return err.message;
   const msg = err.message ?? "";
   if (msg.includes("relation") || msg.includes("does not exist")) {
     return "Database schema out of date. Run: bun run db:push. If you recently added the user role column, run scripts/migrate-add-user-role.sql first.";
@@ -317,7 +334,7 @@ export async function createOrderTransaction(params: {
       const redemptionId = createId();
       const userIdParam = userId ?? null;
       const nowIso = now.toISOString();
-      await tx.execute(sql`
+      const result = await tx.execute(sql`
         INSERT INTO ${couponRedemptionTable} (id, coupon_id, order_id, user_id, created_at)
         SELECT ${redemptionId}, ${couponResult.couponId}, ${orderId}, ${userIdParam}, ${nowIso}
         WHERE (
@@ -328,7 +345,15 @@ export async function createOrderTransaction(params: {
         ) < (
           SELECT COALESCE(${couponsTable.maxUses}, 2147483647) FROM ${couponsTable} WHERE ${couponsTable.id} = ${couponResult.couponId}
         )
+        RETURNING id
       `);
+      // postgres.js returns a RowList; when the WHERE filtered everything out
+      // (coupon exhausted by a concurrent request) we get zero rows.
+      if (toRowCount(result) === 0) {
+        throw new CouponExhaustedError(
+          "Coupon has reached its usage limit. Please retry without the coupon.",
+        );
+      }
     }
 
     return params.base.orderId;
@@ -436,6 +461,36 @@ export async function postOrderBookkeeping(
   } = input;
   const now = new Date();
 
+  // claim the coupon BEFORE any other side effect so we can clean-rollback
+  // the order row (and abort affiliate / marketing writes) if the maxUses
+  // race lost. see h1.
+  if (couponResult) {
+    const redemptionId = createId();
+    const userIdParam = userId ?? null;
+    const nowIso = now.toISOString();
+    // Coerce userId to null when undefined so node-pg never receives undefined (ERR_INVALID_ARG_TYPE).
+    // Pass created_at as ISO string: raw sql binding expects string/Buffer, not Date (ERR_INVALID_ARG_TYPE).
+    const result = await db.execute(sql`
+      INSERT INTO ${couponRedemptionTable} (id, coupon_id, order_id, user_id, created_at)
+      SELECT ${redemptionId}, ${couponResult.couponId}, ${orderId}, ${userIdParam}, ${nowIso}
+      WHERE (
+        SELECT COALESCE(${couponsTable.maxUses}, 0) FROM ${couponsTable} WHERE ${couponsTable.id} = ${couponResult.couponId}
+      ) = 0
+      OR (
+        SELECT COUNT(*) FROM ${couponRedemptionTable} WHERE ${couponRedemptionTable.couponId} = ${couponResult.couponId}
+      ) < (
+        SELECT COALESCE(${couponsTable.maxUses}, 2147483647) FROM ${couponsTable} WHERE ${couponsTable.id} = ${couponResult.couponId}
+      )
+      RETURNING id
+    `);
+    if (toRowCount(result) === 0) {
+      await rollbackOrderInsert(orderId);
+      throw new CouponExhaustedError(
+        "Coupon has reached its usage limit. Please retry without the coupon.",
+      );
+    }
+  }
+
   // Marketing consent -------------------------------------------------------
   if (
     userId &&
@@ -461,34 +516,7 @@ export async function postOrderBookkeeping(
       })
       .where(eq(affiliateTable.id, affiliateResult.affiliate.affiliateId));
   }
-
-  // Coupon redemption (atomic guard against max-uses TOCTOU race) -----------
-  // Coerce userId to null when undefined so node-pg never receives undefined (ERR_INVALID_ARG_TYPE).
-  // Pass created_at as ISO string: raw sql binding expects string/Buffer, not Date (ERR_INVALID_ARG_TYPE).
-  if (couponResult) {
-    const redemptionId = createId();
-    const userIdParam = userId ?? null;
-    const nowIso = now.toISOString();
-    // Use conditional INSERT to atomically enforce maxUses:
-    // only insert if the current redemption count is below the coupon's maxUses.
-    await db.execute(sql`
-      INSERT INTO ${couponRedemptionTable} (id, coupon_id, order_id, user_id, created_at)
-      SELECT ${redemptionId}, ${couponResult.couponId}, ${orderId}, ${userIdParam}, ${nowIso}
-      WHERE (
-        SELECT COALESCE(${couponsTable.maxUses}, 0) FROM ${couponsTable} WHERE ${couponsTable.id} = ${couponResult.couponId}
-      ) = 0
-      OR (
-        SELECT COUNT(*) FROM ${couponRedemptionTable} WHERE ${couponRedemptionTable.couponId} = ${couponResult.couponId}
-      ) < (
-        SELECT COALESCE(${couponsTable.maxUses}, 2147483647) FROM ${couponsTable} WHERE ${couponsTable.id} = ${couponResult.couponId}
-      )
-    `);
-  }
 }
-
-// ---------------------------------------------------------------------------
-// 6b. createEsimOrderRecordsForOrder
-// ---------------------------------------------------------------------------
 
 /**
  * Resolve affiliate and coupon discounts for the order.
@@ -648,8 +676,36 @@ export async function resolveDiscounts(params: {
   return { affiliateResult: effectiveAffiliate, couponResult, expectedTotal };
 }
 
+/**
+ * Reverse a non-transactional order creation (order + items + esim rows).
+ * Callers use this when {@link postOrderBookkeeping} throws
+ * {@link CouponExhaustedError} to avoid leaving a phantom pending order
+ * that received an unclaimed discount.
+ */
+export async function rollbackOrderInsert(orderId: string): Promise<void> {
+  try {
+    await db
+      .delete(orderItemsTable)
+      .where(eq(orderItemsTable.orderId, orderId));
+    await db
+      .delete(esimOrdersTable)
+      .where(eq(esimOrdersTable.orderId, orderId));
+    await db.delete(ordersTable).where(eq(ordersTable.id, orderId));
+  } catch (err) {
+    console.error("[rollbackOrderInsert] failed for", orderId, err);
+  }
+}
+
+/**
+ * Map a create-order error to an appropriate HTTP status — coupon-exhausted
+ * is a 409 (client should retry without the coupon), everything else is 500.
+ */
+export function statusFromOrderError(err: unknown): 409 | 500 {
+  return err instanceof CouponExhaustedError ? 409 : 500;
+}
+
 // ---------------------------------------------------------------------------
-// 7. createOrderTransaction (wraps insert + items + bookkeeping in a tx)
+// 6b. createEsimOrderRecordsForOrder
 // ---------------------------------------------------------------------------
 
 /**
@@ -710,23 +766,36 @@ export async function validateAndFetchProducts(
     )
       continue;
 
-    // eSIM items: pass through without DB lookup (client sends priceCents and name)
+    // eSIM items: resolve wholesale price + name from the reseller api and
+    // apply the server-configured markup. client-supplied priceCents/name is
+    // ignored (h2 — was previously trusted, letting anyone pay $0.01 for a
+    // $30 package).
     if (item.productId.startsWith("esim_")) {
-      const name =
-        typeof item.name === "string" && item.name.trim()
-          ? item.name.trim()
-          : null;
-      const priceCents =
-        typeof item.priceCents === "number" && item.priceCents >= 0
-          ? item.priceCents
-          : null;
-      if (!name || priceCents === null) continue;
       const esimPackageId = item.productId.replace(/^esim_/, "");
       if (!esimPackageId) continue;
+      const detail = await getEsimPackageDetailWithRetry(esimPackageId).catch(
+        () => null,
+      );
+      if (!detail?.status || !detail.data) {
+        throw new Error(
+          `eSIM package ${esimPackageId} is currently unavailable.`,
+        );
+      }
+      const wholesaleUsd = Number.parseFloat(String(detail.data.price ?? ""));
+      if (!Number.isFinite(wholesaleUsd) || wholesaleUsd <= 0) {
+        throw new Error(
+          `eSIM package ${esimPackageId} has no valid reseller price.`,
+        );
+      }
+      const markupPct = Number(process.env.ESIM_MARKUP_PERCENT) || 30;
+      const retailCents = Math.round(
+        wholesaleUsd * (1 + markupPct / 100) * 100,
+      );
+      const name = detail.data.name?.trim() || "eSIM";
       validatedItems.push({
         esimPackageId,
         name,
-        priceCents,
+        priceCents: retailCents,
         productId: item.productId,
         quantity: item.quantity,
       });
@@ -767,7 +836,7 @@ export async function validateAndFetchProducts(
 }
 
 // ---------------------------------------------------------------------------
-// 8. handleCreateOrderError (consistent error response)
+// 7. createOrderTransaction (wraps insert + items + bookkeeping in a tx)
 // ---------------------------------------------------------------------------
 
 /**
@@ -809,4 +878,28 @@ export function validateTotal(params: {
     });
   }
   return { expectedTotal, valid };
+}
+
+// ---------------------------------------------------------------------------
+// 8. handleCreateOrderError (consistent error response)
+// ---------------------------------------------------------------------------
+
+/**
+ * Different drizzle drivers expose "rows affected" differently: postgres.js
+ * returns an array whose length is the RETURNING row count, node-postgres
+ * exposes a `rowCount` property. This normalises both so the coupon-exhausted
+ * guard works regardless of driver choice.
+ */
+function toRowCount(result: unknown): number {
+  if (result == null) return 0;
+  if (Array.isArray(result)) return result.length;
+  if (typeof result === "object" && "rowCount" in result) {
+    const r = (result as { rowCount?: null | number }).rowCount;
+    return typeof r === "number" ? r : 0;
+  }
+  if (typeof result === "object" && "length" in result) {
+    const r = (result as { length?: number }).length;
+    return typeof r === "number" ? r : 0;
+  }
+  return 0;
 }

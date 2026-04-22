@@ -14,6 +14,7 @@ import {
   Trash2,
   Unlink,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useMemo } from "react";
 
@@ -388,11 +389,12 @@ export function ChatSidebar({
                   type="button"
                 >
                   {c.image_url ? (
-                    <img
+                    <Image
                       alt=""
                       className="h-full w-full object-cover"
                       height={64}
                       src={c.image_url}
+                      unoptimized
                       width={64}
                     />
                   ) : (

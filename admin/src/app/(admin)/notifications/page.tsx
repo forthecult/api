@@ -2,9 +2,9 @@
 
 import React from "react";
 
-import { getMainAppUrl } from "~/lib/env";
+import { getAdminApiBaseUrl } from "~/lib/env";
 
-const API_BASE = getMainAppUrl();
+const API_BASE = getAdminApiBaseUrl();
 
 interface Response {
   all: Template[];

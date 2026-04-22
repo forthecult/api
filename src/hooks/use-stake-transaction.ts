@@ -86,23 +86,38 @@ export function useStakeTransaction(options: UseStakeTransactionOptions = {}) {
         const sig = await sendTransaction(tx, connection, SEND_OPTS);
         toast.success(`Stake submitted: ${sig.slice(0, 8)}…`);
 
-        // link wallet to account or create account if not logged in
-        // if account is created/signed in, refresh to update auth state
+        // link the staking wallet to the current account. requires a session —
+        // if none, we nudge the user into SIWS instead of auto-signing them in
+        // (that path used to be an auth-bypass; see route docblock).
         fetch("/api/auth/link-solana-wallet", {
           body: JSON.stringify({ wallet }),
           headers: { "Content-Type": "application/json" },
           method: "POST",
         })
-          .then((res) => res.json())
-          .then((raw: unknown) => {
-            const data = raw as { signedIn?: boolean };
-            if (data.signedIn) {
-              // new account created or signed into existing - soft refresh to update auth
-              window.dispatchEvent(new CustomEvent("auth-state-changed"));
+          .then((res) => res.json().then((raw) => ({ raw, status: res.status })))
+          .then(({ raw, status }) => {
+            const data = raw as {
+              alreadyLinked?: boolean;
+              linked?: boolean;
+              needsSignIn?: boolean;
+            };
+            if (data.linked) {
+              if (!data.alreadyLinked) {
+                window.dispatchEvent(new CustomEvent("auth-state-changed"));
+              }
+              return;
+            }
+            if (data.needsSignIn || status === 401 || status === 409) {
+              toast.message("Sign in to link this wallet to your account.", {
+                action: {
+                  label: "Sign in",
+                  onClick: () => openConnectModal(),
+                },
+              });
             }
           })
           .catch(() => {
-            // silently ignore - linking is optional
+            // best-effort — staking itself already succeeded on chain.
           });
 
         options.onStakeSuccess?.();

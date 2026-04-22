@@ -87,6 +87,34 @@ const redisLimiterCache = new Map<
   Awaited<ReturnType<typeof createRedisLimiter>>
 >();
 
+/**
+ * m8: fail boot in production if upstash isn't configured — without it
+ * rate-limits are per-instance and therefore per-deploy-lottery-bypass.
+ */
+export function assertRateLimitStoreConfigured(): void {
+  if (process.env.NODE_ENV !== "production") return;
+  if (isRedisConfigured()) return;
+  throw new Error(
+    "Rate limiting requires UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN in production. In-memory is per-instance and effectively bypassable.",
+  );
+}
+
+/**
+ * Check rate limit for a given identifier (e.g. IP address, user ID).
+ * Uses Redis when UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN are set;
+ * otherwise uses in-memory store (per-instance). In production the absence of
+ * redis is a hard boot-time error (see assertRateLimitStoreConfigured).
+ */
+export async function checkRateLimit(
+  identifier: string,
+  config: RateLimitConfig,
+): Promise<RateLimitResult> {
+  if (isRedisConfigured()) {
+    return checkRateLimitRedis(identifier, config);
+  }
+  return Promise.resolve(checkRateLimitMemory(identifier, config));
+}
+
 /** Redis-backed check when Upstash env is set. */
 async function checkRateLimitRedis(
   identifier: string,
@@ -124,44 +152,66 @@ function isRedisConfigured(): boolean {
   return Boolean(url && token);
 }
 
-// Warn once in production if Redis is not configured
-let _prodWarningEmitted = false;
-
 /**
- * Check rate limit for a given identifier (e.g. IP address, user ID).
- * Uses Redis when UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN are set;
- * otherwise uses in-memory store (per-instance).
+ * m7: when running behind a CDN/proxy, the client ip only lives in the header
+ * the proxy writes (e.g. `cf-connecting-ip` behind Cloudflare). Any of those
+ * headers sent by an arbitrary client can be forged unless we're actually
+ * behind that proxy, so we don't trust them unless the operator has opted in.
+ *
+ * Set TRUSTED_PROXY_HEADER to the one header that the edge writes (one of
+ * `cf-connecting-ip`, `x-real-ip`, `x-forwarded-for`, `true-client-ip`). In
+ * production this env is REQUIRED; without it we fall back to a single global
+ * bucket instead of bucketing by a spoofable header.
  */
-export async function checkRateLimit(
-  identifier: string,
-  config: RateLimitConfig,
-): Promise<RateLimitResult> {
-  if (isRedisConfigured()) {
-    return checkRateLimitRedis(identifier, config);
-  }
-  if (process.env.NODE_ENV === "production" && !_prodWarningEmitted) {
-    _prodWarningEmitted = true;
+const TRUSTED_PROXY_HEADERS = new Set([
+  "cf-connecting-ip",
+  "fly-client-ip",
+  "true-client-ip",
+  "x-forwarded-for",
+  "x-real-ip",
+  "x-vercel-forwarded-for",
+]);
+
+function getTrustedProxyHeader(): null | string {
+  const raw = process.env.TRUSTED_PROXY_HEADER?.trim().toLowerCase();
+  if (!raw) return null;
+  if (!TRUSTED_PROXY_HEADERS.has(raw)) {
     console.warn(
-      "⚠️  [SECURITY] Rate limiting is in-memory only — ineffective in serverless/multi-instance deployments. " +
-        "Configure UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN for production. " +
-        "Without Redis, each instance has its own counter and rate limits are effectively bypassed.",
+      `[rate-limit] TRUSTED_PROXY_HEADER="${raw}" is not a recognized header; ignoring.`,
     );
+    return null;
   }
-  return Promise.resolve(checkRateLimitMemory(identifier, config));
+  return raw;
 }
 
+let _missingProxyHeaderWarned = false;
+
 /**
- * Get client IP from request headers.
- * Prefers provider-specific headers that can't be spoofed by clients,
- * falling back to x-forwarded-for only when more trusted headers are absent.
+ * Get client IP from request headers. Only reads headers the operator has
+ * explicitly opted in via TRUSTED_PROXY_HEADER; other IP-ish headers are
+ * ignored because any user-agent can set them.
+ *
+ * When no trusted header is configured we return a single sentinel
+ * (`proxyless`) so a forged `x-forwarded-for` can't bucket-jump rate limits.
  */
 export function getClientIp(headers: Headers): string {
-  return (
-    headers.get("cf-connecting-ip") || // Cloudflare (set by edge, not spoofable)
-    headers.get("x-real-ip") || // Nginx / Vercel
-    headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    "unknown"
-  );
+  const trusted = getTrustedProxyHeader();
+  if (!trusted) {
+    if (process.env.NODE_ENV === "production" && !_missingProxyHeaderWarned) {
+      _missingProxyHeaderWarned = true;
+      console.warn(
+        "⚠️  [SECURITY] TRUSTED_PROXY_HEADER is unset — rate limits are not per-client-ip. Set it to the header your edge writes (e.g. 'cf-connecting-ip').",
+      );
+    }
+    return "proxyless";
+  }
+  const raw = headers.get(trusted);
+  if (!raw) return "proxyless";
+  // x-forwarded-for is comma-separated; the leftmost entry is the original
+  // client when the proxy appends its own hop. all other trusted headers are
+  // single-valued, so splitting+trim is safe too.
+  const first = raw.split(",")[0]?.trim();
+  return first && first.length > 0 ? first : "proxyless";
 }
 
 /** Preset rate limit configs. Kept generous to avoid blocking normal use. */

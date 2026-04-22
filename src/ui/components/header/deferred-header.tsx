@@ -5,6 +5,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import Image from "next/image";
+
 import { SEO_CONFIG } from "~/app";
 import { cn } from "~/lib/cn";
 import { whenIdle } from "~/lib/when-idle";
@@ -60,11 +62,13 @@ function HeaderPlaceholder() {
       >
         <Link aria-label="Home" className="flex items-center gap-2" href="/">
           {SEO_CONFIG.brandLogoUrl ? (
-            <img
+            <Image
               alt=""
               className="h-8 w-auto"
               height={32}
+              priority
               src={SEO_CONFIG.brandLogoUrl}
+              unoptimized
               width={32}
             />
           ) : (

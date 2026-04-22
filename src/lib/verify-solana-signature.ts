@@ -1,25 +1,38 @@
 /**
- * Verify a Solana wallet signed a message (ed25519).
- * Used for token-gate and tier verification.
+ * verify a solana wallet signed a message (ed25519).
+ * used for token-gate and tier verification.
+ *
+ * kit-native: uses webcrypto ed25519 via @solana/kit
+ * (`getPublicKeyFromAddress` + `verifySignature`). this is why the function
+ * is async — `crypto.subtle.verify` returns a promise. requires node 20+
+ * (we run 22) or any modern browser/edge runtime with subtlecrypto ed25519.
  */
 
-import { PublicKey } from "@solana/web3.js";
+import {
+  address,
+  getPublicKeyFromAddress,
+  type SignatureBytes,
+  verifySignature,
+} from "@solana/kit";
 import bs58 from "bs58";
-import nacl from "tweetnacl";
 
-export function verifySolanaSignature(params: {
+export async function verifySolanaSignature(params: {
   address: string;
   message: string;
   signature?: string;
   signatureBase58?: string;
-}): boolean {
-  const signature = getSignatureBytes(params);
-  if (!signature || signature.length !== 64) return false;
+}): Promise<boolean> {
+  const sig = getSignatureBytes(params);
+  if (!sig || sig.length !== 64) return false;
   try {
-    const publicKey = new PublicKey(params.address);
-    const publicKeyBytes = publicKey.toBytes();
+    const addr = address(params.address);
+    const publicKey = await getPublicKeyFromAddress(addr);
     const messageBytes = new TextEncoder().encode(params.message);
-    return nacl.sign.detached.verify(messageBytes, signature, publicKeyBytes);
+    return await verifySignature(
+      publicKey,
+      sig as SignatureBytes,
+      messageBytes,
+    );
   } catch {
     return false;
   }

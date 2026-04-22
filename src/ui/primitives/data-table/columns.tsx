@@ -3,6 +3,7 @@
 import type { ColumnDef } from "@tanstack/react-table";
 
 import { MoreHorizontal } from "lucide-react";
+import Image from "next/image";
 
 import type { UserWithUploads } from "~/lib/types";
 import type { GalleryMediaItem } from "~/ui/components/blocks/bento-media-gallery";
@@ -94,11 +95,13 @@ export const getColumns = ({
                 size="sm"
                 variant="outline"
               >
-                <img
+                <Image
                   alt={upload.key}
                   className="h-8 w-8 rounded-sm object-cover"
-                  loading="lazy"
-                  src={upload.url} // Show a small thumbnail
+                  height={32}
+                  src={upload.url}
+                  unoptimized
+                  width={32}
                 />
               </Button>
             );

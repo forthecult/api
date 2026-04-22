@@ -327,9 +327,7 @@ const BULK_DELETE_MAX_IDS = 100;
 export async function DELETE(request: NextRequest) {
   try {
     const authResult = await getAdminAuth(request);
-    if (!authResult?.ok) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!authResult?.ok) return adminAuthFailureResponse(authResult);
 
     const body = (await request.json()) as { ids?: unknown };
     const rawIds = Array.isArray(body.ids) ? body.ids : [];
@@ -364,9 +362,7 @@ export async function DELETE(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const authResult = await getAdminAuth(request);
-    if (!authResult?.ok) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!authResult?.ok) return adminAuthFailureResponse(authResult);
 
     const body = (await request.json()) as {
       email?: string;

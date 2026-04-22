@@ -5,6 +5,17 @@
  * or wallet libs) that use indexedDB don't throw ReferenceError on the server.
  */
 export function register(): void {
+  // m8: enforce presence of a shared rate-limit store in prod before anything
+  // accepts traffic. m6 / h3 do the same for virustotal / auth-secret, but we
+  // import those lazily; rate-limit is imported on most routes so a top-level
+  // assert here catches config drift earlier.
+  if (process.env.NEXT_RUNTIME === "nodejs") {
+    void import("./lib/rate-limit").then(
+      ({ assertRateLimitStoreConfigured }) => {
+        assertRateLimitStoreConfigured();
+      },
+    );
+  }
   // Downgrade client-disconnect errors (ECONNRESET / aborted) to a single debug log.
   // These occur when the client navigates away, closes the tab, or cancels the request
   // before the server finishes; they are expected and noisy in production logs.

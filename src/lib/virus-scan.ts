@@ -1,25 +1,49 @@
 /**
- * Optional virus scan for uploaded files via VirusTotal API v3.
- * Set VIRUSTOTAL_API_KEY in env to enable; if unset, scan is skipped (caller may treat as pass).
+ * Virus scan for uploaded files via VirusTotal API v3.
+ * VIRUSTOTAL_API_KEY is REQUIRED in production (assertVirusTotalConfigured
+ * throws on boot if missing); in dev it's optional — missing key → skip scan.
  */
 
 const VT_API = "https://www.virustotal.com/api/v3";
-const MAX_FILE_BYTES = 2 * 1024 * 1024; // 2MB cap for avatar fetch
+const DEFAULT_MAX_FILE_BYTES = 4 * 1024 * 1024; // 4MB – matches the image uploader cap
 const POLL_MS = 3000;
 const POLL_ATTEMPTS = 20;
 
 export type VirusScanResult = { error: string; ok: false } | { ok: true };
 
+interface ScanOptions {
+  /** Files larger than this are passed-through without scanning (with a warning log) to avoid blowing scan latency / quota. Defaults to 4MB. */
+  maxBytes?: number;
+}
+
+/**
+ * m6: boot-time assert that VIRUSTOTAL_API_KEY is present in production. Call
+ * this from module-level code that's loaded at startup (e.g. the upload router)
+ * so a missing key fails loudly instead of silently disabling malware scans.
+ */
+export function assertVirusTotalConfigured(): void {
+  const apiKey = process.env.VIRUSTOTAL_API_KEY?.trim();
+  if (process.env.NODE_ENV === "production" && !apiKey) {
+    throw new Error(
+      "VIRUSTOTAL_API_KEY is required in production — uploads must be virus-scanned.",
+    );
+  }
+}
+
 /**
  * Scan a file at the given URL using VirusTotal. Returns { ok: true } if clean or scan skipped;
  * { ok: false, error } if malicious or scan failed.
- * Skips scan when VIRUSTOTAL_API_KEY is not set (returns ok: true).
+ * Skips scan when VIRUSTOTAL_API_KEY is not set (dev only; prod boot fails via assertVirusTotalConfigured).
  */
-export async function scanFileUrl(url: string): Promise<VirusScanResult> {
+export async function scanFileUrl(
+  url: string,
+  options: ScanOptions = {},
+): Promise<VirusScanResult> {
   const apiKey = process.env.VIRUSTOTAL_API_KEY?.trim();
   if (!apiKey) {
     return { ok: true };
   }
+  const MAX_FILE_BYTES = options.maxBytes ?? DEFAULT_MAX_FILE_BYTES;
 
   let buffer: ArrayBuffer;
   try {
@@ -32,11 +56,21 @@ export async function scanFileUrl(url: string): Promise<VirusScanResult> {
     }
     const contentLength = res.headers.get("content-length");
     if (contentLength && parseInt(contentLength, 10) > MAX_FILE_BYTES) {
-      return { error: "file too large to scan", ok: false };
+      // m6: oversized files skip scan rather than hard-reject — the provider
+      // (uploadthing) already does basic type/size checks and we don't want to
+      // block 64mb video uploads on free-tier vt quotas. log so we can spot
+      // abuse.
+      console.warn(
+        `[virus-scan] skipping scan for oversized file (${contentLength} bytes > ${MAX_FILE_BYTES}): ${url}`,
+      );
+      return { ok: true };
     }
     buffer = await res.arrayBuffer();
     if (buffer.byteLength > MAX_FILE_BYTES) {
-      return { error: "file too large to scan", ok: false };
+      console.warn(
+        `[virus-scan] skipping scan for oversized file (${buffer.byteLength} bytes > ${MAX_FILE_BYTES}): ${url}`,
+      );
+      return { ok: true };
     }
   } catch (e) {
     return {

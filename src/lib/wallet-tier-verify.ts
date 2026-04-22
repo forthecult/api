@@ -95,7 +95,7 @@ export async function verifyWalletForTier(
     };
   }
 
-  const validSig = verifySolanaSignature({
+  const validSig = await verifySolanaSignature({
     address: normalized,
     message,
     signature: params.walletSignature ?? undefined,

@@ -5,23 +5,34 @@ import { Suspense } from "react";
 import { SEO_CONFIG } from "~/app";
 import { ProductsClient } from "~/app/products/products-client";
 import { getPublicSiteUrl, getServerBaseUrl } from "~/lib/app-url";
-import { CollectionPageStructuredData } from "~/ui/components/structured-data";
+import {
+  BreadcrumbStructuredData,
+  CollectionPageStructuredData,
+} from "~/ui/components/structured-data";
 import { PageLoadingFallback } from "~/ui/primitives/spinner";
 
 const siteUrl = getPublicSiteUrl();
+
+const featuredDescription = `Best sellers and featured products at ${SEO_CONFIG.name}. Curated picks and top sellers.`;
 
 export const metadata: Metadata = {
   alternates: {
     canonical: `${siteUrl}/featured`,
   },
-  description: `Best sellers and featured products at ${SEO_CONFIG.name}. Curated picks and top sellers.`,
+  description: featuredDescription,
   openGraph: {
-    description: `Best sellers and featured products at ${SEO_CONFIG.name}. Curated picks and top sellers.`,
+    description: featuredDescription,
+    siteName: SEO_CONFIG.fullName,
     title: `Best Sellers | ${SEO_CONFIG.name}`,
     type: "website",
     url: `${siteUrl}/featured`,
   },
   title: "Best Sellers",
+  twitter: {
+    card: "summary_large_image",
+    description: featuredDescription,
+    title: `Best Sellers | ${SEO_CONFIG.name}`,
+  },
 };
 
 interface CategoryOption {
@@ -47,6 +58,7 @@ interface Product {
   originalPrice?: number;
   price: number;
   rating: number;
+  slug?: string;
   tokenGated?: boolean;
 }
 
@@ -88,12 +100,22 @@ export default async function FeaturedPage({ searchParams }: PageProps) {
     ...(data.categories ?? []),
   ];
 
-  const description = `Browse best sellers and featured products at ${SEO_CONFIG.name}.`;
-
   return (
     <>
+      <BreadcrumbStructuredData
+        items={[
+          { name: "Home", url: `${siteUrl}/` },
+          { name: "Products", url: `${siteUrl}/products` },
+          { name: "Best Sellers", url: `${siteUrl}/featured` },
+        ]}
+      />
       <CollectionPageStructuredData
-        description={description}
+        description={featuredDescription}
+        items={products.map((p) => ({
+          image: p.image,
+          name: p.name,
+          url: `${siteUrl}/${p.slug ?? p.id}`,
+        }))}
         name="Best Sellers"
         numberOfItems={data.total ?? 0}
         url={`${siteUrl}/featured`}
@@ -105,7 +127,7 @@ export default async function FeaturedPage({ searchParams }: PageProps) {
             { href: "/products", name: "Products" },
             { href: "/featured", name: "Best Sellers" },
           ]}
-          description={description}
+          description={featuredDescription}
           initialCategories={categories}
           initialCategory="featured"
           initialPage={page}
@@ -145,6 +167,7 @@ async function fetchFeaturedProducts(
   try {
     const res = await fetch(`${baseUrl}/api/products?${params}`, {
       next: { revalidate: 60 },
+      signal: AbortSignal.timeout(8000),
     });
     if (!res.ok) return { categories: [], items: [], total: 0, totalPages: 1 };
     return (await res.json()) as ProductsResponse;

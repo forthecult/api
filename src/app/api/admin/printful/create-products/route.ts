@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { UTApi } from "uploadthing/server";
 
-import { getAdminAuth } from "~/lib/admin-api-auth";
+import { adminAuthFailureResponse, getAdminAuth } from "~/lib/admin-api-auth";
 import {
   createSyncProduct,
   fetchCatalogVariants,
@@ -37,9 +37,7 @@ import { getUploadThingToken } from "~/lib/uploadthing-token";
  */
 export async function POST(request: NextRequest) {
   const authResult = await getAdminAuth(request);
-  if (!authResult?.ok) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  if (!authResult?.ok) return adminAuthFailureResponse(authResult);
 
   const pf = getPrintfulIfConfigured();
   if (!pf) {

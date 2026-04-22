@@ -43,13 +43,22 @@ const headers: Record<string, string> = {
   Authorization: `Bearer ${API_KEY}`,
 };
 
-const CRUSTAFARIANISM_BASE = resolve(
+const CRUSTAFARIANISM_PUBLIC = resolve(
   process.cwd(),
   "public/crypto/crustafarianism",
 );
-const CRUSTAFARIAN_MAIN_IMAGE = resolve(CRUSTAFARIANISM_BASE, "crust-logo.png");
-const DESIGN_DIR = resolve(CRUSTAFARIANISM_BASE, "design");
-const DESIGN_ART_DIR = resolve(CRUSTAFARIANISM_BASE, "design art");
+// design source art lives outside public/ so we don't ship ~4.3mb of
+// print-on-demand source psd-equivalents to storefront visitors on every deploy.
+const CRUSTAFARIANISM_ASSETS = resolve(
+  process.cwd(),
+  "assets/crustafarianism",
+);
+const CRUSTAFARIAN_MAIN_IMAGE = resolve(
+  CRUSTAFARIANISM_PUBLIC,
+  "crust-logo.png",
+);
+const DESIGN_DIR = resolve(CRUSTAFARIANISM_ASSETS, "design");
+const DESIGN_ART_DIR = resolve(CRUSTAFARIANISM_ASSETS, "design-art");
 
 /** Only these 5 Crustafarian designs are used. First = transparent logo (black bg on product). Rest = full artworks (cover canvas). */
 const CRUSTAFARIAN_DESIGN_KEYS = [
@@ -89,7 +98,12 @@ const PRODUCTS_USE_TRANSPARENT_LOGO = new Set(
 );
 
 function resolveDesignPath(key: string): string | null {
-  for (const dir of [DESIGN_ART_DIR, DESIGN_DIR, CRUSTAFARIANISM_BASE]) {
+  for (const dir of [
+    DESIGN_ART_DIR,
+    DESIGN_DIR,
+    CRUSTAFARIANISM_ASSETS,
+    CRUSTAFARIANISM_PUBLIC,
+  ]) {
     if (!existsSync(dir)) continue;
     for (const ext of [".png", ".jpg", ".jpeg", ".webp"]) {
       const p = resolve(dir, `${key}${ext}`);
@@ -129,7 +143,7 @@ function designFileForProduct(productLabel: string): {
       return { path: CRUSTAFARIAN_MAIN_IMAGE, key, coverCanvas: false };
     const fallback = existsSync(CRUSTAFARIAN_MAIN_IMAGE)
       ? CRUSTAFARIAN_MAIN_IMAGE
-      : resolve(CRUSTAFARIANISM_BASE, "crustafarian.png");
+      : resolve(CRUSTAFARIANISM_PUBLIC, "crustafarian.png");
     if (!existsSync(fallback))
       throw new Error(
         `No design file for key "${key}" and no fallback. Only use the 5 Crustafarian designs.`,

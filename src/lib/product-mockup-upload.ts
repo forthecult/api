@@ -13,12 +13,26 @@ import { slugify } from "~/lib/slugify";
 const WEBP_QUALITY = 85;
 const MAX_WIDTH = 1600;
 
+// m5: exact-host allowlists (with suffix match on registered subdomains) —
+// `substring` matching treated `printful.evil.com` as a printful host and
+// `uploadthing-phish.io` as our own CDN. these arrays enumerate the real
+// hosts, and hostMatchesAllowlist only returns true for an exact match or a
+// subdomain of one of the registered apex domains.
+const PROVIDER_HOSTS = [
+  "printful.com",
+  "printify.com",
+  "cdn.printful.com",
+  "files.cdn.printful.com",
+  "images-api.printify.com",
+];
+const UPLOADTHING_HOSTS = ["utfs.io", "ufs.sh", "uploadthing.com"];
+
 /** Whether the URL is from a Printful or Printify CDN (should be re-hosted). */
 export function isProviderImageUrl(url: null | string): boolean {
   if (!url || typeof url !== "string") return false;
   try {
-    const host = new URL(url).hostname.toLowerCase();
-    return host.includes("printful") || host.includes("printify");
+    const host = new URL(url).hostname;
+    return hostMatchesAllowlist(host, PROVIDER_HOSTS);
   } catch {
     return false;
   }
@@ -28,15 +42,18 @@ export function isProviderImageUrl(url: null | string): boolean {
 export function isUploadThingUrl(url: null | string): boolean {
   if (!url || typeof url !== "string") return false;
   try {
-    const host = new URL(url).hostname.toLowerCase();
-    return (
-      host.includes("utfs.io") ||
-      host.includes("ufs.sh") ||
-      host.includes("uploadthing")
-    );
+    const host = new URL(url).hostname;
+    return hostMatchesAllowlist(host, UPLOADTHING_HOSTS);
   } catch {
     return false;
   }
+}
+
+function hostMatchesAllowlist(host: string, allowlist: string[]): boolean {
+  const h = host.toLowerCase();
+  return allowlist.some(
+    (allowed) => h === allowed || h.endsWith(`.${allowed}`),
+  );
 }
 
 const SEEED_CACHE_BASE =

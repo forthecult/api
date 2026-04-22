@@ -3,7 +3,7 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
 import { productsTable } from "~/db/schema";
-import { getAdminAuth } from "~/lib/admin-api-auth";
+import { adminAuthFailureResponse, getAdminAuth } from "~/lib/admin-api-auth";
 import {
   confirmPrintifyPublishingSucceeded,
   createPrintifyWebhook,
@@ -32,9 +32,7 @@ const REQUIRED_PRODUCT_WEBHOOK_TOPICS = [
  */
 export async function GET(request: NextRequest) {
   const authResult = await getAdminAuth(request);
-  if (!authResult?.ok) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  if (!authResult?.ok) return adminAuthFailureResponse(authResult);
 
   const pf = getPrintifyIfConfigured();
   let webhooks: Awaited<ReturnType<typeof validatePrintifyWebhooks>> | null =
@@ -91,9 +89,7 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   const authResult = await getAdminAuth(request);
-  if (!authResult?.ok) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  if (!authResult?.ok) return adminAuthFailureResponse(authResult);
 
   // Check if Printify is configured
   const pf = getPrintifyIfConfigured();

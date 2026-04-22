@@ -4,9 +4,9 @@ import { ChevronDown } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { cn } from "~/lib/cn";
-import { getMainAppUrl } from "~/lib/env";
+import { getAdminApiBaseUrl } from "~/lib/env";
 
-const API_BASE = getMainAppUrl();
+const API_BASE = getAdminApiBaseUrl();
 
 export interface BrandOption {
   id: string;

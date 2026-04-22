@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 
-import { getAdminAuth } from "~/lib/admin-api-auth";
+import { adminAuthFailureResponse, getAdminAuth } from "~/lib/admin-api-auth";
 import {
   disableWebhook,
   getPrintfulIfConfigured,
@@ -54,9 +54,7 @@ const REQUIRED_WEBHOOK_TYPES = [
  */
 export async function GET(request: NextRequest) {
   const authResult = await getAdminAuth(request);
-  if (!authResult?.ok) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  if (!authResult?.ok) return adminAuthFailureResponse(authResult);
 
   const pf = getPrintfulIfConfigured();
   if (!pf) {
@@ -104,9 +102,7 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   const authResult = await getAdminAuth(request);
-  if (!authResult?.ok) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  if (!authResult?.ok) return adminAuthFailureResponse(authResult);
 
   const pf = getPrintfulIfConfigured();
   if (!pf) {

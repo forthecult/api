@@ -1,5 +1,7 @@
 import { createHmac } from "node:crypto";
 
+import { requireAuthSecret } from "~/lib/require-auth-secret";
+
 /**
  * Server-side only. Computes the public display name for a product review.
  * - If author is set (e.g. imported reviews): uses author (first name only).
@@ -18,12 +20,7 @@ export function getReviewDisplayName(review: {
     const first = review.customerName.trim().split(/\s+/)[0];
     return first ?? "Customer";
   }
-  const secret =
-    typeof process.env.AUTH_SECRET === "string" &&
-    process.env.AUTH_SECRET.length > 0
-      ? process.env.AUTH_SECRET
-      : "review-display-fallback";
-  const hash = createHmac("sha256", secret)
+  const hash = createHmac("sha256", requireAuthSecret("reviews-display-name"))
     .update(review.id)
     .digest("hex")
     .slice(-5);

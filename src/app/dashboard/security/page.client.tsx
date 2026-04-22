@@ -46,6 +46,68 @@ interface LinkedAccount {
   providerId: string;
 }
 
+function ChangePasswordEmailCard({
+  accounts,
+  onSend,
+  resetEmailSent,
+  resetError,
+  resetLoading,
+  userEmail,
+}: {
+  accounts: LinkedAccount[];
+  onSend: () => void;
+  resetEmailSent: boolean;
+  resetError: string;
+  resetLoading: boolean;
+  userEmail: string | undefined;
+}) {
+  const hasCredentialAccount = accounts.some(
+    (a) => a.providerId === "credential",
+  );
+  const showChangePassword =
+    hasCredentialAccount && isRealEmail(userEmail ?? "");
+  if (!showChangePassword) return null;
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <KeyRound className="h-5 w-5" />
+          Change password
+        </CardTitle>
+        <p className="text-sm text-muted-foreground">
+          We&apos;ll send you an email with a link to set a new password. Use
+          that link to change your password.
+        </p>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {resetError && (
+          <div
+            className={`
+              rounded-md bg-destructive/10 p-3 text-sm text-destructive
+            `}
+          >
+            {resetError}
+          </div>
+        )}
+        {resetEmailSent && (
+          <div
+            className={`
+              rounded-md bg-green-50 p-3 text-sm text-green-700
+              dark:bg-green-950/30 dark:text-green-400
+            `}
+          >
+            Check your inbox (and spam) for a link to change your password. The
+            link expires in 1 hour.
+          </div>
+        )}
+        <Button disabled={resetLoading} onClick={onSend} variant="outline">
+          {resetLoading ? "Sending…" : "Send change password email"}
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
 export function SecurityPageClient() {
   const { isPending, user } = useCurrentUserOrRedirect();
   const [password, setPasswordInput] = useState("");
@@ -646,57 +708,14 @@ export function SecurityPageClient() {
         </div>
       )}
 
-      {(() => {
-        const hasCredentialAccount = accounts.some(
-          (a) => a.providerId === "credential",
-        );
-        const showChangePassword =
-          hasCredentialAccount && isRealEmail(user?.email ?? "");
-        if (!showChangePassword) return null;
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <KeyRound className="h-5 w-5" />
-                Change password
-              </CardTitle>
-              <p className="text-sm text-muted-foreground">
-                We&apos;ll send you an email with a link to set a new password.
-                Use that link to change your password.
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {resetError && (
-                <div
-                  className={`
-                    rounded-md bg-destructive/10 p-3 text-sm text-destructive
-                  `}
-                >
-                  {resetError}
-                </div>
-              )}
-              {resetEmailSent && (
-                <div
-                  className={`
-                    rounded-md bg-green-50 p-3 text-sm text-green-700
-                    dark:bg-green-950/30 dark:text-green-400
-                  `}
-                >
-                  Check your inbox (and spam) for a link to change your
-                  password. The link expires in 1 hour.
-                </div>
-              )}
-              <Button
-                disabled={resetLoading}
-                onClick={handleSendChangePasswordEmail}
-                variant="outline"
-              >
-                {resetLoading ? "Sending…" : "Send change password email"}
-              </Button>
-            </CardContent>
-          </Card>
-        );
-      })()}
+      <ChangePasswordEmailCard
+        accounts={accounts}
+        onSend={handleSendChangePasswordEmail}
+        resetEmailSent={resetEmailSent}
+        resetError={resetError}
+        resetLoading={resetLoading}
+        userEmail={user?.email}
+      />
 
       <Card>
         <CardHeader>
@@ -1084,12 +1103,15 @@ export function SecurityPageClient() {
           <CardContent className="space-y-4">
             <div className="flex flex-col items-center">
               {qrCodeImageUrl ? (
-                <img
+                <Image
                   alt="QR Code for Two-Factor Authentication"
                   className={`
                     h-48 w-48 rounded border border-border object-contain
                   `}
+                  height={192}
                   src={qrCodeImageUrl}
+                  unoptimized
+                  width={192}
                 />
               ) : (
                 <div

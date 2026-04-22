@@ -1,13 +1,20 @@
 /**
  * GET /api/governance/wallet-balance?wallet=<base58>
  * Returns the CULT token balance in the user's wallet (not staked).
+ *
+ * kit-native. talks to solana via @solana/kit — no web3.js on this path.
  */
 
-import { Connection, PublicKey } from "@solana/web3.js";
 import { NextResponse } from "next/server";
 
-import { getSolanaRpcUrlServer } from "~/lib/solana-pay";
-import { getActiveToken } from "~/lib/token-config";
+import {
+  getTokenBalanceAnyProgramKit,
+  TOKEN_2022_PROGRAM_ADDRESS,
+} from "~/lib/solana-kit-rpc";
+import {
+  getActiveToken,
+  TOKEN_2022_PROGRAM_ID_BASE58,
+} from "~/lib/token-config";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -20,60 +27,43 @@ export async function GET(request: Request) {
   }
 
   const token = getActiveToken();
+  const zero = {
+    balance: "0",
+    balanceRaw: "0",
+    decimals: token.decimals,
+    tokenSymbol: token.symbol,
+  };
 
-  const tokenPrograms =
-    token.tokenProgram === "token-2022"
-      ? ([
-          new PublicKey("TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"),
-          new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),
-        ] as const)
-      : [new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA")];
+  // prefer the configured token program so we save an rpc hop; the helper
+  // still falls back to the other program if the ata isn't found there.
+  const preferred =
+    token.tokenProgram === TOKEN_2022_PROGRAM_ID_BASE58
+      ? TOKEN_2022_PROGRAM_ADDRESS
+      : undefined;
 
   try {
-    const connection = new Connection(getSolanaRpcUrlServer());
-    const walletPubkey = new PublicKey(wallet);
-    const mintPubkey = new PublicKey(token.mint);
-    const { getAssociatedTokenAddressSync } = await import("@solana/spl-token");
+    const info = await getTokenBalanceAnyProgramKit(
+      token.mint,
+      wallet,
+      preferred,
+    );
+    if (!info) return NextResponse.json(zero);
 
-    for (const tokenProgramId of tokenPrograms) {
-      const ata = getAssociatedTokenAddressSync(
-        mintPubkey,
-        walletPubkey,
-        false,
-        tokenProgramId,
-      );
-      try {
-        const balanceInfo = await connection.getTokenAccountBalance(ata);
-        const amountRaw = balanceInfo.value.amount;
-        const decimals = balanceInfo.value.decimals;
-        const uiAmountString = balanceInfo.value.uiAmountString;
-        const balance =
-          uiAmountString != null && uiAmountString !== ""
-            ? uiAmountString
-            : amountRaw === "0"
-              ? "0"
-              : (Number(amountRaw) / 10 ** decimals).toFixed(decimals);
-        return NextResponse.json({
-          balance,
-          balanceRaw: amountRaw,
-          decimals: token.decimals,
-          tokenSymbol: token.symbol,
-        });
-      } catch {}
-    }
+    const balance =
+      info.uiAmountString !== ""
+        ? info.uiAmountString
+        : info.amount === 0n
+          ? "0"
+          : (Number(info.amount) / 10 ** info.decimals).toFixed(info.decimals);
+
     return NextResponse.json({
-      balance: "0",
-      balanceRaw: "0",
+      balance,
+      balanceRaw: info.amount.toString(),
       decimals: token.decimals,
       tokenSymbol: token.symbol,
     });
   } catch (e) {
     console.error("[governance] wallet-balance error:", e);
-    return NextResponse.json({
-      balance: "0",
-      balanceRaw: "0",
-      decimals: token.decimals,
-      tokenSymbol: token.symbol,
-    });
+    return NextResponse.json(zero);
   }
 }

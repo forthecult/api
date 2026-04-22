@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import sharp from "sharp";
 import { UTApi } from "uploadthing/server";
 
-import { getAdminAuth } from "~/lib/admin-api-auth";
+import { adminAuthFailureResponse, getAdminAuth } from "~/lib/admin-api-auth";
 import { getUploadThingToken } from "~/lib/uploadthing-token";
 
 const MAX_SIZE = 4 * 1024 * 1024; // 4MB
@@ -20,9 +20,7 @@ const MAX_WIDTH = 1600;
  */
 export async function POST(request: NextRequest) {
   const authResult = await getAdminAuth(request);
-  if (!authResult?.ok) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  if (!authResult?.ok) return adminAuthFailureResponse(authResult);
 
   let formData: FormData;
   try {

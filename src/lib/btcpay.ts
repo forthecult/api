@@ -168,11 +168,16 @@ export async function getBtcpayInvoiceStatus(
   return status as InvoiceStatus;
 }
 
-/** True when payment is considered complete (no further confirmation needed). */
+/**
+ * True when payment is considered complete (no further confirmation needed).
+ *
+ * l5: `paid` in btcpay means "customer pressed pay and broadcast a tx" but the
+ * tx may still be in the mempool and can be replaced / dropped. Only treat
+ * `confirmed` / `complete` / `settled` as final; `paid` leaves the order in
+ * pending state until btcpay confirms on-chain.
+ */
 export function isInvoiceSettled(status: InvoiceStatus | null): boolean {
   if (!status) return false;
   const s = status.toLowerCase();
-  return (
-    s === "paid" || s === "confirmed" || s === "complete" || s === "settled"
-  );
+  return s === "confirmed" || s === "complete" || s === "settled";
 }

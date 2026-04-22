@@ -145,19 +145,34 @@ const config = {
           // [SECURITY] Content Security Policy — defence-in-depth against XSS
           {
             key: "Content-Security-Policy",
-            value: [
-              "default-src 'self'",
-              // 'unsafe-inline' required for Next.js style injection + Tailwind; 'unsafe-eval' for dev HMR (stripped by Next in prod)
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://telegram.org https://js.stripe.com https://sideshift.ai",
-              "style-src 'self' 'unsafe-inline'",
-              "img-src 'self' data: blob: https:",
-              "font-src 'self' data:",
-              "connect-src 'self' https: wss: https://*.walletconnect.org https://*.walletconnect.com wss://*.walletconnect.org wss://*.walletconnect.com",
-              "frame-src 'self' https://js.stripe.com https://telegram.org https://oauth.telegram.org https://sideshift.ai",
-              "frame-ancestors 'self'",
-              "base-uri 'self'",
-              "form-action 'self'",
-            ].join("; "),
+            value: (() => {
+              const isDev = process.env.NODE_ENV !== "production";
+              // 'unsafe-inline' is required for Next.js style injection + Tailwind runtime
+              // hydration markers. 'unsafe-eval' is only needed for the dev HMR runtime
+              // (and sideshift widget in dev); prod builds run without it. (h4)
+              const scriptSrc = [
+                "'self'",
+                "'unsafe-inline'",
+                isDev ? "'unsafe-eval'" : null,
+                "https://telegram.org",
+                "https://js.stripe.com",
+                "https://sideshift.ai",
+              ]
+                .filter(Boolean)
+                .join(" ");
+              return [
+                "default-src 'self'",
+                `script-src ${scriptSrc}`,
+                "style-src 'self' 'unsafe-inline'",
+                "img-src 'self' data: blob: https:",
+                "font-src 'self' data:",
+                "connect-src 'self' https: wss: https://*.walletconnect.org https://*.walletconnect.com wss://*.walletconnect.org wss://*.walletconnect.com",
+                "frame-src 'self' https://js.stripe.com https://telegram.org https://oauth.telegram.org https://sideshift.ai",
+                "frame-ancestors 'self'",
+                "base-uri 'self'",
+                "form-action 'self'",
+              ].join("; ");
+            })(),
           },
           // Preconnect to frequently-used image/asset CDNs to reduce DNS+TLS latency
           {

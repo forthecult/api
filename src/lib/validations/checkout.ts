@@ -67,6 +67,15 @@ export const createOrderSchema = z.object({
       "cult",
     ])
     .optional(),
+  // purely advisory: the client-displayed crypto amount (e.g. "0.05") for the
+  // selected token. the server recomputes from a trusted price feed and persists
+  // its own value as `crypto_amount`; this field is only used to flag UI drift.
+  cryptoAmount: z
+    .string()
+    .trim()
+    .regex(/^\d+(\.\d+)?$/)
+    .max(40)
+    .optional(),
   totalCents: z.number().int().nonnegative("Total must be non-negative"),
   userId: z.string().nullable().optional(),
   // Staking wallet for CULT member tier discounts (stacked with coupon/affiliate).

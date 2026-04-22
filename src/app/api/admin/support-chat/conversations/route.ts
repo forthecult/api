@@ -16,7 +16,7 @@ import {
   supportChatMessageTable,
 } from "~/db/schema";
 import { userTable } from "~/db/schema/users/tables";
-import { getAdminAuth } from "~/lib/admin-api-auth";
+import { adminAuthFailureResponse, getAdminAuth } from "~/lib/admin-api-auth";
 
 const DEFAULT_PAGE_SIZE = 20;
 const MAX_PAGE_SIZE = 100;
@@ -28,9 +28,7 @@ const MAX_PAGE_SIZE = 100;
 export async function GET(request: NextRequest) {
   try {
     const authResult = await getAdminAuth(request);
-    if (!authResult?.ok) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!authResult?.ok) return adminAuthFailureResponse(authResult);
 
     const page = Math.max(
       1,

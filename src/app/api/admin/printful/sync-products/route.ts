@@ -4,7 +4,7 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
 import { productsTable, productVariantsTable } from "~/db/schema";
-import { getAdminAuth } from "~/lib/admin-api-auth";
+import { adminAuthFailureResponse, getAdminAuth } from "~/lib/admin-api-auth";
 import {
   fetchCatalogProduct,
   fetchCatalogVariants,
@@ -22,9 +22,7 @@ import {
 export async function POST(request: NextRequest) {
   try {
     const authResult = await getAdminAuth(request);
-    if (!authResult?.ok) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!authResult?.ok) return adminAuthFailureResponse(authResult);
 
     const body = (await request.json().catch(() => ({}))) as {
       catalogProductId?: number;

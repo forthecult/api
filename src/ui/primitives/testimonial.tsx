@@ -1,4 +1,5 @@
 import { Star } from "lucide-react";
+import Image from "next/image";
 
 import { cn } from "~/lib/cn";
 
@@ -59,10 +60,13 @@ export function TestimonialCard({
       )}
       <div className="flex items-center gap-3">
         {author.avatar ? (
-          <img
+          <Image
             alt=""
             className="h-12 w-12 shrink-0 rounded-full object-cover"
+            height={48}
             src={author.avatar}
+            unoptimized
+            width={48}
           />
         ) : null}
         <div className="flex min-w-0 flex-1 flex-col items-start">

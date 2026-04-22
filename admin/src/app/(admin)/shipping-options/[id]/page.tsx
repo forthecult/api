@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
-import { getMainAppUrl } from "~/lib/env";
+import { getAdminApiBaseUrl } from "~/lib/env";
 import { Button } from "~/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/ui/card";
 
@@ -13,7 +13,7 @@ interface BrandOption {
   name: string;
 }
 
-const API_BASE = getMainAppUrl();
+const API_BASE = getAdminApiBaseUrl();
 
 const inputClass =
   "w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";

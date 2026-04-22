@@ -5,7 +5,7 @@ import { NextResponse } from "next/server";
 
 import { db } from "~/db";
 import { sizeChartsTable } from "~/db/schema";
-import { getAdminAuth } from "~/lib/admin-api-auth";
+import { adminAuthFailureResponse, getAdminAuth } from "~/lib/admin-api-auth";
 import { apiError } from "~/lib/api-error";
 
 const _PROVIDERS = ["printful", "printify", "manual"] as const;
@@ -18,9 +18,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const authResult = await getAdminAuth(request);
-  if (!authResult?.ok) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  if (!authResult?.ok) return adminAuthFailureResponse(authResult);
 
   const { id } = await params;
   if (!id) return apiError("MISSING_REQUIRED_FIELD", { field: "id" });
@@ -42,9 +40,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const authResult = await getAdminAuth(request);
-  if (!authResult?.ok) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  if (!authResult?.ok) return adminAuthFailureResponse(authResult);
 
   const { id } = await params;
   if (!id) return apiError("MISSING_REQUIRED_FIELD", { field: "id" });
@@ -67,9 +63,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const authResult = await getAdminAuth(request);
-  if (!authResult?.ok) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  if (!authResult?.ok) return adminAuthFailureResponse(authResult);
 
   const { id } = await params;
   if (!id) return apiError("MISSING_REQUIRED_FIELD", { field: "id" });

@@ -4,9 +4,9 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 import { useSession } from "~/lib/auth-client";
-import { getMainAppUrl } from "~/lib/env";
+import { getAdminApiBaseUrl, getMainAppUrl } from "~/lib/env";
 
-const MAIN_APP = getMainAppUrl();
+const STOREFRONT_SIGNIN_BASE = getMainAppUrl();
 
 export function AdminGuard({ children }: { children: React.ReactNode }) {
   const { data, isPending } = useSession();
@@ -15,14 +15,15 @@ export function AdminGuard({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (isPending) return;
     if (!data?.user) {
-      const signInUrl = `${MAIN_APP}/auth/sign-in?callbackUrl=${encodeURIComponent(typeof window !== "undefined" ? window.location.href : "")}`;
+      const signInUrl = `${STOREFRONT_SIGNIN_BASE}/auth/sign-in?callbackUrl=${encodeURIComponent(typeof window !== "undefined" ? window.location.href : "")}`;
       window.location.href = signInUrl;
       return;
     }
-    fetch(`${MAIN_APP}/api/admin/me`, { credentials: "include" })
+    const apiBase = getAdminApiBaseUrl();
+    fetch(`${apiBase}/api/admin/me`, { credentials: "include" })
       .then((res) => {
         if (res.status === 403) {
-          window.location.href = MAIN_APP;
+          window.location.href = STOREFRONT_SIGNIN_BASE;
         }
       })
       .catch(() => {

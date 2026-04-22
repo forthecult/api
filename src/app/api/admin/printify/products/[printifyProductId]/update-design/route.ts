@@ -14,7 +14,7 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import type { PrintifyProduct } from "~/lib/printify";
 
-import { getAdminAuth } from "~/lib/admin-api-auth";
+import { adminAuthFailureResponse, getAdminAuth } from "~/lib/admin-api-auth";
 import {
   fetchPrintifyProduct,
   getPrintifyIfConfigured,
@@ -27,9 +27,7 @@ export async function POST(
   context: { params: Promise<{ printifyProductId: string }> },
 ) {
   const authResult = await getAdminAuth(request);
-  if (!authResult?.ok) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  if (!authResult?.ok) return adminAuthFailureResponse(authResult);
 
   const pf = getPrintifyIfConfigured();
   if (!pf) {

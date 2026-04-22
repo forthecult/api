@@ -6,9 +6,37 @@ import { db } from "~/db";
 import { uploadsTable } from "~/db/schema";
 import { auth } from "~/lib/auth";
 import { getUploadThingToken } from "~/lib/uploadthing-token";
-import { scanFileUrl } from "~/lib/virus-scan";
+import { assertVirusTotalConfigured, scanFileUrl } from "~/lib/virus-scan";
+
+// m6: fail boot in prod if virustotal isn't configured — we rely on it for
+// malware scanning user-uploaded images + videos.
+assertVirusTotalConfigured();
 
 const f = createUploadthing();
+
+/**
+ * m6: scan a freshly-uploaded file and, if vt flags it, delete it from
+ * uploadthing before rejecting the upload.
+ */
+async function scanAndMaybeDelete(
+  file: { key: string; ufsUrl: string },
+  maxBytes: number,
+): Promise<void> {
+  const scan = await scanFileUrl(file.ufsUrl, { maxBytes });
+  if (scan.ok) return;
+  const token = getUploadThingToken();
+  if (token) {
+    try {
+      const utapi = new UTApi({ token });
+      await utapi.deleteFiles(file.key);
+    } catch {
+      // best-effort delete — upload is being rejected either way.
+    }
+  }
+  throw new UploadThingError(
+    `File rejected: ${scan.error}. Please upload a different file.`,
+  );
+}
 
 const AVATAR_MAX_SIZE = "1MB";
 export const ourFileRouter = {
@@ -31,21 +59,7 @@ export const ourFileRouter = {
         file: { key: string; ufsUrl: string };
         metadata: { userId: string };
       }) => {
-        const scan = await scanFileUrl(file.ufsUrl);
-        if (!scan.ok) {
-          const token = getUploadThingToken();
-          if (token) {
-            try {
-              const utapi = new UTApi({ token });
-              await utapi.deleteFiles(file.key);
-            } catch {
-              // best-effort delete
-            }
-          }
-          throw new UploadThingError(
-            `File rejected: ${scan.error}. Please upload a different image.`,
-          );
-        }
+        await scanAndMaybeDelete(file, 2 * 1024 * 1024);
 
         return {
           fileKey: file.key,
@@ -91,6 +105,10 @@ export const ourFileRouter = {
         console.log("Upload complete for userId (image):", metadata.userId);
         console.log("file url", file.ufsUrl);
         console.log("file key", file.key);
+
+        // m6: scan before recording in the db so malware-flagged uploads never
+        // become user-visible URLs.
+        await scanAndMaybeDelete(file, 4 * 1024 * 1024);
 
         try {
           await db.insert(uploadsTable).values({
@@ -139,6 +157,10 @@ export const ourFileRouter = {
         console.log("Upload complete for userId (video):", metadata.userId);
         console.log("file url", file.ufsUrl);
         console.log("file key", file.key);
+
+        // m6: larger cap for videos — vt free tier tops out around 32mb, so
+        // anything bigger is pass-through with a warn log inside scanFileUrl.
+        await scanAndMaybeDelete(file, 32 * 1024 * 1024);
 
         try {
           await db.insert(uploadsTable).values({

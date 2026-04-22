@@ -1571,11 +1571,12 @@ export function CryptoPayClient({
                       </div>
                     ) : isMobile && token !== "sui" ? null : qrDataUrl ? (
                       <div className="relative inline-block">
-                        <img
+                        <Image
                           alt="Payment QR code"
                           className="rounded-lg"
                           height={320}
                           src={qrDataUrl}
+                          unoptimized
                           width={320}
                         />
                         {/* Logo overlay in the center of the QR code */}
@@ -1585,11 +1586,12 @@ export function CryptoPayClient({
                           `}
                         >
                           <div className="rounded-full bg-white p-1.5">
-                            <img
+                            <Image
                               alt=""
                               className="size-9 object-contain"
                               height={36}
                               src={logo.src}
+                              unoptimized
                               width={36}
                             />
                           </div>
@@ -1640,11 +1642,12 @@ export function CryptoPayClient({
                             relative inline-block rounded-lg bg-white p-2
                           `}
                         >
-                          <img
+                          <Image
                             alt="Payment QR code"
                             className="rounded-lg"
                             height={280}
                             src={qrDataUrl}
+                            unoptimized
                             width={280}
                           />
                           <div
@@ -1653,11 +1656,12 @@ export function CryptoPayClient({
                             `}
                           >
                             <div className={`rounded-full bg-white p-1.5`}>
-                              <img
+                              <Image
                                 alt=""
                                 className="size-8 object-contain"
                                 height={32}
                                 src={logo.src}
+                                unoptimized
                                 width={32}
                               />
                             </div>
@@ -1764,11 +1768,12 @@ export function CryptoPayClient({
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
                       {wallet?.adapter.icon && (
-                        <img
+                        <Image
                           alt=""
                           className="size-8 rounded object-contain"
                           height={32}
                           src={wallet.adapter.icon}
+                          unoptimized
                           width={32}
                         />
                       )}
@@ -1850,11 +1855,12 @@ export function CryptoPayClient({
                         type="button"
                       >
                         {wallet?.adapter.icon && (
-                          <img
+                          <Image
                             alt=""
                             className="size-5 object-contain"
                             height={20}
                             src={wallet.adapter.icon}
+                            unoptimized
                             width={20}
                           />
                         )}
@@ -1914,11 +1920,12 @@ export function CryptoPayClient({
                         type="button"
                       >
                         {wallet?.adapter.icon && (
-                          <img
+                          <Image
                             alt=""
                             className="size-5 object-contain"
                             height={20}
                             src={wallet.adapter.icon}
+                            unoptimized
                             width={20}
                           />
                         )}

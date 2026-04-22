@@ -88,12 +88,13 @@ function WalletOption({
           `}
           style={{ height: 32, width: 32 }}
         >
-          <img
+          <Image
             alt=""
             className="shrink-0 object-contain"
             height={32}
             src={icon}
             style={{ height: 32, minHeight: 32, minWidth: 32, width: 32 }}
+            unoptimized
             width={32}
           />
         </div>
@@ -457,11 +458,12 @@ export function ConnectWalletModal({
                         onClick={() => onOpenChange(false)}
                         type="button"
                       >
-                        <img
+                        <Image
                           alt=""
                           className={`size-8 shrink-0 rounded-md object-contain`}
                           height={32}
                           src={METAMASK_LOGO}
+                          unoptimized
                           width={32}
                         />
                         <span className="flex-1 font-medium">MetaMask</span>
@@ -529,11 +531,12 @@ export function ConnectWalletModal({
                 )}
               >
                 {selectedWallet.adapter.icon && (
-                  <img
+                  <Image
                     alt=""
                     className="size-14 min-h-14 min-w-14 object-contain"
                     height={56}
                     src={selectedWallet.adapter.icon}
+                    unoptimized
                     width={56}
                   />
                 )}

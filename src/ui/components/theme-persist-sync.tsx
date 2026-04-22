@@ -5,32 +5,87 @@ import * as React from "react";
 
 import { useSession } from "~/lib/auth-client";
 
+const THEMES = new Set(["light", "dark", "system"] as const);
+type Theme = "dark" | "light" | "system";
+
 /**
- * For logged-in users: applies saved theme on load and persists theme changes to the server.
- * When initialUserTheme is provided (user has an account), we set it once on mount so the
- * theme is restored after login or on a new device. When the user changes theme, we PATCH
- * it to the profile API so it persists across sessions.
+ * client-only theme sync for logged-in users.
+ *
+ * sequence (important — prevents a race where local state clobbers server state
+ * on a new device):
+ *   1. on mount, next-themes has already applied the user's local preference
+ *      from localStorage (instant, no flash).
+ *   2. once a session exists, we GET /api/user/profile on idle. if the server
+ *      value differs from local, we call setTheme(server). the PATCH effect is
+ *      gated until this server round-trip resolves so the initial "seed" write
+ *      always reflects the authoritative server value.
+ *   3. after that, any user-driven theme change PATCHes back to the server.
  */
-export function ThemePersistSync({
-  initialUserTheme,
-}: {
-  initialUserTheme: null | string;
-}) {
+export function ThemePersistSync() {
   const { setTheme, theme } = useTheme();
   const { data } = useSession();
-  const appliedInitial = React.useRef(false);
+  const serverAppliedRef = React.useRef(false);
+  const lastSyncedThemeRef = React.useRef<null | Theme>(null);
+  const userId = data?.user?.id;
 
-  // Apply server-saved theme once when we have a logged-in user's preference
   React.useEffect(() => {
-    if (appliedInitial.current || !initialUserTheme) return;
-    appliedInitial.current = true;
-    setTheme(initialUserTheme);
-  }, [initialUserTheme, setTheme]);
+    if (serverAppliedRef.current || !userId) return;
 
-  // Persist theme changes to server when user is logged in
+    const ctrl = new AbortController();
+    const run = () => {
+      fetch("/api/user/profile", { signal: ctrl.signal })
+        .then((r) => (r.ok ? (r.json() as Promise<unknown>) : null))
+        .then((body) => {
+          if (ctrl.signal.aborted) return;
+          if (
+            body &&
+            typeof body === "object" &&
+            "theme" in body &&
+            isTheme((body as { theme: unknown }).theme)
+          ) {
+            const serverTheme = (body as { theme: Theme }).theme;
+            lastSyncedThemeRef.current = serverTheme;
+            setTheme(serverTheme);
+          }
+          // open the PATCH gate AFTER the server value is the current one.
+          serverAppliedRef.current = true;
+        })
+        .catch(() => {
+          // network/abort: still open the gate so user-driven changes persist.
+          serverAppliedRef.current = true;
+        });
+    };
+
+    const idle =
+      typeof window !== "undefined" &&
+      "requestIdleCallback" in window &&
+      (
+        window as Window & {
+          requestIdleCallback?: (cb: () => void) => number;
+        }
+      ).requestIdleCallback;
+
+    let timeoutId: null | ReturnType<typeof setTimeout> = null;
+    if (typeof idle === "function") {
+      idle(run);
+    } else {
+      timeoutId = setTimeout(run, 150);
+    }
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      ctrl.abort();
+    };
+  }, [userId, setTheme]);
+
   React.useEffect(() => {
-    if (!data?.user?.id || !theme) return;
-    if (theme !== "light" && theme !== "dark" && theme !== "system") return;
+    if (!userId || !isTheme(theme)) return;
+    // gate until we've observed the server's authoritative value; otherwise the
+    // first mount on a new device could PATCH localStorage-derived theme over
+    // the real server preference.
+    if (!serverAppliedRef.current) return;
+    if (lastSyncedThemeRef.current === theme) return;
+    lastSyncedThemeRef.current = theme;
 
     const ctrl = new AbortController();
     fetch("/api/user/profile", {
@@ -39,10 +94,14 @@ export function ThemePersistSync({
       method: "PATCH",
       signal: ctrl.signal,
     }).catch(() => {
-      // Ignore errors (e.g. network); theme is still in localStorage
+      /* ignore: localStorage still retains the choice */
     });
     return () => ctrl.abort();
-  }, [data?.user?.id, theme]);
+  }, [userId, theme]);
 
   return null;
+}
+
+function isTheme(v: unknown): v is Theme {
+  return typeof v === "string" && THEMES.has(v as Theme);
 }

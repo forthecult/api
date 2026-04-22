@@ -174,10 +174,12 @@
   }
 }
 
-/* JetBrains Mono for crypto prices, data values, and terminal aesthetic */
+/* Mono for crypto prices, data values, and terminal aesthetic.
+   Shares the Geist Mono family already loaded in layout.tsx — previously this
+   pulled in a second Google font (JetBrains Mono) just for numeric copy. */
 .font-mono-crypto {
   font-family:
-    var(--font-mono-crypto), "JetBrains Mono", "Fira Code", ui-monospace,
+    var(--font-geist-mono), "JetBrains Mono", "Fira Code", ui-monospace,
     monospace;
 }
 
@@ -287,14 +289,15 @@
   animation: border-pulse 3s ease-in-out infinite;
 }
 
-/* Product card hover effects — will-change only on hover to avoid permanent compositor layers */
+/* product card hover: translate only (no box-shadow — flat surfaces rule).
+   will-change is scoped to :hover so we don't permanently pin a compositor layer. */
 .product-card {
-  @apply transition-all duration-300;
+  @apply transition-transform duration-300;
 }
 
 .product-card:hover {
-  @apply shadow-lg -translate-y-1;
-  will-change: transform, box-shadow;
+  @apply -translate-y-1;
+  will-change: transform;
 }
 
 /* Optimized hover transforms for interactive elements */

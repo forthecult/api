@@ -24,6 +24,8 @@ export const productsTable = pgTable(
     amazonAsin: text("amazon_asin"),
     /** Last time Amazon price was refreshed (for cache invalidation). */
     amazonPriceRefreshedAt: timestamp("amazon_price_refreshed_at"),
+    /** Google Merchant: product age group ("newborn" | "infant" | "toddler" | "kids" | "adult"). */
+    ageGroup: text("age_group"),
     barcode: text("barcode"),
     brand: text("brand"),
     compareAtPriceCents: integer("compare_at_price_cents"),
@@ -37,8 +39,12 @@ export const productsTable = pgTable(
     externalId: text("external_id"), // printful: catalog_product_id / printify: blueprint_id
     /** Bullet-point features (JSON array of strings). Shown on product page; details go in description. */
     featuresJson: text("features_json"),
+    /** Google Merchant product category path, e.g. "Apparel & Accessories > Clothing > Tops" (taxonomy: https://www.google.com/basepages/producttype/taxonomy-with-ids.en-US.txt). */
+    googleProductCategory: text("google_product_category"),
     /** GPSR (EU General Product Safety Regulation) compliance data — JSON from Printify /gpsr.json. */
     gpsrJson: jsonb("gpsr_json"),
+    /** Product-level GTIN (UPC/EAN/JAN/ISBN) when variants share the same barcode, or the product has no variants. Per-variant gtin lives on product_variant. */
+    gtin: text("gtin"),
     handlingDaysMax: integer("handling_days_max"),
     // Estimated delivery: fulfillment (handling) and transit days from vendor or manual
     handlingDaysMin: integer("handling_days_min"), // e.g. from Printify shipping.json
@@ -50,6 +56,8 @@ export const productsTable = pgTable(
     imageUrl: text("image_url"),
     /** True when the underlying catalog product is discontinued by the manufacturer. Product should be hidden from storefront. */
     isDiscontinued: boolean("is_discontinued").notNull().default(false),
+    /** Google Merchant condition ("new" | "refurbished" | "used"). Most new retail stock = "new". */
+    itemCondition: text("item_condition").notNull().default("new"),
     // Last sync timestamp – when the product was last synced with the vendor
     lastSyncedAt: timestamp("last_synced_at"),
     /** SEO: alt text for main product image */
@@ -59,6 +67,8 @@ export const productsTable = pgTable(
     metaDescription: text("meta_description"),
     /** Blank product model (e.g. "3001") for size chart lookup. */
     model: text("model"),
+    /** Product-level Manufacturer Part Number. Per-variant mpn lives on product_variant. */
+    mpn: text("mpn"),
     name: text("name").notNull(),
     optionDefinitionsJson: text("option_definitions_json"), // [{ name, values: string[] }]
     /** Product page layout: "default" (standard PDP) or "long-form" (hero, sections, specs, FAQ). */
@@ -66,6 +76,8 @@ export const productsTable = pgTable(
     pageTitle: text("page_title"),
     physicalProduct: boolean("physical_product").notNull().default(true),
     priceCents: integer("price_cents").notNull(),
+    /** Price validity end date (for sales/promotions). Emitted as `offers.priceValidUntil` in JSON-LD. */
+    priceValidUntil: timestamp("price_valid_until"),
     // Printful Sync Product – stores the sync_product_id from Printful for bidirectional sync
     // BIGINT: Printful IDs can exceed 32-bit INTEGER max (2,147,483,647)
     printfulSyncProductId: bigint("printful_sync_product_id", {
@@ -104,6 +116,12 @@ export const productsTable = pgTable(
     shipsFromDisplay: text("ships_from_display"), // optional freeform full address
     shipsFromPostalCode: text("ships_from_postal_code"),
     shipsFromRegion: text("ships_from_region"), // state / province / region
+    /** Package height (cm) used for shipping quotes and Merchant feed. Distinct from product size: box ≠ item. */
+    shippingHeightCm: integer("shipping_height_cm"),
+    /** Package length (cm) used for shipping quotes and Merchant feed. */
+    shippingLengthCm: integer("shipping_length_cm"),
+    /** Package width (cm) used for shipping quotes and Merchant feed. */
+    shippingWidthCm: integer("shipping_width_cm"),
     sizeGuideJson: text("size_guide_json"),
     sku: text("sku"),
     slug: text("slug").unique(),
@@ -122,6 +140,7 @@ export const productsTable = pgTable(
     transitDaysMin: integer("transit_days_min"), // optional; fallback in UI if null
     updatedAt: timestamp("updated_at").notNull(),
     vendor: text("vendor"),
+    /** Product weight in grams. Used as the shipping weight by default and for the Merchant feed. */
     weightGrams: integer("weight_grams"),
     weightUnit: text("weight_unit"), // "kg" | "lb"
   },
@@ -146,6 +165,8 @@ export const productVariantsTable = pgTable(
     externalId: text("external_id"), // printful: catalog_variant_id / printify: variant_id
     /** Gender/style option (e.g. Men's / Women's for Earth Runners). Used when product has 3 option dimensions. */
     gender: text("gender"),
+    /** Variant-level GTIN (Global Trade Item Number). Preferred Merchant identifier when present. */
+    gtin: text("gtin"),
     id: text("id").primaryKey(),
     /** SEO: alt text for variant image */
     imageAlt: text("image_alt"),
@@ -154,6 +175,10 @@ export const productVariantsTable = pgTable(
     imageUrl: text("image_url"),
     /** Display label (e.g. Printful sync variant "name": "Product / Color / Size") */
     label: text("label"),
+    /** Variant-level material composition, e.g. "100% cotton". Product-level optionDefinitions for "Material" mirror the distinct values here. */
+    material: text("material"),
+    /** Variant-level Manufacturer Part Number. */
+    mpn: text("mpn"),
     priceCents: integer("price_cents").notNull(),
     // Printful Sync Variant ID – stores the sync_variant_id from Printful for bidirectional sync
     // BIGINT: Printful IDs can exceed 32-bit INTEGER max (2,147,483,647)

@@ -5,11 +5,11 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
 import { cn } from "~/lib/cn";
-import { getMainAppUrl } from "~/lib/env";
+import { getAdminApiBaseUrl } from "~/lib/env";
 import { Button } from "~/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/ui/card";
 
-const API_BASE = getMainAppUrl();
+const API_BASE = getAdminApiBaseUrl();
 
 type SortBy = "createdAt" | "discountValue" | "memberTier" | "scope";
 type SortOrder = "asc" | "desc";

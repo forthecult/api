@@ -11,7 +11,7 @@ import {
   productsTable,
   productTagsTable,
 } from "~/db/schema";
-import { getAdminAuth } from "~/lib/admin-api-auth";
+import { adminAuthFailureResponse, getAdminAuth } from "~/lib/admin-api-auth";
 import { getWholeWordRegexPattern } from "~/lib/category-auto-assign";
 
 /**
@@ -25,9 +25,7 @@ export async function POST(
 ) {
   try {
     const authResult = await getAdminAuth(request);
-    if (!authResult?.ok) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!authResult?.ok) return adminAuthFailureResponse(authResult);
 
     const { id: categoryId } = await params;
     const body = (await request.json().catch(() => ({}))) as {

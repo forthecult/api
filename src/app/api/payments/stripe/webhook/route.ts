@@ -55,7 +55,11 @@ export async function POST(request: NextRequest) {
       }
 
       const [order] = await db
-        .select({ id: ordersTable.id, status: ordersTable.status })
+        .select({
+          id: ordersTable.id,
+          status: ordersTable.status,
+          totalCents: ordersTable.totalCents,
+        })
         .from(ordersTable)
         .where(eq(ordersTable.id, orderId))
         .limit(1);
@@ -69,6 +73,39 @@ export async function POST(request: NextRequest) {
       }
       if (order.status === "paid") {
         return NextResponse.json({ duplicate: true, received: true });
+      }
+
+      // m1: reconcile captured amount vs the order total we committed to when
+      // we issued the PaymentIntent. if an upstream bug / tampering / partial
+      // auth landed a smaller amount, do NOT mark the order paid — leave it
+      // pending so ops can investigate. stripe's amount & currency are trusted
+      // because we already verified the event signature above.
+      const capturedCents = paymentIntent.amount_received ?? paymentIntent.amount ?? 0;
+      if (!Number.isFinite(capturedCents) || capturedCents < order.totalCents) {
+        console.error(
+          `[stripe webhook] amount mismatch for order ${orderId}: captured ${capturedCents}, expected ${order.totalCents}. leaving order pending.`,
+        );
+        return NextResponse.json(
+          {
+            amountMismatch: true,
+            capturedCents,
+            expectedCents: order.totalCents,
+            received: true,
+          },
+          { status: 202 },
+        );
+      }
+      const currency = (paymentIntent.currency ?? "").toLowerCase();
+      if (currency && currency !== "usd") {
+        // our totals are in usd cents — reject any non-usd intent rather than
+        // treating, e.g., 1000 jpy as $10.
+        console.error(
+          `[stripe webhook] non-usd currency ${currency} for order ${orderId}; ignoring.`,
+        );
+        return NextResponse.json(
+          { received: true, unsupportedCurrency: currency },
+          { status: 202 },
+        );
       }
 
       await db
@@ -224,6 +261,35 @@ export async function POST(request: NextRequest) {
     );
     const totalCents =
       affiliateResult?.totalAfterDiscountCents ?? subtotalCents;
+
+    // m1: reconcile stripe's captured amount against what we computed from
+    // our metadata. any divergence here means either upstream tampering or
+    // a stale session — don't mark the order paid.
+    const sessionAmount = session.amount_total ?? session.amount_subtotal ?? 0;
+    const sessionCurrency = (session.currency ?? "").toLowerCase();
+    if (sessionCurrency && sessionCurrency !== "usd") {
+      console.error(
+        `[stripe webhook] non-usd session currency ${sessionCurrency}; refusing to credit order.`,
+      );
+      return NextResponse.json(
+        { received: true, unsupportedCurrency: sessionCurrency },
+        { status: 202 },
+      );
+    }
+    if (!Number.isFinite(sessionAmount) || sessionAmount < totalCents) {
+      console.error(
+        `[stripe webhook] checkout.session amount mismatch: captured ${sessionAmount}, expected ${totalCents}.`,
+      );
+      return NextResponse.json(
+        {
+          amountMismatch: true,
+          capturedCents: sessionAmount,
+          expectedCents: totalCents,
+          received: true,
+        },
+        { status: 202 },
+      );
+    }
 
     const email =
       session.customer_email ??

@@ -4,8 +4,10 @@ import { apiError, apiSuccess } from "~/lib/api-error";
 import { withPublicApiCors } from "~/lib/cors-public-api";
 import { getProductBySlugOrId } from "~/lib/product-by-slug";
 
-/** Always return fresh product data so variants (e.g. Printful size/color) are never stale on customer frontend. */
-export const dynamic = "force-dynamic";
+// short revalidate keeps variant / inventory edits visible within seconds
+// without forcing dynamic on every request. the underlying Cache-Control
+// header on the response still instructs CDNs appropriately.
+export const revalidate = 30;
 
 /**
  * Single product details by slug. 404 if not found or not published.

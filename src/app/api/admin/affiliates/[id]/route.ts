@@ -4,7 +4,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { db } from "~/db";
 import { affiliateTable, ordersTable } from "~/db/schema";
 import { userTable } from "~/db/schema/users/tables";
-import { getAdminAuth } from "~/lib/admin-api-auth";
+import { adminAuthFailureResponse, getAdminAuth } from "~/lib/admin-api-auth";
 
 export async function GET(
   request: NextRequest,
@@ -12,9 +12,7 @@ export async function GET(
 ) {
   try {
     const authResult = await getAdminAuth(request);
-    if (!authResult?.ok) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!authResult?.ok) return adminAuthFailureResponse(authResult);
 
     const { id } = await params;
 
@@ -77,9 +75,7 @@ export async function PATCH(
 ) {
   try {
     const authResult = await getAdminAuth(request);
-    if (!authResult?.ok) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!authResult?.ok) return adminAuthFailureResponse(authResult);
 
     const { id } = await params;
 

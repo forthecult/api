@@ -49,9 +49,10 @@ function isMissingTableError(err: unknown): boolean {
 /**
  * Public API: returns only published products for the storefront.
  * Query: page, limit, category (optional).
- * No auth required. Cached for 60s.
+ * No auth required. The route handler reads `request.headers` for the
+ * token-gate cookie which already opts into dynamic per-request rendering;
+ * the explicit cache headers below drive CDN-level caching.
  */
-export const dynamic = "force-dynamic";
 export const revalidate = 60;
 
 export async function GET(request: NextRequest) {

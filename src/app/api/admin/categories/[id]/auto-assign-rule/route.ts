@@ -3,7 +3,7 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
 import { categoryAutoAssignRuleTable } from "~/db/schema";
-import { getAdminAuth } from "~/lib/admin-api-auth";
+import { adminAuthFailureResponse, getAdminAuth } from "~/lib/admin-api-auth";
 
 /**
  * DELETE /api/admin/categories/[id]/auto-assign-rule?ruleId=xxx
@@ -15,9 +15,7 @@ export async function DELETE(
 ) {
   try {
     const authResult = await getAdminAuth(request);
-    if (!authResult?.ok) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!authResult?.ok) return adminAuthFailureResponse(authResult);
 
     const { id: categoryId } = await params;
     const { searchParams } = new URL(request.url);
@@ -65,9 +63,7 @@ export async function GET(
 ) {
   try {
     const authResult = await getAdminAuth(request);
-    if (!authResult?.ok) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!authResult?.ok) return adminAuthFailureResponse(authResult);
 
     const { id: categoryId } = await params;
     const rules = await db

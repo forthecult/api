@@ -25,6 +25,20 @@ export async function POST(request: Request) {
       typeof body.resourceType === "string" ? body.resourceType.trim() : "";
     const resourceId =
       typeof body.resourceId === "string" ? body.resourceId.trim() : "";
+    // l1: bind every challenge to a resource. the validate route also enforces
+    // this; rejecting here surfaces misuse earlier with a clearer error.
+    if (!resourceType || !resourceId) {
+      return NextResponse.json(
+        { error: "resourceType and resourceId required" },
+        { status: 400 },
+      );
+    }
+    if (!["category", "page", "product"].includes(resourceType.toLowerCase())) {
+      return NextResponse.json(
+        { error: "resourceType must be product, category, or page" },
+        { status: 400 },
+      );
+    }
     const message = buildMessage(resourceType, resourceId);
     return NextResponse.json({ message });
   } catch {
@@ -32,11 +46,7 @@ export async function POST(request: Request) {
   }
 }
 
-/** Build challenge message; when resourceType/resourceId are provided, bind signature to that resource (replay protection). */
 function buildMessage(resourceType: string, resourceId: string): string {
   const timestamp = new Date().toISOString();
-  if (!resourceType || !resourceId) {
-    return MESSAGE_PREFIX + timestamp;
-  }
   return `${MESSAGE_PREFIX}resourceType: ${resourceType}\nresourceId: ${resourceId}\ntimestamp: ${timestamp}`;
 }

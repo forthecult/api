@@ -5,24 +5,36 @@ import { Suspense } from "react";
 
 import { SEO_CONFIG } from "~/app";
 import { getPublicSiteUrl, getServerBaseUrl } from "~/lib/app-url";
-import { CollectionPageStructuredData } from "~/ui/components/structured-data";
+import {
+  BreadcrumbStructuredData,
+  CollectionPageStructuredData,
+} from "~/ui/components/structured-data";
 import { PageLoadingFallback } from "~/ui/primitives/spinner";
 
 import { ProductsClient } from "./products-client";
 
 const siteUrl = getPublicSiteUrl();
 
+const productsListingDescription = `Browse our latest products at ${SEO_CONFIG.name}. Quality apparel, tech accessories, and curated essentials.`;
+
 export const metadata: Metadata = {
   alternates: {
     canonical: `${siteUrl}/products`,
   },
-  description: `Browse our latest products at ${SEO_CONFIG.name}. Quality apparel, tech accessories, and curated essentials.`,
+  description: productsListingDescription,
   openGraph: {
-    description: `Browse our latest products at ${SEO_CONFIG.name}. Quality apparel, tech accessories, and curated essentials.`,
+    description: productsListingDescription,
+    siteName: SEO_CONFIG.fullName,
     title: `Products | ${SEO_CONFIG.name}`,
     type: "website",
+    url: `${siteUrl}/products`,
   },
   title: "Products",
+  twitter: {
+    card: "summary_large_image",
+    description: productsListingDescription,
+    title: `Products | ${SEO_CONFIG.name}`,
+  },
 };
 
 interface CategoryOption {
@@ -54,6 +66,7 @@ interface Product {
   originalPrice?: number;
   price: number;
   rating: number;
+  slug?: string;
 }
 
 interface ProductsResponse {
@@ -96,20 +109,11 @@ export default async function ProductsPage({ searchParams }: PageProps) {
     searchQuery || undefined,
   );
 
-  let products = (data.items ?? []).map((p) => ({
+  const products = (data.items ?? []).map((p) => ({
     ...p,
     inStock: p.inStock ?? true,
     rating: p.rating ?? 0,
   }));
-
-  // SHOWCASE: randomize product order on /products — remove this block when done
-  if (products.length > 1) {
-    products = [...products];
-    for (let i = products.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [products[i], products[j]] = [products[j], products[i]];
-    }
-  }
 
   const categories: CategoryOption[] = [
     { name: "All", slug: "all" },
@@ -118,8 +122,19 @@ export default async function ProductsPage({ searchParams }: PageProps) {
 
   return (
     <>
+      <BreadcrumbStructuredData
+        items={[
+          { name: "Home", url: `${siteUrl}/` },
+          { name: "Products", url: `${siteUrl}/products` },
+        ]}
+      />
       <CollectionPageStructuredData
-        description={`Browse our latest products at ${SEO_CONFIG.name}. Quality apparel, tech accessories, and curated essentials.`}
+        description={productsListingDescription}
+        items={products.map((p) => ({
+          image: p.image,
+          name: p.name,
+          url: `${siteUrl}/${p.slug ?? p.id}`,
+        }))}
         name="All Products"
         numberOfItems={data.total ?? 0}
         url={`${siteUrl}/products`}
@@ -172,6 +187,7 @@ async function fetchProducts(
   try {
     const res = await fetch(`${baseUrl}/api/products?${params}`, {
       next: { revalidate: 60 }, // Cache for 60 seconds
+      signal: AbortSignal.timeout(8000),
     });
     if (!res.ok) {
       console.error("Failed to fetch products:", res.status);

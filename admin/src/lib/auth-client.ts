@@ -1,13 +1,10 @@
 import { createAuthClient } from "better-auth/react";
 
-import { getMainAppUrl } from "~/lib/env";
-
-const baseURL = getMainAppUrl();
+import { getAuthClientBaseUrl } from "~/lib/env";
 
 export const authClient = createAuthClient({
-  baseURL,
+  baseURL: getAuthClientBaseUrl(),
   fetchOptions: {
-    // Required for cross-origin requests to include cookies
     credentials: "include",
   },
 });

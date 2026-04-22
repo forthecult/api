@@ -1,6 +1,7 @@
 "use client";
 
 import { Loader2, Lock } from "lucide-react";
+import nextDynamic from "next/dynamic";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
@@ -73,11 +74,27 @@ import {
 } from "./BillingAddressForm";
 import { ExpressCheckout } from "./ExpressCheckout";
 import { PolicyPopup } from "./PolicyPopup";
-import { SolanaPayDialog } from "./solana-pay-dialog";
-import {
-  StripeCardPayment,
-  type StripeCardPaymentRef,
-} from "./StripeCardPayment";
+import type { StripeCardPaymentRef } from "./StripeCardPayment";
+
+// modal dialog: lives in its own chunk and only downloads when the user
+// actually starts a solana pay flow (click → state change → mount). saves
+// ~20kb + its deps on initial checkout paint.
+const SolanaPayDialog = nextDynamic(
+  () =>
+    import("./solana-pay-dialog").then((m) => ({ default: m.SolanaPayDialog })),
+  { ssr: false },
+);
+
+// stripe card form uses @stripe/stripe-js + @stripe/react-stripe-js (~80kb
+// gzipped on their own). we only render it when the user picks "credit-card",
+// so deferring the chunk keeps the default checkout bundle lean.
+const StripeCardPayment = nextDynamic(
+  () =>
+    import("./StripeCardPayment").then((m) => ({
+      default: m.StripeCardPayment,
+    })),
+  { ssr: false },
+);
 
 type CryptoSub =
   | "bitcoin"

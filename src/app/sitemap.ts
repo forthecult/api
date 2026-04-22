@@ -9,8 +9,9 @@ import {
   isAgentSubdomain,
 } from "~/lib/app-url";
 
-// Generate on request so build doesn't depend on DB/API (avoids timeout + 42P01 during deploy)
-export const dynamic = "force-dynamic";
+// sitemap doesn't need to be per-request — revalidate hourly so the build
+// doesn't hit the db while still picking up new products/categories quickly.
+export const revalidate = 3600;
 
 interface CategoryItem {
   id: string;

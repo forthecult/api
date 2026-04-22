@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import type { PodProvider } from "@/lib/pod/types";
 
-import { getAdminAuth } from "@/lib/admin-api-auth";
+import { adminAuthFailureResponse, getAdminAuth } from "@/lib/admin-api-auth";
 import {
   analyzeImage,
   makeBackgroundTransparent,
@@ -20,9 +20,7 @@ const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
  */
 export async function POST(request: NextRequest) {
   const authResult = await getAdminAuth(request);
-  if (!authResult?.ok) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  if (!authResult?.ok) return adminAuthFailureResponse(authResult);
   const provider = request.nextUrl.searchParams.get(
     "provider",
   ) as null | PodProvider;

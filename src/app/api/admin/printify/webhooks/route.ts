@@ -15,7 +15,7 @@ import {
 
 /** When true, register_all deletes all existing webhooks first so only our URL receives events (fixes stuck "Publishing"). */
 const REPLACE_ALL_WEBHOOKS_ON_REGISTER = true;
-import { getAdminAuth } from "~/lib/admin-api-auth";
+import { adminAuthFailureResponse, getAdminAuth } from "~/lib/admin-api-auth";
 
 /** Extract hostname from a URL for Printify's required `host` query parameter on DELETE. */
 function extractHostFromUrl(url: string): string {
@@ -51,9 +51,7 @@ const REQUIRED_WEBHOOK_TOPICS: PrintifyWebhookEventType[] = [
  */
 export async function GET(request: NextRequest) {
   const authResult = await getAdminAuth(request);
-  if (!authResult?.ok) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  if (!authResult?.ok) return adminAuthFailureResponse(authResult);
 
   const pf = getPrintifyIfConfigured();
   if (!pf) {
@@ -103,9 +101,7 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   const authResult = await getAdminAuth(request);
-  if (!authResult?.ok) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  if (!authResult?.ok) return adminAuthFailureResponse(authResult);
 
   const pf = getPrintifyIfConfigured();
   if (!pf) {
@@ -135,10 +131,35 @@ export async function POST(request: NextRequest) {
 
   const { action } = body;
 
-  // Build webhook URL - use custom URL if provided, otherwise use app URL
-  const baseUrl = (body.customUrl || process.env.NEXT_PUBLIC_APP_URL || "")
-    .trim()
-    .replace(/\/+$/, "");
+  // l8: only accept a customUrl if its origin matches NEXT_PUBLIC_APP_URL so an
+  // admin (or a stolen admin session) can't point printify webhooks at an
+  // attacker-controlled host to harvest order events / signing secrets.
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL?.trim() ?? "";
+  const customUrlRaw = body.customUrl?.trim() ?? "";
+  if (customUrlRaw) {
+    const parseOrigin = (raw: string): null | string => {
+      try {
+        return new URL(raw).origin.toLowerCase();
+      } catch {
+        return null;
+      }
+    };
+    const appOrigin = parseOrigin(appUrl);
+    const customOrigin = parseOrigin(customUrlRaw);
+    if (!appOrigin || !customOrigin || customOrigin !== appOrigin) {
+      return NextResponse.json(
+        {
+          allowedOrigin: appOrigin,
+          customOrigin,
+          error: "customUrl must be on the same origin as NEXT_PUBLIC_APP_URL.",
+        },
+        { status: 400 },
+      );
+    }
+  }
+
+  // Build webhook URL - use custom URL (same-origin) if provided, otherwise use app URL
+  const baseUrl = (customUrlRaw || appUrl).replace(/\/+$/, "");
   if (!baseUrl) {
     return NextResponse.json(
       { error: "NEXT_PUBLIC_APP_URL not set and no customUrl provided" },

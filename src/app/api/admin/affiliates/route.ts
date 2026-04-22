@@ -4,7 +4,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { db } from "~/db";
 import { affiliateTable, ordersTable } from "~/db/schema";
 import { userTable } from "~/db/schema/users/tables";
-import { getAdminAuth } from "~/lib/admin-api-auth";
+import { adminAuthFailureResponse, getAdminAuth } from "~/lib/admin-api-auth";
 
 const DEFAULT_PAGE_SIZE = 20;
 const MAX_PAGE_SIZE = 100;
@@ -12,9 +12,7 @@ const MAX_PAGE_SIZE = 100;
 export async function GET(request: NextRequest) {
   try {
     const authResult = await getAdminAuth(request);
-    if (!authResult?.ok) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!authResult?.ok) return adminAuthFailureResponse(authResult);
 
     const page = Math.max(
       1,
@@ -43,7 +41,11 @@ export async function GET(request: NextRequest) {
       conditions.push(eq(affiliateTable.status, statusFilter));
     }
     if (search.length > 0) {
-      const term = `%${search}%`;
+      // l6: escape LIKE metacharacters (% _ \) so the user can't blow up the
+      // query with a leading `%` (forces a seq scan against every row) or
+      // match unintended rows via `_`.
+      const escaped = search.replace(/[\\%_]/g, (ch) => `\\${ch}`);
+      const term = `%${escaped}%`;
       conditions.push(
         or(
           ilike(affiliateTable.code, term),

@@ -4,7 +4,7 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
 import { brandTable, shippingOptionsTable } from "~/db/schema";
-import { getAdminAuth } from "~/lib/admin-api-auth";
+import { adminAuthFailureResponse, getAdminAuth } from "~/lib/admin-api-auth";
 
 const SORT_COLUMNS = [
   "name",
@@ -22,9 +22,7 @@ type SortBy = (typeof SORT_COLUMNS)[number];
 export async function GET(request: NextRequest) {
   try {
     const authResult = await getAdminAuth(request);
-    if (!authResult?.ok) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!authResult?.ok) return adminAuthFailureResponse(authResult);
 
     const sortByParam = request.nextUrl.searchParams.get("sortBy")?.trim();
     const sortBy: SortBy =
@@ -136,9 +134,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const authResult = await getAdminAuth(request);
-    if (!authResult?.ok) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!authResult?.ok) return adminAuthFailureResponse(authResult);
 
     const body = (await request.json()) as {
       additionalItemCents?: null | number;

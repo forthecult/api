@@ -5,10 +5,10 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { cn } from "~/lib/cn";
-import { getMainAppUrl } from "~/lib/env";
+import { getAdminApiBaseUrl } from "~/lib/env";
 import { Button } from "~/ui/button";
 
-const API_BASE = getMainAppUrl();
+const API_BASE = getAdminApiBaseUrl();
 
 const POLL_INTERVAL_MS = 8000;
 

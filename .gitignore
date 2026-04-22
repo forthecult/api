@@ -6,3 +6,7 @@ build/
 .env.local
 *.log
 .DS_Store
+
+# tooling caches (regenerated locally — shouldn't ever be committed)
+.eslintcache
+tsconfig.tsbuildinfo

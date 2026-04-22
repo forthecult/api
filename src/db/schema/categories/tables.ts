@@ -17,6 +17,8 @@ export const categoriesTable = pgTable(
     createdAt: timestamp("created_at").notNull(),
     description: text("description"),
     featured: boolean("featured").notNull().default(false),
+    /** Default Google Merchant category path for products assigned to this category (unless the product overrides it). */
+    googleProductCategory: text("google_product_category"),
     id: text("id").primaryKey(),
     imageUrl: text("image_url"),
     level: integer("level").notNull().default(1),

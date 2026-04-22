@@ -7,7 +7,7 @@ import {
   supportTicketTable,
   userTable,
 } from "~/db/schema";
-import { getAdminAuth } from "~/lib/admin-api-auth";
+import { adminAuthFailureResponse, getAdminAuth } from "~/lib/admin-api-auth";
 
 /**
  * GET /api/admin/support-tickets/[id]
@@ -19,9 +19,7 @@ export async function GET(
 ) {
   try {
     const authResult = await getAdminAuth(request);
-    if (!authResult?.ok) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!authResult?.ok) return adminAuthFailureResponse(authResult);
 
     const { id } = await params;
     if (!id) {
@@ -131,9 +129,7 @@ export async function PATCH(
 ) {
   try {
     const authResult = await getAdminAuth(request);
-    if (!authResult?.ok) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!authResult?.ok) return adminAuthFailureResponse(authResult);
 
     const { id } = await params;
     if (!id) {

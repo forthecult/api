@@ -7,7 +7,7 @@
 
 import { type NextRequest, NextResponse } from "next/server";
 
-import { getAdminAuth } from "~/lib/admin-api-auth";
+import { adminAuthFailureResponse, getAdminAuth } from "~/lib/admin-api-auth";
 import {
   fetchPrintifyShops,
   getPrintifyIfConfigured,
@@ -16,9 +16,7 @@ import {
 
 export async function GET(request: NextRequest) {
   const authResult = await getAdminAuth(request);
-  if (!authResult?.ok) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  if (!authResult?.ok) return adminAuthFailureResponse(authResult);
 
   try {
     const config = getPrintifyIfConfigured();

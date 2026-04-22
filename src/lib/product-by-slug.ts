@@ -3,7 +3,7 @@
  * Used by the storefront [slug] page (no self-fetch) and by the products API.
  */
 
-import { and, asc, eq, ilike, or } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, or } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
 import { db } from "~/db";
@@ -12,6 +12,7 @@ import {
   productAvailableCountryTable,
   productCategoriesTable,
   productImagesTable,
+  productReviewsTable,
   productsTable,
   productVariantsTable,
   sizeChartsTable,
@@ -20,43 +21,96 @@ import {
   getAmazonProduct,
   isAmazonProductApiConfigured,
 } from "~/lib/amazon-product-api";
+import { getReviewDisplayName } from "~/lib/reviews";
 import { sortClothingSizes } from "~/lib/sort-clothing-sizes";
+
+/** Cap on the number of recent reviews returned for JSON-LD `review` emission. */
+const MAX_REVIEWS_FOR_JSONLD = 5;
 
 const AMAZON_PRICE_CACHE_MS = 15 * 60 * 1000; // 15 minutes
 
+/** Aggregated rating for a product, computed from visible reviews in `product_review`. */
+export interface ProductRatingSummary {
+  /** Average rating across all counted reviews (1–5). */
+  average: number;
+  /** Total number of visible reviews. */
+  count: number;
+  /** Up to N most recent visible reviews for JSON-LD `review` emission. */
+  recent: {
+    author: string;
+    body: null | string;
+    createdAt: string;
+    id: string;
+    rating: number;
+    title: null | string;
+  }[];
+}
+
 export interface ProductBySlugResult {
+  /** Google Merchant age group. */
+  ageGroup?: null | string;
   availableCountryCodes: string[];
   /** Blank product brand (for size chart lookup). */
   brand?: null | string;
   category: string;
+  /** Main category Google product taxonomy path when the product or category supplies it. */
+  categoryGoogleProductCategory?: null | string;
+  /** Primary color derived from variants (when uniform or single-variant). */
+  color?: null | string;
   compareAtPriceCents?: number;
   /** When true, product can be purchased regardless of stock (POD/made-to-order). */
   continueSellingWhenOutOfStock: boolean;
   description?: string;
   /** Bullet-point features for product page. */
   features?: string[];
+  /** Primary gender derived from variants (when uniform or single-variant). */
+  gender?: null | string;
+  /** Google Merchant product taxonomy path. */
+  googleProductCategory?: null | string;
+  /** Product-level GTIN (shared across variants or when there are none). */
+  gtin?: null | string;
   handlingDaysMax?: null | number;
   /** Fulfillment (handling) days min/max from Printify, Printful, or manual. Used for estimated delivery timeline. */
   handlingDaysMin?: null | number;
   hasVariants: boolean;
   id: string;
+  /** Google Merchant condition. */
+  itemCondition?: null | string;
   /** Per-image alt text (same order as images). Used for gallery SEO when set. */
   imageAlts?: (null | string)[];
   images?: string[];
   imageUrl?: string;
   inStock: boolean;
   mainImageAlt?: null | string;
+  /** Primary material derived from variants (when uniform or single-variant). */
+  material?: null | string;
   metaDescription?: null | string;
   /** Blank product model (for size chart lookup). */
   model?: null | string;
+  /** Product-level Manufacturer Part Number. */
+  mpn?: null | string;
   name: string;
   optionDefinitions?: OptionDefinition[];
   /** Product page layout: "default" or "long-form". */
   pageLayout?: null | string;
   pageTitle?: null | string;
   price: { crypto: Record<string, string>; usd: number };
+  /** ISO date string (YYYY-MM-DD) until which the price is guaranteed. */
+  priceValidUntil?: null | string;
+  /** Aggregate review summary for JSON-LD. Empty `count` → no rating emitted. */
+  rating: ProductRatingSummary;
   /** Ships from: full display string or composed from city/region/postal/country. Used for display and future shipping-time estimates. */
   shipsFrom?: string;
+  /** ISO 3166-1 alpha-2 country the product ships from. */
+  shipsFromCountry?: null | string;
+  /** Package height (cm). Separate from the physical product size. */
+  shippingHeightCm?: null | number;
+  /** Package length (cm). */
+  shippingLengthCm?: null | number;
+  /** Package width (cm). */
+  shippingWidthCm?: null | number;
+  /** Primary size derived from variants (when uniform or single-variant). */
+  size?: null | string;
   /** When product has brand+model and a size chart exists, for accordion "Size Guide". */
   sizeChart?: null | {
     dataImperial: unknown;
@@ -70,16 +124,25 @@ export interface ProductBySlugResult {
   transitDaysMax?: null | number;
   /** Transit (shipping) days min/max. Fallback used in UI if null. */
   transitDaysMin?: null | number;
-  variants?: {
-    color?: string;
-    gender?: string;
-    id: string;
-    imageUrl?: string;
-    label?: string;
-    priceCents: number;
-    size?: string;
-    stockQuantity?: number;
-  }[];
+  /** Variant rows with Merchant-relevant identifiers/attributes. */
+  variants?: ProductVariantSummary[];
+  /** Product weight in grams (doubles as shipping weight by default). */
+  weightGrams?: null | number;
+}
+
+export interface ProductVariantSummary {
+  color?: string;
+  gender?: string;
+  gtin?: string;
+  id: string;
+  imageUrl?: string;
+  label?: string;
+  material?: string;
+  mpn?: string;
+  priceCents: number;
+  size?: string;
+  sku?: string;
+  stockQuantity?: number;
 }
 
 interface OptionDefinition {
@@ -98,6 +161,7 @@ export async function getProductBySlugOrId(
 
   const [product] = await db
     .select({
+      ageGroup: productsTable.ageGroup,
       amazonAsin: productsTable.amazonAsin,
       amazonPriceRefreshedAt: productsTable.amazonPriceRefreshedAt,
       brand: productsTable.brand,
@@ -106,19 +170,24 @@ export async function getProductBySlugOrId(
         productsTable.continueSellingWhenOutOfStock,
       description: productsTable.description,
       featuresJson: productsTable.featuresJson,
+      googleProductCategory: productsTable.googleProductCategory,
+      gtin: productsTable.gtin,
       handlingDaysMax: productsTable.handlingDaysMax,
       handlingDaysMin: productsTable.handlingDaysMin,
       hasVariants: productsTable.hasVariants,
       id: productsTable.id,
       imageUrl: productsTable.imageUrl,
+      itemCondition: productsTable.itemCondition,
       mainImageAlt: productsTable.mainImageAlt,
       metaDescription: productsTable.metaDescription,
       model: productsTable.model,
+      mpn: productsTable.mpn,
       name: productsTable.name,
       optionDefinitionsJson: productsTable.optionDefinitionsJson,
       pageLayout: productsTable.pageLayout,
       pageTitle: productsTable.pageTitle,
       priceCents: productsTable.priceCents,
+      priceValidUntil: productsTable.priceValidUntil,
       published: productsTable.published,
       quantity: productsTable.quantity,
       shipsFromCity: productsTable.shipsFromCity,
@@ -126,12 +195,16 @@ export async function getProductBySlugOrId(
       shipsFromDisplay: productsTable.shipsFromDisplay,
       shipsFromPostalCode: productsTable.shipsFromPostalCode,
       shipsFromRegion: productsTable.shipsFromRegion,
+      shippingHeightCm: productsTable.shippingHeightCm,
+      shippingLengthCm: productsTable.shippingLengthCm,
+      shippingWidthCm: productsTable.shippingWidthCm,
       slug: productsTable.slug,
       source: productsTable.source,
       // Stock management fields
       trackQuantity: productsTable.trackQuantity,
       transitDaysMax: productsTable.transitDaysMax,
       transitDaysMin: productsTable.transitDaysMin,
+      weightGrams: productsTable.weightGrams,
     })
     .from(productsTable)
     .where(or(eq(productsTable.id, slug), eq(productsTable.slug, slug)))
@@ -178,10 +251,13 @@ export async function getProductBySlugOrId(
   const id = product.id;
   const _productSlug = product.slug ?? product.id;
 
-  const [mainCat, availableCountries, variantsRows, imagesRows] =
+  const [mainCat, availableCountries, variantsRows, imagesRows, reviewsRows] =
     await Promise.all([
       db
-        .select({ categoryName: categoriesTable.name })
+        .select({
+          categoryGoogleProductCategory: categoriesTable.googleProductCategory,
+          categoryName: categoriesTable.name,
+        })
         .from(productCategoriesTable)
         .innerJoin(
           categoriesTable,
@@ -203,11 +279,15 @@ export async function getProductBySlugOrId(
         .select({
           color: productVariantsTable.color,
           gender: productVariantsTable.gender,
+          gtin: productVariantsTable.gtin,
           id: productVariantsTable.id,
           imageUrl: productVariantsTable.imageUrl,
           label: productVariantsTable.label,
+          material: productVariantsTable.material,
+          mpn: productVariantsTable.mpn,
           priceCents: productVariantsTable.priceCents,
           size: productVariantsTable.size,
+          sku: productVariantsTable.sku,
           stockQuantity: productVariantsTable.stockQuantity,
         })
         .from(productVariantsTable)
@@ -220,6 +300,30 @@ export async function getProductBySlugOrId(
         .from(productImagesTable)
         .where(eq(productImagesTable.productId, id))
         .orderBy(asc(productImagesTable.sortOrder), asc(productImagesTable.id)),
+      // Visible reviews for this product. Used for aggregate + recent review JSON-LD.
+      // We fetch a bounded set ordered by newest first; aggregate uses the same set
+      // since Merchant/Product Snippets only needs a stable average and count —
+      // reviews of this product rarely number in the thousands here.
+      db
+        .select({
+          author: productReviewsTable.author,
+          comment: productReviewsTable.comment,
+          createdAt: productReviewsTable.createdAt,
+          customerName: productReviewsTable.customerName,
+          id: productReviewsTable.id,
+          rating: productReviewsTable.rating,
+          showName: productReviewsTable.showName,
+          title: productReviewsTable.title,
+        })
+        .from(productReviewsTable)
+        .where(
+          and(
+            eq(productReviewsTable.productId, id),
+            eq(productReviewsTable.visible, true),
+          ),
+        )
+        .orderBy(desc(productReviewsTable.createdAt))
+        .limit(200),
     ]);
 
   const availableCountryCodes = availableCountries.map((r) => r.countryCode);
@@ -294,18 +398,31 @@ export async function getProductBySlugOrId(
       });
   }
 
-  const variants = hasVariantRows
+  const variants: ProductVariantSummary[] | undefined = hasVariantRows
     ? variantsRows.map((v) => ({
         color: v.color ?? undefined,
         gender: v.gender ?? undefined,
+        gtin: v.gtin ?? undefined,
         id: v.id,
         imageUrl: v.imageUrl ?? undefined,
         label: v.label ?? undefined,
+        material: v.material ?? undefined,
+        mpn: v.mpn ?? undefined,
         priceCents: v.priceCents,
         size: v.size ?? undefined,
+        sku: v.sku ?? undefined,
         stockQuantity: v.stockQuantity ?? undefined,
       }))
     : undefined;
+
+  // Derive a single top-level color/size/material/gender when all variants agree
+  // (or there's exactly one variant). Multi-value dimensions are left as null so
+  // schema.org/Product emits them on `hasVariant` children instead of pretending
+  // the top-level product has a single value.
+  const derivedColor = uniqueOrNull(variants?.map((v) => v.color));
+  const derivedSize = uniqueOrNull(variants?.map((v) => v.size));
+  const derivedMaterial = uniqueOrNull(variants?.map((v) => v.material));
+  const derivedGender = uniqueOrNull(variants?.map((v) => v.gender));
 
   const basePriceUsd = priceCents / 100;
 
@@ -441,14 +558,53 @@ export async function getProductBySlugOrId(
     }
   }
 
+  const mainCategoryRow = mainCat[0] ?? null;
+  const priceValidUntilIso =
+    product.priceValidUntil instanceof Date
+      ? product.priceValidUntil.toISOString().slice(0, 10)
+      : null;
+
+  const rating: ProductRatingSummary = (() => {
+    if (reviewsRows.length === 0) {
+      return { average: 0, count: 0, recent: [] };
+    }
+    const sum = reviewsRows.reduce((acc, r) => acc + r.rating, 0);
+    const average = sum / reviewsRows.length;
+    const recent = reviewsRows.slice(0, MAX_REVIEWS_FOR_JSONLD).map((r) => ({
+      author: getReviewDisplayName({
+        author: r.author ?? undefined,
+        customerName: r.customerName,
+        id: r.id,
+        showName: r.showName,
+      }),
+      body: r.comment?.trim() ? r.comment.trim() : null,
+      createdAt: r.createdAt.toISOString(),
+      id: r.id,
+      rating: r.rating,
+      title: r.title?.trim() ? r.title.trim() : null,
+    }));
+    return {
+      average: Math.round(average * 10) / 10,
+      count: reviewsRows.length,
+      recent,
+    };
+  })();
+
   return {
+    ageGroup: product.ageGroup ?? undefined,
     availableCountryCodes,
     brand: product.brand ?? undefined,
-    category: mainCat?.[0]?.categoryName ?? "Uncategorized",
+    category: mainCategoryRow?.categoryName ?? "Uncategorized",
+    categoryGoogleProductCategory:
+      mainCategoryRow?.categoryGoogleProductCategory ?? undefined,
+    color: derivedColor,
     compareAtPriceCents: product.compareAtPriceCents ?? undefined,
     continueSellingWhenOutOfStock,
     description: product.description ?? undefined,
     features: features.length > 0 ? features : undefined,
+    gender: derivedGender,
+    googleProductCategory: product.googleProductCategory ?? undefined,
+    gtin: product.gtin ?? undefined,
     handlingDaysMax: product.handlingDaysMax ?? undefined,
     handlingDaysMin: product.handlingDaysMin ?? undefined,
     hasVariants: hasVariantRows || (product.hasVariants ?? false),
@@ -457,16 +613,26 @@ export async function getProductBySlugOrId(
     images: imageUrls.length > 0 ? imageUrls : undefined,
     imageUrl: product.imageUrl ?? undefined,
     inStock,
+    itemCondition: product.itemCondition ?? "new",
     mainImageAlt: product.mainImageAlt ?? undefined,
+    material: derivedMaterial,
     metaDescription: product.metaDescription ?? undefined,
     model: product.model ?? undefined,
+    mpn: product.mpn ?? undefined,
     name: product.name,
     optionDefinitions:
       optionDefinitions.length > 0 ? optionDefinitions : undefined,
     pageLayout: product.pageLayout ?? undefined,
     pageTitle: product.pageTitle ?? undefined,
     price: { crypto: {}, usd: basePriceUsd },
+    priceValidUntil: priceValidUntilIso ?? undefined,
+    rating,
     shipsFrom,
+    shipsFromCountry: product.shipsFromCountry ?? undefined,
+    shippingHeightCm: product.shippingHeightCm ?? undefined,
+    shippingLengthCm: product.shippingLengthCm ?? undefined,
+    shippingWidthCm: product.shippingWidthCm ?? undefined,
+    size: derivedSize,
     sizeChart: sizeChart ?? undefined,
     slug: product.slug ?? undefined,
     source: product.source ?? undefined,
@@ -474,7 +640,30 @@ export async function getProductBySlugOrId(
     transitDaysMax: product.transitDaysMax ?? undefined,
     transitDaysMin: product.transitDaysMin ?? undefined,
     variants,
+    weightGrams: product.weightGrams ?? undefined,
   };
+}
+
+/**
+ * Returns the single non-empty value from a list when every entry agrees, else null.
+ * Used to promote a uniform variant dimension (color/size/material/gender) up to
+ * the top-level schema.org/Product without hiding the fact that variants differ.
+ */
+function uniqueOrNull(
+  values: (string | undefined)[] | undefined,
+): null | string {
+  if (!values || values.length === 0) return null;
+  let seen: null | string = null;
+  for (const raw of values) {
+    const v = raw?.trim();
+    if (!v) continue;
+    if (seen === null) {
+      seen = v;
+    } else if (seen !== v) {
+      return null;
+    }
+  }
+  return seen;
 }
 
 /**

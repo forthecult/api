@@ -17,6 +17,7 @@ import { RelatedProductsSection } from "~/app/products/[id]/related-products-sec
 import { sanitizeProductDescription } from "~/lib/sanitize-product-description";
 import { slugify } from "~/lib/slugify";
 import { Breadcrumbs } from "~/ui/components/breadcrumbs";
+import { ProductBrandModel } from "~/ui/components/product-brand-model";
 import { Button } from "~/ui/primitives/button";
 
 export interface LongFormProductProps {
@@ -131,41 +132,11 @@ export function LongFormProductPage({
                 </div>
               </ProductVariantImageProvider>
               <div className="flex flex-col justify-center">
-                {(() => {
-                  const b = product.brand?.trim();
-                  const m = product.model?.trim();
-                  const isProviderBrand =
-                    b?.toLowerCase() === "printful" ||
-                    b?.toLowerCase() === "printify" ||
-                    b?.toLowerCase() === "generic brand";
-                  if (!b && !m) return null;
-                  if (isProviderBrand) return null;
-                  return (
-                    <div
-                      className={`
-                        mb-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm
-                        text-muted-foreground
-                      `}
-                    >
-                      {b && (
-                        <span>
-                          <span className="font-medium text-foreground">
-                            Brand:
-                          </span>{" "}
-                          {b}
-                        </span>
-                      )}
-                      {m && (
-                        <span>
-                          <span className="font-medium text-foreground">
-                            Model:
-                          </span>{" "}
-                          {m}
-                        </span>
-                      )}
-                    </div>
-                  );
-                })()}
+                <ProductBrandModel
+                  brand={product.brand}
+                  className="mb-2"
+                  model={product.model}
+                />
                 <h1
                   className={`
                     text-3xl font-bold tracking-tight

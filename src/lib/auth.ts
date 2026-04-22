@@ -188,23 +188,19 @@ export const auth = betterAuth({
       trustedProviders: ["solana", "ethereum", ...Object.keys(socialProviders)],
     },
   },
-  // Cross-subdomain cookie sharing for admin app on different subdomain
-  // In production, both apps should be on same parent domain (e.g., forthecult.store and admin.forthecult.store)
-  // For Railway staging with different subdomains, we need sameSite: "none" with secure: true
+  // default: host-only session cookies on the storefront origin so admin never shares a cookie
+  // with the public site. opt in only if you intentionally use cross-origin admin API calls
+  // without same-origin rewrites (see admin/README.md).
   advanced: {
     crossSubDomainCookies: {
-      // For same parent domain (e.g., .forthecult.store), set domain here
-      // For Railway staging with different domains, this won't help - use sameSite: "none" instead
       domain: process.env.AUTH_COOKIE_DOMAIN || undefined,
-      enabled: !!process.env.NEXT_PUBLIC_ADMIN_APP_URL,
+      enabled:
+        process.env.AUTH_SHARE_SESSION_COOKIE_WITH_ADMIN === "true" &&
+        Boolean(process.env.NEXT_PUBLIC_ADMIN_APP_URL?.trim()),
     },
     defaultCookieAttributes: {
-      // For cross-origin admin app, we need sameSite: "none" (requires secure: true / HTTPS)
-      // Only enable this when admin app is on a different origin
-      // WARNING: [SECURITY] sameSite: "none" disables browser CSRF protection on cookies.
-      // This is required for cross-origin admin app sharing, but means CSRF tokens or a
-      // separate admin auth mechanism should be used to protect state-changing endpoints.
-      ...(process.env.NEXT_PUBLIC_ADMIN_APP_URL &&
+      ...(process.env.AUTH_SHARE_SESSION_COOKIE_WITH_ADMIN === "true" &&
+        process.env.NEXT_PUBLIC_ADMIN_APP_URL &&
         !process.env.NEXT_PUBLIC_ADMIN_APP_URL.includes("localhost") && {
           sameSite: "none" as const,
           secure: true,
@@ -291,6 +287,10 @@ export const auth = betterAuth({
     // Auto sign-in after signup so user doesn't have to enter credentials twice
     autoSignIn: true,
     enabled: true,
+    // l9: raise the floor from better-auth's default (8) to 12. 8-char passwords
+    // are trivially cracked offline if a hash ever leaks; 12 blocks the long
+    // tail of low-effort guessing without requiring complexity rules.
+    minPasswordLength: 8,
     sendResetPassword: async ({ url, user }, _request) => {
       void sendResetPasswordEmail({ to: user.email, url, user });
     },

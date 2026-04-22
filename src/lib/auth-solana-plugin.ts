@@ -24,11 +24,22 @@ import { withFkRetry } from "~/lib/auth-db-retry";
 import { linkOrdersToUserByWallet } from "~/lib/link-orders-to-user";
 
 const SOLANA_PROVIDER_ID = "solana";
-const MESSAGE_PREFIX = "Sign this message to sign in to";
 const NONCE_EXPIRY_SEC = 300; // 5 minutes
+const SIWS_STATEMENT =
+  "Sign in with Solana to authenticate. This request will not trigger any blockchain transaction or cost gas.";
+const SIWS_CHAIN_ID = "solana:mainnet";
+const SIWS_VERSION = "1";
 
 interface AccountRecord {
   userId: string;
+}
+interface ParsedSiwsMessage {
+  address: string;
+  domain: string;
+  expirationMs: null | number;
+  issuedAtMs: number;
+  nonce: string;
+  uri: string;
 }
 interface UserRecord {
   createdAt: Date;
@@ -39,6 +50,7 @@ interface UserRecord {
   name: string;
   updatedAt: Date;
 }
+
 interface VerificationRecord {
   expiresAt: Date;
   id: string;
@@ -57,14 +69,40 @@ export function solanaAuthPlugin() {
         },
         async (ctx) => {
           const address = ctx.body.address.trim();
+          // l2: invalidate any pending nonces for this address before issuing a
+          // new one. prevents a caller from harvesting several valid messages
+          // and replaying the last one after a signature-failure probe.
+          try {
+            const adapter = ctx.context.adapter ?? ctx.context.internalAdapter;
+            await adapter.deleteMany?.({
+              model: "verification",
+              where: [{ field: "identifier", value: `solana:${address}` }],
+            });
+          } catch (cleanupErr) {
+            console.warn(
+              "[solana-auth] Failed to clear stale nonces:",
+              cleanupErr,
+            );
+          }
           const nonce = randomBytes(32).toString("hex");
-          const expiresAt = new Date(Date.now() + NONCE_EXPIRY_SEC * 1000);
+          const issuedAt = new Date();
+          const expiresAt = new Date(
+            issuedAt.getTime() + NONCE_EXPIRY_SEC * 1000,
+          );
           await ctx.context.internalAdapter.createVerificationValue({
             expiresAt,
             identifier: `solana:${address}`,
             value: nonce,
           });
-          const message = makeMessage(nonce);
+          const { domain, uri } = deriveSiwsDomainAndUri(ctx);
+          const message = makeSiwsMessage({
+            address,
+            domain,
+            expiresAt,
+            issuedAt,
+            nonce,
+            uri,
+          });
           return ctx.json({ message });
         },
       ),
@@ -91,12 +129,49 @@ export function solanaAuthPlugin() {
             }
             const addressTrim = address.trim();
 
-            const nonce = extractNonceFromMessage(message);
-            if (!nonce) {
+            // m4: parse message as SIWS. we require the signed payload to
+            // include the address + domain + issued-at + expiration + nonce so
+            // it can't be replayed against a different origin or after expiry.
+            const parsed = parseSiwsMessage(message);
+            if (!parsed) {
+              // l2: single generic error for anything wrong with the message /
+              // signature path to avoid acting as an oracle for attackers.
               throw new APIError("BAD_REQUEST", {
-                message: "Invalid message format",
+                message: "Challenge invalid or expired",
               });
             }
+            const { domain: expectedDomain } = deriveSiwsDomainAndUri(ctx);
+            if (
+              expectedDomain &&
+              parsed.domain.toLowerCase() !== expectedDomain.toLowerCase()
+            ) {
+              console.warn(
+                "[solana-auth] SIWS domain mismatch — message:",
+                parsed.domain,
+                "request:",
+                expectedDomain,
+              );
+              throw new APIError("BAD_REQUEST", {
+                message: "Challenge invalid or expired",
+              });
+            }
+            if (parsed.address !== addressTrim) {
+              throw new APIError("BAD_REQUEST", {
+                message: "Challenge invalid or expired",
+              });
+            }
+            const nowMs = Date.now();
+            if (parsed.issuedAtMs > nowMs + 30_000) {
+              throw new APIError("BAD_REQUEST", {
+                message: "Challenge invalid or expired",
+              });
+            }
+            if (parsed.expirationMs != null && parsed.expirationMs < nowMs) {
+              throw new APIError("BAD_REQUEST", {
+                message: "Challenge invalid or expired",
+              });
+            }
+            const nonce = parsed.nonce;
 
             // Use internalAdapter for database operations - adapter may be undefined in some better-auth versions
             const adapter = ctx.context.adapter ?? ctx.context.internalAdapter;
@@ -111,8 +186,9 @@ export function solanaAuthPlugin() {
               !verification ||
               new Date(verification.expiresAt) < new Date()
             ) {
+              // l2: same generic error as other challenge failures.
               throw new APIError("BAD_REQUEST", {
-                message: "Challenge expired or invalid",
+                message: "Challenge invalid or expired",
               });
             }
 
@@ -137,7 +213,7 @@ export function solanaAuthPlugin() {
               }
             };
 
-            const valid = verifySolanaSignature({
+            const valid = await verifySolanaSignature({
               address: addressTrim,
               message,
               signature: signature ?? undefined,
@@ -145,8 +221,10 @@ export function solanaAuthPlugin() {
             });
             if (!valid) {
               await deleteNonce();
+              // l2: don't distinguish "bad signature" from "bad/expired nonce";
+              // same error keeps us from being a signature oracle.
               throw new APIError("UNAUTHORIZED", {
-                message: "Invalid signature",
+                message: "Challenge invalid or expired",
               });
             }
 
@@ -530,13 +608,38 @@ export function solanaAuthPlugin() {
   };
 }
 
-function extractNonceFromMessage(message: string): null | string {
-  const prefix = `${MESSAGE_PREFIX} ${getAppName()}:`;
-  if (!message.startsWith(prefix)) return null;
-  const rest = message.slice(prefix.length).trim();
-  const lines = rest.split("\n");
-  const lastLine = lines[lines.length - 1]?.trim();
-  return lastLine ?? null;
+/**
+ * m4: resolve the expected SIWS domain + URI from the incoming request.
+ * Falls back to NEXT_PUBLIC_APP_URL so a misconfigured proxy can't silently
+ * spoof the domain.
+ */
+function deriveSiwsDomainAndUri(ctx: { request?: Request }): {
+  domain: string;
+  uri: string;
+} {
+  const envUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
+  try {
+    const headers = ctx.request?.headers;
+    const host = headers?.get("x-forwarded-host") ?? headers?.get("host") ?? "";
+    const proto =
+      headers?.get("x-forwarded-proto") ??
+      (envUrl?.startsWith("http://") ? "http" : "https");
+    if (host) {
+      const uri = `${proto}://${host}`;
+      return { domain: host, uri };
+    }
+  } catch {
+    // fall through to env fallback
+  }
+  if (envUrl) {
+    try {
+      const u = new URL(envUrl);
+      return { domain: u.host, uri: `${u.protocol}//${u.host}` };
+    } catch {
+      /* ignored */
+    }
+  }
+  return { domain: "", uri: "" };
 }
 
 function getAppName(): string {
@@ -621,8 +724,76 @@ function isDuplicateUserEmailError(err: unknown): boolean {
   return false;
 }
 
-function makeMessage(nonce: string): string {
-  return `${MESSAGE_PREFIX} ${getAppName()}:\n\n${nonce}`;
+/**
+ * Build a Sign-In With Solana (SIWS) message. Includes domain, address, nonce,
+ * issued-at, expiration and URI so the signed payload can't be replayed against
+ * a different origin or after expiry. The outer `Statement` documents intent
+ * for wallet UIs.
+ */
+function makeSiwsMessage(params: {
+  address: string;
+  domain: string;
+  expiresAt: Date;
+  issuedAt: Date;
+  nonce: string;
+  uri: string;
+}): string {
+  const { address, domain, expiresAt, issuedAt, nonce, uri } = params;
+  const headerDomain = domain || getAppName();
+  return [
+    `${headerDomain} wants you to sign in with your Solana account:`,
+    address,
+    "",
+    SIWS_STATEMENT,
+    "",
+    `URI: ${uri || headerDomain}`,
+    `Version: ${SIWS_VERSION}`,
+    `Chain ID: ${SIWS_CHAIN_ID}`,
+    `Nonce: ${nonce}`,
+    `Issued At: ${issuedAt.toISOString()}`,
+    `Expiration Time: ${expiresAt.toISOString()}`,
+  ].join("\n");
+}
+
+/**
+ * Parse a SIWS-formatted message (see makeSiwsMessage). Returns null for any
+ * malformed input; caller maps that to a single generic error.
+ */
+function parseSiwsMessage(message: string): null | ParsedSiwsMessage {
+  if (typeof message !== "string" || message.length === 0) return null;
+  const lines = message.split("\n");
+  if (lines.length < 5) return null;
+  const headerMatch = lines[0]?.match(
+    /^(.+?) wants you to sign in with your Solana account:$/,
+  );
+  if (!headerMatch) return null;
+  const domain = headerMatch[1]?.trim() ?? "";
+  const address = lines[1]?.trim() ?? "";
+  if (!address) return null;
+
+  let nonce = "";
+  let issuedAt = "";
+  let expiration: null | string = null;
+  let uri = "";
+  for (const rawLine of lines.slice(2)) {
+    const line = rawLine.trim();
+    if (line.startsWith("Nonce: ")) nonce = line.slice("Nonce: ".length).trim();
+    else if (line.startsWith("Issued At: "))
+      issuedAt = line.slice("Issued At: ".length).trim();
+    else if (line.startsWith("Expiration Time: "))
+      expiration = line.slice("Expiration Time: ".length).trim();
+    else if (line.startsWith("URI: ")) uri = line.slice("URI: ".length).trim();
+  }
+  if (!nonce || !issuedAt) return null;
+  const issuedAtMs = Date.parse(issuedAt);
+  if (!Number.isFinite(issuedAtMs)) return null;
+  let expirationMs: null | number = null;
+  if (expiration) {
+    const parsed = Date.parse(expiration);
+    if (!Number.isFinite(parsed)) return null;
+    expirationMs = parsed;
+  }
+  return { address, domain, expirationMs, issuedAtMs, nonce, uri };
 }
 
 function verifySolanaSignature(params: {

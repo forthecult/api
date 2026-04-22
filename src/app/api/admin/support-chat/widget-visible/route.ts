@@ -4,7 +4,7 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
 import { supportChatSettingTable } from "~/db/schema";
-import { getAdminAuth } from "~/lib/admin-api-auth";
+import { adminAuthFailureResponse, getAdminAuth } from "~/lib/admin-api-auth";
 
 const KEY_WIDGET_VISIBLE = "widget_visible";
 const KEY_SUPPORT_AGENT_ENABLED = "support_agent_enabled";
@@ -16,9 +16,7 @@ const KEY_SUPPORT_AGENT_ENABLED = "support_agent_enabled";
 export async function GET(request: NextRequest) {
   try {
     const authResult = await getAdminAuth(request);
-    if (!authResult?.ok) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!authResult?.ok) return adminAuthFailureResponse(authResult);
     const [rowVisible] = await db
       .select({ value: supportChatSettingTable.value })
       .from(supportChatSettingTable)
@@ -47,9 +45,7 @@ export async function GET(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const authResult = await getAdminAuth(request);
-    if (!authResult?.ok) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!authResult?.ok) return adminAuthFailureResponse(authResult);
 
     let body: { supportAgentEnabled?: boolean; visible?: boolean };
     try {

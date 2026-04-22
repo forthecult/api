@@ -1,13 +1,12 @@
 import type { Metadata } from "next";
 
-import { Geist, Geist_Mono, JetBrains_Mono, Manrope } from "next/font/google";
+import { Geist, Geist_Mono, Manrope } from "next/font/google";
 import { cookies, headers } from "next/headers";
 import { Suspense } from "react";
 
 import { SEO_CONFIG } from "~/app";
 import { LazySolanaWalletProvider } from "~/app/checkout/crypto/lazy-solana-wallet-provider";
 import { getPublicSiteUrl, isAgentSubdomain } from "~/lib/app-url";
-import { getCurrentUserTheme } from "~/lib/get-current-user-theme";
 import { CartProvider } from "~/lib/hooks/use-cart";
 import { CountryCurrencyProvider } from "~/lib/hooks/use-country-currency";
 import "~/css/globals.css";
@@ -23,10 +22,7 @@ import { DeferredCriticalRoutePrefetcher } from "~/ui/components/deferred-critic
 import { DeferredSpeedInsights } from "~/ui/components/deferred-speed-insights";
 import { ConditionalHeader } from "~/ui/components/header/conditional-header";
 import { MainWithDogePadding } from "~/ui/components/main-with-doge-padding";
-import {
-  OrganizationStructuredData,
-  WebSiteStructuredData,
-} from "~/ui/components/structured-data";
+import { OrganizationWebSiteJsonLd } from "~/ui/components/structured-data";
 import { SupportChatWidgetWrapper } from "~/ui/components/support-chat/support-chat-widget-wrapper";
 import { ThemePersistSync } from "~/ui/components/theme-persist-sync";
 import { ThemeProvider } from "~/ui/components/theme-provider";
@@ -34,18 +30,17 @@ import { WalletErrorBoundary } from "~/ui/components/wallet-error-boundary";
 import { Toaster } from "~/ui/primitives/sonner";
 
 const geistSans = Geist({
+  display: "swap",
   subsets: ["latin"],
   variable: "--font-geist-sans",
 });
 
+// geist mono also powers the "crypto / data" numeric style (previously a separate JetBrains Mono family).
+// one mono family is enough and saves a round-trip font download on every page.
 const geistMono = Geist_Mono({
+  display: "swap",
   subsets: ["latin"],
   variable: "--font-geist-mono",
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ["latin"],
-  variable: "--font-mono-crypto",
 });
 
 const manrope = Manrope({
@@ -135,7 +130,6 @@ export default async function RootLayout({
           className={`
             ${geistSans.variable}
             ${geistMono.variable}
-            ${jetbrainsMono.variable}
             ${manrope.variable}
             min-h-screen bg-background text-foreground antialiased
             selection:bg-primary/30
@@ -157,15 +151,12 @@ export default async function RootLayout({
     );
   }
 
-  const initialUserTheme = await getCurrentUserTheme();
-
   return (
     <html lang="en" suppressHydrationWarning>
       <body
         className={`
           ${geistSans.variable}
           ${geistMono.variable}
-          ${jetbrainsMono.variable}
           ${manrope.variable}
           min-h-screen bg-background text-foreground antialiased
           selection:bg-[#C4873A]/30
@@ -180,7 +171,9 @@ export default async function RootLayout({
           disableTransitionOnChange
           enableSystem
         >
-          <ThemePersistSync initialUserTheme={initialUserTheme} />
+          {/* no initial theme is fetched server-side: next-themes restores from localStorage for
+              returning users, and ThemePersistSync backfills cross-device theme via idle fetch. */}
+          <ThemePersistSync />
           <DeferredCriticalRoutePrefetcher />
           <CartProvider>
             <CryptoCurrencyProvider>
@@ -202,9 +195,7 @@ export default async function RootLayout({
         {process.env.NEXT_PUBLIC_VERCEL === "1" ? (
           <DeferredSpeedInsights />
         ) : null}
-        {/* Structured data for search engines */}
-        <OrganizationStructuredData />
-        <WebSiteStructuredData />
+        <OrganizationWebSiteJsonLd />
       </body>
     </html>
   );

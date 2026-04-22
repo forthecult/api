@@ -15,7 +15,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <MainAppUrlScript />
+        <StorefrontOriginMeta />
       </head>
       <body className="min-h-screen bg-background text-foreground antialiased">
         {children}
@@ -24,8 +24,8 @@ export default function RootLayout({
   );
 }
 
-/** Server has env at runtime (e.g. Railway); Next bakes NEXT_PUBLIC_* at build time. Inject so client can use it. */
-function MainAppUrlScript() {
+/** runtime storefront URL for links (client reads meta; avoids inline script + innerHTML). */
+function StorefrontOriginMeta() {
   const raw =
     process.env.NEXT_PUBLIC_MAIN_APP_URL?.trim() ||
     process.env.NEXT_PUBLIC_APP_URL?.trim() ||
@@ -34,11 +34,6 @@ function MainAppUrlScript() {
     raw && !raw.startsWith("http://") && !raw.startsWith("https://")
       ? `https://${raw}`
       : raw;
-  return (
-    <script
-      dangerouslySetInnerHTML={{
-        __html: `window.__MAIN_APP_URL=${JSON.stringify(value)};`,
-      }}
-    />
-  );
+  if (!value) return null;
+  return <meta content={value} name="ftc-storefront-origin" />;
 }

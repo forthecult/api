@@ -48,18 +48,21 @@ import {
 } from "~/lib/token-gate";
 import { COOKIE_NAME, hasValidTokenGateCookie } from "~/lib/token-gate-cookie";
 import { Breadcrumbs } from "~/ui/components/breadcrumbs";
+import { ProductBrandModel } from "~/ui/components/product-brand-model";
 import {
   BreadcrumbStructuredData,
   CollectionPageStructuredData,
-  ProductStructuredData,
+  ProductPageJsonLd,
 } from "~/ui/components/structured-data";
 import { TokenGateGuard } from "~/ui/components/token-gate/TokenGateGuard";
 import { Button } from "~/ui/primitives/button";
 import { Separator } from "~/ui/primitives/separator";
 import { PageLoadingFallback } from "~/ui/primitives/spinner";
 
-/** Always fetch product/category data from DB so variants match admin (no stale cache). */
-export const dynamic = "force-dynamic";
+// the page reads cookies() for token-gate state, which already opts it into
+// dynamic rendering. `force-dynamic` was redundant and prevents next from
+// caching per-request data lookups via `fetch`'s `next: { revalidate }` option.
+export const revalidate = 60;
 
 /* -------------------------------------------------------------------------- */
 /*                               Types                                        */
@@ -129,6 +132,7 @@ async function fetchCategoryPage(
   try {
     const res = await fetch(`${baseUrl()}/api/products?${params}`, {
       next: { revalidate: 60 },
+      signal: AbortSignal.timeout(8000),
       ...(cookieHeader ? { headers: { Cookie: cookieHeader } } : {}),
     });
     if (!res.ok) return { categories: [], items: [], total: 0, totalPages: 1 };
@@ -147,6 +151,7 @@ async function fetchRelatedProducts(
       `${baseUrl()}/api/products/${encodeURIComponent(slug)}/related`,
       {
         next: { revalidate: 60 },
+        signal: AbortSignal.timeout(5000),
         ...(cookieHeader ? { headers: { Cookie: cookieHeader } } : {}),
       },
     );
@@ -175,13 +180,20 @@ const range = (length: number) => Array.from({ length }, (_, i) => i);
 
 interface PageProps {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{
+    page?: string;
+    q?: string;
+    sort?: string;
+    subcategory?: string;
+  }>;
 }
 
 export async function generateMetadata({
   params,
+  searchParams,
 }: PageProps): Promise<Metadata> {
   const { slug } = await params;
+  const resolvedSearchParams = await searchParams;
   const headersList = await headers();
   const host = headersList.get("host") ?? "";
   const noindexForAgent = shouldNoindexForAgent(host);
@@ -224,6 +236,7 @@ export async function generateMetadata({
             width: 1200,
           },
         ],
+        siteName: SEO_CONFIG.fullName,
         title: ogTitle,
         type: "website",
         url: canonicalUrl,
@@ -242,10 +255,23 @@ export async function generateMetadata({
   }
   const category = await getCategoryBySlug(slug);
   const categoryName = category?.name ?? slug;
-  const title = category?.title ?? `${categoryName} | ${SEO_CONFIG.name}`;
-  const description =
+  const listPage = Math.max(
+    1,
+    Number.parseInt(resolvedSearchParams.page ?? "1", 10),
+  );
+  const baseCategoryTitle =
+    category?.title ?? `${categoryName} | ${SEO_CONFIG.name}`;
+  const title =
+    category && listPage > 1
+      ? `${baseCategoryTitle} — Page ${listPage}`
+      : baseCategoryTitle;
+  const baseDescription =
     category?.metaDescription?.slice(0, 160) ??
     `Browse ${categoryName} at ${SEO_CONFIG.name}.`;
+  const description =
+    category && listPage > 1
+      ? `${baseDescription.slice(0, 120)}… Page ${listPage}.`.slice(0, 160)
+      : baseDescription;
 
   const defaultOgImagePath =
     "/lookbook/culture-brand-lifestyle-premium-apparel.jpg";
@@ -281,6 +307,7 @@ export async function generateMetadata({
           width: 1200,
         },
       ],
+      siteName: SEO_CONFIG.fullName,
       title,
       type: "website",
       url: `${siteUrl}/${slug}`,
@@ -355,27 +382,49 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
       `/${canonicalSlug}`,
     );
 
+    const productJsonLd = {
+      ageGroup: product.ageGroup,
+      availableCountryCodes: product.availableCountryCodes,
+      brand: product.brand,
+      category: product.category,
+      color: product.color,
+      condition: product.itemCondition,
+      description: stripHtmlForMeta(product.description),
+      gender: product.gender,
+      googleProductCategory: product.googleProductCategory,
+      gtin: product.gtin,
+      handlingDaysMax: product.handlingDaysMax,
+      handlingDaysMin: product.handlingDaysMin,
+      id: product.id,
+      image: product.image,
+      inStock: product.inStock,
+      material: product.material,
+      mpn: product.mpn,
+      name: product.name,
+      price: product.price,
+      priceValidUntil: product.priceValidUntil,
+      rating: product.rating,
+      reviewCount: product.reviewCount,
+      reviews: product.reviews,
+      shipsFromCountry: product.shipsFromCountry,
+      size: product.size,
+      slug: canonicalSlug,
+      transitDaysMax: product.transitDaysMax,
+      transitDaysMin: product.transitDaysMin,
+      variants: product.variants,
+    } as const;
+
+    const breadcrumbJsonLd = breadcrumbTrail.map((item) => ({
+      name: item.name,
+      url: `${siteUrl}${item.href}`,
+    }));
+
     if (product.pageLayout === "long-form") {
       return (
         <>
-          <ProductStructuredData
-            product={{
-              category: product.category,
-              description: stripHtmlForMeta(product.description),
-              id: product.id,
-              image: product.image,
-              inStock: product.inStock,
-              name: product.name,
-              price: product.price,
-              rating: product.rating,
-              slug: canonicalSlug,
-            }}
-          />
-          <BreadcrumbStructuredData
-            items={breadcrumbTrail.map((item) => ({
-              name: item.name,
-              url: `${siteUrl}${item.href}`,
-            }))}
+          <ProductPageJsonLd
+            breadcrumbItems={breadcrumbJsonLd}
+            product={productJsonLd}
           />
           <LongFormProductPage
             breadcrumbTrail={breadcrumbTrail}
@@ -390,24 +439,9 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
 
     return (
       <>
-        <ProductStructuredData
-          product={{
-            category: product.category,
-            description: stripHtmlForMeta(product.description),
-            id: product.id,
-            image: product.image,
-            inStock: product.inStock,
-            name: product.name,
-            price: product.price,
-            rating: product.rating,
-            slug: canonicalSlug,
-          }}
-        />
-        <BreadcrumbStructuredData
-          items={breadcrumbTrail.map((item) => ({
-            name: item.name,
-            url: `${siteUrl}${item.href}`,
-          }))}
+        <ProductPageJsonLd
+          breadcrumbItems={breadcrumbJsonLd}
+          product={productJsonLd}
         />
         <div className="flex min-h-screen flex-col">
           <main className="flex-1 py-10">
@@ -481,41 +515,10 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
                           {product.category}
                         </p>
                       </div>
-                      {(() => {
-                        const b = product.brand?.trim();
-                        const m = product.model?.trim();
-                        const isProviderBrand =
-                          b?.toLowerCase() === "printful" ||
-                          b?.toLowerCase() === "printify" ||
-                          b?.toLowerCase() === "generic brand";
-                        if (!b && !m) return null;
-                        if (isProviderBrand) return null;
-                        return (
-                          <div
-                            className={`
-                              mb-4 flex flex-wrap items-center gap-x-4 gap-y-1
-                              text-sm text-muted-foreground
-                            `}
-                          >
-                            {b && (
-                              <span>
-                                <span className="font-medium text-foreground">
-                                  Brand:
-                                </span>{" "}
-                                {b}
-                              </span>
-                            )}
-                            {m && (
-                              <span>
-                                <span className="font-medium text-foreground">
-                                  Model:
-                                </span>{" "}
-                                {m}
-                              </span>
-                            )}
-                          </div>
-                        );
-                      })()}
+                      <ProductBrandModel
+                        brand={product.brand}
+                        model={product.model}
+                      />
                       {/* Features only at top; description is in accordion below */}
                       {product.features.length > 0 && (
                         <ul className="mb-6 space-y-2 text-muted-foreground">
@@ -711,13 +714,30 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
     category.description?.slice(0, 160) ??
     `Browse ${category.name} at ${SEO_CONFIG.name}.`;
 
+  const publicSiteUrl = getPublicSiteUrl();
+  const categoryCanonicalUrl = `${publicSiteUrl}/${slug}`;
+  const breadcrumbJsonLdItems = [
+    { name: "Home", url: `${publicSiteUrl}/` },
+    { name: "Products", url: `${publicSiteUrl}/products` },
+    ...(parent
+      ? [{ name: parent.name, url: `${publicSiteUrl}/${parent.slug}` }]
+      : []),
+    { name: category.name, url: categoryCanonicalUrl },
+  ];
+
   return (
     <>
+      <BreadcrumbStructuredData items={breadcrumbJsonLdItems} />
       <CollectionPageStructuredData
         description={categoryDescription}
+        items={products.map((p) => ({
+          image: p.image,
+          name: p.name,
+          url: `${publicSiteUrl}/${p.slug ?? p.id}`,
+        }))}
         name={category.name}
         numberOfItems={data.total ?? 0}
-        url={`${baseUrl()}/${slug}`}
+        url={categoryCanonicalUrl}
       />
       <Suspense fallback={<PageLoadingFallback />}>
         <ProductsClient

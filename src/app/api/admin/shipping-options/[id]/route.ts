@@ -3,7 +3,7 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
 import { shippingOptionsTable } from "~/db/schema";
-import { getAdminAuth } from "~/lib/admin-api-auth";
+import { adminAuthFailureResponse, getAdminAuth } from "~/lib/admin-api-auth";
 
 export async function DELETE(
   _request: NextRequest,
@@ -11,9 +11,7 @@ export async function DELETE(
 ) {
   try {
     const authResult = await getAdminAuth(_request);
-    if (!authResult?.ok) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!authResult?.ok) return adminAuthFailureResponse(authResult);
 
     const { id } = await params;
 
@@ -45,9 +43,7 @@ export async function GET(
 ) {
   try {
     const authResult = await getAdminAuth(_request);
-    if (!authResult?.ok) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!authResult?.ok) return adminAuthFailureResponse(authResult);
 
     const { id } = await params;
     const [row] = await db
@@ -99,9 +95,7 @@ export async function PATCH(
 ) {
   try {
     const authResult = await getAdminAuth(request);
-    if (!authResult?.ok) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!authResult?.ok) return adminAuthFailureResponse(authResult);
 
     const { id } = await params;
     const body = (await request.json()) as {

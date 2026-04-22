@@ -11,7 +11,7 @@ You have two frontends in this repo:
 - **Customer frontend** – main app (store, checkout, dashboard) in the repo root.
 - **Admin frontend** – separate Next.js app in `admin/`, for orders, products, categories, etc.
 
-Both talk to the **same backend** (the main app’s API routes). Auth and CORS are set up so the admin app can call the main app’s APIs.
+Both talk to the **same backend** (the main app’s API routes). By default the **admin** app proxies `/api/*` to the main URL (see `admin/next.config.ts`) so **session cookies stay on the admin origin**; the main app must **not** use `AUTH_SHARE_SESSION_COOKIE_WITH_ADMIN` unless you intentionally run legacy cross-origin admin fetches (`NEXT_PUBLIC_ADMIN_API_RELATIVE=0` on admin).
 
 ---
 
@@ -30,7 +30,7 @@ Railway will assign a URL like `https://your-app.up.railway.app`. That’s your 
 **Env for main app (staging):**
 
 - `NEXT_PUBLIC_APP_URL` = `https://your-app.up.railway.app` (the same URL Railway gives this service). Also used for links in emails (e.g. password reset).
-- `NEXT_PUBLIC_ADMIN_APP_URL` = leave empty if you’re not deploying admin; if you do deploy admin, set it to the admin service URL (see below).
+- `NEXT_PUBLIC_ADMIN_APP_URL` = leave empty if you’re not deploying admin; if you do deploy admin, set it to the admin service URL (see below). Do **not** set `AUTH_SHARE_SESSION_COOKIE_WITH_ADMIN` unless you intentionally run the legacy cross-origin admin API mode.
 - `NEXT_SERVER_APP_URL` = `http://localhost:PORT` (e.g. `http://localhost:8080`) for server-side fetches only; auth email links use `NEXT_PUBLIC_APP_URL`.
 - `DATABASE_URL`, `AUTH_SECRET`, and any other env your app needs.
 
@@ -111,8 +111,9 @@ To run both the **store** and the **admin** dashboard:
 - **Start:** `bun run start` (runs `next start` in `admin/`).
 - **Port:** leave Railway’s default. Next.js will use the `PORT` Railway sets; you don’t need to pick 3001.
 - **Env (in the admin service):**
-  - `NEXT_PUBLIC_MAIN_APP_URL` or `NEXT_PUBLIC_APP_URL` = main app URL (same as `NEXT_PUBLIC_APP_URL` above). The admin app uses this to call the main app’s API and for login redirects.
-  - **Database / auth:** the admin app talks to the main app’s API (same backend). It does **not** need its own `DATABASE_URL` or `AUTH_SECRET`; it needs the main app’s URL so it can call `/api/auth/*`, `/api/admin/*`, etc. So only set the main app URL (and any env the admin’s own build needs, if any).
+  - `NEXT_PUBLIC_MAIN_APP_URL` or `NEXT_PUBLIC_APP_URL` = main app URL (same as `NEXT_PUBLIC_APP_URL` above). Required for **rewrites** (`/api/*` → storefront) and for the storefront link in `<meta name="ftc-storefront-origin">`.
+  - `NEXT_PUBLIC_ADMIN_APP_URL` = this admin service’s public URL (used for auth client base URL on the server and for main-app `trustedOrigins` / CORS).
+  - **Database / auth:** the admin app talks to the main app’s API (same backend). It does **not** need its own `DATABASE_URL` or `AUTH_SECRET`. Do **not** set `AUTH_SHARE_SESSION_COOKIE_WITH_ADMIN` on the main app unless you use `NEXT_PUBLIC_ADMIN_API_RELATIVE=0` and accept cross-site session cookies.
 
 **Redeploying admin:** When you change admin-only code (e.g. sidebar in `admin/src/ui/admin-sidebar.tsx`), you must deploy the **admin** service. Redeploying only the main (customer) service will not update the admin. In Railway, open the **admin** service and use “Redeploy” or push to the branch that triggers the admin build. If the admin service uses the same repo and branch as the main app, ensure its **Root directory** is set to **`admin`** so it builds from `admin/`, not the repo root.
 

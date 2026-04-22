@@ -148,11 +148,12 @@ export function CheckoutCryptoHeader() {
                   variant="outline"
                 >
                   {connected && wallet?.adapter.icon ? (
-                    <img
+                    <Image
                       alt=""
                       className="size-5 shrink-0 rounded object-contain"
                       height={20}
                       src={wallet.adapter.icon}
+                      unoptimized
                       width={20}
                     />
                   ) : (
@@ -186,12 +187,13 @@ export function CheckoutCryptoHeader() {
                   >
                     <span className="flex min-w-0 flex-1 items-center gap-2">
                       {w.icon ? (
-                        <img
+                        <Image
                           alt=""
                           className="size-5 shrink-0 rounded object-contain"
                           height={20}
                           src={w.icon}
                           title={w.name}
+                          unoptimized
                           width={20}
                         />
                       ) : (

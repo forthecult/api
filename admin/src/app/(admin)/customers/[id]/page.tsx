@@ -18,7 +18,7 @@ import { useParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { cn } from "~/lib/cn";
-import { getMainAppUrl } from "~/lib/env";
+import { getAdminApiBaseUrl } from "~/lib/env";
 import { mapRetrieveToShipping } from "~/lib/loqate";
 import { Button } from "~/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/ui/card";
@@ -31,7 +31,7 @@ import {
   TableRow,
 } from "~/ui/table";
 
-const API_BASE = getMainAppUrl();
+const API_BASE = getAdminApiBaseUrl();
 
 interface LoqateFindItem {
   Description?: string;

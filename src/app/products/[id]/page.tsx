@@ -1,12 +1,16 @@
 import type { Metadata } from "next";
 
 import { Star } from "lucide-react";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { SEO_CONFIG } from "~/app";
-import { getPublicSiteUrl, getServerBaseUrl } from "~/lib/app-url";
+import {
+  getPublicSiteUrl,
+  getServerBaseUrl,
+  shouldNoindexForAgent,
+} from "~/lib/app-url";
 import { getProductBreadcrumbTrail } from "~/lib/categories";
 import { getProductBySlugOrId } from "~/lib/product-by-slug";
 import {
@@ -25,10 +29,8 @@ import {
 } from "~/lib/token-gate";
 import { COOKIE_NAME, hasValidTokenGateCookie } from "~/lib/token-gate-cookie";
 import { Breadcrumbs } from "~/ui/components/breadcrumbs";
-import {
-  BreadcrumbStructuredData,
-  ProductStructuredData,
-} from "~/ui/components/structured-data";
+import { ProductBrandModel } from "~/ui/components/product-brand-model";
+import { ProductPageJsonLd } from "~/ui/components/structured-data";
 import { TokenGateGuard } from "~/ui/components/token-gate/TokenGateGuard";
 import { Button } from "~/ui/primitives/button";
 import { Separator } from "~/ui/primitives/separator";
@@ -110,9 +112,18 @@ export async function generateMetadata({
     };
   }
 
+  const headersList = await headers();
+  const noindexForAgent = shouldNoindexForAgent(headersList.get("host"));
   const productGate = await getProductTokenGates(product.id);
-  const metaDesc = stripHtmlForMeta(product.description).slice(0, 160);
+  const metaDesc =
+    product.metaDescription?.trim()?.slice(0, 160) ??
+    stripHtmlForMeta(product.description).slice(0, 160);
+  const pageTitle = product.pageTitle?.trim() || product.name;
+  const ogTitle = pageTitle.includes(SEO_CONFIG.name)
+    ? pageTitle
+    : `${pageTitle} | ${SEO_CONFIG.name}`;
   const siteUrl = getPublicSiteUrl();
+  const canonicalUrl = `${siteUrl}/products/${id}`;
   const defaultOgPath = "/lookbook/culture-brand-lifestyle-premium-apparel.jpg";
   const imageUrl = productGate.tokenGated
     ? `${siteUrl}${defaultOgPath}`
@@ -122,27 +133,36 @@ export async function generateMetadata({
         ? `${siteUrl}${product.image.startsWith("/") ? "" : "/"}${product.image}`
         : `${siteUrl}${defaultOgPath}`;
   return {
+    alternates: {
+      canonical: canonicalUrl,
+    },
     description: metaDesc,
     openGraph: {
       description: metaDesc,
       images: [
         {
-          alt: productGate.tokenGated ? SEO_CONFIG.name : product.name,
+          alt: productGate.tokenGated
+            ? SEO_CONFIG.name
+            : (product.mainImageAlt ?? product.name),
           height: 630,
           url: imageUrl,
           width: 1200,
         },
       ],
-      title: `${product.name} | ${SEO_CONFIG.name}`,
+      siteName: SEO_CONFIG.fullName,
+      title: ogTitle,
       type: "website",
+      url: canonicalUrl,
     },
-    robots: { follow: true, index: true },
-    title: product.name,
+    robots: noindexForAgent
+      ? { follow: true, index: false }
+      : { follow: true, index: true },
+    title: pageTitle,
     twitter: {
       card: "summary_large_image",
       description: metaDesc,
       images: [imageUrl],
-      title: product.name,
+      title: ogTitle,
     },
   };
 }
@@ -200,24 +220,43 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
   return (
     <>
-      {/* Structured data for SEO */}
-      <ProductStructuredData
-        product={{
-          category: product.category,
-          description: stripHtmlForMeta(product.description),
-          id: product.id,
-          image: product.image,
-          inStock: product.inStock,
-          name: product.name,
-          price: product.price,
-          rating: product.rating,
-        }}
-      />
-      <BreadcrumbStructuredData
-        items={breadcrumbTrail.map((item) => ({
+      <ProductPageJsonLd
+        breadcrumbItems={breadcrumbTrail.map((item) => ({
           name: item.name,
           url: `${siteUrl}${item.href}`,
         }))}
+        product={{
+          ageGroup: product.ageGroup,
+          availableCountryCodes: product.availableCountryCodes,
+          brand: product.brand,
+          canonicalPath: `/products/${product.id}`,
+          category: product.category,
+          color: product.color,
+          condition: product.itemCondition,
+          description: stripHtmlForMeta(product.description),
+          gender: product.gender,
+          googleProductCategory: product.googleProductCategory,
+          gtin: product.gtin,
+          handlingDaysMax: product.handlingDaysMax,
+          handlingDaysMin: product.handlingDaysMin,
+          id: product.id,
+          image: product.image,
+          inStock: product.inStock,
+          material: product.material,
+          mpn: product.mpn,
+          name: product.name,
+          price: product.price,
+          priceValidUntil: product.priceValidUntil,
+          rating: product.rating,
+          reviewCount: product.reviewCount,
+          reviews: product.reviews,
+          shipsFromCountry: product.shipsFromCountry,
+          size: product.size,
+          slug: product.slug,
+          transitDaysMax: product.transitDaysMax,
+          transitDaysMin: product.transitDaysMin,
+          variants: product.variants,
+        }}
       />
 
       <div className="flex min-h-screen flex-col">
@@ -302,42 +341,10 @@ export default async function ProductDetailPage({ params }: PageProps) {
                       </p>
                     </div>
 
-                    {/* Brand & model: show only when brand is not the fulfillment provider placeholder */}
-                    {(() => {
-                      const b = product.brand?.trim();
-                      const m = product.model?.trim();
-                      const isProviderBrand =
-                        b?.toLowerCase() === "printful" ||
-                        b?.toLowerCase() === "printify" ||
-                        b?.toLowerCase() === "generic brand";
-                      if (!b && !m) return null;
-                      if (isProviderBrand) return null;
-                      return (
-                        <div
-                          className={`
-                            mb-4 flex flex-wrap items-center gap-x-4 gap-y-1
-                            text-sm text-muted-foreground
-                          `}
-                        >
-                          {b && (
-                            <span>
-                              <span className="font-medium text-foreground">
-                                Brand:
-                              </span>{" "}
-                              {b}
-                            </span>
-                          )}
-                          {m && (
-                            <span>
-                              <span className="font-medium text-foreground">
-                                Model:
-                              </span>{" "}
-                              {m}
-                            </span>
-                          )}
-                        </div>
-                      );
-                    })()}
+                    <ProductBrandModel
+                      brand={product.brand}
+                      model={product.model}
+                    />
 
                     {/* Features only at top (bullet points); description is in accordion below */}
                     {product.features.length > 0 && (

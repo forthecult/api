@@ -1,5 +1,3 @@
-"use client";
-
 import { cn } from "~/lib/cn";
 
 /** Standard max-width container with responsive padding. Use for all customer-facing page content. */

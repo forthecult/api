@@ -9,6 +9,7 @@ import {
   insertOrderItems,
   postOrderBookkeeping,
   resolveDiscounts,
+  statusFromOrderError,
   validateAndFetchProducts,
   validateTotal,
 } from "~/lib/checkout/create-order-helpers";
@@ -20,6 +21,10 @@ import {
   rateLimitResponse,
 } from "~/lib/rate-limit";
 import { deriveDepositAddress } from "~/lib/solana-deposit";
+import {
+  computeExpectedSolanaCryptoAmount,
+  type SolanaPayToken,
+} from "~/lib/solana-pay-amount";
 import { createOrderSchema, validateBody } from "~/lib/validations/checkout";
 import { verifyWalletForTier } from "~/lib/wallet-tier-verify";
 
@@ -174,6 +179,33 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // ── Lock in the expected crypto amount server-side ─────────────────
+    // confirm route verifies against this exact value and refuses any
+    // client-supplied threshold. for non-usdc tokens we must have a trusted
+    // price feed; if we don't, refuse the order rather than falling back to
+    // client input (that path was cve c2).
+    let cryptoAmountToStore: null | string = null;
+    if (tokenFromBody) {
+      const computed = await computeExpectedSolanaCryptoAmount({
+        clientAmount: validation.data.cryptoAmount ?? null,
+        token: tokenFromBody as SolanaPayToken,
+        totalCents: totalCheck.expectedTotal,
+      });
+      if (!computed) {
+        return NextResponse.json(
+          {
+            error:
+              "Cannot price this token right now. Please pick another payment method or retry in a moment.",
+          },
+          { status: 503 },
+        );
+      }
+      cryptoAmountToStore = computed.serverAmount;
+      if (computed.warning) {
+        console.warn("[solana-pay create-order]", computed.warning);
+      }
+    }
+
     // ── Payment-method-specific: Solana deposit address ────────────────
     const orderId = createId();
     const userIdVal =
@@ -204,6 +236,7 @@ export async function POST(request: NextRequest) {
           ? { solanaPayReference: reference.trim() }
           : {}),
         ...(cryptoCurrency ? { cryptoCurrency } : {}),
+        ...(cryptoAmountToStore ? { cryptoAmount: cryptoAmountToStore } : {}),
         // Shipping address for admin order details
         ...(shipping?.name && { shippingName: shipping.name }),
         ...(shipping?.address1 && { shippingAddress1: shipping.address1 }),
@@ -254,7 +287,7 @@ export async function POST(request: NextRequest) {
     console.error("Solana Pay create-order error:", err);
     return NextResponse.json(
       { error: buildOrderErrorMessage(err) },
-      { status: 500 },
+      { status: statusFromOrderError(err) },
     );
   }
 }

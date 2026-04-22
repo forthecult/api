@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import type { PodProvider } from "@/lib/pod/types";
 
-import { getAdminAuth } from "@/lib/admin-api-auth";
+import { adminAuthFailureResponse, getAdminAuth } from "@/lib/admin-api-auth";
 import { fetchBlueprintWithSpecs } from "@/lib/pod/catalog";
 
 /**
@@ -16,9 +16,7 @@ export async function GET(
   { params }: { params: Promise<{ blueprintId: string }> },
 ) {
   const authResult = await getAdminAuth(request);
-  if (!authResult?.ok) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  if (!authResult?.ok) return adminAuthFailureResponse(authResult);
   const { blueprintId } = await params;
   const { searchParams } = new URL(request.url);
   const provider = searchParams.get("provider") as null | PodProvider;

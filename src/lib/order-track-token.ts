@@ -1,9 +1,19 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
-const ORDER_TRACK_SECRET =
-  process.env.ORDER_TRACK_SECRET ??
-  process.env.NEXTAUTH_SECRET ??
-  "order-track-fallback";
+import { requireAuthSecret } from "~/lib/require-auth-secret";
+
+/**
+ * Order-track tokens let guests view their order without logging in. secret
+ * precedence: ORDER_TRACK_SECRET (explicit override) → shared AUTH_SECRET.
+ * In production `requireAuthSecret` throws when AUTH_SECRET is missing, so
+ * this file can no longer silently fall back to a hardcoded literal (h3).
+ */
+function orderTrackSecret(): string {
+  const explicit = process.env.ORDER_TRACK_SECRET;
+  if (typeof explicit === "string" && explicit.length > 0) return explicit;
+  return requireAuthSecret("order-track-token");
+}
+
 const TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
 
 /**
@@ -13,7 +23,7 @@ const TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
 export function createOrderTrackToken(orderId: string): string {
   const expiry = String(Date.now() + TOKEN_TTL_MS);
   const payload = `${orderId}:${expiry}`;
-  const sig = createHmac("sha256", ORDER_TRACK_SECRET).update(payload).digest();
+  const sig = createHmac("sha256", orderTrackSecret()).update(payload).digest();
   return `${base64UrlEncode(Buffer.from(expiry))}.${base64UrlEncode(sig)}`;
 }
 
@@ -31,7 +41,7 @@ export function verifyOrderTrackToken(orderId: string, token: string): boolean {
   const expiry = parseInt(expiryBuf.toString("utf8"), 10);
   if (Number.isNaN(expiry) || Date.now() > expiry) return false;
   const payload = `${orderId}:${expiry}`;
-  const expected = createHmac("sha256", ORDER_TRACK_SECRET)
+  const expected = createHmac("sha256", orderTrackSecret())
     .update(payload)
     .digest();
   if (expected.length !== sigBuf.length) return false;

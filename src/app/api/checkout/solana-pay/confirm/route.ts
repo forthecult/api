@@ -150,20 +150,38 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Use server-stored amount for SPL tokens / USDC. For native SOL, when order has no
-    // cryptoAmount, the client sends amount in lamports — use that for verification so we
-    // match the correct tx and store the actual SOL amount.
+    // Use the server-locked amount from create-order. Never trust a
+    // client-supplied threshold at confirm time — that was cve c2, where an
+    // attacker could pass `amount: 1` (lamport) and satisfy the check by
+    // sending 1 lamport on chain for any order.
+    //
+    // The only permitted fallback is usdc (usd-pegged, 1:1) since create-order
+    // for older orders didn't always store the amount; for everything else we
+    // refuse.
     const isNativeSol = splToken === NATIVE_SOL_SENTINEL;
+    const isUsdcOrder =
+      !isNativeSol &&
+      typeof splToken === "string" &&
+      splToken.trim() !== "" &&
+      splToken.trim() !== NATIVE_SOL_SENTINEL &&
+      splToken.trim() === USDC_MINT_MAINNET;
     let serverAmount: string;
     if (order.cryptoAmount) {
       serverAmount = order.cryptoAmount;
-    } else if (isNativeSol && amount != null && String(amount).trim() !== "") {
-      // Client sends lamports for native SOL; we'll verify with this and store actual SOL from tx
-      serverAmount = String(amount).trim();
-    } else {
-      // Default: USDC where 1 USD = 1 USDC, totalCents / 100
+    } else if (isUsdcOrder) {
       serverAmount = (order.totalCents / 100).toString();
+    } else {
+      return NextResponse.json(
+        {
+          error:
+            "Order is missing a server-locked crypto amount. Please recreate the order.",
+        },
+        { status: 400 },
+      );
     }
+    // `amount` from the body is now purely advisory (used only for logging);
+    // never for verification.
+    void amount;
 
     const splTokenMint =
       splToken === NATIVE_SOL_SENTINEL
@@ -185,12 +203,26 @@ export async function POST(request: NextRequest) {
     let verifiedNativeSolLamports: number | undefined;
     try {
       const connection = new Connection(getSolanaRpcUrlServer(), {
-        commitment: "confirmed",
+        // m2: use finalized for payment verification. 'confirmed' is a majority-
+        // of-cluster vote (≈1 slot) and can still be rolled back; finalized is
+        // after the supermajority and is effectively irreversible.
+        commitment: "finalized",
       });
       const depositPk = new PublicKey(depositAddressStr);
       const amountBn = new BigNumber(serverAmount);
       if (isNativeSol) {
-        const expectedLamports = amountBn.integerValue().toNumber();
+        // serverAmount is in user units (e.g. "0.05" sol) since create-order
+        // stores it that way; scale to lamports (1 sol = 1e9 lamports).
+        const expectedLamports = amountBn
+          .times(1_000_000_000)
+          .integerValue(BigNumber.ROUND_FLOOR)
+          .toNumber();
+        if (!Number.isFinite(expectedLamports) || expectedLamports <= 0) {
+          return NextResponse.json(
+            { error: "Invalid server-locked amount for SOL order" },
+            { status: 400 },
+          );
+        }
         const result = await verifyNativeSolTransfer(
           connection,
           sigTrim,
@@ -435,7 +467,7 @@ async function verifyNativeSolTransfer(
   expectedLamports: number,
 ): Promise<{ lamports?: number; ok: boolean }> {
   const tx = await connection.getTransaction(signature, {
-    commitment: "confirmed",
+    commitment: "finalized",
     maxSupportedTransactionVersion: 0,
   });
   if (!tx?.transaction?.message) return { ok: false };

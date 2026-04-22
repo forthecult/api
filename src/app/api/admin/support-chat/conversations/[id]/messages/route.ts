@@ -6,7 +6,7 @@ import {
   supportChatConversationTable,
   supportChatMessageTable,
 } from "~/db/schema";
-import { getAdminAuth } from "~/lib/admin-api-auth";
+import { adminAuthFailureResponse, getAdminAuth } from "~/lib/admin-api-auth";
 
 const MAX_CONTENT_LENGTH = 8_000;
 
@@ -20,9 +20,7 @@ export async function POST(
 ) {
   try {
     const authResult = await getAdminAuth(request);
-    if (!authResult?.ok) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!authResult?.ok) return adminAuthFailureResponse(authResult);
 
     const { id: conversationId } = await params;
     if (!conversationId) {

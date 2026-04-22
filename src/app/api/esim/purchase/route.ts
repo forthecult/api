@@ -4,7 +4,10 @@ import { NextResponse } from "next/server";
 import { db } from "~/db";
 import { esimOrdersTable, orderItemsTable, ordersTable } from "~/db/schema";
 import { getCurrentUser } from "~/lib/auth";
-import { postOrderBookkeeping } from "~/lib/checkout/create-order-helpers";
+import {
+  CouponExhaustedError,
+  postOrderBookkeeping,
+} from "~/lib/checkout/create-order-helpers";
 import { resolveAutomaticCouponForCheckout } from "~/lib/coupon";
 import { getEsimPackageDetail } from "~/lib/esim-api";
 
@@ -187,6 +190,12 @@ export async function POST(request: Request) {
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.error("eSIM purchase error:", message, error);
+    if (error instanceof CouponExhaustedError) {
+      return NextResponse.json(
+        { message: error.message, status: false },
+        { status: 409 },
+      );
+    }
     return NextResponse.json(
       {
         message: "Failed to create eSIM order",

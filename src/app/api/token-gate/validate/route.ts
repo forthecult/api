@@ -71,27 +71,48 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
-    if (Date.now() - payload.timestamp > CHALLENGE_MAX_AGE_MS) {
+    // l1: reject messages whose timestamp is far in the future — a small skew
+    // window is tolerated for clock drift.
+    const CLOCK_SKEW_MS = 30 * 1000;
+    const now = Date.now();
+    if (payload.timestamp > now + CLOCK_SKEW_MS) {
+      return NextResponse.json(
+        { error: "Challenge timestamp is in the future. Retry." },
+        { status: 400 },
+      );
+    }
+    if (now - payload.timestamp > CHALLENGE_MAX_AGE_MS) {
       return NextResponse.json(
         { error: "Challenge expired. Please request a new one." },
         { status: 400 },
       );
     }
-    if (payload.resourceType != null && payload.resourceId != null) {
-      const msgType = payload.resourceType.toLowerCase();
-      const bodyType = resourceType.toLowerCase();
-      if (msgType !== bodyType || payload.resourceId !== resourceId) {
-        return NextResponse.json(
-          {
-            error:
-              "Challenge was for a different resource. Sign again for this page.",
-          },
-          { status: 400 },
-        );
-      }
+    // l1: require the signed message to bind to this resource. previously only
+    // enforced when the client opted in; any client could sign an empty
+    // timestamp-only message and reuse it across resources.
+    if (payload.resourceType == null || payload.resourceId == null) {
+      return NextResponse.json(
+        {
+          error:
+            "Signed challenge must include resourceType + resourceId. Please re-sign.",
+        },
+        { status: 400 },
+      );
+    }
+    if (
+      payload.resourceType.toLowerCase() !== resourceType.toLowerCase() ||
+      payload.resourceId !== resourceId
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Challenge was for a different resource. Sign again for this page.",
+        },
+        { status: 400 },
+      );
     }
 
-    const validSig = verifySolanaSignature({
+    const validSig = await verifySolanaSignature({
       address,
       message,
       signature: body.signature,
@@ -156,6 +177,7 @@ export async function POST(request: Request) {
       currentValue,
       resourceType as TokenGateResourceType,
       resourceId,
+      address,
     );
 
     const res = NextResponse.json({

@@ -113,8 +113,10 @@ const _LOOKBOOK_IMAGES: {
   },
 ];
 
-/** Avoid prerender at build to prevent DB connection pool exhaustion (e.g. Neon Session mode). */
-export const dynamic = "force-dynamic";
+// this page does zero db work at render time (filesystem + static data only),
+// so isr is safe and much faster than forcing dynamic. revalidate hourly keeps
+// fresh UploadThing URLs picked up after admin edits without building-time DB.
+export const revalidate = 3600;
 
 const siteUrl = getPublicSiteUrl();
 

@@ -15,7 +15,7 @@ import { UTApi } from "uploadthing/server";
 
 import { db } from "~/db";
 import { productsTable } from "~/db/schema";
-import { getAdminAuth } from "~/lib/admin-api-auth";
+import { adminAuthFailureResponse, getAdminAuth } from "~/lib/admin-api-auth";
 import {
   isProviderImageUrl,
   isUploadThingUrl,
@@ -32,9 +32,7 @@ export async function POST(
 ) {
   try {
     const authResult = await getAdminAuth(request);
-    if (!authResult?.ok) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!authResult?.ok) return adminAuthFailureResponse(authResult);
 
     const { id: param } = await params;
     const [byId] = await db

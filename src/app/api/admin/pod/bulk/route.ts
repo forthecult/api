@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 
-import { getAdminAuth } from "@/lib/admin-api-auth";
+import { adminAuthFailureResponse, getAdminAuth } from "@/lib/admin-api-auth";
 import { bulkCreate } from "@/lib/pod/bulk-creator";
 
 /**
@@ -11,9 +11,7 @@ import { bulkCreate } from "@/lib/pod/bulk-creator";
  */
 export async function POST(request: NextRequest) {
   const authResult = await getAdminAuth(request);
-  if (!authResult?.ok) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  if (!authResult?.ok) return adminAuthFailureResponse(authResult);
   let body: unknown;
   try {
     body = (await request.json()) as typeof body;

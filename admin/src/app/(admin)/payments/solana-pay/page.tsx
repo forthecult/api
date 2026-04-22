@@ -3,7 +3,7 @@
 import { Coins, Loader2 } from "lucide-react";
 import { useCallback, useState } from "react";
 
-import { getMainAppUrl } from "~/lib/env";
+import { getAdminApiBaseUrl } from "~/lib/env";
 import { Button } from "~/ui/button";
 import {
   Card,
@@ -13,7 +13,7 @@ import {
   CardTitle,
 } from "~/ui/card";
 
-const API_BASE = getMainAppUrl();
+const API_BASE = getAdminApiBaseUrl();
 
 interface SolanaSweepResult {
   configError?: string;

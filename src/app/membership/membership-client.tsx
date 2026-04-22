@@ -21,6 +21,7 @@ import {
   Wallet,
   Wifi,
 } from "lucide-react";
+import nextDynamic from "next/dynamic";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -57,7 +58,6 @@ import {
   PRELOAD_AUTH_WALLET_MODAL,
   PRELOAD_SOLANA_WALLET,
 } from "~/ui/components/auth/auth-wallet-modal-events";
-import { CultSwapBlock } from "~/ui/components/cult-swap-block";
 import { Badge } from "~/ui/primitives/badge";
 import { Button } from "~/ui/primitives/button";
 import {
@@ -75,6 +75,18 @@ import {
   TableHeader,
   TableRow,
 } from "~/ui/primitives/table";
+
+// below-the-fold swap widget: splits out @solana/web3.js + spl-token +
+// pump-swap-cult (~300-500KB of js) so the initial /membership chunk only
+// ships what renders above the fold. ssr:true keeps it in server-rendered
+// markup for SEO; the client bundle just arrives lazily.
+const CultSwapBlock = nextDynamic(
+  () =>
+    import("~/ui/components/cult-swap-block").then((m) => ({
+      default: m.CultSwapBlock,
+    })),
+  { ssr: true },
+);
 
 // ---------------------------------------------------------------------------
 // Live pricing types

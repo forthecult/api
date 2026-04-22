@@ -1,30 +1,34 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import "swagger-ui-react/swagger-ui.css";
 
 import "./api-docs-dark-overrides.css";
 
 // Dynamic import: swagger-ui-react is ~500KB+ and only used on this page.
-// Loading it lazily keeps it out of the main bundle entirely.
-const SwaggerUI = dynamic(() => import("swagger-ui-react"), {
-  loading: () => (
-    <div
-      className={`
-        flex min-h-screen items-center justify-center bg-[#fafafa]
-        dark:bg-[#1a1a1a]
-      `}
-    >
+// The wrapper module statically imports the swagger-ui css alongside the react
+// component, so both ship together in this route's async chunk rather than the
+// main bundle.
+const SwaggerUI = dynamic(
+  () => import("./swagger-ui-wrapper").then((m) => m.default),
+  {
+    loading: () => (
       <div
         className={`
-          h-8 w-8 animate-spin rounded-full border-4 border-primary
-          border-t-transparent
+          flex min-h-screen items-center justify-center bg-[#fafafa]
+          dark:bg-[#1a1a1a]
         `}
-      />
-    </div>
-  ),
-  ssr: false,
-});
+      >
+        <div
+          className={`
+            h-8 w-8 animate-spin rounded-full border-4 border-primary
+            border-t-transparent
+          `}
+        />
+      </div>
+    ),
+    ssr: false,
+  },
+);
 
 export default function ApiDocsClient() {
   return (

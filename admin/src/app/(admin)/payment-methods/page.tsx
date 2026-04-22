@@ -4,10 +4,10 @@ import { ChevronDown, ChevronRight, CreditCard } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
 import { cn } from "~/lib/cn";
-import { getMainAppUrl } from "~/lib/env";
+import { getAdminApiBaseUrl } from "~/lib/env";
 import { Card, CardContent, CardHeader, CardTitle } from "~/ui/card";
 
-const API_BASE = getMainAppUrl();
+const API_BASE = getAdminApiBaseUrl();
 
 interface PaymentMethodRow {
   displayOrder: number;

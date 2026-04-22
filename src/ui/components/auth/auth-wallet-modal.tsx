@@ -109,7 +109,7 @@ function EthereumOptionButton({
         `}
       >
         {}
-        <img
+        <Image
           alt=""
           className="size-8 object-contain"
           height={32}
@@ -117,6 +117,7 @@ function EthereumOptionButton({
             e.currentTarget.style.display = "none";
           }}
           src={icon}
+          unoptimized
           width={32}
         />
       </div>
@@ -1223,11 +1224,12 @@ function WalletOption({
             rounded-md bg-muted/20
           `}
         >
-          <img
+          <Image
             alt=""
             className="object-contain"
             height={32}
             src={icon}
+            unoptimized
             width={32}
           />
         </div>

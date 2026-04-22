@@ -1,42 +1,42 @@
 "use client";
 
-import { useChat } from "@ai-sdk/react";
 import {
   convertFileListToFileUIParts,
   DefaultChatTransport,
   type UIMessage,
 } from "ai";
 import {
+  ArrowDown,
   ChevronLeft,
   Copy,
   Folder,
-  ImageIcon,
   Loader2,
   MessageSquare,
-  Mic,
   PanelRightClose,
   Plus,
   RotateCcw,
   Settings2,
-  Square,
   Trash2,
+  Volume2,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
+import { ChatComposer } from "~/app/chat/chat-composer";
 import {
   loadProjects,
-  loadProjectSettingsPanelCollapsed,
   loadSessionList,
   loadSessionMessages,
-  loadSidebarCollapsed,
   saveProjects,
-  saveProjectSettingsPanelCollapsed,
   saveSessionList,
-  saveSessionMessages,
-  saveSidebarCollapsed,
 } from "~/app/chat/chat-local";
+import { ChatMarkdown } from "~/app/chat/chat-markdown";
+import {
+  mergeRemoteSessions,
+  messageText,
+} from "~/app/chat/chat-message-utils";
 import {
   type ChatProject,
   type ChatSessionMeta,
@@ -49,7 +49,9 @@ import {
   serializeKnowledgeForPrompt,
 } from "~/app/chat/project-knowledge";
 import { ProjectSettingsPanel } from "~/app/chat/project-settings-panel";
-import { useAiLocalStorageSync } from "~/app/chat/use-ai-local-storage-sync";
+import { useChatSession } from "~/app/chat/use-chat-session";
+import { useLocalStorageState } from "~/app/chat/use-local-storage-state";
+import { useVeniceTts } from "~/app/chat/use-venice-tts";
 import { useSession } from "~/lib/auth-client";
 import { cn } from "~/lib/cn";
 import { Button } from "~/ui/primitives/button";
@@ -76,6 +78,8 @@ const TEMP_KEY = "ftc-ai-temperature";
 const TOP_P_KEY = "ftc-ai-top-p";
 const WEB_KEY = "ftc-ai-web-enabled";
 const URL_SCRAPE_KEY = "ftc-ai-url-scraping";
+const SIDEBAR_KEY = "ftc-ai-sidebar-collapsed";
+const PROJECT_PANEL_KEY = "ftc-ai-project-settings-panel-collapsed";
 
 interface AiCharacter {
   description?: null | string;
@@ -96,13 +100,21 @@ export function ChatPageClient() {
 
   const [characterSlug, setCharacterSlug] = useState("default");
   const [selectedMeta, setSelectedMeta] = useState<AiCharacter | null>(null);
-  const [sessionId, setSessionId] = useState(() => crypto.randomUUID());
-  const [temperature, setTemperature] = useState(0.7);
-  const [topP, setTopP] = useState(0.95);
-  const [webEnabled, setWebEnabled] = useState(false);
-  const [urlScrapingEnabled, setUrlScrapingEnabled] = useState(false);
+  const [temperature, setTemperature] = useLocalStorageState(
+    TEMP_KEY,
+    parseTemperature,
+  );
+  const [topP, setTopP] = useLocalStorageState(TOP_P_KEY, parseTopP);
+  const [webEnabled, setWebEnabled] = useLocalStorageState(WEB_KEY, parseBool);
+  const [urlScrapingEnabled, setUrlScrapingEnabled] = useLocalStorageState(
+    URL_SCRAPE_KEY,
+    parseBool,
+  );
 
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useLocalStorageState(
+    SIDEBAR_KEY,
+    parseBool,
+  );
   const [searchQuery, setSearchQuery] = useState("");
   const [projects, setProjects] = useState<ChatProject[]>([]);
   const [sessions, setSessions] = useState<ChatSessionMeta[]>([]);
@@ -120,87 +132,12 @@ export function ChatPageClient() {
   const [projectSettingsDialogOpen, setProjectSettingsDialogOpen] =
     useState(false);
   const [projectSettingsPanelCollapsed, setProjectSettingsPanelCollapsed] =
-    useState(false);
+    useLocalStorageState(PROJECT_PANEL_KEY, parseBool);
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const skipNextPersistRef = useRef(false);
+  const [atBottom, setAtBottom] = useState(true);
 
-  useAiLocalStorageSync({
-    setTemperature,
-    setTopP,
-    setUrlScrapingEnabled,
-    setWebEnabled,
-  });
 
-  useEffect(() => {
-    try {
-      setSidebarCollapsed(loadSidebarCollapsed());
-    } catch {
-      /* ignore */
-    }
-  }, []);
-
-  useEffect(() => {
-    try {
-      setProjectSettingsPanelCollapsed(loadProjectSettingsPanelCollapsed());
-    } catch {
-      /* ignore */
-    }
-  }, []);
-
-  useEffect(() => {
-    try {
-      const tv = localStorage.getItem(TEMP_KEY);
-      if (tv) {
-        const n = Number.parseFloat(tv);
-        if (Number.isFinite(n) && n >= 0 && n <= 2) setTemperature(n);
-      }
-      const pv = localStorage.getItem(TOP_P_KEY);
-      if (pv) {
-        const n = Number.parseFloat(pv);
-        if (Number.isFinite(n) && n > 0 && n <= 1) setTopP(n);
-      }
-      if (localStorage.getItem(WEB_KEY) === "1") setWebEnabled(true);
-      if (localStorage.getItem(URL_SCRAPE_KEY) === "1")
-        setUrlScrapingEnabled(true);
-    } catch {
-      /* ignore */
-    }
-  }, []);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(TEMP_KEY, String(temperature));
-    } catch {
-      /* ignore */
-    }
-  }, [temperature]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(TOP_P_KEY, String(topP));
-    } catch {
-      /* ignore */
-    }
-  }, [topP]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(WEB_KEY, webEnabled ? "1" : "0");
-      localStorage.setItem(URL_SCRAPE_KEY, urlScrapingEnabled ? "1" : "0");
-    } catch {
-      /* ignore */
-    }
-  }, [webEnabled, urlScrapingEnabled]);
-
-  useEffect(() => {
-    try {
-      saveProjectSettingsPanelCollapsed(projectSettingsPanelCollapsed);
-    } catch {
-      /* ignore */
-    }
-  }, [projectSettingsPanelCollapsed]);
 
   useEffect(() => {
     // eslint-disable-next-line @eslint-react/set-state-in-effect -- localStorage-backed guest id
@@ -225,33 +162,7 @@ export function ChatPageClient() {
         };
         const list = data.conversations ?? [];
         if (cancelled || !list.length) return;
-        setSessions((prev) => {
-          const prevById = new Map(prev.map((s) => [s.id, s]));
-          const next: ChatSessionMeta[] = list.map((c) => {
-            const local = prevById.get(c.id);
-            return {
-              favorite: local?.favorite ?? false,
-              id: c.id,
-              projectId: local?.projectId ?? null,
-              title: (c.title?.trim() || "Chat").slice(0, 120),
-              updatedAt: new Date(c.updatedAt).getTime(),
-            };
-          });
-          next.sort((a, b) => b.updatedAt - a.updatedAt);
-          const seen = new Set(next.map((s) => s.id));
-          const merged = [...next];
-          for (const p of prev) {
-            if (!seen.has(p.id)) merged.push(p);
-          }
-          merged.sort((a, b) => {
-            if (Boolean(a.favorite) !== Boolean(b.favorite)) {
-              return a.favorite ? -1 : 1;
-            }
-            return b.updatedAt - a.updatedAt;
-          });
-          saveSessionList(merged);
-          return merged;
-        });
+        setSessions((prev) => mergeRemoteSessions(prev, list));
       } catch {
         /* ignore */
       }
@@ -263,18 +174,40 @@ export function ChatPageClient() {
 
   useEffect(() => {
     try {
+      /* eslint-disable-next-line @eslint-react/set-state-in-effect -- hydrate from localStorage on mount */
       setProjects(loadProjects());
+      /* eslint-disable-next-line @eslint-react/set-state-in-effect -- hydrate from localStorage on mount */
       setSessions(loadSessionList());
     } catch {
       /* ignore */
     }
   }, []);
 
+  const sessionsPersistSkipRef = useRef(true);
+  useEffect(() => {
+    if (sessionsPersistSkipRef.current) {
+      sessionsPersistSkipRef.current = false;
+      return;
+    }
+    saveSessionList(sessions);
+  }, [sessions]);
+
+  const projectsPersistSkipRef = useRef(true);
+  useEffect(() => {
+    if (projectsPersistSkipRef.current) {
+      projectsPersistSkipRef.current = false;
+      return;
+    }
+    saveProjects(projects);
+  }, [projects]);
+
   useEffect(() => {
     if (!selectedProjectId) {
+      /* eslint-disable-next-line @eslint-react/set-state-in-effect -- derived per-project state */
       setKnowledgeItems([]);
       return;
     }
+    /* eslint-disable-next-line @eslint-react/set-state-in-effect -- derived per-project state */
     setKnowledgeItems(loadProjectKnowledge(selectedProjectId));
   }, [selectedProjectId]);
 
@@ -357,13 +290,11 @@ export function ChatPageClient() {
   const updateProjectInstructions = useCallback(
     (next: string) => {
       if (!selectedProjectId) return;
-      setProjects((prev) => {
-        const mapped = prev.map((p) =>
+      setProjects((prev) =>
+        prev.map((p) =>
           p.id === selectedProjectId ? { ...p, instructions: next } : p,
-        );
-        saveProjects(mapped);
-        return mapped;
-      });
+        ),
+      );
     },
     [selectedProjectId],
   );
@@ -401,7 +332,7 @@ export function ChatPageClient() {
 
   const transport = useMemo(
     () =>
-      new DefaultChatTransport({
+      new DefaultChatTransport<UIMessage>({
         api: "/api/ai/chat",
         body: {
           characterSlug,
@@ -433,178 +364,49 @@ export function ChatPageClient() {
     ],
   );
 
-  const chatId = `ftc-chat-${characterSlug}-${sessionId}`;
-
-  const {
-    clearError,
-    error,
-    messages,
-    regenerate,
-    sendMessage,
-    setMessages,
-    status,
-    stop,
-  } = useChat({
-    id: chatId,
-    onError: (err) => {
+  const chatSession = useChatSession({
+    characterSlug,
+    onChatError: (err) => {
       toast.error(err.message || "Something went wrong");
     },
+    selectedProjectId,
+    setSessions,
     transport,
+    userId,
   });
 
-  const busy = status === "streaming" || status === "submitted";
+  const {
+    busy,
+    clearError,
+    deleteAssistantMessage,
+    error,
+    forgetConversationCreated,
+    lastAssistantId,
+    messages,
+    newChat: createNewChatSession,
+    regenerate,
+    selectSession: selectChatSession,
+    sendMessage,
+    sessionId,
+    setMessages,
+    setSessionId,
+    stop,
+  } = chatSession;
 
-  const lastAssistantId = useMemo(() => {
-    for (let i = messages.length - 1; i >= 0; i--) {
-      const m = messages[i];
-      if (m?.role === "assistant") return m.id;
-    }
-    return null;
-  }, [messages]);
+  const { loadingId: ttsLoadingId, speak: speakAssistant, stop: stopTts } =
+    useVeniceTts();
 
-  useEffect(() => {
-    let cancelled = false;
-    skipNextPersistRef.current = true;
-    (async () => {
-      if (userId) {
-        try {
-          const res = await fetch(
-            `/api/ai/conversations/${encodeURIComponent(sessionId)}`,
-            { credentials: "include" },
-          );
-          if (res.ok) {
-            const data = (await res.json()) as {
-              conversation?: { messages?: unknown };
-            };
-            const raw = data.conversation?.messages;
-            if (Array.isArray(raw) && raw.length) {
-              if (!cancelled) setMessages(raw as UIMessage[]);
-              return;
-            }
-          }
-        } catch {
-          /* fall back to local */
-        }
-      }
-      try {
-        const loaded = loadSessionMessages(sessionId);
-        if (!cancelled) setMessages(loaded ?? []);
-      } catch {
-        if (!cancelled) setMessages([]);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [sessionId, setMessages, userId]);
-
-  useEffect(() => {
-    if (skipNextPersistRef.current) {
-      skipNextPersistRef.current = false;
-      return;
-    }
-    saveSessionMessages(sessionId, messages);
-  }, [messages, sessionId]);
-
-  useEffect(() => {
-    if (!userId) return;
-    if (skipNextPersistRef.current) return;
-    const id = window.setTimeout(() => {
-      void (async () => {
-        const firstUser = messages.find((m) => m.role === "user");
-        const title =
-          (firstUser ? messageText(firstUser).trim() : "") || "Chat";
-        const body = {
-          characterSlug,
-          messages,
-          title: title.slice(0, 200),
-        };
-        try {
-          const put = await fetch(
-            `/api/ai/conversations/${encodeURIComponent(sessionId)}`,
-            {
-              body: JSON.stringify(body),
-              credentials: "include",
-              headers: { "Content-Type": "application/json" },
-              method: "PUT",
-            },
-          );
-          if (put.status === 404) {
-            await fetch("/api/ai/conversations", {
-              body: JSON.stringify({ id: sessionId, ...body }),
-              credentials: "include",
-              headers: { "Content-Type": "application/json" },
-              method: "POST",
-            });
-          }
-        } catch {
-          /* ignore */
-        }
-      })();
-    }, 1400);
-    return () => window.clearTimeout(id);
-  }, [characterSlug, messages, sessionId, userId]);
-
-  const upsertSessionTitle = useCallback(
-    (id: string, title: string, opts?: { projectId?: null | string }) => {
-      const now = Date.now();
-      setSessions((prev) => {
-        const existing = prev.find((s) => s.id === id);
-        const projectId =
-          opts?.projectId !== undefined
-            ? opts.projectId
-            : (existing?.projectId ?? null);
-        const favorite = existing?.favorite ?? false;
-        const next = prev.filter((s) => s.id !== id);
-        next.unshift({
-          favorite,
-          id,
-          projectId,
-          title: title.slice(0, 120),
-          updatedAt: now,
-        });
-        next.sort((a, b) => {
-          if (Boolean(a.favorite) !== Boolean(b.favorite)) {
-            return a.favorite ? -1 : 1;
-          }
-          return b.updatedAt - a.updatedAt;
-        });
-        saveSessionList(next);
-        return next;
+  const handleSubmit = useCallback(
+    (text: string) => {
+      stopTts();
+      void sendMessage({
+        parts: [{ text, type: "text" }],
+        role: "user",
       });
+      setInput("");
     },
-    [],
+    [sendMessage, stopTts],
   );
-
-  useEffect(() => {
-    if (messages.length === 0) return;
-    const firstUser = messages.find((m) => m.role === "user");
-    if (!firstUser) return;
-    const t = messageText(firstUser).trim() || "Chat";
-    upsertSessionTitle(
-      sessionId,
-      t,
-      selectedProjectId ? { projectId: selectedProjectId } : {},
-    );
-  }, [messages, selectedProjectId, sessionId, upsertSessionTitle]);
-
-  const onSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const text = input.trim();
-    if (!text) return;
-    void sendMessage({
-      parts: [{ text, type: "text" }],
-      role: "user",
-    });
-    setInput("");
-  };
-
-  const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      onSubmit(e as unknown as React.FormEvent);
-    }
-  };
 
   const copyText = async (text: string) => {
     try {
@@ -616,81 +418,31 @@ export function ChatPageClient() {
   };
 
   const newChat = () => {
-    const id = crypto.randomUUID();
-    setSessionId(id);
-    setMessages([]);
-    clearError();
+    stopTts();
+    createNewChatSession({ characterSlug, selectedProjectId, userId });
     setMainView("chat");
-    setSessions((prev) => {
-      const next = prev.filter((s) => s.id !== id);
-      next.unshift({
-        favorite: false,
-        id,
-        projectId: selectedProjectId ?? null,
-        title: "New chat",
-        updatedAt: Date.now(),
-      });
-      next.sort((a, b) => {
-        if (Boolean(a.favorite) !== Boolean(b.favorite)) {
-          return a.favorite ? -1 : 1;
-        }
-        return b.updatedAt - a.updatedAt;
-      });
-      saveSessionList(next);
-      return next;
-    });
     toast.message("New chat");
-    if (userId) {
-      void (async () => {
-        try {
-          await fetch("/api/ai/conversations", {
-            body: JSON.stringify({
-              characterSlug,
-              id,
-              messages: [],
-              title: null,
-            }),
-            credentials: "include",
-            headers: { "Content-Type": "application/json" },
-            method: "POST",
-          });
-        } catch {
-          /* ignore */
-        }
-      })();
-    }
   };
 
   const handleSelectSession = (id: string) => {
-    if (id === sessionId) return;
-    setSessionId(id);
+    stopTts();
     setMainView("chat");
-    const loaded = loadSessionMessages(id);
-    setMessages(loaded ?? []);
-    clearError();
-    const meta = sessions.find((s) => s.id === id);
-    if (meta?.projectId) setSelectedProjectId(meta.projectId);
-    else setSelectedProjectId(null);
+    selectChatSession(id, sessions, {
+      clearError,
+      setSelectedProjectId,
+    });
   };
 
   const toggleFavorite = useCallback((id: string) => {
-    setSessions((prev) => {
-      const next = prev.map((s) =>
-        s.id === id ? { ...s, favorite: !s.favorite } : s,
-      );
-      saveSessionList(next);
-      return next;
-    });
+    setSessions((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, favorite: !s.favorite } : s)),
+    );
   }, []);
 
   const removeFromProject = useCallback((id: string) => {
-    setSessions((prev) => {
-      const next = prev.map((s) =>
-        s.id === id ? { ...s, projectId: null } : s,
-      );
-      saveSessionList(next);
-      return next;
-    });
+    setSessions((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, projectId: null } : s)),
+    );
   }, []);
 
   const deleteSession = useCallback(
@@ -706,8 +458,8 @@ export function ChatPageClient() {
           method: "DELETE",
         });
       }
+      forgetConversationCreated(id);
       const next = sessions.filter((s) => s.id !== id);
-      saveSessionList(next);
       setSessions(next);
       if (id !== sessionId) return;
       const pick = next[0];
@@ -729,16 +481,10 @@ export function ChatPageClient() {
         title: "New chat",
         updatedAt: Date.now(),
       };
-      const n2 = [row, ...next];
-      saveSessionList(n2);
-      setSessions(n2);
+      setSessions([row, ...next]);
     },
-    [clearError, selectedProjectId, sessionId, sessions, setMessages, userId],
+    [clearError, forgetConversationCreated, selectedProjectId, sessionId, sessions, setMessages, setSessionId, userId],
   );
-
-  const deleteAssistantMessage = (id: string) => {
-    setMessages((prev) => prev.filter((m) => m.id !== id));
-  };
 
   const startSpeech = () => {
     type RecognitionCtor = new () => {
@@ -840,13 +586,30 @@ export function ChatPageClient() {
       });
   };
 
-  const onPickImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    e.target.value = "";
-    if (!files?.length) return;
+  const handleImages = async (files: FileList) => {
+    const MAX_FILES = 4;
+    const MAX_SIZE = 4 * 1024 * 1024;
+    const ALLOWED = new Set(["image/gif", "image/jpeg", "image/png", "image/webp"]);
+    const valid: File[] = [];
+    for (const f of Array.from(files).slice(0, MAX_FILES)) {
+      if (!ALLOWED.has(f.type)) {
+        toast.error(`Unsupported image type: ${f.name}`);
+        continue;
+      }
+      if (f.size > MAX_SIZE) {
+        toast.error(`Image too large (max 4MB): ${f.name}`);
+        continue;
+      }
+      valid.push(f);
+    }
+    if (valid.length === 0) return;
+
+    const dt = new DataTransfer();
+    for (const f of valid) dt.items.add(f);
+
     let fileParts: Awaited<ReturnType<typeof convertFileListToFileUIParts>>;
     try {
-      fileParts = await convertFileListToFileUIParts(files);
+      fileParts = await convertFileListToFileUIParts(dt.files);
     } catch {
       toast.error("Could not read images.");
       return;
@@ -857,6 +620,7 @@ export function ChatPageClient() {
       | { text: string; type: "text" }
     )[] = [...fileParts];
     if (text) parts.push({ text, type: "text" });
+    stopTts();
     void sendMessage({ parts, role: "user" });
     setInput("");
   };
@@ -871,9 +635,7 @@ export function ChatPageClient() {
       instructions: newProjectInstructions.trim(),
       name,
     };
-    const next = [...projects, p];
-    setProjects(next);
-    saveProjects(next);
+    setProjects((prev) => [...prev, p]);
     setSelectedProjectId(id);
     setMainView("chat");
     setProjectDialogOpen(false);
@@ -888,15 +650,30 @@ export function ChatPageClient() {
 
   useEffect(() => {
     if (messages.length === 0) return;
+    if (!atBottom) return;
     const el = scrollRef.current;
     if (!el) return;
     el.scrollTop = el.scrollHeight;
-  }, [messages.length]);
+  }, [atBottom, messages.length]);
+
+  const onScrollMessages = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const distance = el.scrollHeight - el.scrollTop - el.clientHeight;
+    setAtBottom(distance < 80);
+  }, []);
+
+  const scrollToBottom = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTo({ behavior: "smooth", top: el.scrollHeight });
+    setAtBottom(true);
+  }, []);
 
   return (
     <div
       className={`
-        flex h-full min-h-0 w-full flex-col overflow-hidden bg-background
+        flex h-full min-h-0 w-full flex-row overflow-hidden bg-background
       `}
     >
       <ChatSidebar
@@ -905,11 +682,7 @@ export function ChatPageClient() {
         collapsed={sidebarCollapsed}
         loadingCharacters={loadingCharacters}
         mainView={mainView}
-        onCollapseToggle={() => {
-          const next = !sidebarCollapsed;
-          setSidebarCollapsed(next);
-          saveSidebarCollapsed(next);
-        }}
+        onCollapseToggle={() => setSidebarCollapsed((v) => !v)}
         onDeleteSession={deleteSession}
         onNewChat={newChat}
         onOpenCreateProject={() => setProjectDialogOpen(true)}
@@ -953,11 +726,6 @@ export function ChatPageClient() {
           `}
         >
           <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-            <div
-              aria-hidden
-              className="pointer-events-none min-h-0 flex-[1] shrink-0 basis-0"
-            />
-            <div className="flex min-h-0 flex-[2] flex-col overflow-hidden">
               <header
                 className={`
                   flex shrink-0 items-center justify-between gap-2 border-b
@@ -1147,10 +915,12 @@ export function ChatPageClient() {
                 </div>
               ) : null}
 
-              <div
-                className="relative min-h-0 flex-1 overflow-y-auto px-4 py-6"
-                ref={scrollRef}
-              >
+              <div className="relative min-h-0 flex-1">
+                <div
+                  className={`absolute inset-0 overflow-y-auto px-4 py-6`}
+                  onScroll={onScrollMessages}
+                  ref={scrollRef}
+                >
                 <div className="mx-auto flex max-w-3xl flex-col gap-4">
                   {messages.length === 0 ? (
                     <div
@@ -1192,9 +962,7 @@ export function ChatPageClient() {
                           {isUser ? (
                             <MessageParts message={m} />
                           ) : (
-                            <div className="space-y-2 whitespace-pre-wrap">
-                              {text}
-                            </div>
+                            <ChatMarkdown content={text} />
                           )}
                           {isAssistant && text ? (
                             <div
@@ -1212,6 +980,38 @@ export function ChatPageClient() {
                               >
                                 <Copy aria-hidden className="mr-1 h-3 w-3" />
                                 Copy
+                              </Button>
+                              <Button
+                                className="h-7 px-2 text-xs"
+                                disabled={
+                                  (Boolean(busy) &&
+                                    m.id === lastAssistantId) ||
+                                  (ttsLoadingId != null &&
+                                    ttsLoadingId !== m.id)
+                                }
+                                onClick={() =>
+                                  void speakAssistant({
+                                    messageId: m.id,
+                                    text,
+                                  })
+                                }
+                                size="sm"
+                                title="Read aloud (Venice TTS)"
+                                type="button"
+                                variant="ghost"
+                              >
+                                {ttsLoadingId === m.id ? (
+                                  <Loader2
+                                    aria-hidden
+                                    className="mr-1 h-3 w-3 animate-spin"
+                                  />
+                                ) : (
+                                  <Volume2
+                                    aria-hidden
+                                    className="mr-1 h-3 w-3"
+                                  />
+                                )}
+                                Read aloud
                               </Button>
                               {m.id === lastAssistantId ? (
                                 <Button
@@ -1259,98 +1059,33 @@ export function ChatPageClient() {
                     </div>
                   ) : null}
                 </div>
+                </div>
+                {messages.length > 0 && !atBottom ? (
+                  <Button
+                    aria-label="Scroll to latest"
+                    className={`
+                      absolute right-4 bottom-4 z-10 h-9 w-9 rounded-full
+                      shadow-md
+                    `}
+                    onClick={scrollToBottom}
+                    size="icon"
+                    type="button"
+                    variant="secondary"
+                  >
+                    <ArrowDown aria-hidden className="h-4 w-4" />
+                  </Button>
+                ) : null}
               </div>
 
-              <div
-                className={`
-                  shrink-0 border-b border-border/80 bg-background/95 p-4
-                  backdrop-blur
-                  supports-[backdrop-filter]:bg-background/80
-                `}
-              >
-                <div className="mx-auto w-full max-w-3xl">
-                  <input
-                    accept="image/*"
-                    className="hidden"
-                    onChange={onPickImage}
-                    ref={fileInputRef}
-                    type="file"
-                  />
-                  <form
-                    className={`
-                      rounded-2xl border border-border/80 bg-muted/30 p-2
-                    `}
-                    onSubmit={onSubmit}
-                  >
-                    <textarea
-                      className={cn(
-                        "border-input bg-transparent",
-                        "placeholder:text-muted-foreground",
-                        "min-h-[48px] w-full resize-none px-3 py-2 text-sm",
-                        "rounded-xl border-0 border-transparent",
-                        `
-                          ring-0 outline-none
-                          focus:ring-0
-                          focus-visible:ring-0 focus-visible:outline-none
-                        `,
-                      )}
-                      disabled={busy}
-                      onChange={(e) => setInput(e.target.value)}
-                      onKeyDown={onKeyDown}
-                      placeholder="Send a private message…"
-                      rows={2}
-                      value={input}
-                    />
-                    <div
-                      className={`
-                        flex items-center justify-between gap-2 px-1 pb-1
-                      `}
-                    >
-                      <div className="flex items-center gap-1">
-                        <Button
-                          disabled={busy}
-                          onClick={() => void startSpeech()}
-                          size="icon"
-                          title="Dictate"
-                          type="button"
-                          variant="ghost"
-                        >
-                          <Mic aria-hidden className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          disabled={busy}
-                          onClick={() => fileInputRef.current?.click()}
-                          size="icon"
-                          title="Attach image"
-                          type="button"
-                          variant="ghost"
-                        >
-                          <ImageIcon aria-hidden className="h-4 w-4" />
-                        </Button>
-                        {busy ? (
-                          <Button
-                            onClick={() => stop()}
-                            size="sm"
-                            type="button"
-                            variant="destructive"
-                          >
-                            <Square aria-hidden className="mr-1 h-3.5 w-3.5" />
-                            Stop
-                          </Button>
-                        ) : null}
-                      </div>
-                      <Button
-                        disabled={busy || !input.trim()}
-                        size="sm"
-                        type="submit"
-                      >
-                        Send
-                      </Button>
-                    </div>
-                  </form>
-                </div>
-              </div>
-            </div>
+              <ChatComposer
+                busy={busy}
+                input={input}
+                onImagePicked={(files) => void handleImages(files)}
+                onInputChange={setInput}
+                onStartSpeech={startSpeech}
+                onStop={stop}
+                onSubmit={handleSubmit}
+              />
           </div>
           {selectedProject && !projectSettingsPanelCollapsed ? (
             <div
@@ -1488,7 +1223,10 @@ export function ChatPageClient() {
 
 async function fetchJson<T>(url: string): Promise<T> {
   const res = await fetch(url, { credentials: "include" });
-  if (!res.ok) throw new Error(await res.text());
+  if (!res.ok) {
+    // Avoid surfacing raw response bodies (may contain stack traces).
+    throw new Error(`Request failed (${res.status})`);
+  }
   return (await res.json()) as T;
 }
 
@@ -1525,11 +1263,14 @@ function MessageParts({ message }: { message: UIMessage }) {
               : "";
           if (url && mt.startsWith("image/")) {
             return (
-              <img
+              <Image
                 alt=""
                 className="max-h-52 max-w-full rounded-lg object-contain"
+                height={208}
                 key={i}
                 src={url}
+                unoptimized
+                width={416}
               />
             );
           }
@@ -1540,12 +1281,16 @@ function MessageParts({ message }: { message: UIMessage }) {
   );
 }
 
-function messageText(m: { parts?: { text?: string; type: string }[] }): string {
-  if (!m.parts?.length) return "";
-  return m.parts
-    .filter((p) => p.type === "text")
-    .map((p) => p.text ?? "")
-    .join("");
+function parseBool(raw: null | string): boolean {
+  if (raw == null) return false;
+  // Accept legacy "1"/"0" + JSON booleans.
+  if (raw === "1") return true;
+  if (raw === "0") return false;
+  try {
+    return JSON.parse(raw) === true;
+  } catch {
+    return false;
+  }
 }
 
 function parseCharacterDetail(json: unknown): AiCharacter | null {
@@ -1564,6 +1309,18 @@ function parseCharacterDetail(json: unknown): AiCharacter | null {
     name: typeof inner.name === "string" ? inner.name : slug,
     slug,
   };
+}
+
+function parseTemperature(raw: null | string): number {
+  if (raw == null) return 0.7;
+  const n = Number.parseFloat(raw);
+  return Number.isFinite(n) && n >= 0 && n <= 2 ? n : 0.7;
+}
+
+function parseTopP(raw: null | string): number {
+  if (raw == null) return 0.95;
+  const n = Number.parseFloat(raw);
+  return Number.isFinite(n) && n > 0 && n <= 1 ? n : 0.95;
 }
 
 function ProjectsBrowseView({

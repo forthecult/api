@@ -77,22 +77,24 @@ function ConnectorIcon({
 }) {
   if (connector.name === "MetaMask") {
     return (
-      <img
+      <Image
         alt="MetaMask"
         className={className}
         height={32}
         src={METAMASK_LOGO}
+        unoptimized
         width={32}
       />
     );
   }
   if (connector.icon) {
     return (
-      <img
+      <Image
         alt=""
         className={className}
         height={32}
         src={connector.icon}
+        unoptimized
         width={32}
       />
     );
@@ -980,11 +982,12 @@ export function EthPayClient({
                       onClick={handlePhantomClick}
                       type="button"
                     >
-                      <img
+                      <Image
                         alt=""
                         className="size-8 shrink-0 rounded-md object-contain"
                         height={32}
                         src={phantomConnector?.icon ?? PHANTOM_LOGO}
+                        unoptimized
                         width={32}
                       />
                       <span className="flex-1 font-medium">Phantom</span>

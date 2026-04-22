@@ -190,6 +190,7 @@ async function getCategories(): Promise<CategoryItem[]> {
     const siteUrl = getPublicSiteUrl();
     const res = await fetch(`${siteUrl}/api/categories`, {
       next: { revalidate: 3600 },
+      signal: AbortSignal.timeout(5000),
     });
     if (!res.ok) return [];
     const data = (await res.json()) as { categories?: CategoryItem[] };

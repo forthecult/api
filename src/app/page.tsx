@@ -15,9 +15,15 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { SEO_CONFIG } from "~/app";
-import { getPublicSiteUrl, getServerBaseUrl } from "~/lib/app-url";
+import {
+  getHomeFeaturedProducts,
+  getHomePublicCategories,
+  getHomeTestimonials,
+} from "~/app/home-page-data";
+import { getPublicSiteUrl } from "~/lib/app-url";
 import { getCategoriesWithProductsAndDisplayImage } from "~/lib/categories";
 import { SHOW_IN_ALL_PRODUCTS_CATEGORY_SLUG } from "~/lib/storefront-categories";
+import { COOKIE_NAME as TOKEN_GATE_COOKIE } from "~/lib/token-gate-cookie";
 import { PageContainer } from "~/ui/components/layout/page-container";
 import { Button } from "~/ui/primitives/button";
 import {
@@ -85,141 +91,11 @@ const LazyTestimonialsSection = nextDynamic(
   },
 );
 
-// Avoid build-time SSG timeout when API/DB unreachable (e.g. Railway build)
-export const dynamic = "force-dynamic";
-
 interface TestimonialItem {
   author: { avatar?: string; handle?: string; name: string };
   productTitle?: string;
   rating?: number;
   text: string;
-}
-
-async function fetchCategories(): Promise<
-  { id: string; name: string; productCount: number; slug?: string }[]
-> {
-  const baseUrl =
-    process.env.NEXT_SERVER_APP_URL ||
-    process.env.NEXT_PUBLIC_APP_URL ||
-    "http://localhost:3000";
-  try {
-    const res = await fetch(`${baseUrl}/api/categories`, {
-      next: { revalidate: 300 },
-      signal: AbortSignal.timeout(5000),
-    });
-    if (!res.ok) return [];
-    const data = (await res.json()) as {
-      categories?: {
-        id: string;
-        name: string;
-        productCount?: number;
-        slug?: string;
-      }[];
-    };
-    return (data.categories ?? []).map((c) => ({
-      id: c.id,
-      name: c.name,
-      productCount: c.productCount ?? 0,
-      slug: c.slug,
-    }));
-  } catch {
-    return [];
-  }
-}
-
-async function fetchFeaturedProducts(cookieHeader?: string): Promise<
-  {
-    category: string;
-    hasVariants?: boolean;
-    id: string;
-    image: string;
-    inStock: boolean;
-    name: string;
-    originalPrice?: number;
-    price: number;
-    rating: number;
-    slug?: string;
-    tokenGated?: boolean;
-    tokenGatePassed?: boolean;
-  }[]
-> {
-  const baseUrl = getServerBaseUrl();
-  try {
-    const res = await fetch(
-      `${baseUrl}/api/products?page=1&limit=8&category=__featured__&sort=manual`,
-      {
-        next: { revalidate: 60 },
-        signal: AbortSignal.timeout(8000),
-        ...(cookieHeader ? { headers: { Cookie: cookieHeader } } : {}),
-      },
-    );
-    if (!res.ok) return [];
-    const data = (await res.json()) as {
-      items?: {
-        category?: string;
-        hasVariants?: boolean;
-        id: string;
-        image?: string;
-        inStock?: boolean;
-        name: string;
-        originalPrice?: number;
-        price?: number;
-        rating?: number;
-        slug?: string;
-        tokenGated?: boolean;
-        tokenGatePassed?: boolean;
-      }[];
-    };
-    return (data.items ?? []).map((p) => ({
-      category: p.category ?? "Uncategorized",
-      hasVariants: p.hasVariants ?? false,
-      id: p.id,
-      image: p.image ?? "/placeholder.svg",
-      inStock: p.inStock ?? true,
-      name: p.name,
-      originalPrice: p.originalPrice,
-      price: p.price ?? 0,
-      rating: p.rating ?? 0,
-      slug: p.slug,
-      tokenGated: p.tokenGated,
-      tokenGatePassed: p.tokenGatePassed ?? false,
-    }));
-  } catch {
-    return [];
-  }
-}
-
-async function fetchReviewsForTestimonials(): Promise<TestimonialItem[]> {
-  const baseUrl = getServerBaseUrl();
-  try {
-    const res = await fetch(
-      `${baseUrl}/api/reviews?limit=20&includeProductName=true`,
-      {
-        next: { revalidate: 300 },
-        signal: AbortSignal.timeout(5000),
-      },
-    );
-    if (!res.ok) return [];
-    const data = (await res.json()) as {
-      items?: {
-        comment: string;
-        displayName: string;
-        id: string;
-        productName?: null | string;
-        rating: number;
-      }[];
-    };
-    const items = data.items ?? [];
-    if (items.length === 0) return [];
-    return items.map((r) => ({
-      author: { name: r.displayName },
-      productTitle: r.productName ?? undefined,
-      rating: r.rating,
-      text: r.comment,
-    }));
-  } catch {
-    return [];
-  }
 }
 
 const siteUrl = getPublicSiteUrl();
@@ -276,17 +152,17 @@ const EXCLUDED_SLUGS = [
  * ------------------------------------------------------------------------- */
 
 export default async function HomePage() {
+  // only the token-gate cookie matters for featured-product gating. reading
+  // individual cookies (instead of getAll()) keeps the dynamic render cheap and
+  // avoids hashing arbitrary session cookies into any downstream cache keys.
   const cookieStore = await cookies();
-  const cookieHeader = cookieStore
-    .getAll()
-    .map((c) => `${c.name}=${c.value}`)
-    .join("; ");
+  const tgCookieValue = cookieStore.get(TOKEN_GATE_COOKIE)?.value;
 
   const settled = await Promise.allSettled([
-    fetchCategories(),
+    getHomePublicCategories(),
     getCategoriesWithProductsAndDisplayImage({ topLevelOnly: true }),
-    fetchFeaturedProducts(cookieHeader),
-    fetchReviewsForTestimonials(),
+    getHomeFeaturedProducts(tgCookieValue),
+    getHomeTestimonials(),
   ]);
   const shopCategories =
     settled[0].status === "fulfilled" ? settled[0].value : [];

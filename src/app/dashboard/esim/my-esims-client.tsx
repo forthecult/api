@@ -12,6 +12,7 @@ import {
   Wifi,
   XCircle,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -534,11 +535,12 @@ function EsimOrderCard({
               >
                 {qrDataUrl && (
                   <div className="flex shrink-0 flex-col items-center gap-1">
-                    <img
+                    <Image
                       alt="eSIM activation QR code — scan with your phone"
                       className="rounded-lg border border-border bg-white p-2"
                       height={200}
                       src={qrDataUrl}
+                      unoptimized
                       width={200}
                     />
                     <span className="text-xs text-muted-foreground">

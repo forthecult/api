@@ -19,16 +19,18 @@ import {
   RATE_LIMITS,
   rateLimitResponse,
 } from "~/lib/rate-limit";
+import { getTonWalletAddress } from "~/lib/ton-pay";
+import { verifyTonTransfer } from "~/lib/ton-verify";
 
 /**
- * Mark TON order as paid after verifying the transaction.
+ * Mark TON order as paid after verifying the transaction on chain.
  *
- * TODO: Implement full TON on-chain verification via TON Center API
- * (https://toncenter.com/api/v2/getTransactions) to verify that
- * the txHash exists on-chain, the destination matches the order's
- * deposit address, and the amount matches order.cryptoAmount.
- * For now we require txHash and store it, and use an idempotent
- * update to prevent double-processing.
+ * Verification uses TON Center's `/getTransactions` endpoint to find an
+ * incoming transfer to the merchant wallet with a comment equal to the
+ * orderId and value >= the amount we locked at create-order time.
+ *
+ * Refuses when: txHash missing, order cryptoAmount missing, TON_WALLET_ADDRESS
+ * unset, TONCENTER_API_KEY unset, or no matching tx found yet.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -86,11 +88,47 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ alreadyPaid: true, orderId: order.id });
     }
 
-    // TODO: Verify txHash on-chain via TON Center API:
-    // 1. GET https://toncenter.com/api/v2/getTransactions?address={depositAddress}&limit=20
-    // 2. Find transaction matching txHash
-    // 3. Verify amount matches order.cryptoAmount or order.totalCents conversion
-    // For now, we store the txHash and rely on the idempotent update below.
+    // verify the payment on chain before we flip the order to paid.
+    const merchantWallet = getTonWalletAddress();
+    if (!merchantWallet) {
+      return NextResponse.json(
+        { error: "TON payments are not configured (TON_WALLET_ADDRESS)" },
+        { status: 503 },
+      );
+    }
+    if (!order.cryptoAmount || order.cryptoAmount.trim() === "") {
+      return NextResponse.json(
+        {
+          error:
+            "Order is missing its server-locked TON amount. Please recreate the order.",
+        },
+        { status: 400 },
+      );
+    }
+    // order.cryptoAmount is stored as a decimal TON string (e.g. "1.234"); convert
+    // to nanotons (1 ton = 1e9 nanotons).
+    const expectedTon = Number.parseFloat(order.cryptoAmount);
+    if (!Number.isFinite(expectedTon) || expectedTon <= 0) {
+      return NextResponse.json(
+        { error: "Invalid server-locked TON amount" },
+        { status: 400 },
+      );
+    }
+    const expectedNanotons = BigInt(Math.floor(expectedTon * 1_000_000_000));
+
+    const verify = await verifyTonTransfer({
+      expectedNanotons,
+      orderId: order.id,
+      toAddress: merchantWallet,
+      txHash,
+    });
+    if (!verify.ok) {
+      return NextResponse.json(
+        { error: verify.error ?? "TON transfer verification failed" },
+        { status: 400 },
+      );
+    }
+    const verifiedTxHash = verify.txHash ?? txHash;
 
     // Idempotent update: only transition from 'pending' to prevent double-fulfillment
     const updated = await db.transaction(async (tx) => {
@@ -105,7 +143,7 @@ export async function POST(request: NextRequest) {
       await tx
         .update(ordersTable)
         .set({
-          cryptoTxHash: txHash,
+          cryptoTxHash: verifiedTxHash,
           fulfillmentStatus: "unfulfilled",
           paymentStatus: "paid",
           status: "paid",

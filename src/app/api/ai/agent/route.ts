@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
+import { z } from "zod";
 
 import { db } from "~/db";
 import {
@@ -8,6 +9,19 @@ import {
 } from "~/db/schema/ai-chat/tables";
 import { getOrCreateAiAgent } from "~/lib/ai/user-agent";
 import { auth } from "~/lib/auth";
+
+// l4: jsonSettings is a free-form jsonb column on aiAgentTable but only a
+// handful of keys are actually consumed by the app. Anything else is an
+// injection surface (disk bloat, prototype pollution on downstream code that
+// iterates keys). Maintain an explicit allowlist here and reject payloads
+// carrying unknown keys.
+const aiJsonSettingsSchema = z
+  .object({
+    personalAiWidgetEnabled: z.boolean().optional(),
+  })
+  .strict();
+
+type AiJsonSettings = z.infer<typeof aiJsonSettingsSchema>;
 
 export async function GET(request: Request) {
   const session = await auth.api.getSession({ headers: request.headers });
@@ -55,6 +69,26 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: "Invalid backupMode" }, { status: 400 });
   }
 
+  let jsonSettingsValue: AiJsonSettings | null | Record<string, unknown> =
+    existing.jsonSettings;
+  if (body.jsonSettings !== undefined) {
+    if (body.jsonSettings === null) {
+      jsonSettingsValue = null;
+    } else {
+      const parsed = aiJsonSettingsSchema.safeParse(body.jsonSettings);
+      if (!parsed.success) {
+        return NextResponse.json(
+          {
+            details: parsed.error.flatten(),
+            error: "Invalid jsonSettings",
+          },
+          { status: 400 },
+        );
+      }
+      jsonSettingsValue = parsed.data;
+    }
+  }
+
   await db
     .update(aiAgentTable)
     .set({
@@ -68,10 +102,7 @@ export async function PUT(request: Request) {
         typeof body.characterSlug === "string" || body.characterSlug === null
           ? (body.characterSlug as null | string)
           : existing.characterSlug,
-      jsonSettings:
-        body.jsonSettings !== undefined
-          ? (body.jsonSettings as Record<string, unknown>)
-          : existing.jsonSettings,
+      jsonSettings: jsonSettingsValue,
       localCacheEncrypted:
         typeof body.localCacheEncrypted === "boolean"
           ? body.localCacheEncrypted

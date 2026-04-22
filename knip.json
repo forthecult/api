@@ -27,7 +27,6 @@
   "ignoreBinaries": ["psql"],
   "ignoreDependencies": [
     "@solana/client",
-    "@solana/kit",
     "@tanstack/react-form",
     "@tanstack/react-table",
     "@tanstack/table-core",

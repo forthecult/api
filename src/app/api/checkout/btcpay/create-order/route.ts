@@ -15,6 +15,7 @@ import {
   insertOrderItems,
   postOrderBookkeeping,
   resolveDiscounts,
+  statusFromOrderError,
   validateAndFetchProducts,
   validateTotal,
 } from "~/lib/checkout/create-order-helpers";
@@ -264,7 +265,7 @@ export async function POST(request: NextRequest) {
     console.error("BTCPay create-order error:", err);
     return NextResponse.json(
       { error: buildOrderErrorMessage(err) },
-      { status: 500 },
+      { status: statusFromOrderError(err) },
     );
   }
 }
