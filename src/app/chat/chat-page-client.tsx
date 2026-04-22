@@ -220,16 +220,32 @@ export function ChatPageClient() {
     let cancelled = false;
     (async () => {
       try {
-        const json = await fetchJson<{ data?: AiCharacter[] }>(
+        const res = await fetch(
           "/api/ai/characters?limit=48&sortBy=imports&sortOrder=desc",
+          { credentials: "include" },
         );
+        const rawText = await res.text();
+        if (!res.ok) {
+          let msg = `Could not load characters (${res.status}).`;
+          try {
+            const errBody = JSON.parse(rawText) as { error?: string };
+            if (typeof errBody.error === "string" && errBody.error.trim()) {
+              msg = errBody.error.trim();
+            }
+          } catch {
+            /* keep generic */
+          }
+          if (!cancelled) setCharactersError(msg);
+          return;
+        }
+        const json = JSON.parse(rawText) as { data?: AiCharacter[] };
         const list = Array.isArray(json.data) ? json.data : [];
-        if (!cancelled) setCharacters(list);
-      } catch (e) {
-        if (!cancelled)
-          setCharactersError(
-            e instanceof Error ? e.message : "Could not load characters.",
-          );
+        if (!cancelled) {
+          setCharacters(list);
+          setCharactersError(null);
+        }
+      } catch {
+        if (!cancelled) setCharactersError("Could not load characters.");
       } finally {
         if (!cancelled) setLoadingCharacters(false);
       }
@@ -645,10 +661,6 @@ export function ChatPageClient() {
   };
 
   useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
-
-  useEffect(() => {
     if (messages.length === 0) return;
     if (!atBottom) return;
     const el = scrollRef.current;
@@ -673,7 +685,8 @@ export function ChatPageClient() {
   return (
     <div
       className={`
-        flex h-full min-h-0 w-full flex-row overflow-hidden bg-background
+        flex min-h-0 w-full min-w-0 flex-1 flex-row overflow-hidden
+        bg-background
       `}
     >
       <ChatSidebar

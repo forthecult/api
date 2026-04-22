@@ -21,6 +21,11 @@ import { Label } from "~/ui/primitives/label";
 
 import { useProductShippingEstimateContext } from "./product-shipping-estimate-context";
 
+export interface ProductShippingEstimateFormProps {
+  availableCountryCodes?: string[];
+  productId: string;
+}
+
 const SELECT_CLASS = cn(
   "w-full rounded-md border border-input bg-background px-3 py-2 text-sm",
   `
@@ -36,8 +41,14 @@ interface EstimateOption {
   shippingSpeed: "express" | "standard";
 }
 
-export function ProductShippingEstimateForm() {
+export function ProductShippingEstimateForm({
+  availableCountryCodes: availableCountryCodesProp,
+  productId: productIdProp,
+}: ProductShippingEstimateFormProps) {
   const ctx = useProductShippingEstimateContext();
+  const productId = ctx?.productId ?? productIdProp;
+  const availableCountryCodes =
+    ctx?.availableCountryCodes ?? availableCountryCodesProp;
   const { selectedCountry: preferredCountry } = useCountryCurrency();
   const [country, setCountry] = React.useState("");
   const [postal, setPostal] = React.useState("");
@@ -56,7 +67,7 @@ export function ProductShippingEstimateForm() {
       code: o.code,
       label: o.countryName,
     })).sort((a, b) => a.label.localeCompare(b.label));
-    const allowed = ctx?.availableCountryCodes?.filter(Boolean) ?? [];
+    const allowed = availableCountryCodes?.filter(Boolean) ?? [];
     if (allowed.length === 0) return rows;
     const upper = new Set(
       allowed.map((c) => c.trim().toUpperCase().slice(0, 2)),
@@ -68,7 +79,7 @@ export function ProductShippingEstimateForm() {
       const known = rows.find((r) => r.code === code);
       return { code, label: known?.label ?? code };
     });
-  }, [ctx?.availableCountryCodes]);
+  }, [availableCountryCodes]);
 
   React.useEffect(() => {
     if (country) return;
@@ -87,14 +98,14 @@ export function ProductShippingEstimateForm() {
     country.length === 2 && isShippingExcluded(country.toUpperCase());
 
   const canSubmit =
-    Boolean(ctx?.productId) &&
+    Boolean(productId) &&
     country.length === 2 &&
     !excluded &&
     (!needsState || stateCode.trim().length > 0) &&
     (!needsPostal || postal.trim().length > 0);
 
   const runEstimate = React.useCallback(async () => {
-    if (!ctx?.productId || !canSubmit) return;
+    if (!productId || !canSubmit) return;
     setLoading(true);
     setSubmitted(true);
     setFulfillmentError(null);
@@ -103,8 +114,8 @@ export function ProductShippingEstimateForm() {
         body: JSON.stringify({
           countryCode: country.toUpperCase(),
           postalCode: needsPostal ? postal.trim() : undefined,
-          productId: ctx.productId,
-          ...(ctx.variantId && { productVariantId: ctx.variantId }),
+          productId,
+          ...(ctx?.variantId && { productVariantId: ctx.variantId }),
           quantity: 1,
           ...(needsState && stateCode.trim()
             ? { stateCode: stateCode.trim() }
@@ -139,15 +150,15 @@ export function ProductShippingEstimateForm() {
   }, [
     canSubmit,
     country,
-    ctx?.productId,
     ctx?.variantId,
     needsPostal,
     needsState,
     postal,
+    productId,
     stateCode,
   ]);
 
-  if (!ctx) return null;
+  if (!productId) return null;
 
   return (
     <div className="space-y-4">

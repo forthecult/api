@@ -1,7 +1,6 @@
 /**
- * Lock the chat route to the viewport below the site header (~4rem) so the
- * thread + composer stay in view without page-level scrolling (only the message
- * list scrolls inside the column).
+ * Lock /chat to the viewport below the site header so only in-panel regions
+ * scroll (message list/sidebar), not the full page.
  */
 export default function ChatLayout({
   children,

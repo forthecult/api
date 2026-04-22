@@ -10,6 +10,8 @@ import type {
 
 import { EstimatedDeliveryTimeline } from "~/app/products/[id]/estimated-delivery-timeline";
 import { ProductImageGallery } from "~/app/products/[id]/product-image-gallery";
+import { ProductShippingEstimateForm } from "~/app/products/[id]/product-shipping-estimate-form";
+import { ProductShippingEstimateProvider } from "~/app/products/[id]/product-shipping-estimate-context";
 import { ProductReviewsCarousel } from "~/app/products/[id]/product-reviews-carousel";
 import { ProductShare } from "~/app/products/[id]/product-share";
 import { ProductVariantImageProvider } from "~/app/products/[id]/product-variant-image-context";
@@ -80,6 +82,10 @@ export function LongFormProductPage({
   return (
     <div className="flex min-h-screen flex-col">
       <main className="flex-1">
+        <ProductShippingEstimateProvider
+          availableCountryCodes={product.availableCountryCodes}
+          productId={product.id}
+        >
         <div className="border-b bg-muted/30">
           <div
             className={`
@@ -331,6 +337,22 @@ export function LongFormProductPage({
                     }}
                     variants={product.variants ?? []}
                   />
+                  <div
+                    className={`
+                      mt-6 space-y-2 border-t border-border/60 pt-4 text-sm
+                      text-muted-foreground
+                    `}
+                  >
+                    <p>
+                      Rates combine our store shipping rules with live quotes
+                      from fulfillment partners when your item is produced on
+                      demand.
+                    </p>
+                    <ProductShippingEstimateForm
+                      availableCountryCodes={product.availableCountryCodes}
+                      productId={product.id}
+                    />
+                  </div>
                 </ProductVariantImageProvider>
               </Suspense>
               <ProductShare
@@ -344,6 +366,7 @@ export function LongFormProductPage({
 
         <RelatedProductsSection products={relatedProducts} />
         <ProductReviewsCarousel />
+        </ProductShippingEstimateProvider>
       </main>
     </div>
   );

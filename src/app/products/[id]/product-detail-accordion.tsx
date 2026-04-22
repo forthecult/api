@@ -117,10 +117,13 @@ const RETURNS_COPY = (
 );
 
 export interface ProductDetailAccordionProps {
+  /** When non-empty, country list in the shipping estimate is limited to these ISO codes. */
+  availableCountryCodes?: string[];
   category: string;
   description: string;
   /** When true, description is sanitized HTML and will be rendered as HTML. */
   descriptionIsHtml?: boolean;
+  productId: string;
   /** When set, adds a "Size Guide: {displayName}" accordion section with imperial + metric charts. */
   sizeChart?: {
     dataImperial: unknown;
@@ -130,9 +133,11 @@ export interface ProductDetailAccordionProps {
 }
 
 export function ProductDetailAccordion({
+  availableCountryCodes,
   category,
   description,
   descriptionIsHtml,
+  productId,
   sizeChart,
 }: ProductDetailAccordionProps) {
   const items = React.useMemo(() => {
@@ -182,7 +187,10 @@ export function ProductDetailAccordion({
                 Rates combine our store shipping rules with live quotes from
                 fulfillment partners when your item is produced on demand.
               </p>
-              <ProductShippingEstimateForm />
+              <ProductShippingEstimateForm
+                availableCountryCodes={availableCountryCodes}
+                productId={productId}
+              />
             </div>
           </div>
         );

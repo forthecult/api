@@ -590,11 +590,13 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
                           transitDaysMin={product.transitDaysMin}
                         />
                         <ProductDetailAccordion
+                          availableCountryCodes={product.availableCountryCodes}
                           category={product.category}
                           description={sanitizeProductDescription(
                             product.description,
                           )}
                           descriptionIsHtml
+                          productId={product.id}
                           sizeChart={product.sizeChart ?? undefined}
                         />
                         <ProductFaqSection items={product.faq ?? []} />
