@@ -1,0 +1,21 @@
+/**
+ * Swagger UI layout tweaks for /api/docs (light + dark).
+ * Hides the default Swagger top bar (branding / promo strip).
+ */
+.api-docs-wrapper .swagger-ui .topbar {
+  display: none !important;
+}
+
+.api-docs-wrapper .swagger-ui .wrapper {
+  box-sizing: border-box;
+  margin-left: auto;
+  margin-right: auto;
+  max-width: min(1200px, 100% - 2rem);
+  padding: 1.25rem 0 2.5rem;
+}
+
+@media (min-width: 1280px) {
+  .api-docs-wrapper .swagger-ui .wrapper {
+    max-width: min(1400px, 100% - 3rem);
+  }
+}

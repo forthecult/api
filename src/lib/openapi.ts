@@ -395,57 +395,6 @@ export const openApiSpec = {
         tags: ["Discovery"],
       },
     },
-    "/chains": {
-      get: {
-        deprecated: true,
-        description:
-          "Deprecated. Prefer GET /payment-methods for the canonical list. Returns chains and tokens only.",
-        operationId: "getChains",
-        responses: {
-          "200": {
-            content: {
-              "application/json": {
-                schema: {
-                  properties: {
-                    chains: {
-                      items: {
-                        properties: {
-                          id: { example: "solana", type: "string" },
-                          name: { example: "Solana", type: "string" },
-                          tokens: {
-                            items: {
-                              properties: {
-                                decimals: { type: "integer" },
-                                mint: { type: "string" },
-                                name: { type: "string" },
-                                symbol: { type: "string" },
-                                type: {
-                                  enum: ["native", "spl"],
-                                  type: "string",
-                                },
-                              },
-                              type: "object",
-                            },
-                            type: "array",
-                          },
-                        },
-                        type: "object",
-                      },
-                      type: "array",
-                    },
-                  },
-                  required: ["chains"],
-                  type: "object",
-                },
-              },
-            },
-            description: "Chains and tokens (deprecated, use /payment-methods)",
-          },
-        },
-        summary: "Get chains (deprecated)",
-        tags: ["Payment Methods"],
-      },
-    },
     "/checkout": {
       post: {
         description:

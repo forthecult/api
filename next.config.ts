@@ -271,6 +271,8 @@ const config = {
     };
     config.resolve.alias = {
       ...config.resolve.alias,
+      // @wagmi/core tempo connectors use dynamic import('accounts'); webpack must resolve the optional peer.
+      accounts: wagmiStub,
       "@base-org/account": wagmiStub,
       "@coinbase/wallet-sdk": wagmiStub,
       "@gemini-wallet/core": wagmiStub,

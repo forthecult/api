@@ -1,5 +1,5 @@
 /**
- * Supported blockchain chains and tokens for payment. Shared by GET /api/chains
+ * Supported blockchain chains and tokens for payment. Shared by GET /api/payment-methods
  * and GET /api/payment-methods so payment methods can expand beyond blockchain over time.
  */
 

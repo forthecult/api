@@ -40,6 +40,8 @@ GET /api/agent/capabilities — Returns features, payment options, shipping coun
 
 ## Payment methods
 
+- GET /api/payment-methods — Canonical list of enabled payment methods, chains, and tokens. Call before checkout to validate `payment.chain` / `payment.token`.
+
 - **Card:** Stripe checkout (payment.method: "stripe")
 - **Solana:** SOL, USDC, and SPL tokens (payment.chain: "solana", payment.token: "USDC")
 - **EVM chains:** ETH, USDC, USDT on Ethereum, Base, Arbitrum, Polygon, BNB (payment.chain: "ethereum", payment.token: "USDC")
@@ -67,6 +69,7 @@ Common codes: PRODUCT_NOT_FOUND, VARIANT_REQUIRED, ORDER_EXPIRED, SHIPPING_UNAVA
 | GET | /api/agent/capabilities | Start here — full API guide |
 | GET | /api/health | Health check |
 | GET | /api/openapi.json | OpenAPI 3.0 spec |
+| GET | /api/payment-methods | Payment methods, chains, and tokens |
 | GET | /api/categories | All categories |
 | GET | /api/categories/{id} | Category details + filters |
 | GET | /api/brands | All brands |

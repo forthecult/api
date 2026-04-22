@@ -75,10 +75,6 @@
   border-color: #71717a;
 }
 
-.dark .api-docs-wrapper .swagger-ui .topbar {
-  background-color: #18181b;
-}
-
 .dark .api-docs-wrapper .swagger-ui .info .base-url {
   color: #d4d4d8;
 }

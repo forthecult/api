@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 
 import "./api-docs-dark-overrides.css";
+import "./api-docs-swagger-overrides.css";
 
 // Dynamic import: swagger-ui-react is ~500KB+ and only used on this page.
 // The wrapper module statically imports the swagger-ui css alongside the react
@@ -38,7 +39,18 @@ export default function ApiDocsClient() {
         dark:bg-[#1a1a1a]
       `}
     >
-      <SwaggerUI url="/api/openapi.json" />
+      <SwaggerUI
+        defaultModelsExpandDepth={1}
+        defaultModelExpandDepth={2}
+        displayOperationId
+        docExpansion="list"
+        filter
+        persistAuthorization
+        showCommonExtensions
+        showExtensions
+        tryItOutEnabled
+        url="/api/openapi.json"
+      />
     </div>
   );
 }

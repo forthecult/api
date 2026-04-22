@@ -47,7 +47,13 @@ export function ShopApiShowcase({ apiBaseUrl }: ShopApiShowcaseProps) {
 
   return (
     <section className="py-16">
-      <div className="mx-auto max-w-4xl px-4">
+      <div
+        className={`
+          mx-auto w-full max-w-7xl px-4
+          sm:px-6
+          lg:px-8
+        `}
+      >
         <div className="mb-8 text-center">
           <h2
             className={`
@@ -63,7 +69,12 @@ export function ShopApiShowcase({ apiBaseUrl }: ShopApiShowcaseProps) {
           </p>
         </div>
 
-        <div className="mb-8 flex items-center justify-center gap-3">
+        <div
+          className={`
+            mb-8 flex flex-wrap items-center justify-center gap-3
+            sm:flex-nowrap
+          `}
+        >
           <span
             className={`
               rounded-md bg-emerald-600 px-3 py-1.5 font-mono text-sm
@@ -74,9 +85,8 @@ export function ShopApiShowcase({ apiBaseUrl }: ShopApiShowcaseProps) {
           </span>
           <code
             className={`
-              max-w-md flex-1 rounded-md border border-border bg-muted px-4 py-2
-              font-mono text-sm
-              sm:max-w-lg
+              min-w-0 max-w-full flex-1 break-all rounded-md border border-border
+              bg-muted px-4 py-2 font-mono text-sm
             `}
           >
             {endpoint}
@@ -132,8 +142,8 @@ export function ShopApiShowcase({ apiBaseUrl }: ShopApiShowcaseProps) {
             </div>
             <pre
               className={`
-                overflow-x-auto bg-emerald-900 p-4 font-mono text-sm
-                leading-relaxed text-emerald-100
+                whitespace-pre-wrap break-words bg-emerald-900 p-4 font-mono
+                text-sm leading-relaxed text-emerald-100
               `}
             >
               {REQUEST_EXAMPLE}
@@ -153,8 +163,8 @@ export function ShopApiShowcase({ apiBaseUrl }: ShopApiShowcaseProps) {
             </div>
             <pre
               className={`
-                overflow-x-auto bg-emerald-900 p-4 font-mono text-sm
-                leading-relaxed text-emerald-100
+                whitespace-pre-wrap break-words bg-emerald-900 p-4 font-mono
+                text-sm leading-relaxed text-emerald-100
               `}
             >
               {RESPONSE_EXAMPLE}
