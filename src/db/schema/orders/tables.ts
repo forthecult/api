@@ -39,6 +39,11 @@ export const productsTable = pgTable(
     externalId: text("external_id"), // printful: catalog_product_id / printify: blueprint_id
     /** Bullet-point features (JSON array of strings). Shown on product page; details go in description. */
     featuresJson: text("features_json"),
+    /**
+     * Optional PDP FAQ: JSON array of `{ "question": string, "answer": string }`.
+     * Rendered as an on-page FAQ block + FAQPage JSON-LD when non-empty.
+     */
+    faqJson: text("faq_json"),
     /** Google Merchant product category path, e.g. "Apparel & Accessories > Clothing > Tops" (taxonomy: https://www.google.com/basepages/producttype/taxonomy-with-ids.en-US.txt). */
     googleProductCategory: text("google_product_category"),
     /** GPSR (EU General Product Safety Regulation) compliance data — JSON from Printify /gpsr.json. */

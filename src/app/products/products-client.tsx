@@ -14,6 +14,7 @@ import { useRouter } from "next/navigation";
 import * as React from "react";
 import { toast } from "sonner";
 
+import { trackViewItemList } from "~/lib/analytics/ecommerce";
 import { useCart } from "~/lib/hooks/use-cart";
 import { useWishlist } from "~/lib/hooks/use-wishlist";
 import { ProductCard } from "~/ui/components/product-card";
@@ -141,6 +142,14 @@ export function ProductsClient({
   const [quickViewSlug, setQuickViewSlug] = React.useState<null | string>(null);
   const [preloadQuickView, setPreloadQuickView] = React.useState(false);
   const productGridRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    trackViewItemList({
+      itemCount: products.length,
+      listId: selectedCategory,
+      listName: title,
+    });
+  }, [products.length, selectedCategory, title]);
 
   React.useEffect(() => {
     const el = productGridRef.current;

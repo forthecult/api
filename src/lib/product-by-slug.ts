@@ -46,6 +46,12 @@ export interface ProductRatingSummary {
   }[];
 }
 
+/** Optional PDP FAQ + FAQ JSON-LD (`products.faq_json`). */
+export interface ProductFaqItem {
+  answer: string;
+  question: string;
+}
+
 export interface ProductBySlugResult {
   /** Google Merchant age group. */
   ageGroup?: null | string;
@@ -63,6 +69,8 @@ export interface ProductBySlugResult {
   description?: string;
   /** Bullet-point features for product page. */
   features?: string[];
+  /** Optional FAQ for PDP section + FAQPage JSON-LD. */
+  faq?: ProductFaqItem[];
   /** Primary gender derived from variants (when uniform or single-variant). */
   gender?: null | string;
   /** Google Merchant product taxonomy path. */
@@ -169,6 +177,7 @@ export async function getProductBySlugOrId(
       continueSellingWhenOutOfStock:
         productsTable.continueSellingWhenOutOfStock,
       description: productsTable.description,
+      faqJson: productsTable.faqJson,
       featuresJson: productsTable.featuresJson,
       googleProductCategory: productsTable.googleProductCategory,
       gtin: productsTable.gtin,
@@ -558,6 +567,31 @@ export async function getProductBySlugOrId(
     }
   }
 
+  let faq: ProductFaqItem[] = [];
+  if (product.faqJson) {
+    try {
+      const parsed = JSON.parse(product.faqJson) as unknown;
+      if (Array.isArray(parsed)) {
+        for (const row of parsed) {
+          if (!row || typeof row !== "object") continue;
+          const o = row as Record<string, unknown>;
+          const q = o.question;
+          const a = o.answer;
+          if (
+            typeof q === "string" &&
+            typeof a === "string" &&
+            q.trim() !== "" &&
+            a.trim() !== ""
+          ) {
+            faq.push({ answer: a.trim(), question: q.trim() });
+          }
+        }
+      }
+    } catch {
+      // ignore invalid JSON
+    }
+  }
+
   const mainCategoryRow = mainCat[0] ?? null;
   const priceValidUntilIso =
     product.priceValidUntil instanceof Date
@@ -602,6 +636,7 @@ export async function getProductBySlugOrId(
     continueSellingWhenOutOfStock,
     description: product.description ?? undefined,
     features: features.length > 0 ? features : undefined,
+    faq: faq.length > 0 ? faq : undefined,
     gender: derivedGender,
     googleProductCategory: product.googleProductCategory ?? undefined,
     gtin: product.gtin ?? undefined,

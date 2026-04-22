@@ -94,13 +94,17 @@ interface BreadcrumbStructuredDataProps {
   items: BreadcrumbItem[];
 }
 
-interface CollectionListItem {
+export interface CollectionListItem {
   /** Absolute or relative URL to the product detail page. */
   url: string;
   /** Product display name (used for `ListItem.name`). */
   name?: string;
   /** Optional image URL for the list item. */
   image?: string;
+  /** When set with `priceCurrency` and `inStock`, embeds a stable Offer on the nested Product. */
+  inStock?: boolean;
+  price?: number;
+  priceCurrency?: string;
 }
 
 interface CollectionPageStructuredDataProps {
@@ -112,7 +116,7 @@ interface CollectionPageStructuredDataProps {
   url: string;
 }
 
-interface FAQItem {
+export interface FAQItem {
   answer: string;
   question: string;
 }
@@ -157,6 +161,8 @@ interface ProductStructuredDataProps {
     handlingDaysMin?: null | number;
     id: string;
     image: string;
+    /** Extra gallery URLs; JSON-LD emits `image` as an array when multiple. */
+    images?: string[];
     inStock: boolean;
     /** Primary material when variants agree or there are none. */
     material?: null | string;
@@ -190,6 +196,8 @@ interface ProductStructuredDataProps {
 
 interface ProductPageJsonLdProps {
   breadcrumbItems: BreadcrumbItem[];
+  /** When non-empty, adds an FAQPage node to `@graph` (must match visible FAQ copy). */
+  faqItems?: FAQItem[];
   product: ProductStructuredDataProps["product"];
 }
 
@@ -278,13 +286,39 @@ export function CollectionPageStructuredData({
   numberOfItems,
   url,
 }: CollectionPageStructuredDataProps) {
-  const itemList = (items ?? []).map((item, index) => ({
-    "@type": "ListItem",
-    position: index + 1,
-    url: item.url,
-    ...(item.name && { name: item.name }),
-    ...(item.image && { image: item.image }),
-  }));
+  const itemList = (items ?? []).map((item, index) => {
+    const urlAbs = absoluteUrlForStructuredData(item.url);
+    const productNode: Record<string, unknown> = {
+      "@type": "Product",
+      url: urlAbs,
+    };
+    if (item.name?.trim()) productNode.name = item.name.trim();
+    if (item.image?.trim()) {
+      productNode.image = absoluteProductImageUrl(item.image.trim());
+    }
+    const currency = item.priceCurrency?.trim().toUpperCase();
+    const canEmbedOffer =
+      item.price != null &&
+      Number.isFinite(item.price) &&
+      Boolean(currency) &&
+      typeof item.inStock === "boolean";
+    if (canEmbedOffer) {
+      productNode.offers = {
+        "@type": "Offer",
+        availability: item.inStock
+          ? "https://schema.org/InStock"
+          : "https://schema.org/OutOfStock",
+        price: item.price,
+        priceCurrency: currency,
+        url: urlAbs,
+      };
+    }
+    return {
+      "@type": "ListItem",
+      item: productNode,
+      position: index + 1,
+    };
+  });
 
   const structuredData = {
     "@context": "https://schema.org",
@@ -403,13 +437,14 @@ export function ProductStructuredData({ product }: ProductStructuredDataProps) {
 /** Product + breadcrumb JSON-LD in a single script (one innerHTML instead of two). */
 export function ProductPageJsonLd({
   breadcrumbItems,
+  faqItems,
   product,
 }: ProductPageJsonLdProps) {
   const productUrl = productCanonicalUrl(product);
   const productNodeId = `${productUrl}#product`;
   const breadcrumbNodeId = `${productUrl}#breadcrumb`;
 
-  const graph = [
+  const graph: unknown[] = [
     productJsonLdNode(product),
     {
       "@type": "WebPage",
@@ -426,6 +461,21 @@ export function ProductPageJsonLd({
       numberOfItems: breadcrumbItems.length,
     },
   ];
+
+  if (faqItems && faqItems.length > 0) {
+    graph.push({
+      "@id": `${productUrl}#faq`,
+      "@type": "FAQPage",
+      mainEntity: faqItems.map((item) => ({
+        "@type": "Question",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: item.answer,
+        },
+        name: item.question,
+      })),
+    });
+  }
 
   return (
     <JsonLdScript
@@ -482,11 +532,20 @@ function productJsonLdNode(product: ProductStructuredDataProps["product"]) {
           shippingDetails,
         });
 
+  const primaryImage = absoluteProductImageUrl(product.image);
+  const extraImages = (product.images ?? [])
+    .map((u) => absoluteProductImageUrl(u.trim()))
+    .filter((u) => u && u !== primaryImage);
+  const imageLd =
+    extraImages.length > 0
+      ? Array.from(new Set([primaryImage, ...extraImages]))
+      : primaryImage;
+
   const node: Record<string, unknown> = {
     "@type": "Product",
     "@id": `${productUrl}#product`,
     description: product.description,
-    image: absoluteProductImageUrl(product.image),
+    image: imageLd,
     name: product.name,
     offers,
     productID: sku,

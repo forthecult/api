@@ -113,7 +113,10 @@ export default async function FeaturedPage({ searchParams }: PageProps) {
         description={featuredDescription}
         items={products.map((p) => ({
           image: p.image,
+          inStock: p.inStock,
           name: p.name,
+          price: p.price,
+          priceCurrency: "USD",
           url: `${siteUrl}/${p.slug ?? p.id}`,
         }))}
         name="Best Sellers"

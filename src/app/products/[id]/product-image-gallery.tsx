@@ -126,7 +126,7 @@ export function ProductImageGallery({
           fill
           key={`${mainSrc ?? "main"}-${useUnoptimizedUrls.has(actualMainSrc) ? "direct" : "opt"}`}
           onError={handleMainImageError}
-          priority={selectedIndex === 0 && list[0] === baseList[0]}
+          priority={selectedIndex === 0}
           sizes="(max-width: 768px) 100vw, (max-width: 1800px) 50vw, 900px"
           src={mainSrc}
           style={

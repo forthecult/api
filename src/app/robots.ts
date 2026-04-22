@@ -28,7 +28,7 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
     host: baseUrl,
     rules: [
       {
-        allow: "/",
+        allow: ["/", "/feed/google-merchant"],
         disallow: [
           "/_next/",
           "/api/",

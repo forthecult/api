@@ -5,6 +5,7 @@
 
 import type {
   ProductBySlugResult,
+  ProductFaqItem,
   ProductRatingSummary,
   ProductVariantSummary,
 } from "~/lib/product-by-slug";
@@ -21,6 +22,8 @@ export interface PageProduct {
   continueSellingWhenOutOfStock?: boolean;
   description: string;
   features: string[];
+  /** Optional FAQ (DB `faq_json`) for PDP + JSON-LD. */
+  faq?: ProductFaqItem[];
   /** Primary gender derived from variants (null when variants disagree). */
   gender?: null | string;
   /** Google Merchant taxonomy path, e.g. "Apparel & Accessories > Clothing > Tops". */
@@ -113,6 +116,7 @@ export function mapProductBySlugResultToPageProduct(
     continueSellingWhenOutOfStock: data.continueSellingWhenOutOfStock ?? false,
     description: data.description ?? "",
     features: data.features ?? [],
+    faq: data.faq,
     gender: data.gender ?? undefined,
     // Product-level override wins over the main category's Merchant taxonomy.
     googleProductCategory:

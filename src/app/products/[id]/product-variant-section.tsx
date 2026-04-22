@@ -1,5 +1,6 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
 import * as React from "react";
 
 import { cn } from "~/lib/cn";
@@ -56,6 +57,7 @@ export function ProductVariantSection({
   product,
   variants,
 }: ProductVariantSectionProps) {
+  const searchParams = useSearchParams();
   const unavailableInCountry = useUnavailableInCountry(product);
 
   // Use option definitions from API, or derive from variants when missing (e.g. after fulfillment sync)
@@ -77,6 +79,23 @@ export function ProductVariantSection({
     });
     return initial;
   });
+
+  const appliedVariantFromQuery = React.useRef(false);
+  React.useLayoutEffect(() => {
+    if (appliedVariantFromQuery.current) return;
+    if (!hasVariants || optionDefinitions.length === 0 || variants.length === 0)
+      return;
+    const raw = searchParams.get("variant")?.trim();
+    if (!raw) return;
+    const inferred = inferSelectionsForVariant(
+      raw,
+      variants,
+      optionDefinitions,
+    );
+    if (!inferred) return;
+    appliedVariantFromQuery.current = true;
+    setSelectedByIndex((prev) => ({ ...prev, ...inferred }));
+  }, [hasVariants, optionDefinitions, searchParams, variants]);
 
   // Options with only one value are hidden; customer selection defaults to that value. Multiple options (even if only one in stock) are always shown.
 
@@ -135,6 +154,7 @@ export function ProductVariantSection({
 
   // Default phone model option to first brand's latest model when unset (so dropdowns have a valid selection)
   React.useEffect(() => {
+    if (searchParams.get("variant")?.trim()) return;
     let updates: null | Record<number, string> = null;
     optionDefinitions.forEach((opt, optionIndex) => {
       const values = (opt.values ?? []).filter(Boolean);
@@ -150,7 +170,7 @@ export function ProductVariantSection({
     if (updates) setSelectedByIndex((prev) => ({ ...prev, ...updates }));
     // Only run on mount so we don't override user selection when other options change
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [optionDefinitions.forEach]);
+  }, [optionDefinitions.forEach, searchParams]);
 
   if (!hasVariants || optionDefinitions.length === 0 || variants.length === 0) {
     return (
@@ -466,6 +486,55 @@ function findVariant(
   }
 
   return null;
+}
+
+const MAX_VARIANT_INFER_COMBOS = 4096;
+
+/**
+ * Derive per-option selections that resolve to `variantId` (for `?variant=` deep links).
+ * Bounded combinatorial search — skips when option cartesian product is huge.
+ */
+function inferSelectionsForVariant(
+  variantId: string,
+  variants: ProductVariantOption[],
+  optionDefinitions: ProductOptionDefinition[],
+): null | Record<number, string> {
+  const target = variants.find((x) => x.id === variantId);
+  if (!target || optionDefinitions.length === 0) return null;
+  const targetId = target.id;
+
+  const selected: Record<number, string> = {};
+  optionDefinitions.forEach((opt, idx) => {
+    const values = (opt.values ?? []).filter(Boolean);
+    if (values.length === 1) selected[idx] = values[0]!;
+  });
+
+  const multiIndices = optionDefinitions
+    .map((opt, idx) => ({ opt, idx }))
+    .filter(({ opt }) => (opt.values ?? []).filter(Boolean).length > 1)
+    .map(({ idx }) => idx);
+
+  const valueLists = multiIndices.map((idx) =>
+    (optionDefinitions[idx]!.values ?? []).filter(Boolean),
+  );
+  let combos = 1;
+  for (const vl of valueLists) combos *= Math.max(1, vl.length);
+  if (combos > MAX_VARIANT_INFER_COMBOS) return null;
+
+  function dfs(depth: number): boolean {
+    if (depth === multiIndices.length) {
+      return findVariant(variants, selected)?.id === targetId;
+    }
+    const idx = multiIndices[depth]!;
+    for (const val of valueLists[depth] ?? []) {
+      selected[idx] = val;
+      if (dfs(depth + 1)) return true;
+    }
+    delete selected[idx];
+    return false;
+  }
+
+  return dfs(0) ? { ...selected } : null;
 }
 
 /** Build a single display label for a variant (e.g. "Black / M" or "iPhone 16 Pro"). */

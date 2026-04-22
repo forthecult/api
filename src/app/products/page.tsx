@@ -132,7 +132,10 @@ export default async function ProductsPage({ searchParams }: PageProps) {
         description={productsListingDescription}
         items={products.map((p) => ({
           image: p.image,
+          inStock: p.inStock,
           name: p.name,
+          price: p.price,
+          priceCurrency: "USD",
           url: `${siteUrl}/${p.slug ?? p.id}`,
         }))}
         name="All Products"

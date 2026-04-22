@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { Star } from "lucide-react";
+import { Suspense } from "react";
 import { cookies, headers } from "next/headers";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -12,6 +13,8 @@ import {
   shouldNoindexForAgent,
 } from "~/lib/app-url";
 import { getProductBreadcrumbTrail } from "~/lib/categories";
+import { buildHreflangLanguages } from "~/lib/hreflang";
+import { ProductViewAnalytics } from "~/lib/analytics/product-view-analytics";
 import { getProductBySlugOrId } from "~/lib/product-by-slug";
 import {
   mapProductBySlugResultToPageProduct,
@@ -29,6 +32,7 @@ import {
 } from "~/lib/token-gate";
 import { COOKIE_NAME, hasValidTokenGateCookie } from "~/lib/token-gate-cookie";
 import { Breadcrumbs } from "~/ui/components/breadcrumbs";
+import { ProductFaqSection } from "~/ui/components/product-faq-section";
 import { ProductBrandModel } from "~/ui/components/product-brand-model";
 import { ProductPageJsonLd } from "~/ui/components/structured-data";
 import { TokenGateGuard } from "~/ui/components/token-gate/TokenGateGuard";
@@ -135,6 +139,7 @@ export async function generateMetadata({
   return {
     alternates: {
       canonical: canonicalUrl,
+      languages: buildHreflangLanguages(`/products/${id}`),
     },
     description: metaDesc,
     openGraph: {
@@ -225,6 +230,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
           name: item.name,
           url: `${siteUrl}${item.href}`,
         }))}
+        faqItems={product.faq}
         product={{
           ageGroup: product.ageGroup,
           availableCountryCodes: product.availableCountryCodes,
@@ -241,6 +247,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
           handlingDaysMin: product.handlingDaysMin,
           id: product.id,
           image: product.image,
+          ...(product.images?.length ? { images: product.images } : {}),
           inStock: product.inStock,
           material: product.material,
           mpn: product.mpn,
@@ -258,6 +265,13 @@ export default async function ProductDetailPage({ params }: PageProps) {
           variants: product.variants,
         }}
       />
+      <Suspense fallback={null}>
+        <ProductViewAnalytics
+          price={product.price}
+          productId={product.id}
+          productName={product.name}
+        />
+      </Suspense>
 
       <div className="flex min-h-screen flex-col">
         <main className="flex-1 py-10">
@@ -280,40 +294,41 @@ export default async function ProductDetailPage({ params }: PageProps) {
             </Link>
 
             {/* Main grid */}
-            <ProductVariantImageProvider>
-              <div
-                className={`
+            <Suspense fallback={null}>
+              <ProductVariantImageProvider>
+                <div
+                  className={`
                   grid grid-cols-1 gap-8
                   md:grid-cols-2
                 `}
-              >
-                <ProductImageGallery
-                  discountPercentage={discountPercentage}
-                  imageAlts={product.imageAlts}
-                  images={product.images ?? [product.image]}
-                  mainImageAlt={product.mainImageAlt}
-                  productName={product.name}
-                />
-
-                {/* Product info */}
-                <ProductShippingEstimateProvider
-                  availableCountryCodes={product.availableCountryCodes}
-                  productId={product.id}
                 >
-                  <div className="flex flex-col">
-                    {/* Title & rating (only when there are reviews) */}
-                    <div className="mb-6">
-                      <h1 className="text-3xl font-bold">{product.name}</h1>
+                  <ProductImageGallery
+                    discountPercentage={discountPercentage}
+                    imageAlts={product.imageAlts}
+                    images={product.images ?? [product.image]}
+                    mainImageAlt={product.mainImageAlt}
+                    productName={product.name}
+                  />
 
-                      {product.rating > 0 && (
-                        <div className="mt-2 flex items-center gap-2">
-                          <div
-                            aria-label={`Rating ${product.rating} out of 5`}
-                            className="flex items-center"
-                          >
-                            {range(5).map((i) => (
-                              <Star
-                                className={`
+                  {/* Product info */}
+                  <ProductShippingEstimateProvider
+                    availableCountryCodes={product.availableCountryCodes}
+                    productId={product.id}
+                  >
+                    <div className="flex flex-col">
+                      {/* Title & rating (only when there are reviews) */}
+                      <div className="mb-6">
+                        <h1 className="text-3xl font-bold">{product.name}</h1>
+
+                        {product.rating > 0 && (
+                          <div className="mt-2 flex items-center gap-2">
+                            <div
+                              aria-label={`Rating ${product.rating} out of 5`}
+                              className="flex items-center"
+                            >
+                              {range(5).map((i) => (
+                                <Star
+                                  className={`
                                   h-5 w-5
                                   ${
                                     i < Math.floor(product.rating)
@@ -323,94 +338,96 @@ export default async function ProductDetailPage({ params }: PageProps) {
                                         : "text-muted-foreground"
                                   }
                                 `}
-                                key={`star-${i}`}
-                              />
-                            ))}
+                                  key={`star-${i}`}
+                                />
+                              ))}
+                            </div>
+                            <span className="text-sm text-muted-foreground">
+                              ({product.rating.toFixed(1)})
+                            </span>
                           </div>
-                          <span className="text-sm text-muted-foreground">
-                            ({product.rating.toFixed(1)})
-                          </span>
-                        </div>
-                      )}
-                    </div>
+                        )}
+                      </div>
 
-                    {/* Category */}
-                    <div className="mb-2">
-                      <p className="text-lg font-medium text-muted-foreground">
-                        {product.category}
-                      </p>
-                    </div>
+                      {/* Category */}
+                      <div className="mb-2">
+                        <p className="text-lg font-medium text-muted-foreground">
+                          {product.category}
+                        </p>
+                      </div>
 
-                    <ProductBrandModel
-                      brand={product.brand}
-                      model={product.model}
-                    />
+                      <ProductBrandModel
+                        brand={product.brand}
+                        model={product.model}
+                      />
 
-                    {/* Features only at top (bullet points); description is in accordion below */}
-                    {product.features.length > 0 && (
-                      <ul className="mb-6 space-y-2 text-muted-foreground">
-                        {product.features.map((feature) => (
-                          <li
-                            className="flex items-start"
-                            key={`feature-${product.id}-${slugify(feature)}`}
-                          >
-                            <span
-                              className={`
+                      {/* Features only at top (bullet points); description is in accordion below */}
+                      {product.features.length > 0 && (
+                        <ul className="mb-6 space-y-2 text-muted-foreground">
+                          {product.features.map((feature) => (
+                            <li
+                              className="flex items-start"
+                              key={`feature-${product.id}-${slugify(feature)}`}
+                            >
+                              <span
+                                className={`
                                 mt-1 mr-2 h-2 w-2 shrink-0 rounded-full
                                 bg-primary
                               `}
-                            />
-                            <span>{feature}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-
-                    {/* Variant options (when present), price, stock, add to cart */}
-                    <ProductVariantSection
-                      handlingDaysMax={product.handlingDaysMax}
-                      handlingDaysMin={product.handlingDaysMin}
-                      hasVariants={product.hasVariants ?? false}
-                      optionDefinitions={product.optionDefinitions ?? []}
-                      product={{
-                        availableCountryCodes: product.availableCountryCodes,
-                        category: product.category,
-                        continueSellingWhenOutOfStock:
-                          product.continueSellingWhenOutOfStock,
-                        id: product.id,
-                        image: product.image,
-                        inStock: product.inStock,
-                        name: product.name,
-                        originalPrice: product.originalPrice,
-                        price: product.price,
-                        slug: product.slug,
-                      }}
-                      variants={product.variants ?? []}
-                    />
-                    <EstimatedDeliveryTimeline
-                      className="mb-6"
-                      handlingDaysMax={product.handlingDaysMax}
-                      handlingDaysMin={product.handlingDaysMin}
-                      transitDaysMax={product.transitDaysMax}
-                      transitDaysMin={product.transitDaysMin}
-                    />
-                    <ProductDetailAccordion
-                      category={product.category}
-                      description={sanitizeProductDescription(
-                        product.description,
+                              />
+                              <span>{feature}</span>
+                            </li>
+                          ))}
+                        </ul>
                       )}
-                      descriptionIsHtml
-                      sizeChart={product.sizeChart ?? undefined}
-                    />
-                    <ProductShare
-                      className="mt-6"
-                      title={product.name}
-                      url={`${siteUrl}/products/${product.id}`}
-                    />
-                  </div>
-                </ProductShippingEstimateProvider>
-              </div>
-            </ProductVariantImageProvider>
+
+                      {/* Variant options (when present), price, stock, add to cart */}
+                      <ProductVariantSection
+                        handlingDaysMax={product.handlingDaysMax}
+                        handlingDaysMin={product.handlingDaysMin}
+                        hasVariants={product.hasVariants ?? false}
+                        optionDefinitions={product.optionDefinitions ?? []}
+                        product={{
+                          availableCountryCodes: product.availableCountryCodes,
+                          category: product.category,
+                          continueSellingWhenOutOfStock:
+                            product.continueSellingWhenOutOfStock,
+                          id: product.id,
+                          image: product.image,
+                          inStock: product.inStock,
+                          name: product.name,
+                          originalPrice: product.originalPrice,
+                          price: product.price,
+                          slug: product.slug,
+                        }}
+                        variants={product.variants ?? []}
+                      />
+                      <EstimatedDeliveryTimeline
+                        className="mb-6"
+                        handlingDaysMax={product.handlingDaysMax}
+                        handlingDaysMin={product.handlingDaysMin}
+                        transitDaysMax={product.transitDaysMax}
+                        transitDaysMin={product.transitDaysMin}
+                      />
+                      <ProductDetailAccordion
+                        category={product.category}
+                        description={sanitizeProductDescription(
+                          product.description,
+                        )}
+                        descriptionIsHtml
+                        sizeChart={product.sizeChart ?? undefined}
+                      />
+                      <ProductFaqSection items={product.faq ?? []} />
+                      <ProductShare
+                        className="mt-6"
+                        title={product.name}
+                        url={`${siteUrl}/products/${product.id}`}
+                      />
+                    </div>
+                  </ProductShippingEstimateProvider>
+                </div>
+              </ProductVariantImageProvider>
+            </Suspense>
 
             <Separator className="my-8" />
 

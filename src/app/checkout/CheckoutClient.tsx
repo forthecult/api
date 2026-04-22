@@ -13,6 +13,7 @@ import {
 } from "react";
 
 import { useSolanaWallet } from "~/app/checkout/crypto/solana-wallet-stub";
+import { trackBeginCheckout } from "~/lib/analytics/ecommerce";
 import { getAffiliateCodeFromDocument } from "~/lib/affiliate-tracking";
 import { useCurrentUser } from "~/lib/auth-client";
 import { useCart } from "~/lib/hooks/use-cart";
@@ -172,6 +173,27 @@ export function CheckoutClient() {
   useEffect(() => {
     preloadStripe();
   }, []);
+
+  const beginCheckoutFired = useRef(false);
+  useEffect(() => {
+    if (items.length === 0) {
+      beginCheckoutFired.current = false;
+      return;
+    }
+    if (!isHydrated || beginCheckoutFired.current) return;
+    beginCheckoutFired.current = true;
+    trackBeginCheckout({
+      currency: "USD",
+      items: items.map((i) => ({
+        price: i.price,
+        productId: i.productId ?? i.id,
+        productName: i.name,
+        quantity: i.quantity,
+        variantId: i.productVariantId,
+      })),
+      value: subtotal,
+    });
+  }, [isHydrated, items, subtotal]);
 
   // When logged in and no connected wallet, fetch tier from membership (tier history) so create-order can apply tier discount
   useEffect(() => {

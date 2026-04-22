@@ -61,6 +61,7 @@
     "tests": "bun test ./.tests",
     "email:test": "bun run scripts/send-test-email.ts",
     "prepare": "husky",
+    "lh:store": "bash -c 'test -n \"$LIGHTHOUSE_URL\" || { echo \"Set LIGHTHOUSE_URL to a full PDP or PLP URL (e.g. http://localhost:3000/your-product)\"; exit 1; }; exec bunx lighthouse \"$LIGHTHOUSE_URL\" --only-categories=performance --chrome-flags=\"--headless=new\" --preset=desktop --output=html --output-path=./lighthouse-store.html'",
     "analyze": "ANALYZE=true bun run build",
     "discord-gateway": "bun run src/scripts/discord-gateway-worker.ts"
   },
@@ -129,6 +130,7 @@
     "ofetch": "^1.5.1",
     "pathe": "^2.0.3",
     "postgres": "^3.4.9",
+    "posthog-js": "^1.232.0",
     "qrcode": "^1.5.4",
     "react": "^19.2.5",
     "react-day-picker": "^9.14.0",

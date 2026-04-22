@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Suspense } from "react";
 
 import type {
   ProductOptionDefinition,
@@ -14,9 +15,11 @@ import { ProductShare } from "~/app/products/[id]/product-share";
 import { ProductVariantImageProvider } from "~/app/products/[id]/product-variant-image-context";
 import { ProductVariantSection } from "~/app/products/[id]/product-variant-section";
 import { RelatedProductsSection } from "~/app/products/[id]/related-products-section";
+import type { ProductFaqItem } from "~/lib/product-by-slug";
 import { sanitizeProductDescription } from "~/lib/sanitize-product-description";
 import { slugify } from "~/lib/slugify";
 import { Breadcrumbs } from "~/ui/components/breadcrumbs";
+import { ProductFaqSection } from "~/ui/components/product-faq-section";
 import { ProductBrandModel } from "~/ui/components/product-brand-model";
 import { Button } from "~/ui/primitives/button";
 
@@ -29,6 +32,7 @@ export interface LongFormProductProps {
     category: string;
     continueSellingWhenOutOfStock?: boolean;
     description: string;
+    faq?: ProductFaqItem[];
     features: string[];
     handlingDaysMax?: null | number;
     handlingDaysMin?: null | number;
@@ -150,28 +154,30 @@ export function LongFormProductPage({
                   {product.category}
                 </p>
                 <div className="mt-6">
-                  <ProductVariantImageProvider>
-                    <ProductVariantSection
-                      handlingDaysMax={product.handlingDaysMax}
-                      handlingDaysMin={product.handlingDaysMin}
-                      hasVariants={product.hasVariants ?? false}
-                      optionDefinitions={product.optionDefinitions ?? []}
-                      product={{
-                        availableCountryCodes: product.availableCountryCodes,
-                        category: product.category,
-                        continueSellingWhenOutOfStock:
-                          product.continueSellingWhenOutOfStock,
-                        id: product.id,
-                        image: product.image,
-                        inStock: product.inStock,
-                        name: product.name,
-                        originalPrice: product.originalPrice,
-                        price: product.price,
-                        ...(product.slug && { slug: product.slug }),
-                      }}
-                      variants={product.variants ?? []}
-                    />
-                  </ProductVariantImageProvider>
+                  <Suspense fallback={null}>
+                    <ProductVariantImageProvider>
+                      <ProductVariantSection
+                        handlingDaysMax={product.handlingDaysMax}
+                        handlingDaysMin={product.handlingDaysMin}
+                        hasVariants={product.hasVariants ?? false}
+                        optionDefinitions={product.optionDefinitions ?? []}
+                        product={{
+                          availableCountryCodes: product.availableCountryCodes,
+                          category: product.category,
+                          continueSellingWhenOutOfStock:
+                            product.continueSellingWhenOutOfStock,
+                          id: product.id,
+                          image: product.image,
+                          inStock: product.inStock,
+                          name: product.name,
+                          originalPrice: product.originalPrice,
+                          price: product.price,
+                          ...(product.slug && { slug: product.slug }),
+                        }}
+                        variants={product.variants ?? []}
+                      />
+                    </ProductVariantImageProvider>
+                  </Suspense>
                 </div>
                 <EstimatedDeliveryTimeline
                   className="mt-6"
@@ -277,6 +283,17 @@ export function LongFormProductPage({
           </section>
         )}
 
+        <div
+          className={`
+            container px-4
+            md:px-6
+          `}
+        >
+          <div className="mx-auto max-w-3xl">
+            <ProductFaqSection items={product.faq ?? []} />
+          </div>
+        </div>
+
         {/* CTA again + share */}
         <section
           className={`
@@ -292,28 +309,30 @@ export function LongFormProductPage({
           >
             <div className={`mx-auto max-w-xl rounded-xl border bg-card p-8`}>
               <h2 className="mb-4 text-xl font-bold">Ready to order?</h2>
-              <ProductVariantImageProvider>
-                <ProductVariantSection
-                  handlingDaysMax={product.handlingDaysMax}
-                  handlingDaysMin={product.handlingDaysMin}
-                  hasVariants={product.hasVariants ?? false}
-                  optionDefinitions={product.optionDefinitions ?? []}
-                  product={{
-                    availableCountryCodes: product.availableCountryCodes,
-                    category: product.category,
-                    continueSellingWhenOutOfStock:
-                      product.continueSellingWhenOutOfStock,
-                    id: product.id,
-                    image: product.image,
-                    inStock: product.inStock,
-                    name: product.name,
-                    originalPrice: product.originalPrice,
-                    price: product.price,
-                    ...(product.slug && { slug: product.slug }),
-                  }}
-                  variants={product.variants ?? []}
-                />
-              </ProductVariantImageProvider>
+              <Suspense fallback={null}>
+                <ProductVariantImageProvider>
+                  <ProductVariantSection
+                    handlingDaysMax={product.handlingDaysMax}
+                    handlingDaysMin={product.handlingDaysMin}
+                    hasVariants={product.hasVariants ?? false}
+                    optionDefinitions={product.optionDefinitions ?? []}
+                    product={{
+                      availableCountryCodes: product.availableCountryCodes,
+                      category: product.category,
+                      continueSellingWhenOutOfStock:
+                        product.continueSellingWhenOutOfStock,
+                      id: product.id,
+                      image: product.image,
+                      inStock: product.inStock,
+                      name: product.name,
+                      originalPrice: product.originalPrice,
+                      price: product.price,
+                      ...(product.slug && { slug: product.slug }),
+                    }}
+                    variants={product.variants ?? []}
+                  />
+                </ProductVariantImageProvider>
+              </Suspense>
               <ProductShare
                 className="mt-6"
                 title={product.name}

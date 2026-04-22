@@ -17,12 +17,14 @@ import { ProductShippingEstimateProvider } from "~/app/products/[id]/product-shi
 import { ProductVariantImageProvider } from "~/app/products/[id]/product-variant-image-context";
 import { ProductVariantSection } from "~/app/products/[id]/product-variant-section";
 import { RelatedProductsSection } from "~/app/products/[id]/related-products-section";
+import { ProductViewAnalytics } from "~/lib/analytics/product-view-analytics";
 import { ProductsClient } from "~/app/products/products-client";
 import {
   getPublicSiteUrl,
   getServerBaseUrl,
   shouldNoindexForAgent,
 } from "~/lib/app-url";
+import { buildHreflangLanguages } from "~/lib/hreflang";
 import {
   getCategoryBySlug,
   getCategoryParent,
@@ -48,6 +50,7 @@ import {
 } from "~/lib/token-gate";
 import { COOKIE_NAME, hasValidTokenGateCookie } from "~/lib/token-gate-cookie";
 import { Breadcrumbs } from "~/ui/components/breadcrumbs";
+import { ProductFaqSection } from "~/ui/components/product-faq-section";
 import { ProductBrandModel } from "~/ui/components/product-brand-model";
 import {
   BreadcrumbStructuredData,
@@ -222,6 +225,7 @@ export async function generateMetadata({
     return {
       alternates: {
         canonical: canonicalUrl,
+        languages: buildHreflangLanguages(`/${canonicalSlug}`),
       },
       description: metaDesc,
       openGraph: {
@@ -295,6 +299,7 @@ export async function generateMetadata({
   return {
     alternates: {
       canonical: `${siteUrl}/${slug}`,
+      languages: buildHreflangLanguages(`/${slug}`),
     },
     description,
     openGraph: {
@@ -397,6 +402,7 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
       handlingDaysMin: product.handlingDaysMin,
       id: product.id,
       image: product.image,
+      ...(product.images?.length ? { images: product.images } : {}),
       inStock: product.inStock,
       material: product.material,
       mpn: product.mpn,
@@ -412,7 +418,7 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
       transitDaysMax: product.transitDaysMax,
       transitDaysMin: product.transitDaysMin,
       variants: product.variants,
-    } as const;
+    };
 
     const breadcrumbJsonLd = breadcrumbTrail.map((item) => ({
       name: item.name,
@@ -424,8 +430,16 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
         <>
           <ProductPageJsonLd
             breadcrumbItems={breadcrumbJsonLd}
+            faqItems={product.faq}
             product={productJsonLd}
           />
+          <Suspense fallback={null}>
+            <ProductViewAnalytics
+              price={product.price}
+              productId={product.id}
+              productName={product.name}
+            />
+          </Suspense>
           <LongFormProductPage
             breadcrumbTrail={breadcrumbTrail}
             discountPercentage={discountPercentage}
@@ -441,8 +455,16 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
       <>
         <ProductPageJsonLd
           breadcrumbItems={breadcrumbJsonLd}
+          faqItems={product.faq}
           product={productJsonLd}
         />
+        <Suspense fallback={null}>
+          <ProductViewAnalytics
+            price={product.price}
+            productId={product.id}
+            productName={product.name}
+          />
+        </Suspense>
         <div className="flex min-h-screen flex-col">
           <main className="flex-1 py-10">
             <div
@@ -461,36 +483,37 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
                   ← Back to Products
                 </Button>
               </Link>
-              <ProductVariantImageProvider>
-                <div
-                  className={`
+              <Suspense fallback={null}>
+                <ProductVariantImageProvider>
+                  <div
+                    className={`
                     grid grid-cols-1 gap-8
                     md:grid-cols-2
                   `}
-                >
-                  <ProductImageGallery
-                    discountPercentage={discountPercentage}
-                    imageAlts={product.imageAlts}
-                    images={product.images ?? [product.image]}
-                    mainImageAlt={product.mainImageAlt}
-                    productName={product.name}
-                  />
-                  <ProductShippingEstimateProvider
-                    availableCountryCodes={product.availableCountryCodes}
-                    productId={product.id}
                   >
-                    <div className="flex flex-col">
-                      <div className="mb-6">
-                        <h1 className="text-3xl font-bold">{product.name}</h1>
-                        {product.rating > 0 && (
-                          <div className="mt-2 flex items-center gap-2">
-                            <div
-                              aria-label={`Rating ${product.rating} out of 5`}
-                              className="flex items-center"
-                            >
-                              {range(5).map((i) => (
-                                <Star
-                                  className={`
+                    <ProductImageGallery
+                      discountPercentage={discountPercentage}
+                      imageAlts={product.imageAlts}
+                      images={product.images ?? [product.image]}
+                      mainImageAlt={product.mainImageAlt}
+                      productName={product.name}
+                    />
+                    <ProductShippingEstimateProvider
+                      availableCountryCodes={product.availableCountryCodes}
+                      productId={product.id}
+                    >
+                      <div className="flex flex-col">
+                        <div className="mb-6">
+                          <h1 className="text-3xl font-bold">{product.name}</h1>
+                          {product.rating > 0 && (
+                            <div className="mt-2 flex items-center gap-2">
+                              <div
+                                aria-label={`Rating ${product.rating} out of 5`}
+                                className="flex items-center"
+                              >
+                                {range(5).map((i) => (
+                                  <Star
+                                    className={`
                                     h-5 w-5
                                     ${
                                       i < Math.floor(product.rating)
@@ -500,88 +523,91 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
                                           : "text-muted-foreground"
                                     }
                                   `}
-                                  key={`star-${i}`}
-                                />
-                              ))}
+                                    key={`star-${i}`}
+                                  />
+                                ))}
+                              </div>
+                              <span className="text-sm text-muted-foreground">
+                                ({product.rating.toFixed(1)})
+                              </span>
                             </div>
-                            <span className="text-sm text-muted-foreground">
-                              ({product.rating.toFixed(1)})
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                      <div className="mb-2">
-                        <p className="text-lg font-medium text-muted-foreground">
-                          {product.category}
-                        </p>
-                      </div>
-                      <ProductBrandModel
-                        brand={product.brand}
-                        model={product.model}
-                      />
-                      {/* Features only at top; description is in accordion below */}
-                      {product.features.length > 0 && (
-                        <ul className="mb-6 space-y-2 text-muted-foreground">
-                          {product.features.map((feature) => (
-                            <li
-                              className="flex items-start"
-                              key={`feature-${product.id}-${slugify(feature)}`}
-                            >
-                              <span
-                                className={`
+                          )}
+                        </div>
+                        <div className="mb-2">
+                          <p className="text-lg font-medium text-muted-foreground">
+                            {product.category}
+                          </p>
+                        </div>
+                        <ProductBrandModel
+                          brand={product.brand}
+                          model={product.model}
+                        />
+                        {/* Features only at top; description is in accordion below */}
+                        {product.features.length > 0 && (
+                          <ul className="mb-6 space-y-2 text-muted-foreground">
+                            {product.features.map((feature) => (
+                              <li
+                                className="flex items-start"
+                                key={`feature-${product.id}-${slugify(feature)}`}
+                              >
+                                <span
+                                  className={`
                                   mt-1 mr-2 h-2 w-2 shrink-0 rounded-full
                                   bg-primary
                                 `}
-                              />
-                              <span>{feature}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                      <ProductVariantSection
-                        handlingDaysMax={product.handlingDaysMax}
-                        handlingDaysMin={product.handlingDaysMin}
-                        hasVariants={product.hasVariants ?? false}
-                        optionDefinitions={product.optionDefinitions ?? []}
-                        product={{
-                          availableCountryCodes: product.availableCountryCodes,
-                          category: product.category,
-                          continueSellingWhenOutOfStock:
-                            product.continueSellingWhenOutOfStock,
-                          id: product.id,
-                          image: product.image,
-                          inStock: product.inStock,
-                          name: product.name,
-                          originalPrice: product.originalPrice,
-                          price: product.price,
-                          ...(product.slug && { slug: product.slug }),
-                        }}
-                        variants={product.variants ?? []}
-                      />
-                      <EstimatedDeliveryTimeline
-                        className="mb-6"
-                        handlingDaysMax={product.handlingDaysMax}
-                        handlingDaysMin={product.handlingDaysMin}
-                        transitDaysMax={product.transitDaysMax}
-                        transitDaysMin={product.transitDaysMin}
-                      />
-                      <ProductDetailAccordion
-                        category={product.category}
-                        description={sanitizeProductDescription(
-                          product.description,
+                                />
+                                <span>{feature}</span>
+                              </li>
+                            ))}
+                          </ul>
                         )}
-                        descriptionIsHtml
-                        sizeChart={product.sizeChart ?? undefined}
-                      />
-                      <ProductShare
-                        className="mt-6"
-                        title={product.name}
-                        url={`${siteUrl}/${canonicalSlug}`}
-                      />
-                    </div>
-                  </ProductShippingEstimateProvider>
-                </div>
-              </ProductVariantImageProvider>
+                        <ProductVariantSection
+                          handlingDaysMax={product.handlingDaysMax}
+                          handlingDaysMin={product.handlingDaysMin}
+                          hasVariants={product.hasVariants ?? false}
+                          optionDefinitions={product.optionDefinitions ?? []}
+                          product={{
+                            availableCountryCodes:
+                              product.availableCountryCodes,
+                            category: product.category,
+                            continueSellingWhenOutOfStock:
+                              product.continueSellingWhenOutOfStock,
+                            id: product.id,
+                            image: product.image,
+                            inStock: product.inStock,
+                            name: product.name,
+                            originalPrice: product.originalPrice,
+                            price: product.price,
+                            ...(product.slug && { slug: product.slug }),
+                          }}
+                          variants={product.variants ?? []}
+                        />
+                        <EstimatedDeliveryTimeline
+                          className="mb-6"
+                          handlingDaysMax={product.handlingDaysMax}
+                          handlingDaysMin={product.handlingDaysMin}
+                          transitDaysMax={product.transitDaysMax}
+                          transitDaysMin={product.transitDaysMin}
+                        />
+                        <ProductDetailAccordion
+                          category={product.category}
+                          description={sanitizeProductDescription(
+                            product.description,
+                          )}
+                          descriptionIsHtml
+                          sizeChart={product.sizeChart ?? undefined}
+                        />
+                        <ProductFaqSection items={product.faq ?? []} />
+                        <ProductShare
+                          className="mt-6"
+                          title={product.name}
+                          url={`${siteUrl}/${canonicalSlug}`}
+                        />
+                      </div>
+                    </ProductShippingEstimateProvider>
+                  </div>
+                </ProductVariantImageProvider>
+              </Suspense>
               <Separator className="my-8" />
               {Object.keys(product.specs).length > 0 && (
                 <div
@@ -732,7 +758,10 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
         description={categoryDescription}
         items={products.map((p) => ({
           image: p.image,
+          inStock: p.inStock,
           name: p.name,
+          price: p.price,
+          priceCurrency: "USD",
           url: `${publicSiteUrl}/${p.slug ?? p.id}`,
         }))}
         name={category.name}

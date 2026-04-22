@@ -10,10 +10,11 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { SEO_CONFIG } from "~/app";
+import { trackPurchase } from "~/lib/analytics/ecommerce";
 import {
   requestPasswordReset,
   signUp,
@@ -79,12 +80,34 @@ export function SuccessPageClient() {
 
   const [order, setOrder] = useState<null | OrderDetails>(null);
   const [loading, setLoading] = useState(true);
+  const purchaseFired = useRef(false);
 
   useEffect(() => {
     if (orderIdParam || sessionIdParam) {
       clearCart();
     }
   }, [orderIdParam, sessionIdParam, clearCart]);
+
+  useEffect(() => {
+    if (!order || purchaseFired.current) return;
+    purchaseFired.current = true;
+    const valueUsd = order.totalCents / 100;
+    trackPurchase({
+      currency: "USD",
+      items: order.items.map((i) => ({
+        priceUsd:
+          i.priceUsd ??
+          (i.subtotalUsd != null && i.quantity > 0
+            ? i.subtotalUsd / i.quantity
+            : undefined),
+        productId: i.productId ?? null,
+        quantity: i.quantity,
+        title: i.name,
+      })),
+      orderId: order.orderId,
+      valueUsd,
+    });
+  }, [order]);
 
   /** If user opted to save address at checkout, save it now. */
   useEffect(() => {

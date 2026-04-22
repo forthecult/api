@@ -7,6 +7,7 @@ import { Suspense } from "react";
 import { SEO_CONFIG } from "~/app";
 import { LazySolanaWalletProvider } from "~/app/checkout/crypto/lazy-solana-wallet-provider";
 import { getPublicSiteUrl, isAgentSubdomain } from "~/lib/app-url";
+import { AnalyticsProvider } from "~/lib/analytics/analytics-provider";
 import { CartProvider } from "~/lib/hooks/use-cart";
 import { CountryCurrencyProvider } from "~/lib/hooks/use-country-currency";
 import "~/css/globals.css";
@@ -45,6 +46,7 @@ const geistMono = Geist_Mono({
 
 const manrope = Manrope({
   display: "swap",
+  preload: false,
   subsets: ["latin"],
   variable: "--font-heading",
   weight: ["600", "700", "800"],
@@ -171,25 +173,27 @@ export default async function RootLayout({
           disableTransitionOnChange
           enableSystem
         >
-          {/* no initial theme is fetched server-side: next-themes restores from localStorage for
+          <AnalyticsProvider>
+            {/* no initial theme is fetched server-side: next-themes restores from localStorage for
               returning users, and ThemePersistSync backfills cross-device theme via idle fetch. */}
-          <ThemePersistSync />
-          <DeferredCriticalRoutePrefetcher />
-          <CartProvider>
-            <CryptoCurrencyProvider>
-              <Suspense
-                fallback={
-                  <CountryCurrencyProvider initialCountry={null}>
+            <ThemePersistSync />
+            <DeferredCriticalRoutePrefetcher />
+            <CartProvider>
+              <CryptoCurrencyProvider>
+                <Suspense
+                  fallback={
+                    <CountryCurrencyProvider initialCountry={null}>
+                      <StoreLayoutWrapper>{children}</StoreLayoutWrapper>
+                    </CountryCurrencyProvider>
+                  }
+                >
+                  <CookieCountryProvider>
                     <StoreLayoutWrapper>{children}</StoreLayoutWrapper>
-                  </CountryCurrencyProvider>
-                }
-              >
-                <CookieCountryProvider>
-                  <StoreLayoutWrapper>{children}</StoreLayoutWrapper>
-                </CookieCountryProvider>
-              </Suspense>
-            </CryptoCurrencyProvider>
-          </CartProvider>
+                  </CookieCountryProvider>
+                </Suspense>
+              </CryptoCurrencyProvider>
+            </CartProvider>
+          </AnalyticsProvider>
         </ThemeProvider>
         {/* SpeedInsights deferred until idle so it doesn't compete with LCP; only on Vercel */}
         {process.env.NEXT_PUBLIC_VERCEL === "1" ? (

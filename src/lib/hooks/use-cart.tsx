@@ -2,6 +2,7 @@
 
 import * as React from "react";
 
+import { trackAddToCart } from "~/lib/analytics/ecommerce";
 import type { CartItem } from "~/ui/components/cart";
 
 /* -------------------------------------------------------------------------- */
@@ -102,6 +103,15 @@ export function CartProvider({ children }: React.PropsWithChildren) {
         if (wasEmpty && next.length > 0) {
           React.startTransition(() => setCartOpen(true));
         }
+        queueMicrotask(() => {
+          trackAddToCart({
+            price: newItem.price,
+            productId: newItem.productId ?? newItem.id,
+            productName: newItem.name,
+            quantity: qty,
+            variantId: newItem.productVariantId,
+          });
+        });
         return next;
       });
     },
