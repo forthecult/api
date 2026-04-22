@@ -32,7 +32,7 @@ export function BackToTopButton() {
       aria-label="Back to top"
       className={cn(
         `
-          group fixed relative right-6 bottom-40 z-40 transition-opacity
+          group fixed right-6 bottom-40 z-40 transition-opacity
           duration-200
           focus-visible:outline focus-visible:outline-2
           focus-visible:outline-offset-2 focus-visible:outline-ring
@@ -53,11 +53,11 @@ export function BackToTopButton() {
       <span
         className={cn(
           `
-            flex size-9 items-center justify-center rounded-sm border
-            border-border/50 bg-muted/45 text-muted-foreground/70 shadow-sm
+            flex size-9 items-center justify-center rounded-sm border border-border
+            bg-background text-foreground shadow-md ring-1 ring-black/5
             transition-colors
-            hover:bg-muted/70 hover:text-muted-foreground
-            dark:border-white/18 dark:bg-[#0D0D0D] dark:text-foreground
+            hover:bg-muted
+            dark:border-white/18 dark:bg-[#0D0D0D] dark:text-foreground dark:ring-white/10
             dark:hover:bg-[#141414]
           `,
         )}
@@ -67,7 +67,7 @@ export function BackToTopButton() {
       <span
         className={`
           pointer-events-none absolute top-full left-1/2 z-10 mt-1.5
-          -translate-x-1/2 rounded border border-border/60 bg-background/95 px-2
+          -translate-x-1/2 rounded border border-border bg-background px-2
           py-0.5 text-[10px] font-semibold tracking-wide whitespace-nowrap
           text-foreground uppercase opacity-0 shadow-sm transition-opacity
           duration-150
