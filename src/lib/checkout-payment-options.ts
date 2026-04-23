@@ -17,6 +17,7 @@ export const HIDDEN_PAYMENT_OPTIONS = {
 /** Enabled flags per UI bucket; derived from API settings. Default true when method not in list. */
 export interface PaymentVisibility {
   creditCard: boolean;
+  cryptoBnb: boolean;
   cryptoBitcoin: boolean;
   cryptoCrust: boolean;
   cryptoCult: boolean;
@@ -40,6 +41,7 @@ export interface PaymentVisibility {
 }
 
 const METHOD_KEY_MAP: Record<string, keyof PaymentVisibility> = {
+  crypto_bnb: "cryptoBnb",
   crypto_bitcoin: "cryptoBitcoin",
   crypto_crust: "cryptoCrust",
   crypto_cult: "cryptoCult",
@@ -64,6 +66,7 @@ const BTCPAY_DISABLED = true;
 
 const DEFAULT_VISIBILITY: PaymentVisibility = {
   creditCard: true,
+  cryptoBnb: true,
   cryptoBitcoin: false, // BTCPay not implemented
   cryptoCrust: true,
   cryptoCult: true,
@@ -269,6 +272,10 @@ export function getFooterPaymentItems(
         name: "Culture (CULT)",
         src: "/crypto/cult/cult-logo.svg",
       });
+    if (visibility.cryptoBnb)
+      items.push({ name: "BNB", src: "/crypto/bnb/bnb-smart-chain.svg" });
+    if (visibility.cryptoTon)
+      items.push({ name: "TON", src: "/crypto/ton/ton_logo.svg" });
   }
 
   // Stablecoins (USDC, USDT)
@@ -385,6 +392,18 @@ export function getPaymentIconPaths(
       icons.push({
         alt: "Culture (CULT)",
         src: "/crypto/cult/cult-logo.svg",
+        type: "crypto",
+      });
+    if (visibility.cryptoBnb)
+      icons.push({
+        alt: "BNB",
+        src: "/crypto/bnb/bnb-smart-chain.svg",
+        type: "crypto",
+      });
+    if (visibility.cryptoTon)
+      icons.push({
+        alt: "TON",
+        src: "/crypto/ton/ton_logo.svg",
         type: "crypto",
       });
     if (visibility.stablecoinUsdc)

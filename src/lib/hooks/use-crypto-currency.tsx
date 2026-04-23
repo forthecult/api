@@ -5,6 +5,7 @@ import * as React from "react";
 import { whenIdle } from "~/lib/when-idle";
 
 export type CryptoCode =
+  | "BNB"
   | "BTC"
   | "CRUST"
   | "CULT"
@@ -22,7 +23,7 @@ export type CryptoCode =
 const _COINGECKO_IDS: Record<
   Exclude<
     CryptoCode,
-    "CRUST" | "CULT" | "PUMP" | "SKR" | "TROLL" | "XAG" | "XAU"
+    "BNB" | "CRUST" | "CULT" | "PUMP" | "SKR" | "TROLL" | "XAG" | "XAU"
   >,
   string
 > = {
@@ -52,6 +53,7 @@ const CryptoCurrencyContext = React.createContext<
 >(undefined);
 
 const DECIMAL_MAP: Record<CryptoCode, number> = {
+  BNB: 4,
   BTC: 6,
   CRUST: 6,
   CULT: 6,
@@ -70,6 +72,7 @@ const DECIMAL_MAP: Record<CryptoCode, number> = {
 
 /** Fallback when API fails; also used as initial state so consumers never see empty rates. */
 const FALLBACK_RATES: Record<CryptoCode, number> = {
+  BNB: 600,
   BTC: 70_000,
   CRUST: 0,
   CULT: 0.0001,
@@ -110,7 +113,8 @@ export function CryptoCurrencyProvider({ children }: React.PropsWithChildren) {
           code === "XAU" ||
           code === "XAG" ||
           code === "SKR" ||
-          code === "CULT"
+          code === "CULT" ||
+          code === "BNB"
         ) {
           setSelectedCryptoState(code as CryptoCode);
           if (code !== raw) localStorage.setItem(STORAGE_KEY, code);
@@ -154,28 +158,29 @@ export function CryptoCurrencyProvider({ children }: React.PropsWithChildren) {
           setRates({ ...FALLBACK_RATES });
           return;
         }
-        const next: Rates = { ...FALLBACK_RATES };
-        (
-          [
-            "BTC",
-            "ETH",
-            "SOL",
-            "DOGE",
-            "CRUST",
-            "CULT",
-            "PUMP",
-            "TROLL",
-            "TON",
-            "XMR",
-            "XAU",
-            "XAG",
-            "SKR",
-          ] as const
-        ).forEach((code) => {
-          const v = data[code];
-          if (typeof v === "number" && v > 0) next[code] = v;
-        });
-        setRates(next);
+    const next: Rates = { ...FALLBACK_RATES };
+      (
+        [
+          "BNB",
+          "BTC",
+          "ETH",
+          "SOL",
+          "DOGE",
+          "CRUST",
+          "CULT",
+          "PUMP",
+          "TROLL",
+          "TON",
+          "XMR",
+          "XAU",
+          "XAG",
+          "SKR",
+        ] as const
+      ).forEach((code) => {
+        const v = data[code];
+        if (typeof v === "number" && v > 0) next[code] = v;
+      });
+      setRates(next);
       })
       .catch(() => {
         // On timeout or error, keep fallback rates (already set as default)
@@ -297,6 +302,16 @@ export const CRYPTO_OPTIONS: {
     code: "CULT",
     iconSrc: "/crypto/cult/cult-logo.svg",
     label: "Culture (CULT)",
+  },
+  {
+    code: "TON",
+    iconSrc: "/crypto/ton/ton_logo.svg",
+    label: "TON",
+  },
+  {
+    code: "BNB",
+    iconSrc: "/crypto/bnb/bnb-smart-chain.svg",
+    label: "BNB",
   },
   {
     code: "XMR",

@@ -24,9 +24,6 @@ interface CategoryItem {
   }[];
 }
 
-/** Column order: Currency, Network, Application. categories must be in that order (1–3 items). */
-const COLUMN_LABELS = ["Currency", "Network", "Application"] as const;
-
 const HOVER_OPEN_DELAY_MS = 120;
 const HOVER_CLOSE_DELAY_MS = 150;
 
@@ -141,23 +138,14 @@ export function ShopByCryptoMenu({
             gridTemplateColumns: `repeat(${categories.length}, minmax(160px, 1fr))`,
           }}
         >
-          {categories.map((cat, index) => {
-            const columnLabel = COLUMN_LABELS[index] ?? "Shop";
-            const href = cat.slug ? `/${cat.slug}` : "/products";
-            return (
-              <div
-                className="flex min-w-[160px] shrink-0 flex-col"
-                key={cat.id}
-              >
-                <span
-                  className={`
-                    rounded-lg px-3 py-2 text-xs font-semibold tracking-wider
-                    text-muted-foreground uppercase
-                  `}
-                >
-                  {columnLabel}
-                </span>
-                <Link
+        {categories.map((cat) => {
+          const href = cat.slug ? `/${cat.slug}` : "/products";
+          return (
+            <div
+              className="flex min-w-[160px] shrink-0 flex-col"
+              key={cat.id}
+            >
+              <Link
                   className={`
                     rounded-lg px-3 py-2 text-base font-semibold
                     transition-colors

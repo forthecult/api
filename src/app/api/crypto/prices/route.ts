@@ -30,11 +30,13 @@ const COINGECKO_IDS = [
   "monero",
   "pax-gold",
   "kinesis-silver",
+  "binancecoin",
 ];
 
 export const revalidate = 60;
 
 export interface CryptoPricesResponse {
+  BNB?: number;
   BTC?: number;
   CRUST?: number;
   CULT?: number;
@@ -55,6 +57,7 @@ export interface CryptoPricesResponse {
 
 // Fallback prices to return immediately if external APIs are slow (XAU = USD per troy oz)
 const FALLBACK_PRICES: CryptoPricesResponse = {
+  BNB: 600,
   BTC: 100000,
   CRUST: 0.0001,
   CULT: 0.0001,
@@ -84,15 +87,16 @@ export async function GET() {
       return NextResponse.json(FALLBACK_PRICES);
     }
 
-    const prices: CryptoPricesResponse = {};
-    if (d?.bitcoin?.usd) prices.BTC = d.bitcoin.usd;
-    if (d?.ethereum?.usd) prices.ETH = d.ethereum.usd;
-    if (d?.solana?.usd) prices.SOL = d.solana.usd;
-    if (d?.dogecoin?.usd) prices.DOGE = d.dogecoin.usd;
-    if (d?.toncoin?.usd) prices.TON = d.toncoin.usd;
-    if (d?.monero?.usd) prices.XMR = d.monero.usd;
-    if (d?.["pax-gold"]?.usd) prices.XAU = d["pax-gold"].usd;
-    if (d?.["kinesis-silver"]?.usd) prices.XAG = d["kinesis-silver"].usd;
+  const prices: CryptoPricesResponse = {};
+  if (d?.bitcoin?.usd) prices.BTC = d.bitcoin.usd;
+  if (d?.ethereum?.usd) prices.ETH = d.ethereum.usd;
+  if (d?.solana?.usd) prices.SOL = d.solana.usd;
+  if (d?.dogecoin?.usd) prices.DOGE = d.dogecoin.usd;
+  if (d?.toncoin?.usd) prices.TON = d.toncoin.usd;
+  if (d?.monero?.usd) prices.XMR = d.monero.usd;
+  if (d?.["pax-gold"]?.usd) prices.XAU = d["pax-gold"].usd;
+  if (d?.["kinesis-silver"]?.usd) prices.XAG = d["kinesis-silver"].usd;
+  if (d?.binancecoin?.usd) prices.BNB = d.binancecoin.usd;
 
     // PUMP: prefer CoinGecko token price (keys are often lowercase); fallback to pump.fun DEX if missing
     const pumpEntry =
@@ -202,12 +206,17 @@ export async function GET() {
       prices.CULT = FALLBACK_PRICES.CULT ?? 0.0001;
     }
 
-    // SKR (Seeker) fallback when CoinGecko doesn't return a price
-    if (prices.SKR == null || prices.SKR <= 0) {
-      prices.SKR = FALLBACK_PRICES.SKR ?? 0.01;
-    }
+  // SKR (Seeker) fallback when CoinGecko doesn't return a price
+  if (prices.SKR == null || prices.SKR <= 0) {
+    prices.SKR = FALLBACK_PRICES.SKR ?? 0.01;
+  }
 
-    return NextResponse.json(prices);
+  // BNB fallback when CoinGecko doesn't return a price
+  if (prices.BNB == null || prices.BNB <= 0) {
+    prices.BNB = FALLBACK_PRICES.BNB ?? 600;
+  }
+
+  return NextResponse.json(prices);
   } catch {
     return NextResponse.json(FALLBACK_PRICES);
   }

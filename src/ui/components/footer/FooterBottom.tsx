@@ -109,6 +109,7 @@ function scheduleRetry(): void {
 }
 
 const CRYPTO_COLORS: Record<CryptoCode, string> = {
+  BNB: "#F0B90B",
   BTC: "#F7931A",
   CRUST: "#9945FF",
   CULT: "#c4873a",

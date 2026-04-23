@@ -893,26 +893,17 @@ export function ChatPageClient() {
                     </div>
                   </PopoverContent>
                 </Popover>
-                <Button
-                  onClick={newChat}
-                  size="sm"
-                  type="button"
-                  variant="outline"
-                >
-                  <Plus aria-hidden className="mr-1 h-4 w-4" />
-                  New
-                </Button>
-                {userId ? (
-                  <Button asChild size="sm" variant="outline">
-                    <Link href="/dashboard/ai">Account</Link>
-                  </Button>
-                ) : (
-                  <Button asChild size="sm" variant="outline">
-                    <Link href="/login">Sign in</Link>
-                  </Button>
-                )}
-              </div>
-            </header>
+            <Button
+              onClick={newChat}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              <Plus aria-hidden className="mr-1 h-4 w-4" />
+              New
+            </Button>
+          </div>
+        </header>
 
             {error ? (
               <div

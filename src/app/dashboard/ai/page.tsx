@@ -19,23 +19,11 @@ export default function DashboardAiPage() {
         </p>
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        <Button asChild variant="outline">
-          <Link href="/dashboard/ai/storage">Storage &amp; data</Link>
-        </Button>
-        <Button asChild variant="outline">
-          <Link href="/dashboard/ai/prompts">Prompts &amp; memory</Link>
-        </Button>
-        <Button asChild variant="outline">
-          <Link href="/dashboard/ai/cloud">Cloud data</Link>
-        </Button>
-        <Button asChild variant="outline">
-          <Link href="/dashboard/ai/channels">Channels</Link>
-        </Button>
-        <Button asChild>
-          <Link href="/chat">Open chat</Link>
-        </Button>
-      </div>
+    <div className="flex flex-wrap gap-2">
+      <Button asChild>
+        <Link href="/chat">Open chat</Link>
+      </Button>
+    </div>
 
       <DashboardAiWidgetToggle />
     </div>
