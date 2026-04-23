@@ -41,9 +41,15 @@ export function Footer({ className }: { className?: string }) {
           lg:px-8
         `}
       >
+        {/* Newsletter Subscription - above footer menu */}
+        <div className="mb-8">
+          <NewsletterSignup />
+        </div>
+
         <div
           className={`
-            grid grid-cols-1 gap-8
+            grid grid-cols-1 gap-8 border-t border-border pt-8
+            dark:border-[#2A2A2A]
             md:grid-cols-4
           `}
         >
@@ -339,19 +345,9 @@ export function Footer({ className }: { className?: string }) {
           </div>
       </div>
 
-      {/* Newsletter Subscription */}
       <div
         className={`
-          mt-12 border-t border-border py-8
-          dark:border-[#2A2A2A]
-        `}
-      >
-        <NewsletterSignup />
-      </div>
-
-      <div
-        className={`
-          relative border-t border-border pt-8
+          border-t border-border pt-8
           dark:border-[#2A2A2A]
         `}
       >

@@ -63,8 +63,7 @@ function CultFreeShippingText() {
       <span className="font-medium text-foreground">
         {cultAmount.toLocaleString()} CULT
       </span>{" "}
-      (valued at ${FREE_SHIPPING_USD_THRESHOLD} USD at current market rate) in
-      your wallet at the time of checkout, you will receive free shipping
+      in your wallet at the time of checkout, you will receive free shipping
       anywhere in the world.
     </p>
   );

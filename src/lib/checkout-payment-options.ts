@@ -291,13 +291,13 @@ export function getFooterPaymentItems(
   // PayPal
   if (showPaypal) items.push({ name: "PayPal", src: "/payments/paypal.svg" });
 
-  // Credit cards last
+  // Credit cards last: visa, mastercard, diners, discover, amex
   if (showCc) {
     items.push({ name: "Visa", src: "/payments/visa.svg" });
     items.push({ name: "Mastercard", src: "/payments/mastercard.svg" });
-    items.push({ name: "American Express", src: "/payments/amex.svg" });
     items.push({ name: "Diners Club", src: "/payments/diners.svg" });
     items.push({ name: "Discover", src: "/payments/discover.svg" });
+    items.push({ name: "American Express", src: "/payments/amex.svg" });
   }
 
   return items;
@@ -315,6 +315,8 @@ export function getPaymentIconPaths(
     icons.push(
       { alt: "Visa", src: "/payments/visa.svg", type: "card" },
       { alt: "Mastercard", src: "/payments/mastercard.svg", type: "card" },
+      { alt: "Diners Club", src: "/payments/diners.svg", type: "card" },
+      { alt: "Discover", src: "/payments/discover.svg", type: "card" },
       { alt: "American Express", src: "/payments/amex.svg", type: "card" },
     );
   }

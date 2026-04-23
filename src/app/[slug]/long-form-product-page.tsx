@@ -14,7 +14,6 @@ import { ProductImageGallery } from "~/app/products/[id]/product-image-gallery";
 import { ProductReviewsCarousel } from "~/app/products/[id]/product-reviews-carousel";
 import { ProductShare } from "~/app/products/[id]/product-share";
 import { ProductShippingEstimateProvider } from "~/app/products/[id]/product-shipping-estimate-context";
-import { ProductShippingEstimateForm } from "~/app/products/[id]/product-shipping-estimate-form";
 import { ProductVariantImageProvider } from "~/app/products/[id]/product-variant-image-context";
 import { ProductVariantSection } from "~/app/products/[id]/product-variant-section";
 import { RelatedProductsSection } from "~/app/products/[id]/related-products-section";
@@ -301,66 +300,29 @@ export function LongFormProductPage({
             </div>
           </div>
 
-          {/* CTA again + share */}
-          <section
-            className={`
-              border-b py-12
-              md:py-16
-            `}
-          >
-            <div
-              className={`
-                container px-4
-                md:px-6
-              `}
-            >
-              <div className={`mx-auto max-w-xl rounded-xl border bg-card p-8`}>
-                <h2 className="mb-4 text-xl font-bold">Ready to order?</h2>
-                <Suspense fallback={null}>
-                  <ProductVariantImageProvider>
-                    <ProductVariantSection
-                      handlingDaysMax={product.handlingDaysMax}
-                      handlingDaysMin={product.handlingDaysMin}
-                      hasVariants={product.hasVariants ?? false}
-                      optionDefinitions={product.optionDefinitions ?? []}
-                      product={{
-                        availableCountryCodes: product.availableCountryCodes,
-                        category: product.category,
-                        continueSellingWhenOutOfStock:
-                          product.continueSellingWhenOutOfStock,
-                        id: product.id,
-                        image: product.image,
-                        inStock: product.inStock,
-                        name: product.name,
-                        originalPrice: product.originalPrice,
-                        price: product.price,
-                        ...(product.slug && { slug: product.slug }),
-                      }}
-                      variants={product.variants ?? []}
-                    />
-                    <div
-                      className={`
-                        mt-6 flex flex-col gap-2 border-t border-border/60 pt-4 text-sm
-                        text-muted-foreground
-                      `}
-                    >
-                      <ProductShippingEstimateForm
-                        availableCountryCodes={product.availableCountryCodes}
-                        productId={product.id}
-                      />
-                    </div>
-                  </ProductVariantImageProvider>
-                </Suspense>
-                <ProductShare
-                  className="mt-6"
-                  title={product.name}
-                  url={`${siteUrl}/${canonicalSlug}`}
-                />
-              </div>
-            </div>
-          </section>
+{/* Share section */}
+      <section
+        className={`
+          border-b py-12
+          md:py-16
+        `}
+      >
+        <div
+          className={`
+            container px-4
+            md:px-6
+          `}
+        >
+          <div className={`mx-auto max-w-xl text-center`}>
+            <ProductShare
+              title={product.name}
+              url={`${siteUrl}/${canonicalSlug}`}
+            />
+          </div>
+        </div>
+      </section>
 
-          <RelatedProductsSection products={relatedProducts} />
+      <RelatedProductsSection products={relatedProducts} />
           <ProductReviewsCarousel />
         </ProductShippingEstimateProvider>
       </main>
