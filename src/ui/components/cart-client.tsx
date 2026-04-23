@@ -234,45 +234,54 @@ export function CartClient({ className }: CartClientProps) {
                     </div>
                     <div className="mt-2 flex items-center justify-between">
                       <div className="flex items-center rounded-md border">
-                        <button
-                          className={`
-                            flex h-7 w-7 items-center justify-center
-                            rounded-l-md border-r text-muted-foreground
-                            transition-colors
-                            hover:bg-muted hover:text-foreground
-                          `}
-                          disabled={item.quantity <= 1}
-                          onClick={() =>
-                            handleUpdateQuantity(item.id, item.quantity - 1)
-                          }
-                          type="button"
-                        >
-                          <Minus className="h-3 w-3" />
-                          <span className="sr-only">Decrease quantity</span>
-                        </button>
-                        <span
-                          className={`
-                            flex h-7 w-7 items-center justify-center text-xs
-                            font-medium
-                          `}
-                        >
-                          {item.quantity}
-                        </span>
-                        <button
-                          className={`
-                            flex h-7 w-7 items-center justify-center
-                            rounded-r-md border-l text-muted-foreground
-                            transition-colors
-                            hover:bg-muted hover:text-foreground
-                          `}
-                          onClick={() =>
-                            handleUpdateQuantity(item.id, item.quantity + 1)
-                          }
-                          type="button"
-                        >
-                          <Plus className="h-3 w-3" />
-                          <span className="sr-only">Increase quantity</span>
-                        </button>
+            <button
+              className={`
+                flex h-7 w-7 items-center justify-center
+                rounded-l-md border-r text-muted-foreground
+                transition-colors
+                hover:bg-muted hover:text-foreground
+              `}
+              disabled={item.quantity <= 1}
+              onClick={() =>
+                handleUpdateQuantity(item.id, item.quantity - 1)
+              }
+              type="button"
+            >
+              <Minus className="h-3 w-3" />
+              <span className="sr-only">Decrease quantity</span>
+            </button>
+            <input
+              aria-label="Quantity"
+              className={`
+                h-7 w-12 border-0 bg-transparent text-center text-xs
+                font-medium focus:outline-none focus:ring-1 focus:ring-inset
+                focus:ring-primary [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none
+              `}
+              min={1}
+              onChange={(e) => {
+                const val = parseInt(e.target.value, 10);
+                if (!Number.isNaN(val) && val >= 1) {
+                  handleUpdateQuantity(item.id, val);
+                }
+              }}
+              type="number"
+              value={item.quantity}
+            />
+            <button
+              className={`
+                flex h-7 w-7 items-center justify-center
+                rounded-r-md border-l text-muted-foreground
+                transition-colors
+                hover:bg-muted hover:text-foreground
+              `}
+              onClick={() =>
+                handleUpdateQuantity(item.id, item.quantity + 1)
+              }
+              type="button"
+            >
+              <Plus className="h-3 w-3" />
+              <span className="sr-only">Increase quantity</span>
+            </button>
                       </div>
                       <div className="text-sm font-medium">
                         <FiatPrice usdAmount={item.price * item.quantity} />

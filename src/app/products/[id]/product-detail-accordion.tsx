@@ -6,6 +6,7 @@ import * as React from "react";
 
 import { getPaymentOptionsForDisplay } from "~/lib/checkout-payment-options";
 import { cn } from "~/lib/cn";
+import { useCryptoCurrency } from "~/lib/hooks/use-crypto-currency";
 import { usePaymentMethodSettings } from "~/lib/hooks/use-payment-method-settings";
 import { sanitizeProductDescription } from "~/lib/sanitize-product-description";
 
@@ -35,7 +36,65 @@ interface SizeChartData {
   }[];
 }
 
-const DELIVERY_COPY = (
+const FREE_SHIPPING_USD_THRESHOLD = 250; // $250 USD value
+
+function CultFreeShippingText() {
+  const { rates } = useCryptoCurrency();
+  const cultRate = rates.CULT;
+
+  const cultAmount = React.useMemo(() => {
+    if (!cultRate || cultRate <= 0) return null;
+    return Math.ceil(FREE_SHIPPING_USD_THRESHOLD / cultRate);
+  }, [cultRate]);
+
+  if (!cultAmount) {
+    return (
+      <p className="mb-3">
+        If you hold CULT valued at ${FREE_SHIPPING_USD_THRESHOLD} USD or more in
+        your wallet at the time of checkout, you will receive free shipping
+        anywhere in the world.
+      </p>
+    );
+  }
+
+  return (
+    <p className="mb-3">
+      If you hold more than{" "}
+      <span className="font-medium text-foreground">
+        {cultAmount.toLocaleString()} CULT
+      </span>{" "}
+      (valued at ${FREE_SHIPPING_USD_THRESHOLD} USD at current market rate) in
+      your wallet at the time of checkout, you will receive free shipping
+      anywhere in the world.
+    </p>
+  );
+}
+
+function DeliveryCopy({ category }: { category: string }) {
+  return (
+    <>
+      <p className="mb-3">
+        All orders are shipped within 72 hours from the United States, Europe,
+        or Australia, depending on where you live and what product you purchase.
+        As soon as your order ships, you will receive an email or notification
+        with the tracking information.
+      </p>
+      <p className="mb-3">
+        Most orders placed in the USA arrive in 5-7 days after ordering.
+      </p>
+      <p className="mb-3">Non-US orders arrive in 1 - 4 weeks after ordering.</p>
+      <CultFreeShippingText />
+      {isApparelCategory(category) && <DeliveryApparelExtra />}
+      <p className="mb-3">
+        We ship to most countries. Our shipping prices vary depending on your
+        location and what products you are purchasing. Use the estimate tool
+        below, or review totals in your cart at checkout.
+      </p>
+    </>
+  );
+}
+
+const DELIVERY_COPY_STATIC = (
   <>
     <p className="mb-3">
       All orders are shipped within 72 hours from the United States, Europe, or
@@ -59,14 +118,16 @@ const DELIVERY_COPY = (
   </>
 );
 
-const DELIVERY_APPAREL_EXTRA = (
-  <p className="mt-3">
-    We offer free delivery on all apparel orders over $100 to United States (US)
-    and Europe. For customers in the rest of the world, enjoy free shipping on
-    all apparel orders over $250. Shop now and take advantage of these great
-    shipping deals!
-  </p>
-);
+function DeliveryApparelExtra() {
+  return (
+    <p className="mt-3">
+      We offer free delivery on all apparel orders over $100 to United States
+      (US) and Europe. For customers in the rest of the world, enjoy free
+      shipping on all apparel orders over $250. Shop now and take advantage of
+      these great shipping deals!
+    </p>
+  );
+}
 
 const RETURNS_COPY = (
   <>
@@ -163,8 +224,7 @@ export function ProductDetailAccordion({
       case "delivery":
         return (
           <div className="pb-4 text-sm text-muted-foreground">
-            {DELIVERY_COPY}
-            {isApparelCategory(category) && DELIVERY_APPAREL_EXTRA}
+            <DeliveryCopy category={category} />
             <div
               className={`
                 mt-6 flex flex-col gap-2 border-t border-border/60 pt-4 text-sm

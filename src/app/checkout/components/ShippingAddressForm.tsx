@@ -660,9 +660,7 @@ export const ShippingAddressForm = function ShippingAddressForm({
     <>
       {/* Contact */}
       <Card className="shadow-none">
-        <CardHeader
-          className={`flex flex-row items-center justify-between flex flex-col gap-0 pb-2`}
-        >
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle>Contact</CardTitle>
           {!isLoggedIn && <CheckoutSignInDialog />}
         </CardHeader>

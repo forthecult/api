@@ -60,14 +60,29 @@ const StripeCardPaymentInner = function StripeCardPaymentInner({
   const handleSubmit = useCallback(async () => {
     if (!stripe || !elements) return;
 
-    /* 1. Validate shipping + billing forms */
+    /* 1. Validate shipping form (includes phone requirement from ShippingAddressForm) */
     const shippingErr = shippingFormRef.current?.validate() ?? [];
     const useShippingAsBilling =
       billingFormRef.current?.getUseShippingAsBilling() ?? true;
     const billingErr = !useShippingAsBilling
       ? (billingFormRef.current?.validate() ?? [])
       : [];
-    const allErrors = [...shippingErr, ...billingErr];
+
+    /* 1b. Credit card payments require a phone number for fraud verification */
+    const shippingForm = shippingFormRef.current?.getForm();
+    const billingForm = !useShippingAsBilling
+      ? billingFormRef.current?.getBilling()
+      : null;
+    const phoneSource = useShippingAsBilling ? shippingForm : billingForm;
+    const phoneNumber = phoneSource?.phone?.trim();
+    const cardPhoneErr: string[] = [];
+    if (!phoneNumber) {
+      cardPhoneErr.push(
+        "Phone number is required for credit card payments"
+      );
+    }
+
+    const allErrors = [...shippingErr, ...billingErr, ...cardPhoneErr];
     setValidationErrors(allErrors);
     if (allErrors.length > 0) return;
 
@@ -223,6 +238,11 @@ const StripeCardPaymentInner = function StripeCardPaymentInner({
             phone: "never",
           },
         },
+        wallets: {
+          applePay: "auto",
+          googlePay: "auto",
+          link: "never",
+        },
       }}
     />
   );
@@ -301,7 +321,6 @@ export const StripeCardPayment = function StripeCardPayment({
             },
             currency: "usd",
             mode: "payment" as const,
-            paymentMethodTypes: ["card" as const],
           }
         : undefined,
     [totalCents, isDark],

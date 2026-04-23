@@ -10,6 +10,7 @@ import { FooterBottom } from "~/ui/components/footer/FooterBottom";
 import { FooterPaymentsBar } from "~/ui/components/footer/FooterPaymentsBar";
 import { GitHubIcon } from "~/ui/components/icons/github";
 import { Button } from "~/ui/primitives/button";
+import { Input } from "~/ui/primitives/input";
 
 const FooterDogePeek = dynamic(
   () =>
@@ -336,20 +337,99 @@ export function Footer({ className }: { className?: string }) {
               </li>
             </ul>
           </div>
-        </div>
-        <div
-          className={`
-            relative mt-12 border-t border-border pt-8
-            dark:border-[#2A2A2A]
-          `}
-        >
-          <div className="mb-6">
-            <FooterPaymentsBar />
-          </div>
-          <FooterBottom onCryptoDropdownOpen={() => setShowDogePeek(true)} />
-        </div>
       </div>
-    </footer>
+
+      {/* Newsletter Subscription */}
+      <div
+        className={`
+          mt-12 border-t border-border py-8
+          dark:border-[#2A2A2A]
+        `}
+      >
+        <NewsletterSignup />
+      </div>
+
+      <div
+        className={`
+          relative border-t border-border pt-8
+          dark:border-[#2A2A2A]
+        `}
+      >
+        <div className="mb-6">
+          <FooterPaymentsBar />
+        </div>
+        <FooterBottom onCryptoDropdownOpen={() => setShowDogePeek(true)} />
+      </div>
+    </div>
+  </footer>
+);
+}
+
+function NewsletterSignup() {
+  const [email, setEmail] = useState("");
+  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [message, setMessage] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim()) return;
+
+    setStatus("loading");
+    try {
+      const res = await fetch("/api/newsletter/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+
+      if (res.ok) {
+        setStatus("success");
+        setMessage("Thanks for subscribing!");
+        setEmail("");
+      } else {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        setStatus("error");
+        setMessage(data.error || "Failed to subscribe. Please try again.");
+      }
+    } catch {
+      setStatus("error");
+      setMessage("Something went wrong. Please try again.");
+    }
+  };
+
+  return (
+    <div className="mx-auto max-w-md text-center">
+      <h3 className="mb-2 text-lg font-semibold">Stay in the loop</h3>
+      <p className="mb-4 text-sm text-muted-foreground">
+        Subscribe for exclusive drops, member perks, and culture updates.
+      </p>
+      <form className="flex flex-col gap-2 sm:flex-row" onSubmit={handleSubmit}>
+        <Input
+          className="flex-1"
+          disabled={status === "loading" || status === "success"}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="Enter your email"
+          required
+          type="email"
+          value={email}
+        />
+        <Button
+          disabled={status === "loading" || status === "success"}
+          type="submit"
+        >
+          {status === "loading" ? "Subscribing..." : status === "success" ? "Subscribed!" : "Subscribe"}
+        </Button>
+      </form>
+      {message && (
+        <p
+          className={`mt-2 text-sm ${
+            status === "success" ? "text-green-600" : "text-destructive"
+          }`}
+        >
+          {message}
+        </p>
+      )}
+    </div>
   );
 }
 

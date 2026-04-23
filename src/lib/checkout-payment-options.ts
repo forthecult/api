@@ -282,15 +282,22 @@ export function getFooterPaymentItems(
       items.push({ name: "USDT", src: "/crypto/usdt/tether-usdt-logo.svg" });
   }
 
-  if (showPaypal) items.push({ name: "PayPal", src: "/payments/paypal.svg" });
+  // After crypto: Google Pay, Apple Pay
   if (showCc) {
-    items.push({ name: "American Express", src: "/payments/amex.svg" });
+    items.push({ name: "Google Pay", src: "/payments/google-pay.svg" });
     items.push({ name: "Apple Pay", src: "/payments/apple-pay.svg" });
+  }
+
+  // PayPal
+  if (showPaypal) items.push({ name: "PayPal", src: "/payments/paypal.svg" });
+
+  // Credit cards last
+  if (showCc) {
+    items.push({ name: "Visa", src: "/payments/visa.svg" });
+    items.push({ name: "Mastercard", src: "/payments/mastercard.svg" });
+    items.push({ name: "American Express", src: "/payments/amex.svg" });
     items.push({ name: "Diners Club", src: "/payments/diners.svg" });
     items.push({ name: "Discover", src: "/payments/discover.svg" });
-    items.push({ name: "Google Pay", src: "/payments/google-pay.svg" });
-    items.push({ name: "Mastercard", src: "/payments/mastercard.svg" });
-    items.push({ name: "Visa", src: "/payments/visa.svg" });
   }
 
   return items;

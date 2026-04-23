@@ -1247,12 +1247,26 @@ export function SecurityPageClient() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Backup Codes</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Shield className="h-5 w-5" />
+            Backup Codes
+          </CardTitle>
+          <p className="text-sm text-muted-foreground">
+            {user?.twoFactorEnabled
+              ? "Use backup codes to sign in if you lose access to your authenticator app."
+              : "Enable MFA to get your backup codes for account recovery."}
+          </p>
         </CardHeader>
         <CardContent>
-          <Button asChild variant="outline">
-            <Link href="/auth/mfa">Manage backup codes</Link>
-          </Button>
+          {user?.twoFactorEnabled ? (
+            <Button asChild variant="outline">
+              <Link href="/auth/mfa">Manage backup codes</Link>
+            </Button>
+          ) : (
+            <Button asChild variant="outline">
+              <Link href="/auth/mfa">Set up MFA</Link>
+            </Button>
+          )}
         </CardContent>
       </Card>
     </div>

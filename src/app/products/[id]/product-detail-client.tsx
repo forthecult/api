@@ -258,7 +258,19 @@ export function ProductActions({
           <Minus className="h-4 w-4" />
         </Button>
 
-        <span className="w-12 text-center select-none">{quantity}</span>
+        <input
+          aria-label="Quantity"
+          className="h-10 w-12 border-0 bg-transparent text-center font-medium focus:outline-none focus:ring-1 focus:ring-inset focus:ring-primary [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+          min={1}
+          onChange={(e) => {
+            const val = parseInt(e.target.value, 10);
+            if (!Number.isNaN(val) && val >= 1) {
+              handleQuantityChange(val);
+            }
+          }}
+          type="number"
+          value={quantity}
+        />
 
         <Button
           aria-label="Increase quantity"

@@ -13,3 +13,8 @@ build/
 # tooling caches (regenerated locally — shouldn't ever be committed)
 .eslintcache
 tsconfig.tsbuildinfo
+
+# Playwright
+/test-results/
+/playwright-report/
+/playwright/.cache/
