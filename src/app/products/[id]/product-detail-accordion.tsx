@@ -93,30 +93,6 @@ function DeliveryCopy({ category }: { category: string }) {
   );
 }
 
-const DELIVERY_COPY_STATIC = (
-  <>
-    <p className="mb-3">
-      All orders are shipped within 72 hours from the United States, Europe, or
-      Australia, depending on where you live and what product you purchase. As
-      soon as your order ships, you will receive an email or notification with
-      the tracking information.
-    </p>
-    <p className="mb-3">
-      Most orders placed in the USA arrive in 5-7 days after ordering.
-    </p>
-    <p className="mb-3">Non-US orders arrive in 1 - 4 weeks after ordering.</p>
-    <p className="mb-3">
-      If you hold more than 250,000 CULT in your wallet at the time of checkout,
-      you will receive free shipping anywhere in the world.
-    </p>
-    <p className="mb-3">
-      We ship to most countries. Our shipping prices vary depending on your
-      location and what products you are purchasing. Use the estimate tool
-      below, or review totals in your cart at checkout.
-    </p>
-  </>
-);
-
 function DeliveryApparelExtra() {
   return (
     <p className="mt-3">

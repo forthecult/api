@@ -13,7 +13,6 @@
 import { logger } from "./logger";
 
 const REQUEST_ID_HEADER = "x-request-id";
-const REQUEST_ID_KEY = Symbol.for("request-id");
 
 /** Type for request IDs (typically UUID v4) */
 export type RequestId = string;

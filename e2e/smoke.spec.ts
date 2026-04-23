@@ -1,12 +1,5 @@
 import { expect, test } from "@playwright/test";
 
-const TEST_USER = {
-  firstName: "Test",
-  lastName: "User",
-  email: `test-${Date.now()}@example.com`,
-  password: "TestPass123!",
-};
-
 test.describe("smoke tests", () => {
   // Basic Site Tests
   test("homepage loads", async ({ page }) => {
