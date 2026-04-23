@@ -1,0 +1,121 @@
+name: Snyk PR Security Gate
+
+on:
+  pull_request:
+    branches: [main, master]
+    paths:
+      - 'package.json'
+      - 'bun.lock'
+      - 'bun.lockb'
+      - 'package-lock.json'
+      - 'yarn.lock'
+      - 'pnpm-lock.yaml'
+
+env:
+  SEVERITY_THRESHOLD: high  # Block on HIGH and CRITICAL
+
+jobs:
+  snyk-security-gate:
+    name: Snyk Security Gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Resolve working directory
+        id: wd
+        run: |
+          if [ -f package.json ]; then
+            echo "dir=." >> "$GITHUB_OUTPUT"
+          elif [ -d webapp ] && [ -f webapp/package.json ]; then
+            echo "dir=webapp" >> "$GITHUB_OUTPUT"
+          else
+            echo "dir=." >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install dependencies
+        working-directory: ${{ steps.wd.outputs.dir }}
+        run: bun install --frozen-lockfile
+
+      - name: Run Snyk Security Gate
+        working-directory: ${{ steps.wd.outputs.dir }}
+        run: |
+          echo "🔐 Running Snyk security gate (blocking on HIGH/CRITICAL)..."
+          npm install -g snyk
+
+          # Run Snyk test and capture output
+          set +e
+          snyk test --severity-threshold=$SEVERITY_THRESHOLD --json > snyk-gate-report.json
+          SNYK_EXIT_CODE=$?
+          set -e
+
+          # Generate PR comment content
+          echo "## 🔐 Snyk Security Gate Report" > snyk-pr-comment.md
+          echo "" >> snyk-pr-comment.md
+
+          if [ $SNYK_EXIT_CODE -eq 0 ]; then
+            echo "✅ **No HIGH or CRITICAL vulnerabilities found!**" >> snyk-pr-comment.md
+            echo "" >> snyk-pr-comment.md
+            echo "Your changes passed the security gate. 🎉" >> snyk-pr-comment.md
+          else
+            echo "❌ **BLOCKING: HIGH/CRITICAL vulnerabilities detected**" >> snyk-pr-comment.md
+            echo "" >> snyk-pr-comment.md
+            echo "This PR cannot be merged until the following vulnerabilities are resolved:" >> snyk-pr-comment.md
+            echo "" >> snyk-pr-comment.md
+          fi
+
+          # Add vulnerability details if report exists
+          if [ -f snyk-gate-report.json ] && command -v jq >/dev/null 2>&1; then
+            VULN_COUNT=$(jq '[.vulnerabilities[]? | select(.severity == "high" or .severity == "critical")] | length' snyk-gate-report.json 2>/dev/null || echo "0")
+
+            if [ "$VULN_COUNT" -gt 0 ]; then
+              echo "### Vulnerability Summary" >> snyk-pr-comment.md
+              echo "" >> snyk-pr-comment.md
+              echo "| Severity | Package | Version | CVE | CVSS |" >> snyk-pr-comment.md
+              echo "|----------|---------|---------|-----|------|" >> snyk-pr-comment.md
+
+              jq -r '.vulnerabilities[]? | select(.severity == "high" or .severity == "critical") |
+                "| \(.severity | ascii_upcase) | \(.packageName) | \(.version) | \(.identifiers.CVE[0] // "N/A") | \(.cvssScore // "N/A") |"' snyk-gate-report.json >> snyk-pr-comment.md 2>/dev/null
+
+              echo "" >> snyk-pr-comment.md
+              echo "### Remediation Steps" >> snyk-pr-comment.md
+              echo "" >> snyk-pr-comment.md
+
+              # Suggest fixes
+              jq -r '.vulnerabilities[]? | select(.severity == "high" or .severity == "critical") |
+                "- **\(.packageName)**: Upgrade to \(.fixedIn // "latest version")"' snyk-gate-report.md >> snyk-pr-comment.md 2>/dev/null
+            fi
+
+            # Add dependency tree info
+            DIRECT_DEPS=$(jq '[.vulnerabilities[]? | select(.from[1] | length == 1)] | length' snyk-gate-report.json 2>/dev/null || echo "0")
+            TRANSITIVE_DEPS=$(jq '[.vulnerabilities[]? | select(.from[1] | length > 1)] | length' snyk-gate-report.json 2>/dev/null || echo "0")
+
+            echo "" >> snyk-pr-comment.md
+            echo "### Details" >> snyk-pr-comment.md
+            echo "" >> snyk-pr-comment.md
+            echo "- Direct dependencies affected: $DIRECT_DEPS" >> snyk-pr-comment.md
+            echo "- Transitive dependencies affected: $TRANSITIVE_DEPS" >> snyk-pr-comment.md
+            echo "- Scan threshold: $SEVERITY_THRESHOLD" >> snyk-pr-comment.md
+          fi
+
+          # Post comment to PR
+          cat snyk-pr-comment.md >> $GITHUB_STEP_SUMMARY
+
+          if [ $SNYK_EXIT_CODE -ne 0 ]; then
+            echo ""
+            echo "❌ SECURITY GATE FAILED: Fix high/critical vulnerabilities before merging"
+            exit 1
+          fi
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+      - name: Upload Snyk Gate Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: snyk-gate-report
+          path: ${{ steps.wd.outputs.dir }}/snyk-gate-report.json
+          retention-days: 30

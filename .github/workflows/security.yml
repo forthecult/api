@@ -61,22 +61,57 @@ jobs:
             p/javascript
         continue-on-error: true
 
-      - name: Run Grype (Dependency Scanning)
-        uses: anchore/scan-action@v3
-        with:
-          image: ""
-          path: ${{ steps.wd.outputs.dir }}
-          severity-cutoff: medium
-          fail-build: false
+    - name: Run Grype (Dependency Scanning)
+      uses: anchore/scan-action@v3
+      with:
+        image: ""
+        path: ${{ steps.wd.outputs.dir }}
+        severity-cutoff: medium
+        fail-build: false
 
-      - name: Upload Security Reports
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: security-reports
-          path: |
-            ${{ steps.wd.outputs.dir }}/npm-audit-report.json
-          retention-days: 30
+    - name: Run Snyk SCA Scan
+      working-directory: ${{ steps.wd.outputs.dir }}
+      run: |
+        echo "🔐 Running Snyk SCA scan..."
+        npm install -g snyk
+        snyk test --severity-threshold=high --json > snyk-report.json || true
+        # Parse and display summary
+        cat snyk-report.json | jq -r '
+          if .vulnerabilities then
+            "Snyk Scan Summary:",
+            (.vulnerabilities | group_by(.severity) | map({severity: .[0].severity, count: length}) | .[] | "  \(.severity | ascii_upcase): \(.count)"),
+            "",
+            "Top vulnerabilities:",
+            (.vulnerabilities | sort_by(if .cvssScore then -(.cvssScore | tonumber) else 0 end) | .[0:5] | .[] |
+              "  \(.severity | ascii_upcase) \(.cvssScore // "N/A"): \(.packageName)@\(.version) - \(.title)"
+            )
+          else
+            "No vulnerabilities found or scan incomplete"
+          end
+        ' || echo "Scan completed - see snyk-report.json for details"
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      continue-on-error: true
+
+    - name: Snyk Monitor (Continuous Monitoring)
+      if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+      working-directory: ${{ steps.wd.outputs.dir }}
+      run: |
+        echo "🔄 Setting up Snyk continuous monitoring..."
+        snyk monitor --org=for-the-cult || echo "Monitor setup completed"
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      continue-on-error: true
+
+    - name: Upload Security Reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: security-reports
+        path: |
+          ${{ steps.wd.outputs.dir }}/npm-audit-report.json
+          ${{ steps.wd.outputs.dir }}/snyk-report.json
+        retention-days: 30
 
   dependency-update:
     name: Dependency Update Check
