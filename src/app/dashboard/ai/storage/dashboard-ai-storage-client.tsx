@@ -188,7 +188,7 @@ export function DashboardAiStorageClient() {
         keyDerivation: {
           iterations: Number(
             (data.backup.keyDerivation as { iterations?: number }).iterations ??
-              250_000,
+            250_000,
           ),
           saltB64: String(
             (data.backup.keyDerivation as { saltB64?: string }).saltB64 ?? "",
@@ -240,19 +240,19 @@ export function DashboardAiStorageClient() {
   })();
 
   return (
-    <div className="space-y-8">
+    <div className="flex flex-col gap-8">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">
           Storage &amp; data
         </h1>
         <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-          Chats and projects live in your browser unless you export them or save
-          an encrypted backup to your account. Your passphrase is never sent to
-          the server.
+          Chats and projects live in your browser unless you export them locally or save
+          an encrypted, password protected, backup to your FTC account. Your passphrase is never sent to
+          the server, so we will never be able to access your data.
         </p>
       </div>
 
-      <section className="space-y-2">
+      <section className="flex flex-col gap-2">
         <h2
           className={`
             text-xs font-semibold tracking-wide text-muted-foreground uppercase
@@ -300,7 +300,7 @@ export function DashboardAiStorageClient() {
         </div>
       </section>
 
-      <section className="space-y-2">
+      <section className="flex flex-col gap-2">
         <h2
           className={`
             text-xs font-semibold tracking-wide text-muted-foreground uppercase
@@ -428,7 +428,7 @@ export function DashboardAiStorageClient() {
         </div>
       </section>
 
-      <section className="space-y-2">
+      <section className="flex flex-col gap-2">
         <h2
           className={`
             text-xs font-semibold tracking-wide text-muted-foreground uppercase
@@ -438,18 +438,15 @@ export function DashboardAiStorageClient() {
         </h2>
         <div className="space-y-4 rounded-xl border border-border bg-card p-4">
           <p className="text-sm text-muted-foreground">
-            Stores one encrypted blob per account in our database (same as other
-            dashboard data). You can replace it anytime. For DynamoDB-style
-            storage, the backend can map this to a dedicated store; the UI stays
-            the same.
+            Stores your chat history, projects, and memories our database (cloud backup). You can replace it anytime. We cannot access or restore your data if you lose your passphrase.
           </p>
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             <Label htmlFor="ai-bak-pass">Passphrase</Label>
             <Input
               autoComplete="new-password"
               id="ai-bak-pass"
               onChange={(e) => setPassphrase(e.target.value)}
-              placeholder="Long passphrase only you know"
+              placeholder="Passphrase only you know"
               type="password"
               value={passphrase}
             />

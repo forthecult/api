@@ -172,8 +172,8 @@ export function ProjectSettingsPanel({
         className,
       )}
     >
-      <div className="min-h-0 flex-1 space-y-6 overflow-y-auto p-4">
-        <section className="space-y-2">
+      <div className="min-h-0 flex-1 flex flex-col gap-6 overflow-y-auto p-4">
+        <section className="flex flex-col gap-2">
           <div className="flex items-center gap-1.5">
             <h2 className="text-sm font-semibold">Instructions</h2>
             <span title="How the assistant should behave for this project">
@@ -194,7 +194,7 @@ export function ProjectSettingsPanel({
           />
         </section>
 
-        <section className="space-y-3">
+        <section className="flex flex-col gap-3">
           <div className="flex items-center gap-1.5">
             <h2 className="text-sm font-semibold">Project knowledge</h2>
             <span title="Documents and links the model can use as context">
@@ -291,7 +291,7 @@ export function ProjectSettingsPanel({
               </p>
             </div>
           ) : (
-            <ul className="space-y-2">
+            <ul className="flex flex-col gap-2">
               {knowledgeItems.map((it) => (
                 <li
                   className={`
@@ -352,8 +352,8 @@ export function ProjectSettingsPanel({
               context; ensure the link is accessible to you.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-3">
-            <div className="space-y-1.5">
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-1.5">
               <Label htmlFor="know-url">URL</Label>
               <input
                 className={`
@@ -368,7 +368,7 @@ export function ProjectSettingsPanel({
                 value={linkUrl}
               />
             </div>
-            <div className="space-y-1.5">
+            <div className="flex flex-col gap-1.5">
               <Label htmlFor="know-name">Label (optional)</Label>
               <input
                 className={`

@@ -43,7 +43,7 @@ export function PolicyPopup({
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
-        <div className="space-y-3">
+        <div className="flex flex-col gap-3">
           {richContent ? (
             <div className="text-sm text-foreground">{richContent}</div>
           ) : content ? (

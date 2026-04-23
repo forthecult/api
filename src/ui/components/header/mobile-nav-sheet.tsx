@@ -253,7 +253,7 @@ export function MobileNavSheet({
                 />
               </button>
               {shopExpanded && (
-                <ul className="mt-1 ml-2 space-y-0.5 border-l border-muted pl-3">
+                <ul className="mt-1 ml-2 flex flex-col gap-0.5 border-l border-muted pl-3">
                   {orderCategoriesBySection(categories).map((cat) => {
                     const href = cat.slug ? `/${cat.slug}` : "/products";
                     return (

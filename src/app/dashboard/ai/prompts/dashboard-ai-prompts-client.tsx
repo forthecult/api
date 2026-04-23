@@ -202,7 +202,7 @@ export function DashboardAiPromptsClient() {
   };
 
   return (
-    <div className="space-y-10">
+    <div className="flex flex-col gap-10">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">
           Prompts &amp; memory
@@ -214,7 +214,7 @@ export function DashboardAiPromptsClient() {
         </p>
       </div>
 
-      <section className="space-y-3">
+      <section className="flex flex-col gap-3">
         <h2
           className={`
             text-xs font-semibold tracking-wide text-muted-foreground uppercase
@@ -251,7 +251,7 @@ export function DashboardAiPromptsClient() {
         </div>
       </section>
 
-      <section className="space-y-3">
+      <section className="flex flex-col gap-3">
         <h2
           className={`
             text-xs font-semibold tracking-wide text-muted-foreground uppercase
@@ -261,7 +261,7 @@ export function DashboardAiPromptsClient() {
         </h2>
         <div className="rounded-xl border border-border bg-card p-4">
           <p className="mb-3 text-sm text-muted-foreground">
-            Short notes the model can retrieve (RAG) when relevant. Delete or
+            Short notes the model can retrieve (RAG, for the techies) when relevant. Delete or
             add anytime.
           </p>
           <div
@@ -270,7 +270,7 @@ export function DashboardAiPromptsClient() {
               sm:flex-row sm:items-end
             `}
           >
-            <div className="min-w-0 flex-1 space-y-1">
+            <div className="min-w-0 flex-1 flex flex-col gap-1">
               <Label className="text-xs" htmlFor="mem-cat">
                 Category (optional)
               </Label>
@@ -282,7 +282,7 @@ export function DashboardAiPromptsClient() {
                 value={newMemCategory}
               />
             </div>
-            <div className="min-w-0 flex-[2] space-y-1">
+            <div className="min-w-0 flex-[2] flex flex-col gap-1">
               <Label className="text-xs" htmlFor="mem-body">
                 Content
               </Label>
@@ -304,7 +304,7 @@ export function DashboardAiPromptsClient() {
               Add
             </Button>
           </div>
-          <ul className="space-y-2">
+          <ul className="flex flex-col gap-2">
             {memories.length === 0 ? (
               <li className="text-sm text-muted-foreground">
                 No contexts yet.
@@ -320,7 +320,7 @@ export function DashboardAiPromptsClient() {
                 >
                   <div className="min-w-0">
                     {editingId === m.id ? (
-                      <div className="space-y-2">
+                      <div className="flex flex-col gap-2">
                         <Input
                           disabled={saving}
                           onChange={(e) => setEditCategory(e.target.value)}
@@ -406,7 +406,7 @@ export function DashboardAiPromptsClient() {
         </div>
       </section>
 
-      <section className="space-y-3">
+      <section className="flex flex-col gap-3">
         <h2
           className={`
             text-xs font-semibold tracking-wide text-muted-foreground uppercase
@@ -424,8 +424,8 @@ export function DashboardAiPromptsClient() {
             — the vision model reads image parts there; this uploader is
             text-only.
           </p>
-          <div className="space-y-2">
-            <div className="space-y-1">
+          <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-1">
               <Label className="text-xs" htmlFor="rag-label">
                 Source label (optional)
               </Label>
@@ -437,7 +437,7 @@ export function DashboardAiPromptsClient() {
                 value={ragLabel}
               />
             </div>
-            <div className="space-y-1">
+            <div className="flex flex-col gap-1">
               <Label className="text-xs" htmlFor="rag-body">
                 Text
               </Label>
@@ -466,7 +466,7 @@ export function DashboardAiPromptsClient() {
         </div>
       </section>
 
-      <section className="space-y-3">
+      <section className="flex flex-col gap-3">
         <h2
           className={`
             text-xs font-semibold tracking-wide text-muted-foreground uppercase

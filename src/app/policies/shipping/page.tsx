@@ -36,7 +36,7 @@ export default function ShippingPolicyPage() {
         </p>
       </header>
 
-      <div className="space-y-10">
+      <div className="flex flex-col gap-10">
         <section
           className={`
             rounded-lg border border-border bg-card/50 px-5 py-5

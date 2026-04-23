@@ -140,7 +140,7 @@ export function SupportTicketsPageClient() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-6">
       <div
         className={`
           flex flex-col gap-4
@@ -177,8 +177,8 @@ export function SupportTicketsPageClient() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form className="space-y-4" onSubmit={handleCreate}>
-              <div className="space-y-2">
+            <form className="flex flex-col gap-4" onSubmit={handleCreate}>
+              <div className="flex flex-col gap-2">
                 <Label htmlFor="subject">Subject</Label>
                 <Input
                   id="subject"
@@ -190,7 +190,7 @@ export function SupportTicketsPageClient() {
                   value={newSubject}
                 />
               </div>
-              <div className="space-y-2">
+              <div className="flex flex-col gap-2">
                 <Label htmlFor="type">Priority</Label>
                 <select
                   className={cn(
@@ -214,7 +214,7 @@ export function SupportTicketsPageClient() {
                   <option value="urgent">Urgent</option>
                 </select>
               </div>
-              <div className="space-y-2">
+              <div className="flex flex-col gap-2">
                 <Label htmlFor="message">Message</Label>
                 <textarea
                   className={cn(

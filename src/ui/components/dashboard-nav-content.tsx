@@ -132,13 +132,13 @@ export function DashboardNavContent({
           >
             Dashboard
           </h2>
-          <ul className="space-y-0.5">
-            <li>
-              <Link {...linkProps("/dashboard/orders")}>
-                <span className="flex items-center gap-2">
-                  <Package aria-hidden className="h-4 w-4 shrink-0" />
-                  Orders
-                </span>
+      <ul className="flex flex-col gap-0.5">
+        <li>
+          <Link {...linkProps("/dashboard/orders")}>
+            <span className="flex items-center gap-2">
+              <Package aria-hidden className="h-4 w-4 shrink-0" />
+              Orders
+            </span>
                 <span className="text-muted-foreground tabular-nums">
                   {counts.orders}
                 </span>
@@ -175,18 +175,18 @@ export function DashboardNavContent({
               </Link>
             </li>
             <li>
-              <Link {...linkProps("/dashboard/esim")}>
+              <Link {...linkProps("/dashboard/ai")}>
                 <span className="flex items-center gap-2">
-                  <Smartphone aria-hidden className="h-4 w-4 shrink-0" />
-                  My eSIMs
+                  <Sparkles aria-hidden className="h-4 w-4 shrink-0" />
+                  AI Agent
                 </span>
               </Link>
             </li>
             <li>
-              <Link {...linkProps("/dashboard/ai")}>
+              <Link {...linkProps("/dashboard/esim")}>
                 <span className="flex items-center gap-2">
-                  <Sparkles aria-hidden className="h-4 w-4 shrink-0" />
-                  AI
+                  <Smartphone aria-hidden className="h-4 w-4 shrink-0" />
+                  My eSIMs
                 </span>
               </Link>
             </li>
@@ -204,13 +204,13 @@ export function DashboardNavContent({
           >
             Account Settings
           </h2>
-          <ul className="space-y-0.5">
-            <li>
-              <Link {...linkProps("/dashboard/profile")}>
-                <span className="flex items-center gap-2">
-                  <UserIcon aria-hidden className="h-4 w-4 shrink-0" />
-                  Profile Info
-                </span>
+      <ul className="flex flex-col gap-0.5">
+        <li>
+          <Link {...linkProps("/dashboard/profile")}>
+            <span className="flex items-center gap-2">
+              <UserIcon aria-hidden className="h-4 w-4 shrink-0" />
+              Profile Info
+            </span>
               </Link>
             </li>
             <li>

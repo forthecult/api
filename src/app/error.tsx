@@ -58,7 +58,7 @@ export default function RootError({ error, reset }: ErrorPageProps) {
           <AlertTriangle className="h-10 w-10 text-destructive" />
         </div>
 
-        <div className="space-y-2">
+        <div className="flex flex-col gap-2">
           <h1 className="text-3xl font-bold">Something went wrong</h1>
           <p className="max-w-md text-muted-foreground">
             {isChunk ? (

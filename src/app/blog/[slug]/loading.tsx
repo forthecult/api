@@ -12,7 +12,7 @@ export default function BlogPostLoading() {
       <Skeleton className="mb-6 aspect-video w-full rounded-lg" />
       <Skeleton className="mb-4 h-10 w-3/4" />
       <Skeleton className="mb-6 h-4 w-1/3" />
-      <div className="space-y-2">
+      <div className="flex flex-col gap-2">
         <Skeleton className="h-4 w-full" />
         <Skeleton className="h-4 w-full" />
         <Skeleton className="h-4 w-4/5" />

@@ -2,7 +2,7 @@ import { Skeleton } from "~/ui/primitives/skeleton";
 
 export default function WishlistLoading() {
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col gap-4">
       <Skeleton className="h-8 w-40" />
       <div
         className={`
@@ -14,7 +14,7 @@ export default function WishlistLoading() {
         {Array.from({ length: 6 }).map((_, i) => (
           <div className="rounded-lg border p-4" key={`wishlist-skeleton-${i}`}>
             <Skeleton className="aspect-square w-full rounded" />
-            <div className="mt-3 space-y-2">
+            <div className="mt-3 flex flex-col gap-2">
               <Skeleton className="h-4 w-3/4" />
               <Skeleton className="h-4 w-1/2" />
             </div>

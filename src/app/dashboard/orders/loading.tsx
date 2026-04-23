@@ -2,7 +2,7 @@ import { Skeleton } from "~/ui/primitives/skeleton";
 
 export default function OrdersLoading() {
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col gap-4">
       <Skeleton className="h-8 w-48" />
       {Array.from({ length: 4 }).map((_, i) => (
         <div
@@ -10,7 +10,7 @@ export default function OrdersLoading() {
           key={`order-skeleton-${i}`}
         >
           <Skeleton className="h-16 w-16 rounded" />
-          <div className="flex-1 space-y-2">
+          <div className="flex-1 flex flex-col gap-2">
             <Skeleton className="h-4 w-1/2" />
             <Skeleton className="h-4 w-1/3" />
           </div>

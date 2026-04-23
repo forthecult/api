@@ -35,7 +35,7 @@ export default function DashboardError({ error, reset }: ErrorPageProps) {
           <AlertTriangle className="h-8 w-8 text-destructive" />
         </div>
 
-        <div className="space-y-2">
+        <div className="flex flex-col gap-2">
           <h1 className="text-2xl font-bold">Dashboard Error</h1>
           <p className="max-w-md text-muted-foreground">
             We couldn&apos;t load this section of your dashboard. Please try

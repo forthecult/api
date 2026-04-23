@@ -92,7 +92,7 @@ const changelog: ChangelogEntry[] = [
     date: "February 14, 2026",
     items: [
       {
-        text: "Alice as the unified AI guide across website chat, Telegram, and Discord with shared memory",
+        text: "Alice as the unified Support Agent across website chat, Telegram, and Discord with shared memory",
         type: "added",
       },
       {
@@ -100,7 +100,7 @@ const changelog: ChangelogEntry[] = [
         type: "added",
       },
     ],
-    title: "Alice & personal AI",
+    title: "Alice & AI companion",
     version: "0.97",
   },
   {
@@ -384,7 +384,7 @@ export default function ChangelogPage() {
       </header>
 
       {/* Timeline */}
-      <div className="relative space-y-0">
+      <div className="relative flex flex-col gap-0">
         {/* Vertical timeline line */}
         <div className="absolute top-2 bottom-2 left-[19px] w-px bg-border" />
 
@@ -401,10 +401,9 @@ export default function ChangelogPage() {
               className={`
                 absolute top-1.5 left-[14px] h-[12px] w-[12px] rounded-full
                 border-2
-                ${
-                  idx === 0
-                    ? "border-primary bg-primary"
-                    : "border-border bg-background"
+                ${idx === 0
+                  ? "border-primary bg-primary"
+                  : "border-border bg-background"
                 }
               `}
             />
@@ -434,7 +433,7 @@ export default function ChangelogPage() {
             </h2>
 
             {/* Items */}
-            <ul className="mt-3 space-y-2">
+            <ul className="mt-3 flex flex-col gap-2">
               {release.items.map((item) => {
                 const badge = BADGE_STYLES[item.type];
                 return (

@@ -141,7 +141,7 @@ function LoginPageClientInner() {
           </div>
 
           <form
-            className="mt-6 space-y-4"
+            className="mt-6 flex flex-col gap-4"
             onSubmit={(e) => {
               e.preventDefault();
               void handleEmailLogin(e);

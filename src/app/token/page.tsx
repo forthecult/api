@@ -251,7 +251,7 @@ export default function TokenPage() {
         >
           <div
             className={`
-              relative z-10 mx-auto w-full max-w-3xl space-y-6 text-center
+              relative z-10 mx-auto w-full max-w-3xl flex flex-col gap-6 text-center
             `}
           >
             <p className="text-base font-medium text-muted-foreground">
@@ -308,12 +308,11 @@ export default function TokenPage() {
 
         {/* Why Pump.fun, value cards, then What CULT Gets You */}
         <section
-          className={`
-            space-y-10 py-6
+          className={`flex flex-col gap-10 py-6
             md:py-6
           `}
         >
-          <div className="space-y-6">
+          <div className="flex flex-col gap-6">
             <h2
               className={`
                 font-display text-2xl font-semibold text-foreground
@@ -365,7 +364,7 @@ export default function TokenPage() {
             ))}
           </div>
 
-          <div className="space-y-4">
+          <div className="flex flex-col gap-4">
             <p
               className={`
                 text-base font-medium text-foreground/90 italic
@@ -383,7 +382,7 @@ export default function TokenPage() {
               What CULT gets you
             </h3>
             <ul
-              className={`list-inside list-disc space-y-2 text-muted-foreground`}
+              className={`list-inside list-disc flex flex-col gap-2 text-muted-foreground`}
             >
               <li>
                 <strong className="text-foreground">Free Shipping</strong> for
@@ -413,12 +412,11 @@ export default function TokenPage() {
 
         {/* Membership */}
         <section
-          className={`
-            space-y-8 py-12
+          className={`flex flex-col gap-8 py-12
             md:py-10
           `}
         >
-          <div className="space-y-4">
+          <div className="flex flex-col gap-4">
             <h2
               className={`
                 font-display text-2xl font-semibold text-foreground
@@ -439,7 +437,7 @@ export default function TokenPage() {
           </div>
 
           <Card className="overflow-hidden border-border bg-muted/30">
-            <CardHeader className="space-y-2">
+            <CardHeader className="flex flex-col gap-2">
               <div
                 className={`
                   flex h-10 w-10 items-center justify-center rounded-lg
@@ -455,7 +453,7 @@ export default function TokenPage() {
                 {MEMBERSHIP_HOW_IT_WORKS.subheading}
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="flex flex-col gap-4">
               <p className="text-muted-foreground">
                 {MEMBERSHIP_HOW_IT_WORKS.body}
               </p>
@@ -471,8 +469,7 @@ export default function TokenPage() {
 
         {/* Proposed Token Allocation */}
         <section
-          className={`
-            space-y-8 py-12
+          className={`flex flex-col gap-8 py-12
             md:py-6
           `}
         >
@@ -520,8 +517,7 @@ export default function TokenPage() {
 
         {/* Fair Launch Principles */}
         <section
-          className={`
-            space-y-6 py-6
+          className={`flex flex-col gap-6 py-6
             md:py-6
           `}
         >
@@ -533,7 +529,7 @@ export default function TokenPage() {
           >
             Fair launch principles
           </h2>
-          <ul className="space-y-3">
+          <ul className="flex flex-col gap-3">
             {fairLaunchPrinciples.map((item) => (
               <li
                 className="flex items-start gap-3 text-muted-foreground"
@@ -548,8 +544,7 @@ export default function TokenPage() {
 
         {/* Creator Fee Allocation */}
         <section
-          className={`
-            space-y-8 py-16
+          className={`flex flex-col gap-8 py-16
             md:py-12
           `}
         >
@@ -737,8 +732,7 @@ export default function TokenPage() {
 
         {/* Hackathon Funding */}
         <section
-          className={`
-            space-y-6 py-6
+          className={`flex flex-col gap-6 py-6
             md:py-6
           `}
         >
@@ -757,7 +751,7 @@ export default function TokenPage() {
           >
             Funds will be used for:
           </p>
-          <ul className="space-y-3">
+          <ul className="flex flex-col gap-3">
             <li className="flex items-start gap-3 text-muted-foreground">
               <Check className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
               <span>Investment into phygital infrastructure</span>
@@ -787,8 +781,7 @@ export default function TokenPage() {
 
         {/* Culture */}
         <section
-          className={`
-            space-y-6 py-6
+          className={`flex flex-col gap-6 py-6
             md:py-6
           `}
         >
@@ -800,7 +793,7 @@ export default function TokenPage() {
           >
             What's unique about Culture
           </h2>
-          <ul className="space-y-3">
+          <ul className="flex flex-col gap-3">
             {cultureUnique.map((item) => (
               <li
                 className="flex items-start gap-3 text-muted-foreground"
@@ -815,8 +808,7 @@ export default function TokenPage() {
 
         {/*  Governance */}
         <section
-          className={`
-            space-y-8 py-12
+          className={`flex flex-col gap-8 py-12
             md:py-16
           `}
         >
@@ -848,7 +840,7 @@ export default function TokenPage() {
               <CardContent>
                 <ul
                   className={`
-                    list-inside list-disc space-y-1 text-base
+                    list-inside list-disc flex flex-col gap-1 text-base
                     text-muted-foreground
                   `}
                 >
@@ -867,7 +859,7 @@ export default function TokenPage() {
               <CardContent>
                 <ul
                   className={`
-                    list-inside list-disc space-y-1 text-base
+                    list-inside list-disc flex flex-col gap-1 text-base
                     text-muted-foreground
                   `}
                 >
@@ -882,8 +874,7 @@ export default function TokenPage() {
 
         {/* Token FAQ (dropdown accordion like tns.id/token) */}
         <section
-          className={`
-            space-y-6 py-6
+          className={`flex flex-col gap-6 py-6
             md:py-6
           `}
         >
@@ -895,7 +886,7 @@ export default function TokenPage() {
           >
             Token FAQ
           </h2>
-          <div className="space-y-0">
+          <div className="flex flex-col gap-0">
             {faqItems.map(({ a, q }) => (
               <details
                 className={`

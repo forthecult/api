@@ -357,7 +357,7 @@ export function TokenGateGuard({
         )}
 
         {step === "connect" && (
-          <div className="space-y-3">
+          <div className="flex flex-col gap-3">
             {solanaWallets.length === 0 ? (
               <p className="text-center text-sm text-muted-foreground">
                 No Solana wallet detected. Install Phantom or another supported

@@ -939,7 +939,7 @@ export function AuthWalletModal({
           )}
 
           {step === "network" && selectedWallet && (
-            <div className="space-y-4">
+            <div className="flex flex-col gap-4">
               <p className="text-sm text-muted-foreground">
                 {selectedWallet.adapter.name} supports multiple networks. Choose
                 one to sign in with:
@@ -1042,7 +1042,7 @@ export function AuthWalletModal({
           )}
 
           {step === "wallet" && (
-            <div className="space-y-4">
+            <div className="flex flex-col gap-4">
               <p
                 className={`
                   text-xs font-medium tracking-wider text-muted-foreground

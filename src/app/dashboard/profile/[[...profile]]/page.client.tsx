@@ -167,7 +167,7 @@ export function ProfilePageClient() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-6">
       <div className="flex items-center gap-2">
         <Button
           aria-label="Back to profile"
@@ -183,7 +183,7 @@ export function ProfilePageClient() {
         <h1 className="text-2xl font-bold tracking-tight">Edit Profile</h1>
       </div>
 
-      <form className="space-y-6" onSubmit={handleSubmit}>
+      <form className="flex flex-col gap-6" onSubmit={handleSubmit}>
         <div className="flex flex-col items-center gap-6">
           <input
             accept={AVATAR_ACCEPT}
@@ -246,7 +246,7 @@ export function ProfilePageClient() {
               sm:grid-cols-2
             `}
           >
-            <div className="space-y-2">
+            <div className="flex flex-col gap-2">
               <Label htmlFor="firstName">First Name</Label>
               <Input
                 id="firstName"
@@ -255,7 +255,7 @@ export function ProfilePageClient() {
                 value={firstName}
               />
             </div>
-            <div className="space-y-2">
+            <div className="flex flex-col gap-2">
               <Label htmlFor="lastName">Last Name</Label>
               <Input
                 id="lastName"
@@ -266,8 +266,7 @@ export function ProfilePageClient() {
             </div>
             {isRealEmail(email) && (
               <div
-                className={`
-                  space-y-2
+                className={`flex flex-col gap-2
                   sm:col-span-2
                 `}
               >
@@ -287,8 +286,7 @@ export function ProfilePageClient() {
               </div>
             )}
             <div
-              className={`
-                space-y-2
+              className={`flex flex-col gap-2
                 sm:col-span-2
               `}
             >

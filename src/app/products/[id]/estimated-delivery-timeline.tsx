@@ -80,7 +80,7 @@ export function EstimatedDeliveryTimeline({
   const getItByDate = format(ranges.deliveredStart, "MMM d");
 
   return (
-    <div className={cn("space-y-5", className)}>
+    <div className={cn("flex flex-col gap-5", className)}>
       {countdown != null && (countdown.hours > 0 || countdown.minutes > 0) && (
         <p className="text-lg text-muted-foreground">
           ⚡ Order within{" "}

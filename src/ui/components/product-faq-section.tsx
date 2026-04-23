@@ -16,7 +16,7 @@ export function ProductFaqSection({
       >
         Frequently asked questions
       </h2>
-      <dl className="space-y-6">
+      <dl className="flex flex-col gap-6">
         {items.map((faq, i) => (
           <div key={`${faq.question}-${i}`}>
             <dt className="font-medium text-foreground">{faq.question}</dt>

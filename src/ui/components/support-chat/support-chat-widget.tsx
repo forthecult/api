@@ -588,7 +588,7 @@ export function SupportChatWidget({
                   </div>
                 )}
                 {error && <p className="text-sm text-destructive">{error}</p>}
-                <ul className="space-y-2">
+                <ul className="flex flex-col gap-2">
                   {messages.map((m) => {
                     const date = m.createdAt ? new Date(m.createdAt) : null;
                     const timeStr = date

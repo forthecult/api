@@ -192,7 +192,7 @@ export function ShopMegaMenu({
               </div>
 
               {/* Categories */}
-              <div className="space-y-3">
+              <div className="flex flex-col gap-3">
                 {section.categories.map((cat) => {
                   const href = cat.slug ? `/${cat.slug}` : "/products";
                   const subs = sortSubcategories(

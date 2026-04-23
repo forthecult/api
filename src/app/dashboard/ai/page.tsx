@@ -11,12 +11,11 @@ export const metadata: Metadata = {
 
 export default function DashboardAiPage() {
   return (
-    <div className="space-y-8">
+    <div className="flex flex-col gap-8">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">AI settings</h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-          Manage your assistant, memories, local chats, and encrypted backups.
-          Use the sidebar to open Storage &amp; data or Prompts &amp; memory.
+          Manage your agent, memories, local chats, and encrypted backups.
         </p>
       </div>
 
@@ -34,7 +33,7 @@ export default function DashboardAiPage() {
           <Link href="/dashboard/ai/channels">Channels</Link>
         </Button>
         <Button asChild>
-          <Link href="/chat">Open AI chat</Link>
+          <Link href="/chat">Open chat</Link>
         </Button>
       </div>
 

@@ -83,7 +83,7 @@ export function DashboardLayoutClient({
 
           <div
             className={cn(
-              "w-full space-y-6 p-4",
+              "w-full flex flex-col gap-6 p-4",
               "sm:p-6",
               "md:p-8",
               "[&_[data-slot=card]]:shadow-none",

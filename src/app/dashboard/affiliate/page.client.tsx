@@ -299,7 +299,7 @@ export function AffiliatePageClient() {
   const isRejected = affiliate?.status === "rejected";
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-6">
       <div className="flex items-center gap-2">
         <Link2 className="h-7 w-7" />
         <h1 className="text-2xl font-semibold tracking-tight">
@@ -318,8 +318,8 @@ export function AffiliatePageClient() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form className="space-y-4" onSubmit={handleApply}>
-              <div className="space-y-2">
+            <form className="flex flex-col gap-4" onSubmit={handleApply}>
+              <div className="flex flex-col gap-2">
                 <Label htmlFor="applyCode">
                   Your affiliate code (optional)
                 </Label>
@@ -343,7 +343,7 @@ export function AffiliatePageClient() {
                   sm:grid-cols-2
                 `}
               >
-                <div className="space-y-2">
+                <div className="flex flex-col gap-2">
                   <Label htmlFor="applyPayoutMethod">
                     Payout method (optional)
                   </Label>
@@ -370,7 +370,7 @@ export function AffiliatePageClient() {
                     <option value="cult">CULT</option>
                   </select>
                 </div>
-                <div className="space-y-2">
+                <div className="flex flex-col gap-2">
                   <Label htmlFor="applyPayoutAddress">
                     PayPal email or payout address (optional)
                   </Label>
@@ -387,7 +387,7 @@ export function AffiliatePageClient() {
                   />
                 </div>
               </div>
-              <div className="space-y-2">
+              <div className="flex flex-col gap-2">
                 <Label htmlFor="applicationNote">
                   Why do you want to be an affiliate? (optional)
                 </Label>
@@ -480,7 +480,7 @@ export function AffiliatePageClient() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <form className="space-y-2" onSubmit={handleCodeSave}>
+                  <form className="flex flex-col gap-2" onSubmit={handleCodeSave}>
                     <div className="flex gap-2">
                       <Input
                         aria-describedby="codeEditPendingHint"
@@ -576,7 +576,7 @@ export function AffiliatePageClient() {
                   you earn commission.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="flex flex-col gap-4">
                 <div className="flex gap-2">
                   <Input
                     className="font-mono text-sm"
@@ -591,7 +591,7 @@ export function AffiliatePageClient() {
                     Copy
                   </Button>
                 </div>
-                <form className="space-y-2" onSubmit={handleCodeSave}>
+                <form className="flex flex-col gap-2" onSubmit={handleCodeSave}>
                   <Label htmlFor="codeEdit">Your referral code</Label>
                   <div className="flex gap-2">
                     <Input
@@ -754,14 +754,14 @@ export function AffiliatePageClient() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <form className="space-y-4" onSubmit={handlePayoutSave}>
+                <form className="flex flex-col gap-4" onSubmit={handlePayoutSave}>
                   <div
                     className={`
                       grid gap-4
                       sm:grid-cols-2
                     `}
                   >
-                    <div className="space-y-2">
+                    <div className="flex flex-col gap-2">
                       <Label htmlFor="payoutMethod">Payout method</Label>
                       <select
                         className={cn(
@@ -786,7 +786,7 @@ export function AffiliatePageClient() {
                         <option value="cult">CULT</option>
                       </select>
                     </div>
-                    <div className="space-y-2">
+                    <div className="flex flex-col gap-2">
                       <Label htmlFor="payoutAddress">
                         {payoutMethod === "paypal"
                           ? "PayPal email"
@@ -845,7 +845,7 @@ export function AffiliatePageClient() {
                   or emails.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="flex flex-col gap-4">
                 <div className="flex flex-wrap gap-2">
                   <Button
                     asChild
@@ -884,11 +884,11 @@ export function AffiliatePageClient() {
                     Copy tweet
                   </Button>
                 </div>
-                <div className="space-y-3">
+                <div className="flex flex-col gap-3">
                   <Label className="text-sm font-medium text-muted-foreground">
                     Marketing copy (copy & paste)
                   </Label>
-                  <div className="space-y-2">
+                  <div className="flex flex-col gap-2">
                     <SnippetBlock
                       label="Short (for bios / one-liners)"
                       text={`${SEO_CONFIG.name} — use my link: ${affiliate.referralUrl}`}

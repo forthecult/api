@@ -398,7 +398,7 @@ export default async function HomePage() {
         `}
       >
         <PageContainer>
-          <div className="mx-auto w-full max-w-3xl space-y-8 text-center">
+          <div className="mx-auto flex w-full max-w-3xl flex-col gap-8 text-center">
             <p
               className={`
                 text-xs font-medium tracking-[0.2em] text-primary uppercase
@@ -585,7 +585,7 @@ export default async function HomePage() {
         `}
       >
         <PageContainer>
-          <div className="mx-auto w-full max-w-3xl space-y-4 text-center">
+          <div className="mx-auto w-full max-w-3xl flex flex-col gap-4 text-center">
             <p
               className={`
                 text-xs font-medium tracking-[0.2em] text-primary uppercase

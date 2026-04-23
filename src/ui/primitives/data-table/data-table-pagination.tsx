@@ -16,13 +16,13 @@ export function DataTablePagination<TData>({ table }: { table: Table<TData> }) {
         {table.getFilteredSelectedRowModel().rows.length} of{" "}
         {table.getFilteredRowModel().rows.length} row(s) selected.
       </div>
-      <div
-        className={`
-          flex items-center space-x-6
-          lg:space-x-8
-        `}
-      >
-        <div className="flex items-center space-x-2">
+    <div
+      className={`
+        flex items-center gap-6
+        lg:gap-8
+      `}
+    >
+        <div className="flex items-center gap-2">
           <p className="text-sm font-medium">Rows per page</p>
           <select
             className="h-8 w-[70px] rounded border px-2"
@@ -44,7 +44,7 @@ export function DataTablePagination<TData>({ table }: { table: Table<TData> }) {
           Page {table.getState().pagination.pageIndex + 1} of{" "}
           {table.getPageCount()}
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center gap-2">
           <Button
             className={`
               hidden h-8 w-8 p-0

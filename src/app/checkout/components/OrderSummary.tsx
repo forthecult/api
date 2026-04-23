@@ -105,7 +105,7 @@ export function OrderSummary({
           {itemCount} item{itemCount !== 1 ? "s" : ""} in your cart
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="flex flex-col gap-4">
         {items.map((item) => (
           <div
             className={`
@@ -241,7 +241,7 @@ export function OrderSummary({
           </div>
         ))}
         <div className="space-y-2 border-t border-border pt-3 text-sm">
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             {!showDiscountCode ? (
               <button
                 className={`
@@ -379,7 +379,7 @@ export function OrderSummary({
                         Most orders ship within 1 business day
                       </span>
                     </div>
-                    <ul className="space-y-2">
+                    <ul className="flex flex-col gap-2">
                       <li className="flex items-start gap-2">
                         <span
                           className={`

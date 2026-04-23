@@ -85,20 +85,14 @@ export function CartClient({ className }: CartClientProps) {
   const CartTrigger = (
     <Button
       aria-label="Open cart"
-      className={`
-        relative h-9 w-9 rounded-full text-[#1A1611]
-        dark:text-[#F5F1EB]
-      `}
+      className="relative h-9 w-9 rounded-full text-foreground"
       size="icon"
       variant="outline"
     >
       <ShoppingCart className="h-4 w-4" />
       {totalItems > 0 && (
         <Badge
-          className={`
-            absolute -top-1 -right-1 h-5 w-5 rounded-full bg-[#C4873A] p-0
-            text-[10px] font-bold text-[#111111]
-          `}
+        className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary p-0 text-[10px] font-bold text-primary-foreground"
           variant="default"
         >
           {totalItems}
@@ -163,7 +157,7 @@ export function CartClient({ className }: CartClientProps) {
               )}
             </div>
           ) : (
-            <div className="space-y-4 py-4">
+            <div className="flex flex-col gap-4 py-4">
               {cartItems.map((item) => (
                 <div
                   className={`
@@ -294,7 +288,7 @@ export function CartClient({ className }: CartClientProps) {
         {/* Fixed footer with checkout button */}
         {cartItems.length > 0 && (
           <div className="shrink-0 border-t px-6 py-4">
-            <div className="space-y-3">
+            <div className="flex flex-col gap-3">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Subtotal</span>
                 <span className="font-medium">

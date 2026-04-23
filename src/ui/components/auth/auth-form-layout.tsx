@@ -43,8 +43,7 @@ export function AuthFormDivider({
 export function AuthFormHeader({ subtitle, title }: AuthFormHeaderProps) {
   return (
     <div
-      className={`
-        space-y-1 text-center
+      className={`flex flex-col gap-1 text-center
         md:text-left
       `}
     >
@@ -128,7 +127,7 @@ export function AuthFormLayout({
           md:px-8 md:pt-10 md:pb-8
         `}
       >
-        <div className="w-full max-w-md min-w-0 space-y-3">{children}</div>
+        <div className="w-full max-w-md min-w-0 flex flex-col gap-3">{children}</div>
       </div>
     </div>
   );
@@ -154,7 +153,7 @@ export function AuthPageSkeleton({
         `}
       />
       <div className="flex min-w-0 items-center justify-center p-8">
-        <div className="w-full max-w-md space-y-4">
+        <div className="w-full max-w-md flex flex-col gap-4">
           <Skeleton className="h-10 w-48" />
           <Skeleton className="h-6 w-64" />
           <Skeleton className={cn("w-full rounded-lg", formHeight)} />

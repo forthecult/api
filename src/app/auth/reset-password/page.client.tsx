@@ -148,7 +148,7 @@ export function ResetPasswordClient() {
           </p>
         </CardHeader>
         <CardContent>
-          <form className="space-y-4" onSubmit={handleSubmit}>
+          <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
             {error && (
               <div
                 className={`
@@ -158,7 +158,7 @@ export function ResetPasswordClient() {
                 {error}
               </div>
             )}
-            <div className="space-y-2">
+            <div className="flex flex-col gap-2">
               <Label htmlFor="new-password">New password</Label>
               <Input
                 autoComplete="new-password"
@@ -171,7 +171,7 @@ export function ResetPasswordClient() {
                 value={newPassword}
               />
             </div>
-            <div className="space-y-2">
+            <div className="flex flex-col gap-2">
               <Label htmlFor="confirm-password">Confirm password</Label>
               <Input
                 autoComplete="new-password"

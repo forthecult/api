@@ -169,7 +169,7 @@ export function ShopByCryptoMenu({
                   {cat.name}
                 </Link>
                 {cat.subcategories && cat.subcategories.length > 0 && (
-                  <ul className="mt-1 space-y-0.5 pl-0">
+                  <ul className="mt-1 flex flex-col gap-0.5 pl-0">
                     {cat.subcategories.map((sub) => {
                       const subHref = sub.slug ? `/${sub.slug}` : href;
                       return (

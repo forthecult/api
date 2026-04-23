@@ -144,7 +144,7 @@ export function DashboardAiCloudClient() {
   }
 
   return (
-    <div className="space-y-10">
+    <div className="flex flex-col gap-10">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Cloud data</h1>
         <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
@@ -157,7 +157,7 @@ export function DashboardAiCloudClient() {
         </p>
       </div>
 
-      <section className="space-y-3">
+      <section className="flex flex-col gap-3">
         <h2
           className={`
             text-xs font-semibold tracking-wide text-muted-foreground uppercase
@@ -173,7 +173,7 @@ export function DashboardAiCloudClient() {
           ) : chunks.length === 0 ? (
             <p className="text-sm text-muted-foreground">No chunks yet.</p>
           ) : (
-            <ul className="space-y-3">
+            <ul className="flex flex-col gap-3">
               {chunks.map((c) => (
                 <li
                   className={`
@@ -216,7 +216,7 @@ export function DashboardAiCloudClient() {
         </div>
       </section>
 
-      <section className="space-y-3">
+      <section className="flex flex-col gap-3">
         <h2
           className={`
             text-xs font-semibold tracking-wide text-muted-foreground uppercase
@@ -234,7 +234,7 @@ export function DashboardAiCloudClient() {
               while signed in to sync.
             </p>
           ) : (
-            <ul className="space-y-4">
+            <ul className="flex flex-col gap-4">
               {conversations.map((c) => (
                 <li
                   className="rounded-lg border border-border/80 p-3"
@@ -246,7 +246,7 @@ export function DashboardAiCloudClient() {
                       sm:flex-row sm:items-end sm:justify-between
                     `}
                   >
-                    <div className="min-w-0 flex-1 space-y-1">
+                    <div className="min-w-0 flex-1 flex flex-col gap-1">
                       <Label className="text-xs" htmlFor={`title-${c.id}`}>
                         Title
                       </Label>

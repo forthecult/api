@@ -10,15 +10,15 @@ const DashboardSidebar = dynamic(
   {
     loading: () => (
       <aside className="w-56 shrink-0 rounded-lg border bg-card p-4">
-        <div className="space-y-4">
+        <div className="flex flex-col gap-4">
           <Skeleton className="h-4 w-20" />
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             <Skeleton className="h-10 w-full" />
             <Skeleton className="h-10 w-full" />
             <Skeleton className="h-10 w-full" />
           </div>
           <Skeleton className="mt-4 h-4 w-24" />
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             <Skeleton className="h-10 w-full" />
             <Skeleton className="h-10 w-full" />
             <Skeleton className="h-10 w-full" />

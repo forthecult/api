@@ -149,8 +149,8 @@ export default function UploadsPageClient() {
   };
 
   return (
-    <div className="space-y-8">
-      <div className="space-y-4">
+    <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-4">
         <div className="flex gap-4">
           <UploadButton
             endpoint="imageUploader"

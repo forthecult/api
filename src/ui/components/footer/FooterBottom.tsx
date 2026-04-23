@@ -155,24 +155,24 @@ export function FooterBottom({
   const fiatPrice =
     mounted && usdPrice != null && usdPrice > 0
       ? (() => {
-          const fiat = convertUsdToFiat(usdPrice);
-          if (fiat == null) return null;
-          if (
-            selectedCrypto === "DOGE" ||
-            selectedCrypto === "PUMP" ||
-            selectedCrypto === "TROLL" ||
-            selectedCrypto === "XMR" ||
-            selectedCrypto === "CULT"
-          ) {
-            return new Intl.NumberFormat(undefined, {
-              currency,
-              maximumFractionDigits: 6,
-              minimumFractionDigits: 4,
-              style: "currency",
-            }).format(fiat);
-          }
-          return formatFiat(fiat);
-        })()
+        const fiat = convertUsdToFiat(usdPrice);
+        if (fiat == null) return null;
+        if (
+          selectedCrypto === "DOGE" ||
+          selectedCrypto === "PUMP" ||
+          selectedCrypto === "TROLL" ||
+          selectedCrypto === "XMR" ||
+          selectedCrypto === "CULT"
+        ) {
+          return new Intl.NumberFormat(undefined, {
+            currency,
+            maximumFractionDigits: 6,
+            minimumFractionDigits: 4,
+            style: "currency",
+          }).format(fiat);
+        }
+        return formatFiat(fiat);
+      })()
       : null;
 
   const prefsLabel =
@@ -188,7 +188,7 @@ export function FooterBottom({
       `}
     >
       <p className="text-base text-muted-foreground">
-        COPYLEFT {new Date().getFullYear()} {SEO_CONFIG.name}
+        COPYLEFT 2016 - {new Date().getFullYear()}. {SEO_CONFIG.name}
       </p>
       <div
         className={`
@@ -203,12 +203,11 @@ export function FooterBottom({
               font-mono-crypto flex cursor-pointer items-center gap-1.5
               rounded-sm font-medium transition-opacity
               hover:opacity-80
-              ${
-                selectedCrypto === "SOL" ||
+              ${selectedCrypto === "SOL" ||
                 selectedCrypto === "PUMP" ||
                 selectedCrypto === "CULT"
-                  ? `font-semibold`
-                  : ""
+                ? `font-semibold`
+                : ""
               }
             `}
             onClick={() => {

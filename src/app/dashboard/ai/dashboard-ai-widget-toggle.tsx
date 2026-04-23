@@ -63,8 +63,8 @@ export function DashboardAiWidgetToggle() {
       setEnabled(checked);
       toast.success(
         checked
-          ? "Personal AI will show in the site chat widget."
-          : "Personal AI removed from the floating chat widget.",
+          ? "Personal agent will show in the site chat widget."
+          : "Personal agent removed from the chat widget.",
       );
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not save");
@@ -78,18 +78,16 @@ export function DashboardAiWidgetToggle() {
   return (
     <div className="max-w-xl rounded-lg border bg-card p-4">
       <div className="flex flex-wrap items-start justify-between gap-2">
-        <div className="space-y-1">
+        <div className="flex flex-col gap-1">
           <Label className="text-base" htmlFor="personal-ai-widget">
             Personal AI in the floating chat
           </Label>
           <p className="text-sm text-muted-foreground">
-            When on, the site chat bubble can include your Personal AI (when the
-            store allows it). Turn off to hide it from the widget only—full chat
-            on{" "}
+            When on, the chat bubble will include your Personal AI on most pages. Turn off to hide it from the chat widget only. Full chat
+            is still accessible{" "}
             <a className="text-primary underline" href="/chat">
-              /chat
-            </a>{" "}
-            is unchanged.
+              here
+            </a>.
           </p>
         </div>
         <Switch

@@ -66,7 +66,7 @@ export default async function OrderDetailPage({
     : [];
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-2xl font-semibold tracking-tight">
           Order{" "}
@@ -86,14 +86,14 @@ export default async function OrderDetailPage({
 
       <Card>
         <CardHeader
-          className={`flex flex-row items-center justify-between space-y-0 pb-2`}
+          className={`flex flex-row items-center justify-between flex flex-col gap-0 pb-2`}
         >
           <span className="text-sm font-medium text-muted-foreground capitalize">
             Status
           </span>
           <span>{getOrderStatusLabel(order)}</span>
         </CardHeader>
-        <CardContent className="space-y-2">
+        <CardContent className="flex flex-col gap-2">
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Placed</span>
             <span>{formatDateLong(order.createdAt)}</span>
@@ -126,7 +126,7 @@ export default async function OrderDetailPage({
           <h2 className="text-lg font-medium">Items</h2>
         </CardHeader>
         <CardContent>
-          <ul className="space-y-3">
+          <ul className="flex flex-col gap-3">
             {order.items.map((item) => (
               <li
                 className={`
@@ -154,7 +154,7 @@ export default async function OrderDetailPage({
       {esimOrders.length > 0 && (
         <Card>
           <CardHeader
-            className={`flex flex-row items-center gap-2 space-y-0 pb-2`}
+            className={`flex flex-row items-center gap-2 flex flex-col gap-0 pb-2`}
           >
             <Smartphone className="size-5 text-muted-foreground" />
             <div>
@@ -165,7 +165,7 @@ export default async function OrderDetailPage({
               </p>
             </div>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="flex flex-col gap-4">
             {esimOrders.map((esim) => (
               <div
                 className={`
@@ -226,7 +226,7 @@ export default async function OrderDetailPage({
           <CardHeader>
             <h2 className="text-lg font-medium">Tracking</h2>
           </CardHeader>
-          <CardContent className="space-y-2">
+          <CardContent className="flex flex-col gap-2">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Tracking #</span>
               {order.trackingUrl ? (

@@ -161,7 +161,7 @@ export function ProductShippingEstimateForm({
   if (!productId) return null;
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col gap-4">
       <h4 className="text-sm font-semibold text-foreground">
         Estimate shipping
       </h4>
@@ -288,8 +288,7 @@ export function ProductShippingEstimateForm({
       )}
       {options.length > 0 && (
         <ul
-          className={`
-            space-y-2 rounded-md border border-border bg-muted/30 p-3 text-sm
+          className={`flex flex-col gap-2 rounded-md border border-border bg-muted/30 p-3 text-sm
           `}
         >
           {options.map((o) => (

@@ -8,7 +8,7 @@ const ProfileViewClient = dynamic(
   () => import("./profile-view.client").then((m) => m.ProfileViewClient),
   {
     loading: () => (
-      <div className="space-y-6">
+      <div className="flex flex-col gap-6">
         <Skeleton className="h-8 w-48" />
         <div
           className={`
@@ -40,7 +40,7 @@ const EditProfilePageClient = dynamic(
   () => import("./page.client").then((m) => m.ProfilePageClient),
   {
     loading: () => (
-      <div className="space-y-6">
+      <div className="flex flex-col gap-6">
         <Skeleton className="h-8 w-48" />
         <div className="flex flex-col items-center gap-6">
           <Skeleton className="h-24 w-24 rounded-full" />

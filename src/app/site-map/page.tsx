@@ -88,13 +88,13 @@ export default async function SitemapPage() {
         </p>
       </header>
 
-      <nav aria-label="Sitemap" className="space-y-8">
+      <nav aria-label="Sitemap" className="flex flex-col gap-8">
         <section>
           <h2 className="mb-3 text-lg font-semibold text-foreground">
             Main pages
           </h2>
           <ul
-            className={`list-inside list-disc space-y-1.5 text-muted-foreground`}
+            className={`list-inside list-disc flex flex-col gap-1.5 text-muted-foreground`}
           >
             {STATIC_LINKS.map(({ href, label }) => (
               <li key={href}>
@@ -119,7 +119,7 @@ export default async function SitemapPage() {
             </h2>
             <ul
               className={`
-                list-inside list-disc space-y-1.5 text-muted-foreground
+                list-inside list-disc flex flex-col gap-1.5 text-muted-foreground
               `}
             >
               {categoryLinks.map(({ href, label }) => (
@@ -144,7 +144,7 @@ export default async function SitemapPage() {
             Policies &amp; legal
           </h2>
           <ul
-            className={`list-inside list-disc space-y-1.5 text-muted-foreground`}
+            className={`list-inside list-disc flex flex-col gap-1.5 text-muted-foreground`}
           >
             {POLICY_LINKS.map(({ href, label }) => (
               <li key={href}>

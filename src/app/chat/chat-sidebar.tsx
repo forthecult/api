@@ -176,7 +176,7 @@ export function ChatSidebar({
         ) : null}
       </div>
 
-      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-2">
+      <div className="min-h-0 flex-1 flex flex-col gap-4 overflow-y-auto p-2">
         <div>
           {!collapsed ? (
             <p
@@ -268,7 +268,7 @@ export function ChatSidebar({
               </p>
             ) : null
           ) : (
-            <ul className="space-y-0.5">
+            <ul className="flex flex-col gap-0.5">
               {projects.map((p) => {
                 const active =
                   selectedProjectId === p.id && mainView === "chat";
@@ -321,7 +321,7 @@ export function ChatSidebar({
                 No chats yet. Use New chat while this project is open.
               </p>
             ) : (
-              <ul className="space-y-0.5">
+              <ul className="flex flex-col gap-0.5">
                 {filteredProjectChats.map((s) => (
                   <SessionRow
                     active={sessionId === s.id}
@@ -441,7 +441,7 @@ export function ChatSidebar({
               </p>
             ) : null
           ) : (
-            <ul className="space-y-0.5">
+            <ul className="flex flex-col gap-0.5">
               {historySessions.map((s) => (
                 <SessionRow
                   active={sessionId === s.id}

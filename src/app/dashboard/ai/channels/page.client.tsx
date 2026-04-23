@@ -241,18 +241,13 @@ export function DashboardAiChannelsClient() {
   const sl = payload?.channels?.slack;
 
   return (
-    <div className="space-y-8">
+    <div className="flex flex-col gap-8">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">
           Channels &amp; integrations
         </h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-          Connect the same assistant as{" "}
-          <Link className="text-primary underline" href="/chat">
-            /chat
-          </Link>{" "}
-          to Telegram, Discord, and Slack. Secrets are stored server-side; only
-          masked values are shown after save.
+          Connect your agent to Telegram, Discord, and Slack.
         </p>
       </div>
 
@@ -298,29 +293,21 @@ export function DashboardAiChannelsClient() {
         <CardHeader>
           <CardTitle>Telegram</CardTitle>
           <CardDescription>
-            Create a bot with{" "}
+            Create a telegram bot with{" "}
             <a
               className="text-primary underline"
               href="https://t.me/BotFather"
               rel="noreferrer"
               target="_blank"
             >
-              BotFather
+              @BotFather
             </a>
-            , paste the token, save, then open the t.me link once to link your
-            chat. We call{" "}
-            <code className="rounded bg-muted px-1 py-0.5 text-xs">
-              setWebhook
-            </code>{" "}
-            with a secret token; only requests with matching{" "}
-            <code className="rounded bg-muted px-1 py-0.5 text-xs">
-              X-Telegram-Bot-Api-Secret-Token
-            </code>{" "}
-            are accepted.
+            , paste the token, save, then open the telegram link provided once to link your
+            chat.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2 text-sm">
+        <CardContent className="flex flex-col gap-4">
+          <div className="flex flex-col gap-2 text-sm">
             <p>
               <span className="font-medium">Webhook URL</span>{" "}
               <code className="rounded bg-muted px-1 py-0.5 text-xs">
@@ -411,7 +398,7 @@ export function DashboardAiChannelsClient() {
             option.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="flex flex-col gap-4">
           <div className="space-y-2 text-sm">
             <p>
               <span className="font-medium">Interactions URL</span>{" "}
@@ -528,7 +515,7 @@ export function DashboardAiChannelsClient() {
             the bot token and signing secret. Request URL:
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="flex flex-col gap-4">
           <p className="text-sm">
             <code className="rounded bg-muted px-1 py-0.5 text-xs break-all">
               {sl?.webhookUrl ?? "(configure after save)"}
@@ -604,39 +591,14 @@ export function DashboardAiChannelsClient() {
 
       <Card>
         <CardHeader>
-          <CardTitle>WhatsApp (scoping only)</CardTitle>
+          <CardTitle>WhatsApp (coming soon)</CardTitle>
           <CardDescription>
-            Not wired here yet. Two common paths:
+            Support coming soon.
           </CardDescription>
         </CardHeader>
         <CardContent
-          className={`space-y-3 text-sm leading-relaxed text-muted-foreground`}
+          className={`flex flex-col gap-3 text-sm leading-relaxed text-muted-foreground`}
         >
-          <p>
-            <strong className="text-foreground">Meta Cloud API</strong> — You
-            work directly with Meta: Business verification, a WhatsApp Business
-            number, and webhooks Meta calls on your HTTPS URL. Billing and
-            policies are with Meta; you implement the message flow yourself.
-          </p>
-          <p>
-            <strong className="text-foreground">Twilio</strong> (or similar) —{" "}
-            <a
-              className="text-primary underline"
-              href="https://www.twilio.com/docs/whatsapp"
-              rel="noreferrer"
-              target="_blank"
-            >
-              Twilio WhatsApp
-            </a>{" "}
-            hosts the WhatsApp sender and gives you a familiar Twilio webhook
-            and API. You still need a WhatsApp-approved sender, but you avoid
-            some of the Meta dashboard plumbing.
-          </p>
-          <p>
-            Pick based on whether you want Meta-first tooling (Cloud API) or
-            carrier/vendor consolidation (Twilio). Product can choose later;
-            implementation is separate from Telegram/Discord/Slack.
-          </p>
         </CardContent>
       </Card>
 
@@ -646,12 +608,10 @@ export function DashboardAiChannelsClient() {
         `}
       >
         <h2 className="text-sm font-semibold text-foreground">
-          SMS &amp; voice (scoping only)
+          SMS &amp; voice (under development)
         </h2>
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-          SMS and PSTN voice are out of scope for this page. When needed, they
-          typically go through a carrier API (e.g. Twilio) with separate
-          compliance and billing.
+          We are working on providing this service. Voice and SMS conversations are not private. We recommend using our website or an encrypted messaging service if you want to increase your privacy.
         </p>
       </section>
     </div>

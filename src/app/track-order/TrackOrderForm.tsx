@@ -88,8 +88,8 @@ export function TrackOrderForm() {
         </p>
       </CardHeader>
       <CardContent>
-        <form className="space-y-4" onSubmit={handleSubmit}>
-          <div className="space-y-2">
+        <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+          <div className="flex flex-col gap-2">
             <Label htmlFor="track-order-id">Order ID</Label>
             <Input
               autoComplete="off"
@@ -102,7 +102,7 @@ export function TrackOrderForm() {
               value={orderId}
             />
           </div>
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             <Label htmlFor="track-lookup">
               Email, payment address, or postal code
             </Label>

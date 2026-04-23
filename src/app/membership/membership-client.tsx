@@ -975,7 +975,7 @@ export function MembershipClient() {
                     !(user?.id && !userMembershipFetched) && (
                       <div
                         className={`
-                          mb-4 space-y-3 rounded-xl border border-primary/20
+                          mb-4 flex flex-col gap-3 rounded-xl border border-primary/20
                           bg-primary/5 p-3
                         `}
                       >
@@ -2014,7 +2014,7 @@ export function MembershipClient() {
                       <CardDescription>{tier.tagline}</CardDescription>
                     </CardHeader>
 
-                    <CardContent className="space-y-4">
+                    <CardContent className="flex flex-col gap-4">
                       {/* Staking requirement */}
                       <div>
                         {pricingLoading ? (
@@ -2202,7 +2202,7 @@ export function MembershipClient() {
                 </span>
               </button>
             </div>
-            <div className="mx-auto mt-6 max-w-md space-y-2 text-center">
+            <div className="mx-auto mt-6 max-w-md flex flex-col gap-2 text-center">
               <p className="text-sm text-muted-foreground">Payment method</p>
               <div
                 className={`
@@ -2355,7 +2355,7 @@ export function MembershipClient() {
                       </div>
 
                       {/* Benefits list */}
-                      <ul className="flex-1 space-y-2">
+                      <ul className="flex-1 flex flex-col gap-2">
                         {[
                           tierData.benefits.shipping !== "Free"
                             ? `${tierData.benefits.shipping} off shipping`
@@ -2455,7 +2455,7 @@ export function MembershipClient() {
               while you hold it.
             </p>
 
-            <div className="mt-8 space-y-6">
+            <div className="mt-8 flex flex-col gap-6">
               <div className="rounded-xl border border-border bg-card/50 p-5">
                 <h3 className="text-lg font-semibold text-foreground">
                   Path 1: First 11 stakers (30-day lock)
@@ -2487,7 +2487,7 @@ export function MembershipClient() {
               </div>
             </div>
 
-            <ul className="mt-6 space-y-2 text-base text-muted-foreground">
+            <ul className="mt-6 flex flex-col gap-2 text-base text-muted-foreground">
               <li className="flex items-start gap-2">
                 <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                 <span>
@@ -2689,7 +2689,7 @@ export function MembershipClient() {
                   connected in 200+ countries without hunting for local SIM
                   cards.
                 </p>
-                <ul className="mt-6 space-y-3">
+                <ul className="mt-6 flex flex-col gap-3">
                   {[
                     "Instant activation—no physical SIM needed",
                     "Coverage in 200+ countries and regions",
@@ -3217,7 +3217,7 @@ export function MembershipClient() {
               Frequently Asked Questions
             </h2>
 
-            <div className="mt-10 space-y-0 rounded-xl border border-border">
+            <div className="mt-10 flex flex-col gap-0 rounded-xl border border-border">
               {MEMBERSHIP_FAQ.map(({ a, q }) => (
                 <details
                   className={`

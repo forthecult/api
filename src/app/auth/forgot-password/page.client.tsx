@@ -50,7 +50,7 @@ export function ForgotPasswordClient() {
   if (sent) {
     return (
       <AuthFormLayout>
-        <div className="space-y-4">
+        <div className="flex flex-col gap-4">
           <AuthFormHeader
             subtitle={`If an account exists for ${email.trim()}, you will receive a link to reset your password. In development without an email provider, the link is also printed in the server terminal.`}
             title="Check your email"
@@ -69,15 +69,15 @@ export function ForgotPasswordClient() {
 
   return (
     <AuthFormLayout>
-      <div className="space-y-4">
+      <div className="flex flex-col gap-4">
         <AuthFormHeader
           subtitle="Enter your email and we'll send you a link to set a new password."
           title="Forgot password?"
         />
         <Card>
           <CardContent className="pt-6">
-            <form className="space-y-4" onSubmit={handleSubmit}>
-              <div className="space-y-2">
+            <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+              <div className="flex flex-col gap-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
                   autoComplete="email"

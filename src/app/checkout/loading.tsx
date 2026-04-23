@@ -10,14 +10,14 @@ export default function CheckoutLoading() {
           `}
         >
           <div className="mb-8 h-8 w-32 animate-pulse rounded bg-muted" />
-          <div className="space-y-6">
+          <div className="flex flex-col gap-6">
             {/* Order summary skeleton */}
             <div className="rounded-lg border p-6">
               <div className="mb-4 h-6 w-40 animate-pulse rounded bg-muted" />
               {Array.from({ length: 3 }).map((_, i) => (
                 <div className="flex items-center gap-4 py-3" key={i}>
                   <div className="h-16 w-16 animate-pulse rounded bg-muted" />
-                  <div className="flex-1 space-y-2">
+                  <div className="flex flex-1 flex-col gap-2">
                     <div className="h-4 w-2/3 animate-pulse rounded bg-muted" />
                     <div className="h-4 w-1/4 animate-pulse rounded bg-muted" />
                   </div>

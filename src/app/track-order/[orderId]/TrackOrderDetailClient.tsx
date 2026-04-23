@@ -131,7 +131,7 @@ export function TrackOrderDetailClient({
   const statusLabel = STATUS_LABELS[order.status] ?? order.status;
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-6">
       <div
         className={`
           flex flex-col gap-4
@@ -151,14 +151,14 @@ export function TrackOrderDetailClient({
 
       <Card>
         <CardHeader
-          className={`flex flex-row items-center justify-between space-y-0 pb-2`}
+          className={`flex flex-row items-center justify-between flex flex-col gap-0 pb-2`}
         >
           <span className="text-sm font-medium text-muted-foreground">
             Status
           </span>
           <span>{statusLabel}</span>
         </CardHeader>
-        <CardContent className="space-y-2">
+        <CardContent className="flex flex-col gap-2">
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Placed</span>
             <span>{formatDateLong(order.createdAt)}</span>
@@ -186,7 +186,7 @@ export function TrackOrderDetailClient({
           <h2 className="text-lg font-medium">Items</h2>
         </CardHeader>
         <CardContent>
-          <ul className="space-y-3">
+          <ul className="flex flex-col gap-3">
             {order.items.map((item) => (
               <li
                 className={`
@@ -223,7 +223,7 @@ export function TrackOrderDetailClient({
           <CardHeader>
             <h2 className="text-lg font-medium">Tracking</h2>
           </CardHeader>
-          <CardContent className="space-y-2">
+          <CardContent className="flex flex-col gap-2">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Tracking #</span>
               {order.tracking.trackingUrl ? (

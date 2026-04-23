@@ -118,7 +118,7 @@ export function TwoFactorPageClient() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-8 rounded-lg border p-6">
+      <div className="w-full max-w-md flex flex-col gap-8 rounded-lg border p-6">
         <div className="text-center">
           <h1 className="text-2xl font-bold">Two-Factor Authentication</h1>
           <p className="mt-2 text-gray-600">
@@ -134,8 +134,8 @@ export function TwoFactorPageClient() {
           </div>
         )}
 
-        <form className="mt-8 space-y-6" onSubmit={handleVerify}>
-          <div className="space-y-4">
+        <form className="mt-8 flex flex-col gap-6" onSubmit={handleVerify}>
+          <div className="flex flex-col gap-4">
             <div>
               <label className="block text-sm font-medium" htmlFor="code">
                 {isUsingBackupCode ? "Backup Code" : "Verification Code"}
@@ -273,7 +273,7 @@ export function TwoFactorPageClient() {
             )}
           </div>
 
-          <div className="flex flex-col space-y-4">
+          <div className="flex flex-col flex flex-col gap-4">
             <button
               className={`
                 flex w-full justify-center rounded-md bg-blue-600 px-4 py-2

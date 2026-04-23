@@ -253,7 +253,7 @@ export default function AffiliateProgramPage() {
             Every product passes the Culture test: Does it improve
             someone&apos;s life? Would we use it ourselves?
           </p>
-          <ul className="mt-8 space-y-4">
+          <ul className="mt-8 flex flex-col gap-4">
             {[
               "Curated for intentional consumers who research before they buy.",
               "Crypto-native: 50+ coins, self-custody options, no intermediary holding funds.",
@@ -488,7 +488,7 @@ export default function AffiliateProgramPage() {
             >
               Frequently asked questions
             </h2>
-            <ul className="mt-8 space-y-8">
+            <ul className="mt-8 flex flex-col gap-8">
               <li>
                 <h3
                   className={`

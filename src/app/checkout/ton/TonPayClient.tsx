@@ -381,7 +381,7 @@ export function TonPayClient({
                     <h2 className="mb-4 text-base font-semibold">
                       Payment details
                     </h2>
-                    <div className="space-y-4">
+                    <div className="flex flex-col gap-4">
                       <div className="text-sm">
                         <p className="mb-1 text-muted-foreground">
                           Amount to pay

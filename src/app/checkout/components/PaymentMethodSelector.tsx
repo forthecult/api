@@ -32,6 +32,7 @@ import {
 import { useCountryCurrency } from "~/lib/hooks/use-country-currency";
 import { usePaymentMethodSettings } from "~/lib/hooks/use-payment-method-settings";
 import { getSolanaPayRecipient } from "~/lib/solana-pay";
+import { Alert, AlertDescription, AlertTitle } from "~/ui/primitives/alert";
 import { Button } from "~/ui/primitives/button";
 import {
   Card,
@@ -963,7 +964,7 @@ export const PaymentMethodSelector = forwardRef<
             All transactions are secure and encrypted.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="flex flex-col gap-4">
           <ExpressCheckout
             buildOrderPayload={buildOrderPayload}
             setNavigatingToPay={setNavigatingToPay}
@@ -982,7 +983,7 @@ export const PaymentMethodSelector = forwardRef<
             </div>
           )}
           {!hiddenOptions.creditCard && (
-            <div className="space-y-0">
+            <div className="flex flex-col gap-0">
               <label
                 className={paymentOptionRowClass}
                 onFocus={() => preloadStripe()}
@@ -1107,7 +1108,7 @@ export const PaymentMethodSelector = forwardRef<
           )}
           {/* Crypto row - full JSX continues in next message to avoid length limit */}
           {showCryptoRow && (
-            <div className="space-y-0">
+            <div className="flex flex-col gap-0">
               <label className={paymentOptionRowClass}>
                 <div className="flex items-center gap-3">
                   <input
@@ -1182,7 +1183,7 @@ export const PaymentMethodSelector = forwardRef<
                       {opt.value === "eth" && paymentSubOption === "eth" && (
                         <div
                           className={`
-                            mt-2 ml-5 space-y-2 border-l-2 border-muted pl-4
+                            mt-2 ml-5 flex flex-col gap-2 border-l-2 border-muted pl-4
                           `}
                         >
                           {ETH_CHAIN_OPTIONS.map((chainOpt) => (
@@ -1227,7 +1228,7 @@ export const PaymentMethodSelector = forwardRef<
                         paymentSubOption === "other" && (
                           <div
                             className={`
-                              mt-2 ml-5 space-y-2 border-l-2 border-muted pl-4
+                              mt-2 ml-5 flex flex-col gap-2 border-l-2 border-muted pl-4
                             `}
                           >
                             {OTHER_SUB_OPTIONS.map((otherOpt) => (
@@ -1281,7 +1282,7 @@ export const PaymentMethodSelector = forwardRef<
             </div>
           )}
           {showStablecoinsRow && (
-            <div className="space-y-0">
+            <div className="flex flex-col gap-0">
               <label className={paymentOptionRowClass}>
                 <div className="flex items-center gap-3">
                   <input
@@ -1459,7 +1460,7 @@ export const PaymentMethodSelector = forwardRef<
           )}
           {/* PayPal: shown when Stripe is enabled; selectable only when paypalEnabled */}
           {PAYMENT_CONFIG.stripeEnabled && !hiddenOptions.paypal && (
-            <div className="space-y-0">
+            <div className="flex flex-col gap-0">
               {PAYMENT_CONFIG.paypalEnabled ? (
                 <label className={paymentOptionRowClass}>
                   <div className="flex items-center gap-3">
@@ -1533,7 +1534,7 @@ export const PaymentMethodSelector = forwardRef<
         </CardContent>
       </Card>
 
-      <div className="space-y-4">
+      <div className="flex flex-col gap-4">
         {validationErrors.length > 0 && (
           <div
             className={`
@@ -1723,56 +1724,48 @@ export const PaymentMethodSelector = forwardRef<
                             {navigatingToPay ? "Redirecting…" : "Pay with TON"}
                           </Button>
                         ))
-                      : paymentMethod === ""
-                        ? ((payHandlerRef.current = () => {}),
-                          (
-                            <p
-                              className={`
-                                rounded-md border border-border bg-muted/50 px-4
-                                py-3.5 text-base text-muted-foreground
-                              `}
-                            >
-                              Select a payment method above.
-                            </p>
-                          ))
-                        : paymentMethod === "crypto" && paymentSubOption === ""
-                          ? ((payHandlerRef.current = () => {}),
-                            (
-                              <p
-                                className={`
-                                  rounded-md border border-border bg-muted/50
-                                  px-4 py-3 text-sm text-muted-foreground
-                                `}
-                              >
-                                Select a crypto option above (e.g. Ethereum,
-                                Solana, Crustafarian).
-                              </p>
-                            ))
-                          : paymentMethod === "stablecoins"
-                            ? ((payHandlerRef.current = () => {}),
-                              (
-                                <p
-                                  className={`
-                                    rounded-md border border-border bg-muted/50
-                                    px-4 py-3 text-sm text-muted-foreground
-                                  `}
-                                >
-                                  Select USDC or USDT and a network above.
-                                </p>
-                              ))
-                            : ((payHandlerRef.current = () => {}),
-                              (
-                                <p
-                                  className={`
-                                    rounded-md border border-border bg-muted/50
-                                    px-4 py-3 text-sm text-muted-foreground
-                                  `}
-                                >
-                                  This payment option is not available yet. Use
-                                  Credit/debit card, Crypto, Stablecoins
-                                  (USDC/USDT), or PayPal.
-                                </p>
-                              ))}
+            : paymentMethod === ""
+              ? ((payHandlerRef.current = () => {}),
+                (
+                  <Alert variant="default">
+                    <AlertTitle>Payment required</AlertTitle>
+                    <AlertDescription>
+                      Select a payment method above to continue.
+                    </AlertDescription>
+                  </Alert>
+                ))
+              : paymentMethod === "crypto" && paymentSubOption === ""
+                ? ((payHandlerRef.current = () => {}),
+                  (
+                    <Alert variant="default">
+                      <AlertTitle>Crypto option required</AlertTitle>
+                      <AlertDescription>
+                        Select a cryptocurrency (e.g., Ethereum, Solana, or
+                        CULT) to continue.
+                      </AlertDescription>
+                    </Alert>
+                  ))
+                : paymentMethod === "stablecoins"
+                  ? ((payHandlerRef.current = () => {}),
+                    (
+                      <Alert variant="default">
+                        <AlertTitle>Stablecoin option required</AlertTitle>
+                        <AlertDescription>
+                          Select USDC or USDT and a network to continue.
+                        </AlertDescription>
+                      </Alert>
+                    ))
+                  : ((payHandlerRef.current = () => {}),
+                    (
+                      <Alert variant="destructive">
+                        <AlertTitle>Unavailable</AlertTitle>
+                        <AlertDescription>
+                          This payment option is not available yet. Please use
+                          Credit/debit card, Crypto, Stablecoins (USDC/USDT), or
+                          PayPal.
+                        </AlertDescription>
+                      </Alert>
+                    ))}
         {/* Reassurance messaging */}
         <div
           className={`
@@ -1831,7 +1824,7 @@ export const PaymentMethodSelector = forwardRef<
             <PolicyPopup
               fullPolicyHref="/policies/refund"
               richContent={
-                <div className="space-y-3">
+                <div className="flex flex-col gap-3">
                   <div
                     className={`
                       flex items-center gap-2 rounded-md bg-[#C4873A]/10 px-3
@@ -1909,7 +1902,7 @@ export const PaymentMethodSelector = forwardRef<
                         eSIM plans (in your cart)
                       </p>
                       <ul
-                        className={`space-y-1.5 text-sm text-muted-foreground`}
+                        className={`flex flex-col gap-1.5 text-sm text-muted-foreground`}
                       >
                         {ESIM_REFUND_POPUP_ITEMS.map((item, i) => (
                           <li className="flex items-start gap-2" key={i}>
@@ -1940,7 +1933,7 @@ export const PaymentMethodSelector = forwardRef<
             <PolicyPopup
               fullPolicyHref="/policies/shipping"
               richContent={
-                <div className="space-y-3">
+                <div className="flex flex-col gap-3">
                   <div
                     className={`
                       flex items-center gap-2 rounded-md bg-blue-50 px-3 py-2
@@ -2027,7 +2020,7 @@ export const PaymentMethodSelector = forwardRef<
             <PolicyPopup
               fullPolicyHref="/policies/privacy"
               richContent={
-                <div className="space-y-3">
+                <div className="flex flex-col gap-3">
                   <div
                     className={`
                       flex items-center gap-2 rounded-md bg-purple-50 px-3 py-2
@@ -2111,7 +2104,7 @@ export const PaymentMethodSelector = forwardRef<
             <PolicyPopup
               fullPolicyHref="/policies/terms"
               richContent={
-                <div className="space-y-3">
+                <div className="flex flex-col gap-3">
                   <p className="text-sm">
                     By completing your purchase you agree to these terms and our
                     Privacy, Refund, and Shipping policies.

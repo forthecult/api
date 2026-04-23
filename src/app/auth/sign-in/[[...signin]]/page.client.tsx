@@ -231,10 +231,9 @@ export function SignInPageClient() {
           md:p-8
         `}
       >
-        <div className="w-full max-w-md min-w-0 space-y-4">
+        <div className="w-full max-w-md min-w-0 flex flex-col gap-4">
           <div
-            className={`
-              space-y-4 text-center
+            className={`flex flex-col gap-4 text-center
               md:text-left
             `}
           >
@@ -297,7 +296,7 @@ export function SignInPageClient() {
 
               {method === "password" && (
                 <form
-                  className="space-y-4"
+                  className="flex flex-col gap-4"
                   onSubmit={(e) => {
                     e.preventDefault();
                     void handleEmailPasswordLogin(e);
@@ -348,7 +347,7 @@ export function SignInPageClient() {
 
               {method === "code" && (
                 <form
-                  className="space-y-4"
+                  className="flex flex-col gap-4"
                   onSubmit={(e) => {
                     e.preventDefault();
                     if (otpSent) void handleEmailOtpLogin(e);

@@ -8,9 +8,9 @@ const SecurityPageClient = dynamic(
   () => import("./page.client").then((m) => m.SecurityPageClient),
   {
     loading: () => (
-      <div className="space-y-6">
+      <div className="flex flex-col gap-6">
         <Skeleton className="h-8 w-48" />
-        <div className="space-y-4">
+        <div className="flex flex-col gap-4">
           <Skeleton className="h-20 w-full rounded-lg" />
           <Skeleton className="h-20 w-full rounded-lg" />
           <Skeleton className="h-20 w-full rounded-lg" />

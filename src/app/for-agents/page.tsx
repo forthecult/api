@@ -103,7 +103,7 @@ function ForAgentsPageAgentView({ apiBaseUrl }: { apiBaseUrl: string }) {
         </h2>
         <ol
           className={`
-            list-inside list-decimal space-y-1 text-neutral-700
+            list-inside list-decimal flex flex-col gap-1 text-neutral-700
             dark:text-neutral-300
           `}
         >
@@ -133,7 +133,7 @@ function ForAgentsPageAgentView({ apiBaseUrl }: { apiBaseUrl: string }) {
         </h2>
         <ol
           className={`
-            list-inside list-decimal space-y-1 text-neutral-700
+            list-inside list-decimal flex flex-col gap-1 text-neutral-700
             dark:text-neutral-300
           `}
         >
@@ -183,8 +183,7 @@ function ForAgentsPageAgentView({ apiBaseUrl }: { apiBaseUrl: string }) {
           Endpoint reference
         </h2>
         <dl
-          className={`
-            space-y-3 text-neutral-700
+          className={`flex flex-col gap-3 text-neutral-700
             dark:text-neutral-300
           `}
         >
@@ -355,11 +354,11 @@ function ForAgentsPageHumanView({ apiBaseUrl }: { apiBaseUrl: string }) {
           )}
         </header>
 
-        <section className="space-y-4">
+        <section className="flex flex-col gap-4">
           <h2 className="font-heading text-xl font-semibold">Quick Start</h2>
           <ol
             className={`
-              list-inside list-decimal space-y-2 text-muted-foreground
+              list-inside list-decimal flex flex-col gap-2 text-muted-foreground
             `}
           >
             <li>
@@ -406,7 +405,7 @@ function ForAgentsPageHumanView({ apiBaseUrl }: { apiBaseUrl: string }) {
           <h2 className="font-heading mb-4 text-xl font-semibold">
             Key Endpoints
           </h2>
-          <div className="space-y-3">
+          <div className="flex flex-col gap-3">
             {apiLinks.map((link) => (
               <Card key={link.href}>
                 <CardHeader className="pb-2">

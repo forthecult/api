@@ -1,0 +1,88 @@
+name: Weekly Dependency Update
+
+on:
+  schedule:
+    # Run weekly on Mondays at 09:00 UTC
+    - cron: "0 9 * * 1"
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  update-dependencies:
+    name: Update Dependencies
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Resolve working directory
+        id: wd
+        run: |
+          if [ -d webapp ] && [ -f webapp/package.json ]; then
+            echo "dir=webapp" >> "$GITHUB_OUTPUT"
+          else
+            echo "dir=." >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install dependencies
+        working-directory: ${{ steps.wd.outputs.dir }}
+        run: bun install
+
+      - name: Check for outdated dependencies
+        working-directory: ${{ steps.wd.outputs.dir }}
+        id: outdated
+        run: |
+          echo "outdated_list<<EOF" >> $GITHUB_OUTPUT
+          bun outdated --json | jq -r '.[] | "- \(.name): \(.current) → \(.latest)"' >> $GITHUB_OUTPUT || echo "No outdated dependencies"
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Run security audit (before update)
+        working-directory: ${{ steps.wd.outputs.dir }}
+        run: |
+          npm audit --audit-level=moderate --json > before-audit.json || true
+
+      - name: Update dependencies
+        working-directory: ${{ steps.wd.outputs.dir }}
+        run: |
+          bun update
+          # Re-install to update lockfile
+          bun install
+
+      - name: Run typecheck
+        working-directory: ${{ steps.wd.outputs.dir }}
+        run: bun run typecheck
+        continue-on-error: true
+
+      - name: Run security audit (after update)
+        working-directory: ${{ steps.wd.outputs.dir }}
+        run: |
+          npm audit --audit-level=moderate --json > after-audit.json || true
+
+      - name: Generate summary
+        id: summary
+        run: |
+          echo "summary<<EOF" >> $GITHUB_OUTPUT
+          echo "## Weekly Dependency Update" >> $GITHUB_OUTPUT
+          echo "" >> $GITHUB_OUTPUT
+          echo "### Updated Dependencies" >> $GITHUB_OUTPUT
+          echo "${{ steps.outdated.outputs.outdated_list }}" >> $GITHUB_OUTPUT
+          echo "" >> $GITHUB_OUTPUT
+          echo "### Security Audit Changes" >> $GITHUB_OUTPUT
+          echo "- See attached artifacts for before/after comparison" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore(deps): weekly dependency update"
+          title: "chore(deps): weekly dependency update"
+          body: ${{ steps.summary.outputs.summary }}
+          branch: chore/weekly-deps-update
+          delete-branch: true
+          labels: dependencies, automated

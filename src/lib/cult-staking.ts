@@ -233,7 +233,7 @@ export async function fetchAllStakers(
     });
     return accounts
       .map(({ account }) => {
-        const parsed = parseStakeEntry(account.data as Buffer);
+        const parsed = parseStakeEntry(Buffer.from(account.data));
         if (!parsed || parsed.isWithdrawn || parsed.amount === 0n) return null;
         return {
           amount: parsed.amount,
@@ -320,14 +320,14 @@ export async function fetchStakeEntry(
         ? new PublicKeyClass(walletAddress)
         : walletAddress;
     const [stakeEntryPda] = getStakeEntryPda(programId, user, lockTier);
-    const account = await connection.getAccountInfo(stakeEntryPda);
-    if (!account) return null;
-    const parsed = parseStakeEntry(account.data as Buffer);
-    if (!parsed || parsed.isWithdrawn) return null;
-    return parsed;
-  } catch {
-    return null;
-  }
+  const account = await connection.getAccountInfo(stakeEntryPda);
+  if (!account) return null;
+  const parsed = parseStakeEntry(Buffer.from(account.data));
+  if (!parsed || parsed.isWithdrawn) return null;
+  return parsed;
+} catch {
+  return null;
+}
 }
 
 /**

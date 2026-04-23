@@ -37,7 +37,7 @@ export default function RefundPolicyPage() {
         </p>
       </header>
 
-      <div className="space-y-10">
+      <div className="flex flex-col gap-10">
         <section
           className={`
             rounded-lg border border-border bg-card/50 px-5 py-5
@@ -109,7 +109,7 @@ export default function RefundPolicyPage() {
           </p>
           <ul
             className={`
-              mt-3 list-inside list-disc space-y-2 text-sm leading-relaxed
+              mt-3 list-inside list-disc flex flex-col gap-2 text-sm leading-relaxed
               text-muted-foreground
             `}
           >

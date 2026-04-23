@@ -60,7 +60,7 @@ const PaymentMethodSection = dynamic(
           <Skeleton className="h-6 w-48" />
           <Skeleton className="mt-2 h-4 w-64" />
         </CardHeader>
-        <CardContent className="space-y-4">
+          <CardContent className="flex flex-col gap-4">
           <Skeleton className="h-10 w-full" />
           <Skeleton className="h-32 w-full" />
         </CardContent>
@@ -515,7 +515,7 @@ export function CheckoutClient() {
           {/* Left: contact, address, shipping method, payment, place order + policy links */}
           <div
             className={`
-              min-w-0 space-y-6
+              min-w-0 flex flex-col gap-6
               sm:col-start-1
             `}
           >
@@ -565,7 +565,7 @@ export function CheckoutClient() {
           {/* Right: Your order only — sticky offset below header (max-h-24) so header doesn't overlap */}
           <div
             className={`
-              min-w-0 space-y-6
+              min-w-0 flex flex-col gap-6
               sm:sticky sm:top-28 sm:col-start-2 sm:self-start
             `}
           >

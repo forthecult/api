@@ -127,10 +127,9 @@ export function SignUpPageClient() {
           md:p-8
         `}
       >
-        <div className="w-full max-w-md min-w-0 space-y-4">
+        <div className="w-full max-w-md min-w-0 flex flex-col gap-4">
           <div
-            className={`
-              space-y-4 text-center
+            className={`flex flex-col gap-4 text-center
               md:text-left
             `}
           >
@@ -142,7 +141,7 @@ export function SignUpPageClient() {
 
           <Card className="border-none">
             <CardContent className="pt-2">
-              <form className="space-y-4" onSubmit={handleSubmit}>
+              <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
                 <div className="grid grid-cols-2 gap-2">
                   <div className="grid gap-2">
                     <Label htmlFor="firstName">First name</Label>

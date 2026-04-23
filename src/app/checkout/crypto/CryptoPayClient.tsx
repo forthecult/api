@@ -1683,7 +1683,7 @@ export function CryptoPayClient({
                     <h2 className="mb-5 text-lg font-semibold">
                       Payment details
                     </h2>
-                    <div className="space-y-5">
+                    <div className="flex flex-col gap-5">
                       <div>
                         <p className="mb-1.5 text-sm text-muted-foreground">
                           Pay to

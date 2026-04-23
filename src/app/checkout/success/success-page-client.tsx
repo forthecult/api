@@ -607,7 +607,7 @@ export function SuccessPageClient() {
 
       {/* ───── Post-purchase sections: first visit + notification options for owners ───── */}
       {(isFirstVisit || (canSeePII && user?.id)) && (
-        <div className="mt-10 space-y-8">
+        <div className="mt-10 flex flex-col gap-8">
           {/* Account creation for guests (first visit with real email) */}
           {isFirstVisit && (
             <CreateAccountCard
@@ -810,7 +810,7 @@ function CreateAccountViaEmail({ email }: { email?: string }) {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col gap-3">
       <div className="flex items-center gap-2">
         <Mail aria-hidden className="size-4 text-primary" />
         <p className="text-sm font-medium">Save your info for next time</p>
@@ -952,7 +952,7 @@ function MarketingConsent({
   // No email (e.g. crypto auth): show guidance instead of form
   if (!email) {
     return (
-      <div className="space-y-3">
+      <div className="flex flex-col gap-3">
         <p className="text-sm font-medium">Stay in the loop</p>
         <p className="text-sm text-muted-foreground">
           Add your email in account settings to receive order updates and
@@ -966,7 +966,7 @@ function MarketingConsent({
   }
 
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col gap-3">
       <p className="text-sm font-medium">Stay in the loop</p>
       <label className="flex items-center gap-2 text-sm">
         <Checkbox
@@ -975,7 +975,7 @@ function MarketingConsent({
         />
         <span>Email me with news and offers</span>
       </label>
-      <div className="space-y-2">
+      <div className="flex flex-col gap-2">
         <label className="flex items-center gap-2 text-sm">
           <Checkbox
             checked={smsConsent}

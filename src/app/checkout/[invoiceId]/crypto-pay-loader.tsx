@@ -29,7 +29,7 @@ const EthPayClient = dynamic(
   {
     loading: () => (
       <div className="container mx-auto py-8">
-        <div className="space-y-6">
+        <div className="flex flex-col gap-6">
           <Skeleton className="h-10 w-48" />
           <Skeleton className="h-64 w-full" />
         </div>
@@ -44,7 +44,7 @@ const BtcPayClient = dynamic(
   {
     loading: () => (
       <div className="container mx-auto py-8">
-        <div className="space-y-6">
+        <div className="flex flex-col gap-6">
           <Skeleton className="h-10 w-48" />
           <Skeleton className="h-64 w-full" />
         </div>
@@ -59,7 +59,7 @@ const TonPayClient = dynamic(
   {
     loading: () => (
       <div className="container mx-auto py-8">
-        <div className="space-y-6">
+        <div className="flex flex-col gap-6">
           <Skeleton className="h-10 w-48" />
           <Skeleton className="h-64 w-full" />
         </div>

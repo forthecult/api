@@ -548,7 +548,7 @@ export default function AiLandingPage() {
           >
             Frequently asked questions
           </h2>
-          <div className="mt-10 space-y-3">
+          <div className="mt-10 flex flex-col gap-3">
             {faqItems.map((item) => (
               <details
                 className={cn(

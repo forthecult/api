@@ -131,7 +131,7 @@ export function SignupPageClient() {
             <AuthFormDivider text="Or continue with" />
           </div>
 
-          <form className="mt-4 space-y-3" onSubmit={handleSubmit}>
+          <form className="mt-4 flex flex-col gap-3" onSubmit={handleSubmit}>
             <div className="grid grid-cols-2 gap-x-3 gap-y-0">
               <div className="grid gap-1.5">
                 <Label htmlFor="firstName">First name (optional)</Label>

@@ -212,7 +212,7 @@ export function ProductVariantSection({
   return (
     <>
       {/* Variant option rows: hide options with only one value (e.g. Color when only White); they are auto-selected and defaulted on the backend */}
-      <div className="mb-4 space-y-4">
+      <div className="mb-4 flex flex-col gap-4">
         {optionDefinitions
           .map((opt, optionIndex) => ({ opt, optionIndex }))
           .filter(({ opt }) => (opt.values ?? []).filter(Boolean).length > 1)

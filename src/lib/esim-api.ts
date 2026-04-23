@@ -482,17 +482,17 @@ async function esimFetch<T>(
             ...options.headers,
           },
         });
-        if (!retryRes.ok) {
-          throw new Error(`eSIM API request failed: ${retryRes.status}`);
-        }
-        return retryRes.json() as Promise<T>;
+    if (!retryRes.ok) {
+      throw new Error(`eSIM API request failed: ${retryRes.status}`);
+    }
+    return retryRes.json() as T;
       }
 
       if (!res.ok) {
         throw new Error(`eSIM API request failed: ${res.status}`);
       }
 
-      return res.json() as Promise<T>;
+      return res.json() as T;
     } catch (err) {
       if (timeoutId != null) clearTimeout(timeoutId);
       if (err instanceof Error && err.name === "AbortError") {

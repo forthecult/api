@@ -83,7 +83,7 @@ export const Notifications: React.FC<NotificationsProps> = ({
             <div className="mt-1 flex-shrink-0">
               {getNotificationIcon(notification.type)}
             </div>
-            <div className="flex-1 space-y-1">
+            <div className="flex-1 flex flex-col gap-1">
               <div className="flex items-center justify-between">
                 <p className="text-sm leading-none font-medium">
                   {notification.title}

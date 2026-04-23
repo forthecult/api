@@ -161,7 +161,7 @@ function CheckoutSignInDialog() {
           Sign in to speed up checkout with your saved details.
         </p>
         <form
-          className="mt-2 space-y-4"
+          className="mt-2 flex flex-col gap-4"
           onSubmit={(e) => {
             e.preventDefault();
             void handleSubmit(e);
@@ -661,12 +661,12 @@ export const ShippingAddressForm = function ShippingAddressForm({
       {/* Contact */}
       <Card className="shadow-none">
         <CardHeader
-          className={`flex flex-row items-center justify-between space-y-0 pb-2`}
+          className={`flex flex-row items-center justify-between flex flex-col gap-0 pb-2`}
         >
           <CardTitle>Contact</CardTitle>
           {!isLoggedIn && <CheckoutSignInDialog />}
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="flex flex-col gap-4">
           {isLoggedIn ? (
             <p className="text-sm text-muted-foreground">
               <span className="font-medium text-foreground">Email:</span>{" "}
@@ -1194,7 +1194,7 @@ export const ShippingAddressForm = function ShippingAddressForm({
             <CardHeader>
               <CardTitle>Shipping method</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="flex flex-col gap-3">
               <div
                 className={`
                   flex items-center justify-between rounded-md border

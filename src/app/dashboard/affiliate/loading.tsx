@@ -2,7 +2,7 @@ import { Skeleton } from "~/ui/primitives/skeleton";
 
 export default function AffiliateLoading() {
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-6">
       <Skeleton className="h-8 w-56" />
       <div
         className={`

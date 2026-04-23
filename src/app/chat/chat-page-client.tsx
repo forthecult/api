@@ -832,7 +832,7 @@ export function ChatPageClient() {
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent align="end" className="w-80">
-                    <div className="space-y-4">
+                    <div className="flex flex-col gap-4">
                       <div className="flex items-center justify-between gap-3">
                         <div className="min-w-0">
                           <p className="text-sm font-medium">
@@ -862,10 +862,10 @@ export function ChatPageClient() {
                         />
                       </div>
                       <div
-                        className={`space-y-4 border-t border-border/60 pt-3`}
+                        className={`flex flex-col gap-4 border-t border-border/60 pt-3`}
                       >
                         <p className="text-sm font-medium">Advanced</p>
-                        <div className="space-y-2">
+                        <div className="flex flex-col gap-2">
                           <Label className="text-xs">
                             Temperature: {temperature.toFixed(2)}
                           </Label>
@@ -877,7 +877,7 @@ export function ChatPageClient() {
                             value={[temperature]}
                           />
                         </div>
-                        <div className="space-y-2">
+                        <div className="flex flex-col gap-2">
                           <Label className="text-xs">
                             Top P: {topP.toFixed(2)}
                           </Label>
@@ -1194,8 +1194,8 @@ export function ChatPageClient() {
               is selected.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-3">
-            <div className="space-y-2">
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-2">
               <Label htmlFor="proj-name">Name</Label>
               <Input
                 id="proj-name"
@@ -1204,7 +1204,7 @@ export function ChatPageClient() {
                 value={newProjectName}
               />
             </div>
-            <div className="space-y-2">
+            <div className="flex flex-col gap-2">
               <Label htmlFor="proj-inst">Project instructions (optional)</Label>
               <textarea
                 className={cn(
@@ -1269,7 +1269,7 @@ function MessageParts({ message }: { message: UIMessage }) {
   const parts = message.parts ?? [];
   if (parts.length === 0) return null;
   return (
-    <div className="space-y-2">
+    <div className="flex flex-col gap-2">
       {parts.map((part, i) => {
         if (part.type === "text" && "text" in part) {
           const tx = typeof part.text === "string" ? part.text : "";

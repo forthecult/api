@@ -136,7 +136,7 @@ export function EsimDetailClient({ esimOrderId }: { esimOrderId: string }) {
 
   if (notFound || !order) {
     return (
-      <div className="space-y-4">
+      <div className="flex flex-col gap-4">
         <Button asChild size="sm" variant="ghost">
           <Link href="/dashboard/esim">
             <ArrowLeft className="mr-1 h-4 w-4" />
@@ -165,7 +165,7 @@ export function EsimDetailClient({ esimOrderId }: { esimOrderId: string }) {
     order.activationLink ?? liveDetail?.universal_link ?? null;
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-6">
       <Button asChild size="sm" variant="ghost">
         <Link href="/dashboard/esim">
           <ArrowLeft className="mr-1 h-4 w-4" />
@@ -181,7 +181,7 @@ export function EsimDetailClient({ esimOrderId }: { esimOrderId: string }) {
               sm:flex-row sm:items-start sm:justify-between
             `}
           >
-            <div className="min-w-0 flex-1 space-y-3">
+            <div className="min-w-0 flex-1 flex flex-col gap-3">
               <div className="flex flex-wrap items-center gap-2">
                 <h1 className="text-xl font-semibold">{order.packageName}</h1>
                 <span

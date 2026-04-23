@@ -952,7 +952,7 @@ function VariantSelector({
     "w-full min-w-0 rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2";
 
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col gap-3">
       {optionDefinitions.map((opt, idx) => {
         const values = (opt.values ?? []).filter(Boolean);
         if (values.length <= 1) return null;
@@ -973,7 +973,7 @@ function VariantSelector({
               : (models[0] ?? "");
 
           return (
-            <div className="space-y-2" key={opt.name}>
+            <div className="flex flex-col gap-2" key={opt.name}>
               <span
                 className={`
                   mb-1.5 block text-xs font-medium tracking-wide

@@ -364,7 +364,7 @@ export function StakeVoteClient() {
   return (
     <div
       className={`
-        container mx-auto max-w-7xl space-y-10 px-4 py-10
+        container mx-auto max-w-7xl flex flex-col gap-10 px-4 py-10
         sm:px-6
         lg:px-8
       `}
@@ -466,8 +466,8 @@ export function StakeVoteClient() {
               amount of SOL for transaction fees.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
+          <CardContent className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
               <label className="text-sm font-medium">SOL amount</label>
               <div className="flex gap-2">
                 <Input
@@ -535,7 +535,7 @@ export function StakeVoteClient() {
           Proposals
         </h2>
         {proposalsLoading ? (
-          <div className="space-y-4">
+          <div className="flex flex-col gap-4">
             {[1, 2].map((i) => (
               <Card key={i}>
                 <CardHeader>
@@ -563,7 +563,7 @@ export function StakeVoteClient() {
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-6">
+          <div className="flex flex-col gap-6">
             {proposals.map((p) => (
               <ProposalCard
                 detail={details[p.id]}
@@ -650,10 +650,10 @@ function ProposalCard({
           Ends: {formatDateTime(proposal.endAt)}
         </p>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="flex flex-col gap-4">
         {detail && (
           <>
-            <div className="space-y-2">
+            <div className="flex flex-col gap-2">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">
                   For {formatPower(detail.totals.for, CULT_DECIMALS)} · Against{" "}
@@ -778,7 +778,7 @@ function StakeForm({
           {!wallet && " Connect your Solana wallet above to stake or unstake."}
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="flex flex-col gap-4">
         {!wallet && (
           <p
             className={`
@@ -790,7 +790,7 @@ function StakeForm({
           </p>
         )}
         {/* Lock duration selector */}
-        <div className="space-y-2">
+        <div className="flex flex-col gap-2">
           <label className="text-sm font-medium">Lock Duration</label>
           <div className="flex gap-2">
             <Button
@@ -817,7 +817,7 @@ function StakeForm({
             sm:grid-cols-2
           `}
         >
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             <label className="text-sm font-medium">Stake (CULT)</label>
             <div className="flex gap-2">
               <Input
@@ -837,7 +837,7 @@ function StakeForm({
               </Button>
             </div>
           </div>
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             <label className="text-sm font-medium">Unstake</label>
             <p className="text-xs text-muted-foreground">
               Unstake your full staked balance once the lock period expires.

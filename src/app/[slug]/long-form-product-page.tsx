@@ -340,7 +340,7 @@ export function LongFormProductPage({
                     />
                     <div
                       className={`
-                        mt-6 space-y-2 border-t border-border/60 pt-4 text-sm
+                        mt-6 flex flex-col gap-2 border-t border-border/60 pt-4 text-sm
                         text-muted-foreground
                       `}
                     >

@@ -202,7 +202,7 @@ export default function OpenSourcePage() {
                   </p>
                   <ul
                     className={`
-                      mt-4 list-disc space-y-1.5 pl-5 text-sm
+                      mt-4 list-disc flex flex-col gap-1.5 pl-5 text-sm
                       text-muted-foreground
                     `}
                   >

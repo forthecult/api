@@ -707,7 +707,7 @@ export function ProductsClient({
           )}
 
           {/* Products grid + pagination */}
-          <section aria-label="Products in this category" className="space-y-6">
+          <section aria-label="Products in this category" className="flex flex-col gap-6">
             {loading ? (
               <ProductGridSkeleton count={limit} />
             ) : (

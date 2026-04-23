@@ -158,7 +158,7 @@ export function SupportTicketDetailClient() {
 
   if (error || !ticket) {
     return (
-      <div className="space-y-6">
+      <div className="flex flex-col gap-6">
         <Button asChild className="gap-2" size="sm" variant="ghost">
           <Link href="/dashboard/support-tickets">
             <ChevronLeft className="h-4 w-4" />
@@ -173,7 +173,7 @@ export function SupportTicketDetailClient() {
   const canReply = ticket.status !== "closed";
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-6">
       <div className="flex items-center gap-2">
         <Button
           aria-label="Back to tickets"
@@ -241,14 +241,14 @@ export function SupportTicketDetailClient() {
             </span>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-3">
+        <CardContent className="flex flex-col gap-4">
+          <div className="flex flex-col gap-3">
             <h3 className="text-base font-medium text-muted-foreground">
               Conversation
             </h3>
             <div
               className={`
-                max-h-[400px] space-y-3 overflow-y-auto rounded-md border
+                max-h-[400px] flex flex-col gap-3 overflow-y-auto rounded-md border
                 bg-muted/20 p-3
               `}
             >
@@ -283,7 +283,7 @@ export function SupportTicketDetailClient() {
           </div>
 
           {canReply ? (
-            <form className="space-y-2" onSubmit={handleSendMessage}>
+            <form className="flex flex-col gap-2" onSubmit={handleSendMessage}>
               <label className="text-base font-medium" htmlFor="new-message">
                 Add a message
               </label>

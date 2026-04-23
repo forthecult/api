@@ -448,7 +448,7 @@ export function EthPayClient({
           flex min-h-screen w-full items-center justify-center bg-background
         `}
       >
-        <div className="max-w-md space-y-4 px-4 text-center">
+        <div className="max-w-md flex flex-col gap-4 px-4 text-center">
           <div className="text-4xl text-destructive">⚠️</div>
           <h1 className="text-xl font-semibold">Order Not Found</h1>
           <p className="text-muted-foreground">
@@ -1077,7 +1077,7 @@ export function EthPayClient({
                 )}
               </>
             ) : (
-              <div className="space-y-2">
+              <div className="flex flex-col gap-2">
                 <p
                   className={`
                     mb-3 text-xs font-medium tracking-wider

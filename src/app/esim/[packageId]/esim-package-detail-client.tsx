@@ -693,7 +693,7 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
         `}
       >
         {/* Package Info - Left */}
-        <div className="min-w-0 space-y-6">
+        <div className="min-w-0 flex flex-col gap-6">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">{displayName}</h1>
             <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -721,7 +721,7 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
             <CardHeader>
               <h2 className="text-lg font-semibold">Plan Details</h2>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="flex flex-col gap-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex items-center gap-2">
                   <Wifi className="h-5 w-5 text-primary" />
@@ -778,7 +778,7 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
                 </h2>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
+                <div className="flex flex-col gap-3">
                   {coverageCountries.map((country) => (
                     <div key={country.id}>
                       <div className="mb-2 flex items-center gap-2">
@@ -795,7 +795,7 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
                         </span>
                       </div>
                       {country.network_coverage.length > 0 && (
-                        <div className="ml-8 space-y-1">
+                        <div className="ml-8 flex flex-col gap-1">
                           {country.network_coverage.map((net) => (
                             <div
                               className={`
@@ -961,7 +961,7 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
                 </div>
 
                 {!user && (
-                  <div className="space-y-2">
+                  <div className="flex flex-col gap-2">
                     <Label htmlFor="esim-guest-email">Email</Label>
                     <Input
                       autoComplete="email"
@@ -976,7 +976,7 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
                 )}
 
                 {/* ── Payment method picker (matches checkout page) ── */}
-                <div className="space-y-2">
+                <div className="flex flex-col gap-2">
                   <Label>Payment method</Label>
                   <div className="flex flex-wrap gap-2">
                     {showCard && (
@@ -1077,8 +1077,7 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
                         {/* Ethereum chain picker */}
                         {cryptoSub === "eth" && (
                           <div
-                            className={`
-                              space-y-1 rounded-lg border border-border
+                            className={`flex flex-col gap-1 rounded-lg border border-border
                               bg-muted/30 p-3
                             `}
                           >
@@ -1112,8 +1111,7 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
                         {/* Other sub-options (Sui, TON) */}
                         {cryptoSub === "other" && (
                           <div
-                            className={`
-                              space-y-1 rounded-lg border border-border
+                            className={`flex flex-col gap-1 rounded-lg border border-border
                               bg-muted/30 p-3
                             `}
                           >
@@ -1160,12 +1158,12 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
                   {paymentMethod === "stablecoins" && (
                     <div
                       className={`
-                        mt-2 space-y-2 rounded-lg border border-border
+                        mt-2 flex flex-col gap-2 rounded-lg border border-border
                         bg-muted/30 p-3
                       `}
                     >
                       {/* Token: USDC or USDT */}
-                      <div className="space-y-1">
+                      <div className="flex flex-col gap-1">
                         <p className="text-xs font-medium text-muted-foreground">
                           Token
                         </p>
@@ -1205,7 +1203,7 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
                         </div>
                       </div>
                       {/* Chain / network */}
-                      <div className="space-y-1">
+                      <div className="flex flex-col gap-1">
                         <p className="text-xs font-medium text-muted-foreground">
                           Network
                         </p>
@@ -1259,8 +1257,7 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
                 </Button>
 
                 <div
-                  className={`
-                    space-y-2 rounded-lg bg-muted/50 p-4 text-sm
+                  className={`flex flex-col gap-2 rounded-lg bg-muted/50 p-4 text-sm
                     text-muted-foreground
                   `}
                 >
@@ -1293,7 +1290,7 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
           </p>
           <ul
             className={`
-              list-outside list-disc space-y-3 pl-5 text-sm break-words
+              list-outside list-disc flex flex-col gap-3 pl-5 text-sm break-words
               text-muted-foreground
             `}
           >

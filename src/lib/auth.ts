@@ -365,7 +365,9 @@ export const auth = betterAuth({
       );
     }
     console.warn("⚠️  Using hardcoded dev secret — never use in production");
-    return "dev-secret-min-32-chars-for-better-auth-local";
+    // Dev-only: generate a temporary secret that changes on each restart
+    console.warn("AUTH_SECRET not set — using temporary dev secret");
+    return `dev-${Date.now()}-${Math.random().toString(36).slice(2, 15)}`;
   })(),
 
   session: {

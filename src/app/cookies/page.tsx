@@ -31,7 +31,7 @@ export default function CookiesPolicyPage() {
         </p>
       </header>
 
-      <div className="space-y-10">
+      <div className="flex flex-col gap-10">
         <section
           className={`
             rounded-lg border border-border bg-card/50 px-5 py-5
@@ -95,7 +95,7 @@ export default function CookiesPolicyPage() {
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Summary
           </h2>
-          <ul className="mt-3 space-y-2 text-muted-foreground">
+          <ul className="mt-3 flex flex-col gap-2 text-muted-foreground">
             <li className="flex gap-2 leading-relaxed">
               <span
                 aria-hidden

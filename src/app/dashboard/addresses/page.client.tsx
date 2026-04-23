@@ -191,7 +191,7 @@ export function AddressesPageClient({ addresses }: AddressesPageClientProps) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-2">
           <MapPin className="h-7 w-7" />
@@ -429,13 +429,13 @@ export function AddressesPageClient({ addresses }: AddressesPageClientProps) {
           </CardContent>
         </Card>
       ) : (
-        <ul className="space-y-4">
+        <ul className="flex flex-col gap-4">
           {addresses.map((addr) => (
             <li key={addr.id}>
               <Card>
                 <CardHeader
                   className={`
-                    flex flex-row items-start justify-between space-y-0 pb-2
+                    flex flex-row items-start justify-between flex flex-col gap-0 pb-2
                   `}
                 >
                   <div>

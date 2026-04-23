@@ -75,7 +75,7 @@ export function SocialLoginButtons({
   const showTelegram = Boolean(telegramBotUsername);
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col gap-4">
       {showWalletConnect && (
         <Button
           className="flex w-full items-center gap-2"

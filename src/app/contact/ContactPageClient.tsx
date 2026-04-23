@@ -60,7 +60,7 @@ export function ContactPageClient({ pgpPublicKey }: { pgpPublicKey: string }) {
   );
 
   return (
-    <div className="space-y-8">
+    <div className="flex flex-col gap-8">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
@@ -71,16 +71,16 @@ export function ContactPageClient({ pgpPublicKey }: { pgpPublicKey: string }) {
             We&apos;ll get back to you as soon as we can.
           </p>
         </CardHeader>
-        <CardContent>
-          <form className="space-y-4" onSubmit={handleSubmit}>
+    <CardContent>
+      <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
             <div
               className={`
                 grid gap-2
                 sm:grid-cols-2
               `}
             >
-              <div className="space-y-2">
-                <Label htmlFor="contact-name">Name</Label>
+      <div className="flex flex-col gap-2">
+            <Label htmlFor="contact-name">Name</Label>
                 <Input
                   className={inputClass}
                   id="contact-name"
@@ -91,7 +91,7 @@ export function ContactPageClient({ pgpPublicKey }: { pgpPublicKey: string }) {
                   value={name}
                 />
               </div>
-              <div className="space-y-2">
+              <div className="flex flex-col gap-2">
                 <Label htmlFor="contact-email">Email</Label>
                 <Input
                   className={inputClass}
@@ -104,7 +104,7 @@ export function ContactPageClient({ pgpPublicKey }: { pgpPublicKey: string }) {
                 />
               </div>
             </div>
-            <div className="space-y-2">
+            <div className="flex flex-col gap-2">
               <Label htmlFor="contact-subject">Subject</Label>
               <Input
                 className={inputClass}
@@ -116,7 +116,7 @@ export function ContactPageClient({ pgpPublicKey }: { pgpPublicKey: string }) {
                 value={subject}
               />
             </div>
-            <div className="space-y-2">
+            <div className="flex flex-col gap-2">
               <Label htmlFor="contact-message">Message</Label>
               <textarea
                 className={cn(inputClass, "min-h-[120px] resize-y py-2")}
@@ -128,13 +128,13 @@ export function ContactPageClient({ pgpPublicKey }: { pgpPublicKey: string }) {
                 value={message}
               />
             </div>
-            {status === "success" && (
-              <p
-                className={`
-                  rounded-md bg-green-50 p-3 text-sm text-green-800
-                  dark:bg-green-950/30 dark:text-green-400
-                `}
-              >
+      {status === "success" && (
+        <p
+          className={`
+            rounded-md bg-status-success-bg p-3 text-sm text-status-success
+            dark:bg-status-success-bg/30 dark:text-status-success
+          `}
+        >
                 Message sent. We&apos;ll be in touch soon.
               </p>
             )}
@@ -176,7 +176,7 @@ export function ContactPageClient({ pgpPublicKey }: { pgpPublicKey: string }) {
         </CardHeader>
         <CardContent>
           {pgpPublicKey ? (
-            <div className="space-y-2">
+            <div className="flex flex-col gap-2">
               <Label className="text-muted-foreground">
                 Public key (copy to encrypt)
               </Label>

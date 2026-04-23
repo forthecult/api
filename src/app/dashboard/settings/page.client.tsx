@@ -8,6 +8,11 @@ import { useCurrentUser } from "~/lib/auth-client";
 import { NOTIFICATION_PREFS_UPDATED } from "~/lib/events";
 import { DiscordIcon } from "~/ui/components/icons/discord";
 import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "~/ui/primitives/alert";
+import {
   Card,
   CardContent,
   CardDescription,
@@ -49,10 +54,10 @@ const NOTIFICATION_CHANNELS = [
     requiresDiscord: true,
   },
   {
-    description: "AI assistant notifications",
+    description: "AI notifications",
     icon: Bot,
     id: "aiCompanion",
-    label: "AI Companion",
+    label: "Alice",
   },
 ] as const;
 
@@ -168,8 +173,8 @@ export function SettingsPageClient() {
   );
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-0.5">
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-0.5">
         <h2 className="text-2xl font-bold tracking-tight">Settings</h2>
         <p className="text-muted-foreground">
           Manage your notification preferences.
@@ -199,17 +204,17 @@ export function SettingsPageClient() {
               </p>
             </div>
           ) : (
-            <div className="space-y-6">
+            <div className="flex flex-col gap-6">
               {notificationSaving && (
                 <p className="text-sm text-muted-foreground">Saving...</p>
               )}
-              {/* Mobile: stacked by channel (no horizontal scroll) */}
-              <div
-                className={`
-                  space-y-4
-                  md:hidden
-                `}
-              >
+          {/* Mobile: stacked by channel (no horizontal scroll) */}
+            <div
+              className={`
+                flex flex-col gap-4
+                md:hidden
+              `}
+            >
                 {NOTIFICATION_CHANNELS.map((channel) => {
                   const Icon = channel.icon;
                   const disabled = isChannelDisabled(channel);
@@ -223,10 +228,9 @@ export function SettingsPageClient() {
                           className={`
                             flex h-9 w-9 shrink-0 items-center justify-center
                             rounded-lg
-                            ${
-                              disabled
-                                ? "bg-muted text-muted-foreground"
-                                : "bg-primary/10 text-primary"
+                            ${disabled
+                              ? "bg-muted text-muted-foreground"
+                              : "bg-primary/10 text-primary"
                             }
                           `}
                         >
@@ -250,10 +254,9 @@ export function SettingsPageClient() {
                         <label
                           className={`
                             flex items-center justify-between gap-3
-                            ${
-                              disabled || notificationSaving
-                                ? `cursor-not-allowed opacity-60`
-                                : `cursor-pointer`
+                            ${disabled || notificationSaving
+                              ? `cursor-not-allowed opacity-60`
+                              : `cursor-pointer`
                             }
                           `}
                         >
@@ -282,10 +285,9 @@ export function SettingsPageClient() {
                         <label
                           className={`
                             flex items-center justify-between gap-3
-                            ${
-                              disabled || notificationSaving
-                                ? `cursor-not-allowed opacity-60`
-                                : `cursor-pointer`
+                            ${disabled || notificationSaving
+                              ? `cursor-not-allowed opacity-60`
+                              : `cursor-pointer`
                             }
                           `}
                         >
@@ -365,10 +367,9 @@ export function SettingsPageClient() {
                                 className={`
                                   flex h-9 w-9 items-center justify-center
                                   rounded-lg
-                                  ${
-                                    disabled
-                                      ? "bg-muted text-muted-foreground"
-                                      : "bg-primary/10 text-primary"
+                                  ${disabled
+                                    ? "bg-muted text-muted-foreground"
+                                    : "bg-primary/10 text-primary"
                                   }
                                 `}
                               >
@@ -395,7 +396,7 @@ export function SettingsPageClient() {
                                 aria-label={`${channel.label} transactional notifications`}
                                 checked={
                                   notificationPrefs?.transactional[
-                                    channel.id
+                                  channel.id
                                   ] ?? false
                                 }
                                 disabled={disabled || notificationSaving}
@@ -435,59 +436,39 @@ export function SettingsPageClient() {
                 </Table>
               </div>
 
-              {/* Telegram Link Notice */}
-              {!notificationPrefs?.hasTelegramLinked && (
-                <div className="rounded-lg border border-muted bg-muted/30 p-4">
-                  <div className="flex items-start gap-3">
-                    <MessageCircle
-                      className={`mt-0.5 h-5 w-5 text-muted-foreground`}
-                    />
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium">Telegram not linked</p>
-                      <p className="text-sm text-muted-foreground">
-                        Link your Telegram account to enable the options above.{" "}
-                        <Link
-                          className={`
-                            font-medium text-primary underline
-                            underline-offset-2
-                            hover:no-underline
-                          `}
-                          href="/dashboard/security"
-                        >
-                          Link Telegram in Security →
-                        </Link>
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
+{/* Telegram Link Notice */}
+            {!notificationPrefs?.hasTelegramLinked && (
+              <Alert>
+                <MessageCircle />
+                <AlertTitle>Telegram not linked</AlertTitle>
+                <AlertDescription>
+                  Link your Telegram account to enable the options above.{" "}
+                  <Link
+                    className="font-medium text-primary underline underline-offset-2 hover:no-underline"
+                    href="/dashboard/security"
+                  >
+                    Link Telegram in Security →
+                  </Link>
+                </AlertDescription>
+              </Alert>
+            )}
 
-              {/* Discord Link Notice */}
-              {!notificationPrefs?.hasDiscordLinked && (
-                <div className="rounded-lg border border-muted bg-muted/30 p-4">
-                  <div className="flex items-start gap-3">
-                    <DiscordIcon
-                      className={`mt-0.5 h-5 w-5 text-muted-foreground`}
-                    />
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium">Discord not linked</p>
-                      <p className="text-sm text-muted-foreground">
-                        Link your Discord account to enable the options above.{" "}
-                        <Link
-                          className={`
-                            font-medium text-primary underline
-                            underline-offset-2
-                            hover:no-underline
-                          `}
-                          href="/dashboard/security"
-                        >
-                          Link Discord in Security →
-                        </Link>
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
+            {/* Discord Link Notice */}
+            {!notificationPrefs?.hasDiscordLinked && (
+              <Alert>
+                <DiscordIcon />
+                <AlertTitle>Discord not linked</AlertTitle>
+                <AlertDescription>
+                  Link your Discord account to enable the options above.{" "}
+                  <Link
+                    className="font-medium text-primary underline underline-offset-2 hover:no-underline"
+                    href="/dashboard/security"
+                  >
+                    Link Discord in Security →
+                  </Link>
+                </AlertDescription>
+              </Alert>
+            )}
 
               {/* Info about notification types */}
               <div

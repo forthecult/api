@@ -37,7 +37,7 @@ export default function CheckoutError({ error, reset }: ErrorPageProps) {
           <AlertTriangle className="h-8 w-8 text-destructive" />
         </div>
 
-        <div className="space-y-2">
+        <div className="flex flex-col gap-2">
           <h1 className="text-2xl font-bold">Checkout Error</h1>
           <p className="max-w-md text-muted-foreground">
             We couldn&apos;t process your checkout. Your cart items are still

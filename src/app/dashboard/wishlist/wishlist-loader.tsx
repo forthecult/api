@@ -8,7 +8,7 @@ const WishlistPageClient = dynamic(
   () => import("./page.client").then((m) => m.WishlistPageClient),
   {
     loading: () => (
-      <div className="space-y-6">
+      <div className="flex flex-col gap-6">
         <Skeleton className="h-8 w-48" />
         <div
           className={`

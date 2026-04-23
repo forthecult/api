@@ -46,7 +46,7 @@ export function Footer({ className }: { className?: string }) {
             md:grid-cols-4
           `}
         >
-          <div className="space-y-4">
+          <div className="flex flex-col gap-4">
             <Link className="flex items-center gap-2" href="/">
               <span
                 className={`
@@ -61,7 +61,7 @@ export function Footer({ className }: { className?: string }) {
             <p className="text-base text-muted-foreground">
               Health. Autonomy. Culture.
             </p>
-            <div className="flex space-x-4">
+            <div className="flex gap-4">
               <Button
                 asChild
                 className="h-9 w-9 rounded-full"
@@ -133,7 +133,7 @@ export function Footer({ className }: { className?: string }) {
             >
               Shop
             </h3>
-            <ul aria-label="Shop" className="space-y-2.5 text-base">
+            <ul aria-label="Shop" className="flex flex-col gap-2.5 text-base">
               <li>
                 <Link
                   className={`
@@ -189,14 +189,14 @@ export function Footer({ className }: { className?: string }) {
             >
               Store Links
             </h3>
-            <ul className="space-y-2.5 text-base">
-              <li>
-                <Link
-                  className={`
-                    text-muted-foreground transition-colors
-                    hover:text-foreground
-                  `}
-                  href="/about"
+<ul className="flex flex-col gap-2.5 text-base">
+        <li>
+          <Link
+            className={`
+              text-muted-foreground transition-colors
+              hover:text-foreground
+            `}
+            href="/about"
                 >
                   About Us
                 </Link>
@@ -289,14 +289,14 @@ export function Footer({ className }: { className?: string }) {
             >
               Support
             </h3>
-            <ul className="space-y-2.5 text-base">
-              <li>
-                <Link
-                  className={`
-                    text-muted-foreground transition-colors
-                    hover:text-foreground
-                  `}
-                  href="/contact"
+<ul className="flex flex-col gap-2.5 text-base">
+        <li>
+          <Link
+            className={`
+              text-muted-foreground transition-colors
+              hover:text-foreground
+            `}
+            href="/contact"
                 >
                   Contact Us
                 </Link>

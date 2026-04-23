@@ -444,7 +444,7 @@ function UnlimitedPlanCard({
             })()}
           </div>
         )}
-        <div className="space-y-1">
+        <div className="flex flex-col gap-1">
           <label className="text-xs font-medium text-muted-foreground">
             Days
           </label>
@@ -1471,7 +1471,7 @@ export function EsimStorePage() {
           >
             Frequently asked questions
           </h2>
-          <div className="mx-auto w-full max-w-7xl space-y-3">
+          <div className="mx-auto w-full max-w-7xl flex flex-col gap-3">
             {[
               {
                 a: (

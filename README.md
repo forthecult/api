@@ -7,6 +7,7 @@
 ## stack
 
 1. 🧱 **core**: [nextjs 15.3](https://nextjs.org) + [react 19.1](https://react.dev) + [ts 5.8](https://typescriptlang.org)
+2. 🔐 **security**: [gitleaks](https://gitleaks.io) (secret scanning) + [grype](https://github.com/anchore/grype) + [semgrep](https://semgrep.dev) + [checkov](https://checkov.io)
 2. 🎨 **ui**: [tailwind 4.1](https://tailwindcss.com) + [shadcn/ui](https://ui.shadcn.com)
 3. 🔒 **auth**: [better-auth](https://better-auth.com)
 4. 🎬 **anims**: [animejs](https://animejs.com)

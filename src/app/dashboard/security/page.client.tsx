@@ -612,7 +612,7 @@ export function SecurityPageClient() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-6">
       <div className="flex items-center gap-2">
         <Button
           aria-label="Back"
@@ -666,11 +666,11 @@ export function SecurityPageClient() {
             email/password below.
           </p>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="flex flex-col gap-4">
           {accountsLoading ? (
             <p className="text-sm text-muted-foreground">Loading…</p>
           ) : (
-            <ul className="space-y-2">
+            <ul className="flex flex-col gap-2">
               {accounts.map((acc) => (
                 <li
                   className={`
@@ -823,7 +823,7 @@ export function SecurityPageClient() {
               (no password).
             </p>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="flex flex-col gap-4">
             {addEmailError && (
               <div
                 className={`
@@ -924,7 +924,7 @@ export function SecurityPageClient() {
                 </p>
                 <ul
                   className={`
-                    list-inside list-disc space-y-2 text-sm
+                    list-inside list-disc flex flex-col gap-2 text-sm
                     text-muted-foreground
                   `}
                 >
@@ -1038,7 +1038,7 @@ export function SecurityPageClient() {
           <CardHeader>
             <CardTitle>Step 1: Add to authenticator app</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="flex flex-col gap-4">
             <div className="flex flex-col items-center">
               {qrCodeImageUrl ? (
                 <Image
@@ -1092,13 +1092,13 @@ export function SecurityPageClient() {
           <CardHeader>
             <CardTitle>Step 2: Enter code to activate 2FA</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="flex flex-col gap-4">
             <p className="text-sm text-muted-foreground">
               After adding the account in your authenticator app, enter the
               6-digit code it shows below to finish setup.
             </p>
             <div className="flex flex-wrap items-end gap-2">
-              <div className="min-w-[140px] flex-1 space-y-2">
+              <div className="min-w-[140px] flex-1 flex flex-col gap-2">
                 <Label htmlFor="otp-code">6-digit code</Label>
                 <Input
                   id="otp-code"
@@ -1135,7 +1135,7 @@ export function SecurityPageClient() {
             passkey.
           </p>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="flex flex-col gap-6">
           <div>
             <h3 className="mb-2 text-sm font-medium">
               Authenticator app (OTP)
@@ -1202,7 +1202,7 @@ export function SecurityPageClient() {
             ) : (
               <>
                 {passkeys.length > 0 && (
-                  <ul className="mb-3 space-y-2">
+                  <ul className="mb-3 flex flex-col gap-2">
                     {passkeys.map((p) => (
                       <li
                         className={`
@@ -1292,7 +1292,7 @@ function ChangePasswordEmailCard({
           that link to change your password.
         </p>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="flex flex-col gap-4">
         {resetError && (
           <div
             className={`

@@ -145,12 +145,12 @@ export function RefundRequestForm() {
           receive your refund (in stablecoin).
         </p>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="flex flex-col gap-6">
         <form
-          className="space-y-4"
+          className="flex flex-col gap-4"
           onSubmit={lookupStatus !== "success" ? handleLookup : handleSubmit}
         >
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             <Label htmlFor="refund-order-id">Order ID</Label>
             <Input
               autoComplete="off"
@@ -168,7 +168,7 @@ export function RefundRequestForm() {
               value={orderId}
             />
           </div>
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             <Label htmlFor="refund-lookup">
               Email, payment address, or postal code
             </Label>
@@ -207,8 +207,7 @@ export function RefundRequestForm() {
 
           {showRefundAddressField && (
             <div
-              className={`
-                space-y-2 rounded-md border border-border bg-muted/30 p-4
+              className={`flex flex-col gap-2 rounded-md border border-border bg-muted/30 p-4
               `}
             >
               <p className="text-sm font-medium text-foreground">

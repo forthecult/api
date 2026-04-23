@@ -29,11 +29,11 @@ export default function ProductDetailLoading() {
             <div className="aspect-square animate-pulse rounded-lg bg-muted" />
 
             {/* Product info skeleton */}
-            <div className="flex flex-col space-y-4">
+            <div className="flex flex-col flex flex-col gap-4">
               <div className="h-8 w-3/4 animate-pulse rounded bg-muted" />
               <div className="h-5 w-1/4 animate-pulse rounded bg-muted" />
               <div className="h-6 w-1/3 animate-pulse rounded bg-muted" />
-              <div className="space-y-2">
+              <div className="flex flex-col gap-2">
                 <div className="h-4 w-full animate-pulse rounded bg-muted" />
                 <div className="h-4 w-5/6 animate-pulse rounded bg-muted" />
                 <div className="h-4 w-4/6 animate-pulse rounded bg-muted" />

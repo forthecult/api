@@ -8,7 +8,7 @@ const CheckoutClient = dynamic(
   () => import("~/app/checkout/CheckoutClient").then((m) => m.CheckoutClient),
   {
     loading: () => (
-      <div className="space-y-6">
+      <div className="flex flex-col gap-6">
         <Skeleton className="h-10 w-48" />
         <Skeleton className="h-64 w-full" />
         <div

@@ -17,7 +17,7 @@ export default function BlogLoading() {
         `}
       >
         {[1, 2, 3, 4].map((i) => (
-          <div className="space-y-3" key={i}>
+          <div className="flex flex-col gap-3" key={i}>
             <Skeleton className="aspect-video w-full rounded-lg" />
             <Skeleton className="h-6 w-3/4" />
             <Skeleton className="h-4 w-full" />

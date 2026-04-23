@@ -85,8 +85,8 @@ export default function ServicesPage() {
       >
         <strong className="font-semibold">Disclosure:</strong>{" "}
         <span className="text-muted-foreground">
-          Paid relationships or affiliate links may apply. We do not let fees
-          change our editorial opinion—we recommend what we would use ourselves.
+          Affiliate links may apply. We do not let fees
+          change our editorial opinion—we only recommend what we use ourselves.
         </span>
       </div>
 

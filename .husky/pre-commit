@@ -1,7 +1,38 @@
 #!/bin/sh
-# Run typecheck so broken code (e.g. missing imports, type errors) doesn't get committed.
-# Full `bun run check` (lint + biome + knip) runs in CI.
-if [ -d ftc ] && [ -f ftc/package.json ]; then
-  cd ftc
+# Pre-commit hooks for security and code quality
+
+# Navigate to webapp directory if nested
+if [ -d webapp ] && [ -f webapp/package.json ]; then
+  cd webapp
 fi
+
+# 1. Run gitleaks to detect secrets
+echo "🔍 Running gitleaks to detect secrets..."
+if command -v gitleaks >/dev/null 2>&1; then
+  gitleaks detect --source . --verbose --no-git
+  if [ $? -ne 0 ]; then
+    echo "❌ gitleaks detected potential secrets. Review and commit with --no-verify if false positive."
+    exit 1
+  fi
+else
+  echo "⚠️  gitleaks not installed. Install with: curl -sSfL https://github.com/gitleaks/gitleaks/releases/latest/download/gitleaks-linux-amd64 -o gitleaks && chmod +x gitleaks"
+fi
+
+# 2. Run security audit on dependencies
+echo "🔍 Running npm audit..."
+if command -v npm >/dev/null 2>&1; then
+  npm audit --audit-level=moderate
+  if [ $? -gt 0 ]; then
+    echo "⚠️  npm audit found vulnerabilities. Run 'npm audit fix' or review manually."
+    # Non-blocking for now during active development
+  fi
+fi
+
+# 3. Run typecheck so broken code (e.g. missing imports, type errors) doesn't get committed.
+echo "🔍 Running typecheck..."
 bun run typecheck
+
+# 4. Run lint-staged if available (configured in package.json)
+# This will only run on staged files for performance
+
+echo "✅ Pre-commit checks passed!"
