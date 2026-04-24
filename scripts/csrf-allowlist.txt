@@ -1,0 +1,84 @@
+# CSRF Origin Allowlist — baseline generated 2026-04-23
+#
+# Each path below is a state-changing API route that does NOT currently call
+# verifyCsrfOrigin(). This file is a RATCHET baseline, not a license: new
+# routes MUST call verifyCsrfOrigin or they will break CI. Existing entries
+# should be systematically removed — see docs/compliance-audit-soc2-20260423.md
+# → remediation roadmap item "CSRF coverage".
+#
+# SOC 2: CC6.1 (logical access controls).
+
+src/app/api/affiliates/apply/route.ts
+src/app/api/affiliates/me/route.ts
+src/app/api/agent/me/preferences/route.ts
+src/app/api/agent/shop/route.ts
+src/app/api/ai/agent/route.ts
+src/app/api/ai/backup/route.ts
+src/app/api/ai/channels/route.ts
+src/app/api/ai/chat/route.ts
+src/app/api/ai/conversations/[id]/route.ts
+src/app/api/ai/conversations/route.ts
+src/app/api/ai/memories/[id]/route.ts
+src/app/api/ai/memories/route.ts
+src/app/api/ai/rag/chunks/[id]/route.ts
+src/app/api/ai/rag/documents/route.ts
+src/app/api/ai/tts/route.ts
+src/app/api/cart/estimate/route.ts
+src/app/api/checkout/btcpay/confirm/route.ts
+src/app/api/checkout/btcpay/create-order/route.ts
+src/app/api/checkout/coupons/automatic/route.ts
+src/app/api/checkout/coupons/validate/route.ts
+src/app/api/checkout/eth-pay/confirm/route.ts
+src/app/api/checkout/eth-pay/create-order/route.ts
+src/app/api/checkout/route.ts
+src/app/api/checkout/solana-pay/confirm/route.ts
+src/app/api/checkout/solana-pay/create-order/route.ts
+src/app/api/checkout/ton-pay/confirm/route.ts
+src/app/api/checkout/ton-pay/create-order/route.ts
+src/app/api/checkout/x402/route.ts
+src/app/api/contact/route.ts
+src/app/api/email/unsubscribe/route.ts
+src/app/api/esim/checkout/route.ts
+src/app/api/esim/crypto-checkout/route.ts
+src/app/api/esim/membership-claim/route.ts
+src/app/api/esim/orders/[orderId]/retry-provisioning/route.ts
+src/app/api/esim/purchase/route.ts
+src/app/api/governance/proposals/[id]/vote/route.ts
+src/app/api/governance/restake/prepare/route.ts
+src/app/api/governance/stake/prepare/route.ts
+src/app/api/governance/unstake/prepare/route.ts
+src/app/api/ingest/[[...path]]/route.ts
+src/app/api/internal/messaging/discord-dm/route.ts
+src/app/api/media/route.ts
+src/app/api/newsletter/subscribe/route.ts
+src/app/api/orders/[orderId]/marketing-consent/route.ts
+src/app/api/orders/track/route.ts
+src/app/api/payments/stripe/create-checkout-session/route.ts
+src/app/api/payments/stripe/create-payment-intent/route.ts
+src/app/api/products/search/route.ts
+src/app/api/products/semantic-search/route.ts
+src/app/api/products/store/search/route.ts
+src/app/api/refund/lookup/route.ts
+src/app/api/refund/request/route.ts
+src/app/api/shipping/calculate/route.ts
+src/app/api/shipping/printify-options/route.ts
+src/app/api/shipping/product-estimate/route.ts
+src/app/api/solana-rpc/route.ts
+src/app/api/subscribe/membership/route.ts
+src/app/api/subscription/membership/portal/route.ts
+src/app/api/subscriptions/checkout/route.ts
+src/app/api/support-chat/conversations/[id]/messages/route.ts
+src/app/api/support-chat/conversations/[id]/route.ts
+src/app/api/support-chat/conversations/route.ts
+src/app/api/support-tickets/[id]/messages/route.ts
+src/app/api/support-tickets/[id]/route.ts
+src/app/api/support-tickets/route.ts
+src/app/api/swap/sol-cult/prepare/route.ts
+src/app/api/token-gate/challenge/route.ts
+src/app/api/token-gate/validate/route.ts
+src/app/api/user/addresses/route.ts
+src/app/api/user/avatar/route.ts
+src/app/api/wishlist/route.ts
+src/app/api/x402/media/product-images/route.ts
+src/app/api/x402/rates/products-crypto/route.ts
+src/app/api/x402/rates/products-fiat/route.ts

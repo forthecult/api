@@ -19,11 +19,11 @@ export default function DashboardAiPage() {
         </p>
       </div>
 
-    <div className="flex flex-wrap gap-2">
-      <Button asChild>
-        <Link href="/chat">Open chat</Link>
-      </Button>
-    </div>
+      <div className="flex flex-wrap gap-2">
+        <Button asChild>
+          <Link href="/chat">Open chat</Link>
+        </Button>
+      </div>
 
       <DashboardAiWidgetToggle />
     </div>

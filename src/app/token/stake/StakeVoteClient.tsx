@@ -364,7 +364,7 @@ export function StakeVoteClient() {
   return (
     <div
       className={`
-        container mx-auto max-w-7xl flex flex-col gap-10 px-4 py-10
+        container mx-auto flex max-w-7xl flex-col gap-10 px-4 py-10
         sm:px-6
         lg:px-8
       `}

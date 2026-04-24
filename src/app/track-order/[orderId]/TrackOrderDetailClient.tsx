@@ -151,7 +151,9 @@ export function TrackOrderDetailClient({
 
       <Card>
         <CardHeader
-          className={`flex flex-row items-center justify-between flex flex-col gap-0 pb-2`}
+          className={`
+            flex flex-col flex-row items-center justify-between gap-0 pb-2
+          `}
         >
           <span className="text-sm font-medium text-muted-foreground">
             Status

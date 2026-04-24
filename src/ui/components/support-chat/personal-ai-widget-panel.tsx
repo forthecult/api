@@ -8,20 +8,25 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { useAiLocalStorageSync } from "~/app/chat/use-ai-local-storage-sync";
+import { migrateLegacyAiKeys } from "~/lib/ai-local-bundle";
 import { useSession } from "~/lib/auth-client";
 import { cn } from "~/lib/cn";
 import { Button } from "~/ui/primitives/button";
 
-const GUEST_KEY = "ftc-ai-guest-id";
-const TEMP_KEY = "ftc-ai-temperature";
-const TOP_P_KEY = "ftc-ai-top-p";
-const WEB_KEY = "ftc-ai-web-enabled";
-const URL_SCRAPE_KEY = "ftc-ai-url-scraping";
+const GUEST_KEY = "culture-ai-guest-id";
+const TEMP_KEY = "culture-ai-temperature";
+const TOP_P_KEY = "culture-ai-top-p";
+const WEB_KEY = "culture-ai-web-enabled";
+const URL_SCRAPE_KEY = "culture-ai-url-scraping";
 
 /** Inline Personal AI chat for the floating widget (same API as /chat). */
 export function PersonalAiWidgetPanel() {
   const { data: sessionData } = useSession();
   const userId = sessionData?.user?.id ?? null;
+
+  useEffect(() => {
+    migrateLegacyAiKeys();
+  }, []);
 
   const [guestId] = useState(() =>
     typeof window === "undefined" ? "" : getOrCreateGuestId(),
@@ -134,7 +139,7 @@ export function PersonalAiWidgetPanel() {
     <div className="flex min-h-0 flex-1 flex-col">
       <div
         className={cn(
-          "min-h-0 flex-1 flex flex-col gap-2 overflow-y-auto px-3 py-2",
+          "flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-3 py-2",
           "text-sm",
         )}
       >

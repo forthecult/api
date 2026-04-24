@@ -1,0 +1,25 @@
+# Optional DNS probes for the public sending domain (informational).
+name: Email DNS probe
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: webapp
+
+jobs:
+  dns:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: DNS probe (DOMAIN optional)
+        env:
+          DOMAIN: ${{ secrets.EMAIL_DNS_PROBE_DOMAIN }}
+        run: bash scripts/verify-email-dns.sh

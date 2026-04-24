@@ -138,14 +138,14 @@ export function ShopByCryptoMenu({
             gridTemplateColumns: `repeat(${categories.length}, minmax(160px, 1fr))`,
           }}
         >
-        {categories.map((cat) => {
-          const href = cat.slug ? `/${cat.slug}` : "/products";
-          return (
-            <div
-              className="flex min-w-[160px] shrink-0 flex-col"
-              key={cat.id}
-            >
-              <Link
+          {categories.map((cat) => {
+            const href = cat.slug ? `/${cat.slug}` : "/products";
+            return (
+              <div
+                className="flex min-w-[160px] shrink-0 flex-col"
+                key={cat.id}
+              >
+                <Link
                   className={`
                     rounded-lg px-3 py-2 text-base font-semibold
                     transition-colors

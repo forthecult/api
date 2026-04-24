@@ -975,8 +975,8 @@ export function MembershipClient() {
                     !(user?.id && !userMembershipFetched) && (
                       <div
                         className={`
-                          mb-4 flex flex-col gap-3 rounded-xl border border-primary/20
-                          bg-primary/5 p-3
+                          mb-4 flex flex-col gap-3 rounded-xl border
+                          border-primary/20 bg-primary/5 p-3
                         `}
                       >
                         <div className="flex items-center gap-3">
@@ -2202,7 +2202,9 @@ export function MembershipClient() {
                 </span>
               </button>
             </div>
-            <div className="mx-auto mt-6 max-w-md flex flex-col gap-2 text-center">
+            <div
+              className={`mx-auto mt-6 flex max-w-md flex-col gap-2 text-center`}
+            >
               <p className="text-sm text-muted-foreground">Payment method</p>
               <div
                 className={`
@@ -2355,7 +2357,7 @@ export function MembershipClient() {
                       </div>
 
                       {/* Benefits list */}
-                      <ul className="flex-1 flex flex-col gap-2">
+                      <ul className="flex flex-1 flex-col gap-2">
                         {[
                           tierData.benefits.shipping !== "Free"
                             ? `${tierData.benefits.shipping} off shipping`
@@ -2487,7 +2489,11 @@ export function MembershipClient() {
               </div>
             </div>
 
-            <ul className="mt-6 flex flex-col gap-2 text-base text-muted-foreground">
+            <ul
+              className={`
+                mt-6 flex flex-col gap-2 text-base text-muted-foreground
+              `}
+            >
               <li className="flex items-start gap-2">
                 <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                 <span>
@@ -3217,7 +3223,11 @@ export function MembershipClient() {
               Frequently Asked Questions
             </h2>
 
-            <div className="mt-10 flex flex-col gap-0 rounded-xl border border-border">
+            <div
+              className={`
+                mt-10 flex flex-col gap-0 rounded-xl border border-border
+              `}
+            >
               {MEMBERSHIP_FAQ.map(({ a, q }) => (
                 <details
                   className={`

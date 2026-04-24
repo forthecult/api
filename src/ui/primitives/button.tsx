@@ -39,12 +39,12 @@ const buttonVariants = cva(
         `,
       },
       variant: {
-    default: `
-    bg-primary font-semibold text-primary-foreground
-    hover:bg-primary/90
-    focus-visible:ring-2 focus-visible:ring-ring/60
-    active:bg-primary/80
-    `,
+        default: `
+          bg-primary font-semibold text-primary-foreground
+          hover:bg-primary/90
+          focus-visible:ring-2 focus-visible:ring-ring/60
+          active:bg-primary/80
+        `,
         destructive: `
           bg-destructive text-white
           hover:bg-destructive/90
@@ -60,11 +60,11 @@ const buttonVariants = cva(
           hover:underline
           focus-visible:ring-2 focus-visible:ring-primary/40
         `,
-    outline: `
-    border border-border bg-transparent text-foreground
-    hover:border-primary/50 hover:bg-muted hover:text-primary
-    focus-visible:ring-2 focus-visible:ring-primary/40
-    `,
+        outline: `
+          border border-border bg-transparent text-foreground
+          hover:border-primary/50 hover:bg-muted hover:text-primary
+          focus-visible:ring-2 focus-visible:ring-primary/40
+        `,
         secondary: `
           bg-secondary text-secondary-foreground
           hover:bg-secondary/80

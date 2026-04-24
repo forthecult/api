@@ -7,6 +7,8 @@ import { cn } from "~/lib/cn";
 
 interface ProductReviewsCarouselProps {
   className?: string;
+  /** Limit reviews to products in this category when set (admin “category specific” footer reviews). */
+  forCategorySlug?: string;
 }
 
 interface ReviewItem {
@@ -23,6 +25,7 @@ interface ReviewItem {
  */
 export function ProductReviewsCarousel({
   className,
+  forCategorySlug,
 }: ProductReviewsCarouselProps) {
   const [reviews, setReviews] = useState<ReviewItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,10 +33,15 @@ export function ProductReviewsCarousel({
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      setLoading(true);
       try {
-        const res = await fetch(
-          "/api/reviews?limit=20&includeProductName=true",
-        );
+        const qs = new URLSearchParams({
+          includeProductName: "true",
+          limit: "20",
+        });
+        const t = forCategorySlug?.trim();
+        if (t) qs.set("forCategory", t);
+        const res = await fetch(`/api/reviews?${qs.toString()}`);
         if (!res.ok) throw new Error("Failed to fetch reviews");
         const data = (await res.json()) as { items: ReviewItem[] };
         if (!cancelled) {
@@ -48,7 +56,7 @@ export function ProductReviewsCarousel({
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [forCategorySlug]);
 
   // Don't render if no reviews
   if (!loading && reviews.length === 0) {

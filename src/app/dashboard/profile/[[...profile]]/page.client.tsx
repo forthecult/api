@@ -9,6 +9,11 @@ import { toast } from "sonner";
 import { useCurrentUserOrRedirect } from "~/lib/auth-client";
 import { compressAvatarImage } from "~/lib/avatar-image-compress";
 import { isRealEmail } from "~/lib/is-real-email";
+import {
+  COUNTRY_OPTIONS_ALPHABETICAL,
+  useCountryCurrency,
+} from "~/lib/hooks/use-country-currency";
+import { getDialCodeForIso, parseE164ToForm } from "~/lib/phone-e164";
 import { useUploadThing } from "~/lib/uploadthing";
 import { Button } from "~/ui/primitives/button";
 import { Input } from "~/ui/primitives/input";
@@ -22,8 +27,11 @@ export function ProfilePageClient() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
+  const [phoneLocal, setPhoneLocal] = useState("");
+  const [phoneCountry, setPhoneCountry] = useState("US");
+  const [birthDate, setBirthDate] = useState("");
   const [saving, setSaving] = useState(false);
+  const { selectedCountry } = useCountryCurrency();
   const [loading, setLoading] = useState(true);
   const [avatarUrlOverride, setAvatarUrlOverride] = useState<null | string>(
     null,
@@ -106,15 +114,34 @@ export function ProfilePageClient() {
         });
         if (res.ok) {
           const data = (await res.json()) as {
+            birthDate?: string;
             email?: string;
             firstName?: string;
             lastName?: string;
             phone?: string;
+            phoneCountry?: string;
           };
           setFirstName(data.firstName ?? "");
           setLastName(data.lastName ?? "");
           setEmail(data.email ?? user.email ?? "");
-          setPhone(data.phone ?? "");
+          setBirthDate(
+            (data.birthDate && /^\d{4}-\d{2}-\d{2}$/.test(data.birthDate)
+              ? data.birthDate
+              : "") ?? "",
+          );
+          const pc = (data.phoneCountry ?? "").trim().toUpperCase().slice(0, 2);
+          if (pc) {
+            setPhoneCountry(pc);
+          } else {
+            setPhoneCountry(
+              (selectedCountry ?? "US") as string,
+            );
+          }
+          const parsed = parseE164ToForm(data.phone ?? "");
+          setPhoneLocal(parsed.national);
+          if (data.phone?.startsWith("+") && !pc) {
+            setPhoneCountry(parsed.iso);
+          }
         } else {
           // Fallback to session data
           setEmail(user.email ?? "");
@@ -128,7 +155,7 @@ export function ProfilePageClient() {
     };
 
     void loadProfile();
-  }, [user]);
+  }, [user, selectedCountry]);
 
   if (isPending || loading) {
     return (
@@ -144,9 +171,11 @@ export function ProfilePageClient() {
     try {
       const res = await fetch("/api/user/profile", {
         body: JSON.stringify({
+          birthDate: birthDate.trim() || null,
           firstName: firstName.trim(),
           lastName: lastName.trim(),
-          phone: phone.trim() || null,
+          phoneCountry: phoneCountry.trim() || "US",
+          phoneLocal: phoneLocal.trim() || null,
         }),
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -266,7 +295,8 @@ export function ProfilePageClient() {
             </div>
             {isRealEmail(email) && (
               <div
-                className={`flex flex-col gap-2
+                className={`
+                  flex flex-col gap-2
                   sm:col-span-2
                 `}
               >
@@ -285,19 +315,65 @@ export function ProfilePageClient() {
                 </p>
               </div>
             )}
+            <div className="flex flex-col gap-2 sm:col-span-2">
+              <Label htmlFor="birthDate">Birth date</Label>
+              <Input
+                id="birthDate"
+                onChange={(e) => setBirthDate(e.target.value)}
+                type="date"
+                value={birthDate}
+              />
+            </div>
             <div
-              className={`flex flex-col gap-2
+              className={`
+                flex flex-col gap-2
                 sm:col-span-2
               `}
             >
-              <Label htmlFor="phone">Phone</Label>
-              <Input
-                id="phone"
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="Phone"
-                type="tel"
-                value={phone}
-              />
+              <span className="text-sm font-medium">Phone</span>
+              <div
+                className={`
+                  flex flex-col gap-2
+                  sm:flex-row sm:items-end
+                `}
+              >
+                <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+                  <Label className="text-xs" htmlFor="phoneCountry">
+                    Country
+                  </Label>
+                  <select
+                    className={`
+                      flex h-9 w-full rounded-md border border-input
+                      bg-background px-3 py-1 text-sm
+                      focus-visible:ring-2 focus-visible:ring-ring
+                      focus-visible:outline-none
+                    `}
+                    id="phoneCountry"
+                    onChange={(e) => setPhoneCountry(e.target.value)}
+                    value={phoneCountry}
+                  >
+                    {COUNTRY_OPTIONS_ALPHABETICAL.map((c) => (
+                      <option key={c.code} value={c.code}>
+                        {c.countryName} (+{getDialCodeForIso(c.code)})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <Label className="text-xs" htmlFor="phoneLocal">
+                    Number
+                  </Label>
+                  <Input
+                    className="mt-1.5"
+                    id="phoneLocal"
+                    inputMode="tel"
+                    onChange={(e) => setPhoneLocal(e.target.value)}
+                    placeholder="Phone number"
+                    type="tel"
+                    value={phoneLocal}
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </div>

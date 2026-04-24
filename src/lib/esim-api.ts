@@ -482,10 +482,10 @@ async function esimFetch<T>(
             ...options.headers,
           },
         });
-    if (!retryRes.ok) {
-      throw new Error(`eSIM API request failed: ${retryRes.status}`);
-    }
-    return retryRes.json() as T;
+        if (!retryRes.ok) {
+          throw new Error(`eSIM API request failed: ${retryRes.status}`);
+        }
+        return retryRes.json() as T;
       }
 
       if (!res.ok) {

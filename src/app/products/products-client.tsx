@@ -85,6 +85,9 @@ interface ProductsClientProps {
   initialTotalPages: number;
   /** Child categories for subcategory filter (when on a category page) */
   subcategories?: CategoryOption[];
+  /** For crypto category pages: non-crypto top-level categories with overlapping products */
+  merchFilterOptions?: CategoryOption[];
+  initialMerchCategory?: string;
   /** For category pages: heading and subtext (default: "Products" / "Browse our latest...") */
   title?: string;
 }
@@ -112,6 +115,8 @@ export function ProductsClient({
   initialTotal,
   initialTotalPages,
   subcategories = [],
+  merchFilterOptions = [],
+  initialMerchCategory = "",
   title = "Products",
 }: ProductsClientProps) {
   const router = useRouter();
@@ -131,6 +136,9 @@ export function ProductsClient({
   );
   const [searchQuery, setSearchQuery] = React.useState(initialSearch);
   const [searchInput, setSearchInput] = React.useState(initialSearch);
+  const [selectedMerch, setSelectedMerch] = React.useState(
+    () => initialMerchCategory?.trim() ?? "",
+  );
   const [loading, setLoading] = React.useState(false);
   /** True when loading the next page via "Load More" (append mode). */
   const [loadingMore, setLoadingMore] = React.useState(false);
@@ -184,6 +192,7 @@ export function ProductsClient({
       q?: string;
       sort?: SortOption;
       subcategory?: string;
+      merch?: string;
     }) => {
       const cat = opts.category ?? selectedCategory;
       const path = cat === "all" ? "/products" : `/${cat}`;
@@ -192,14 +201,23 @@ export function ProductsClient({
       const s = opts.sort ?? sort;
       const sub = opts.subcategory ?? selectedSubcategory;
       const searchQ = opts.q ?? searchQuery;
+      const m = opts.merch !== undefined ? opts.merch : selectedMerch;
       if (p > 1) params.set("page", String(p));
       if (s !== "newest") params.set("sort", s);
       if (sub) params.set("subcategory", sub);
       if (searchQ) params.set("q", searchQ);
+      if (cat !== "all" && m?.trim()) params.set("merch", m.trim());
       const qs = params.toString();
       return qs ? `${path}?${qs}` : path;
     },
-    [selectedCategory, page, sort, selectedSubcategory, searchQuery],
+    [
+      selectedCategory,
+      page,
+      sort,
+      selectedSubcategory,
+      searchQuery,
+      selectedMerch,
+    ],
   );
 
   const fetchProducts = React.useCallback(
@@ -211,6 +229,7 @@ export function ProductsClient({
       search = "",
       /** When true, appends results to the existing list instead of replacing. */
       append = false,
+      merchFilter = "",
     ) => {
       if (append) {
         setLoadingMore(true);
@@ -227,6 +246,9 @@ export function ProductsClient({
         else params.set("forStorefront", "1");
         if (subcategorySlug) params.set("subcategory", subcategorySlug);
         if (search.trim()) params.set("q", search.trim());
+        if (categorySlug !== "all" && merchFilter?.trim()) {
+          params.set("merchCategory", merchFilter.trim());
+        }
 
         const res = await fetch(`/api/products?${params}`, {
           credentials: "include",
@@ -281,7 +303,14 @@ export function ProductsClient({
     setProducts(initialProducts);
     setTotalPages(initialTotalPages);
     setTotal(initialTotal);
-  }, [initialPage, initialTotal, initialTotalPages, initialProducts]);
+    setSelectedMerch(initialMerchCategory?.trim() ?? "");
+  }, [
+    initialPage,
+    initialTotal,
+    initialTotalPages,
+    initialProducts,
+    initialMerchCategory,
+  ]);
 
   // When search query changes (user typed), go to page 1 and refetch
   const prevSearchRef = React.useRef(initialSearch);
@@ -290,13 +319,22 @@ export function ProductsClient({
     prevSearchRef.current = searchQuery;
     setPage(1);
     router.push(buildPath({ page: 1, q: searchQuery }), { scroll: false });
-    fetchProducts(1, selectedCategory, sort, selectedSubcategory, searchQuery);
+    fetchProducts(
+      1,
+      selectedCategory,
+      sort,
+      selectedSubcategory,
+      searchQuery,
+      false,
+      selectedMerch,
+    );
   }, [
     searchQuery,
     buildPath,
     selectedCategory,
     sort,
     selectedSubcategory,
+    selectedMerch,
     fetchProducts,
     router,
   ]);
@@ -305,10 +343,11 @@ export function ProductsClient({
     (categorySlug: string) => {
       setSelectedCategory(categorySlug);
       setSelectedSubcategory("");
+      setSelectedMerch("");
       setPage(1);
       const path = categorySlug === "all" ? "/products" : `/${categorySlug}`;
       router.push(`${path}?page=1`, { scroll: false });
-      fetchProducts(1, categorySlug, sort, "", searchQuery);
+      fetchProducts(1, categorySlug, sort, "", searchQuery, false, "");
     },
     [router, fetchProducts, sort, searchQuery],
   );
@@ -324,12 +363,15 @@ export function ProductsClient({
         newSort,
         selectedSubcategory,
         searchQuery,
+        false,
+        selectedMerch,
       );
     },
     [
       router,
       selectedCategory,
       selectedSubcategory,
+      selectedMerch,
       fetchProducts,
       buildPath,
       searchQuery,
@@ -343,9 +385,51 @@ export function ProductsClient({
       router.push(buildPath({ page: 1, subcategory: subSlug }), {
         scroll: false,
       });
-      fetchProducts(1, selectedCategory, sort, subSlug, searchQuery);
+      fetchProducts(
+        1,
+        selectedCategory,
+        sort,
+        subSlug,
+        searchQuery,
+        false,
+        selectedMerch,
+      );
     },
-    [router, selectedCategory, sort, fetchProducts, buildPath, searchQuery],
+    [
+      router,
+      selectedCategory,
+      sort,
+      selectedMerch,
+      fetchProducts,
+      buildPath,
+      searchQuery,
+    ],
+  );
+
+  const handleMerchChange = React.useCallback(
+    (merchSlug: string) => {
+      setSelectedMerch(merchSlug);
+      setPage(1);
+      router.push(buildPath({ page: 1, merch: merchSlug }), { scroll: false });
+      fetchProducts(
+        1,
+        selectedCategory,
+        sort,
+        selectedSubcategory,
+        searchQuery,
+        false,
+        merchSlug,
+      );
+    },
+    [
+      router,
+      buildPath,
+      fetchProducts,
+      selectedCategory,
+      sort,
+      selectedSubcategory,
+      searchQuery,
+    ],
   );
 
   const handleLoadMore = React.useCallback(() => {
@@ -361,6 +445,7 @@ export function ProductsClient({
       selectedSubcategory,
       searchQuery,
       true,
+      selectedMerch,
     );
   }, [
     page,
@@ -369,6 +454,7 @@ export function ProductsClient({
     sort,
     selectedSubcategory,
     searchQuery,
+    selectedMerch,
     fetchProducts,
     buildPath,
   ]);
@@ -443,8 +529,9 @@ export function ProductsClient({
     if (selectedSubcategory) count++;
     if (searchQuery) count++;
     if (sort !== "newest") count++;
+    if (selectedMerch) count++;
     return count;
-  }, [selectedCategory, selectedSubcategory, searchQuery, sort]);
+  }, [selectedCategory, selectedSubcategory, searchQuery, sort, selectedMerch]);
 
   // Default breadcrumbs if none provided
   const breadcrumbItems = React.useMemo<BreadcrumbItem[]>(() => {
@@ -599,12 +686,13 @@ export function ProductsClient({
                     onClick={() => {
                       setSearchInput("");
                       setSelectedSubcategory("");
+                      setSelectedMerch("");
                       setSort("newest");
                       if (selectedCategory !== "all") {
                         handleCategoryChange("all");
                       } else {
                         setPage(1);
-                        fetchProducts(1, "all", "newest", "", "");
+                        fetchProducts(1, "all", "newest", "", "", false, "");
                         router.push("/products", { scroll: false });
                       }
                     }}
@@ -706,8 +794,46 @@ export function ProductsClient({
             </div>
           )}
 
+          {merchFilterOptions.length > 0 && (
+            <div
+              className={`
+                mb-6 flex flex-col gap-2
+                sm:flex-row sm:items-center sm:gap-3
+              `}
+            >
+              <span className="text-sm font-medium text-foreground">
+                Also shop
+              </span>
+              <label className="sr-only" htmlFor="merch-category-filter">
+                Filter by product category
+              </label>
+              <select
+                className={`
+                  h-9 max-w-full rounded-md border border-input
+                  bg-background px-3 py-1 text-sm
+                  sm:max-w-xs
+                  focus-visible:ring-2 focus-visible:ring-ring
+                  focus-visible:outline-none
+                `}
+                id="merch-category-filter"
+                onChange={(e) => handleMerchChange(e.target.value)}
+                value={selectedMerch}
+              >
+                <option value="">All product categories</option>
+                {merchFilterOptions.map((m) => (
+                  <option key={m.slug} value={m.slug}>
+                    {m.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           {/* Products grid + pagination */}
-          <section aria-label="Products in this category" className="flex flex-col gap-6">
+          <section
+            aria-label="Products in this category"
+            className={`flex flex-col gap-6`}
+          >
             {loading ? (
               <ProductGridSkeleton count={limit} />
             ) : (
@@ -754,19 +880,34 @@ export function ProductsClient({
                     </p>
                     {(searchQuery ||
                       selectedSubcategory ||
+                      selectedMerch ||
                       selectedCategory !== "all") && (
                       <Button
                         className="mt-4"
                         onClick={() => {
                           setSearchInput("");
                           setSelectedSubcategory("");
+                          setSelectedMerch("");
                           if (selectedCategory !== "all") {
                             handleCategoryChange("all");
                           } else {
                             setPage(1);
-                            fetchProducts(1, selectedCategory, sort, "", "");
+                            fetchProducts(
+                              1,
+                              selectedCategory,
+                              sort,
+                              "",
+                              "",
+                              false,
+                              "",
+                            );
                             router.push(
-                              buildPath({ page: 1, q: "", subcategory: "" }),
+                              buildPath({
+                                page: 1,
+                                q: "",
+                                subcategory: "",
+                                merch: "",
+                              }),
                               { scroll: false },
                             );
                           }

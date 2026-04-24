@@ -39,6 +39,11 @@ const config = {
   // Enable gzip/brotli compression
   compress: true,
 
+  // typedRoutes: true — deferred. Next.js 16 stabilised this at the top level,
+  // but flipping it on across 78+ pages with dynamic string-built hrefs would
+  // flood the typechecker with errors. Turn on after a dedicated pass that
+  // asserts `as Route` on runtime-built URLs.
+
   // Experimental performance features
   experimental: {
     // give upstream image fetches (e.g. ufs.sh) more time before "upstream image response timed out"
@@ -66,6 +71,11 @@ const config = {
       "vaul",
       "zod",
     ],
+    // Richer Web Vitals attribution shipped in Next.js 15.3+. Lets
+    // `useReportWebVitals` (and our PostHog forwarder) see *which element*
+    // caused an LCP / CLS regression instead of only the metric value —
+    // makes performance debugging dramatically cheaper.
+    webVitalsAttribution: ["CLS", "LCP", "INP", "FCP", "TTFB"],
   },
 
   async headers() {
@@ -174,7 +184,11 @@ const config = {
               ].join("; ");
             })(),
           },
-          // Preconnect to frequently-used image/asset CDNs to reduce DNS+TLS latency
+          // Preconnect to site-wide image/asset CDNs to reduce DNS+TLS latency.
+          // Stripe (js.stripe.com) is intentionally NOT here: it's only
+          // reachable from /checkout, so we issue the preconnect from the
+          // checkout page via React 19's `preconnect()` API instead — every
+          // non-checkout page saves the extra TLS handshake.
           {
             key: "Link",
             value: [
@@ -183,7 +197,6 @@ const config = {
               "<https://images-api.printify.com>; rel=dns-prefetch",
               "<https://cdn.shopify.com>; rel=dns-prefetch",
               "<https://assets.coingecko.com>; rel=dns-prefetch",
-              "<https://js.stripe.com>; rel=preconnect",
             ].join(", "),
           },
           // Block crawlers on staging only (VERCEL_ENV=preview or STAGING=1)

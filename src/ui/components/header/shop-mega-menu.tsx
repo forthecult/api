@@ -306,17 +306,18 @@ export function ShopMegaMenu({
               `}
             />
           </Link>
-      <Link
-        className={`
-          hidden text-xs tracking-wider text-[#8A857E] uppercase
-          transition-colors hover:text-[#C4873A]
-          sm:inline
-        `}
-        href="/membership"
-        onClick={() => setOpen(false)}
-      >
-        Free worldwide shipping for CULT Members
-      </Link>
+          <Link
+            className={`
+              hidden text-xs tracking-wider text-[#8A857E] uppercase
+              transition-colors
+              hover:text-[#C4873A]
+              sm:inline
+            `}
+            href="/membership"
+            onClick={() => setOpen(false)}
+          >
+            Free worldwide shipping for CULT Members
+          </Link>
         </div>
       </PopoverContent>
     </Popover>

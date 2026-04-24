@@ -21,6 +21,8 @@ export const userTable = pgTable("user", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   email: text("email").notNull().unique(),
   emailVerified: boolean("email_verified").default(false).notNull(),
+  /** ISO 8601 date string YYYY-MM-DD */
+  birthDate: text("birth_date"),
   firstName: text("first_name"),
   id: text("id").primaryKey(),
   image: text("image"),
@@ -33,6 +35,8 @@ export const userTable = pgTable("user", {
   marketingWebsite: boolean("marketing_website").default(false),
   name: text("name").notNull(),
   phone: text("phone"),
+  /** ISO 3166-1 alpha-2 default for phone dial code. */
+  phoneCountry: text("phone_country"),
   receiveMarketing: boolean("receive_marketing").default(false),
   receiveOrderNotificationsViaTelegram: boolean(
     "receive_order_notifications_via_telegram",

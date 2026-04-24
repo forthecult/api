@@ -443,6 +443,18 @@ export const auth = betterAuth({
         required: false,
         type: "string",
       },
+      /** ISO 8601 date (YYYY-MM-DD) for profile / age-gated flows. */
+      birthDate: {
+        input: true,
+        required: false,
+        type: "string",
+      },
+      /** ISO 3166-1 alpha-2; default country for phone dialing (can differ from IP). */
+      phoneCountry: {
+        input: true,
+        required: false,
+        type: "string",
+      },
       marketingAiCompanion: {
         defaultValue: false,
         input: false,

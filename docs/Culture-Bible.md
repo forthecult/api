@@ -2,7 +2,7 @@ Culture Brand Bible
 Internal Training Document | February 2026
 
 1. What Culture Is
-Culture is a lifestyle brand selling quality products that promote health, autonomy, and human flourishing. We are plugged into the latest trends, building off the popular Pump Fun memecoin launchpad that is dialed into the latest trends, and sometimes even creates them.
+Culture is a lifestyle brand selling quality products that promote health, autonomy, and human flourishing. Our audience is people roughly 18–48 who want to live well — technology-literate, longevity-minded, early adopters, interested in smart home tools and everyday goods that make their lives better.
 
 1. Origin
 Culture started in 2015 selling crypto merchandise from apparel to hardware wallets to the early crypto community. Over a decade, we learned what that community values: self-sovereignty, quality, and skepticism of centralized systems. We shut down in 2019. Now, we no longer see a need to start a business that promotes crypto because everyone knows what crypto is. We are building a lifestyle brand where crypto is a means, rather than an ends.
@@ -86,7 +86,7 @@ GrapheneOS phones
 DePIN nodes (Helium, etc.)
 VR/AR headsets
 Laptops (open-source, repairable)
-Biohacking test kits
+At-home health and lab test kits
 
 
 1. Customer Segments
@@ -110,14 +110,14 @@ Wellness Seekers: Care about toxin-free living, longevity, clean eating. May not
 Digital Nomads: Need portable, durable, location-independent products.
 
 
-    CULT token
-CULT is our Solana-based token launched on Pump.Fun, a memecoin platform. Holders are stakeholders.
-Holder Benefits
-Become a member by staking CULT. There are different tiers with different benefits, from free shipping to exclusive products
+    CULT rewards
+CULT is the points used in Culture's rewards program, tracked on the Solana network. It was launched on Pump.fun.
+Member Benefits
+Become a member by holding and locking CULT. Different tiers unlock different member benefits, from free shipping to exclusive products.
 CULT holding Exclusive products
-Token-gatedGovernance votes
-Staked CULT Revenue share
-Staked CULT Private Discord/TelegramToken-gated
+Token-gated Governance votes
+Locked CULT Member rewards
+Locked CULT Private Discord/Telegram (token-gated)
 
 
 Token Economics
@@ -125,12 +125,12 @@ Token Economics
 1 billion max supply
 Deflationary via regular burns
 65% of trading fees fund operations
-Stakers receive portion of profits
+A share of program fees funds CULT buyback-and-burn.
 
 Creator Fee Distribution
 
 5% burned
-5% to stakers
+5% to locked-CULT holders
 10% to inventory and artwork
 5% to charity/research
 Remainder to operations and AI development

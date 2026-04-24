@@ -1,4 +1,5 @@
 import {
+  boolean,
   index,
   integer,
   pgTable,
@@ -31,6 +32,8 @@ export const couponsTable = pgTable("coupon", {
   getDiscountValue: integer("get_discount_value"), // percent or cents
   getQuantity: integer("get_quantity"),
   id: text("id").primaryKey(),
+  /** When true, treat as a gift card / stored value (same redemption path as fixed-amount coupons). */
+  isGiftCard: boolean("is_gift_card").notNull().default(false),
   /** Admin-facing label describing what the discount does (e.g. "10% off eSIMs with CULT"). */
   label: text("label"),
   maxUses: integer("max_uses"), // total redemptions allowed; null = unlimited

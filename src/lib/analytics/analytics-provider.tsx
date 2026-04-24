@@ -2,44 +2,27 @@
 
 import posthog from "posthog-js";
 import { PostHogProvider } from "posthog-js/react";
-import { useLayoutEffect, useRef } from "react";
-
-/** Default ingest host: Railway reverse proxy (see PostHog Railway proxy guide). */
-const defaultPosthogApiHost = "https://albertjaynock.forthecult.store";
 
 /**
- * PostHog runs only when `NEXT_PUBLIC_POSTHOG_KEY` is set. Events go to
- * `NEXT_PUBLIC_POSTHOG_HOST` (defaults to the Cult Railway proxy). With a proxy,
- * `ui_host` must stay on PostHog Cloud for toolbar / session links — set
- * `NEXT_PUBLIC_POSTHOG_UI_HOST` if your project is in the EU region.
+ * Thin wrapper that exposes the shared PostHog client to the React tree via
+ * `usePostHog()` / `usePostHogHook()`.
  *
- * @see https://posthog.com/docs/libraries/js
- * @see https://posthog.com/docs/advanced/proxy/railway
+ * Initialisation itself has moved to `src/instrumentation-client.ts` — that
+ * file runs *before* React hydrates, which fixes three concrete issues:
+ *   1. Previously the init ran inside a `useLayoutEffect` in this provider,
+ *      so fast-bouncing visitors (back-button within ~300 ms) never produced
+ *      a pageview. That's a silent hole in the conversion funnel.
+ *   2. Client-side `$exception` capture needs to hook window.onerror before
+ *      user code runs; a provider runs too late for that.
+ *   3. Removing the effect here eliminates a render-blocking effect on every
+ *      page, helping INP.
+ *
+ * When `NEXT_PUBLIC_POSTHOG_KEY` is unset (local/dev), instrumentation-client
+ * never calls `posthog.init()` — passing the uninitialised client to
+ * <PostHogProvider> is a safe no-op, so we just always render it.
  */
 export function AnalyticsProvider({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const key = process.env.NEXT_PUBLIC_POSTHOG_KEY?.trim();
-  const host =
-    process.env.NEXT_PUBLIC_POSTHOG_HOST?.trim() || defaultPosthogApiHost;
-  const uiHost =
-    process.env.NEXT_PUBLIC_POSTHOG_UI_HOST?.trim() || "https://us.posthog.com";
-  const inited = useRef(false);
-
-  useLayoutEffect(() => {
-    if (!key || inited.current) return;
-    posthog.init(key, {
-      api_host: host,
-      capture_pageleave: true,
-      capture_pageview: true,
-      disable_session_recording: true,
-      persistence: "localStorage",
-      ui_host: uiHost,
-    });
-    inited.current = true;
-  }, [key, host, uiHost]);
-
-  if (!key) return <>{children}</>;
-
   return <PostHogProvider client={posthog}>{children}</PostHogProvider>;
 }

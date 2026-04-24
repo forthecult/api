@@ -14,6 +14,12 @@ build/
 .eslintcache
 tsconfig.tsbuildinfo
 
+# This project uses bun (bun.lock). Stale npm/yarn/pnpm lockfiles confuse
+# SCA scanners (grype, snyk, npm audit) and produce false-positive CVEs.
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
 # Playwright
 /test-results/
 /playwright-report/

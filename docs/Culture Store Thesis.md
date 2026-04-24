@@ -1,3 +1,5 @@
+> Archive — early thesis / brainstorm. Not canonical. For current strategy see [CULTURE-BRAND-VISION.md](CULTURE-BRAND-VISION.md); for voice and vocabulary see [CULTURE-BRAND-GUIDE.md](CULTURE-BRAND-GUIDE.md). Known contradictions (including 1T vs 1B token supply) are tracked in [BRAND-RECONCILIATION.md](BRAND-RECONCILIATION.md).
+
 CULTURE
 
 Lifestyle brand
@@ -183,7 +185,7 @@ TOKEN MECHANICS
 
 Creator Fees
 - Burn CULT tokens (5%)
-- Staked CULT token holders (5%)
+- Locked-CULT holders (5%)
 - Purchase inventory and artwork (10%)
 - Charity - research (10%)
 - Lottery giveaway? (5%)
@@ -354,7 +356,7 @@ Long-term (ideas)
 -   Digital nomad services, e.g. second passports
 -   Laptops (opensource, high quality)
 -   3D printed products and/or 3D printers (e.g. 3D printed shoes)
--   High-tech products that feel futuristic now, but will be incorporated into everyday life (wireless HDMI, biohacking test kits)
+-   High-tech products that feel futuristic now, but will be incorporated into everyday life (wireless HDMI, at-home health and lab test kits)
 -   Humanoid robots
 -   Air taxis, teslas
 

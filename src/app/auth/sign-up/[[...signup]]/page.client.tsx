@@ -127,9 +127,10 @@ export function SignUpPageClient() {
           md:p-8
         `}
       >
-        <div className="w-full max-w-md min-w-0 flex flex-col gap-4">
+        <div className="flex w-full max-w-md min-w-0 flex-col gap-4">
           <div
-            className={`flex flex-col gap-4 text-center
+            className={`
+              flex flex-col gap-4 text-center
               md:text-left
             `}
           >

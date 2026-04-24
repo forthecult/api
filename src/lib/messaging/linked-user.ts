@@ -29,12 +29,13 @@ export async function getLinkedFtcUserId(options: {
   return rows[0]?.userId ?? null;
 }
 
-/** Match `ftc link <code>` or `link <code>` (hex code from dashboard). */
-export function parseFtcLinkCodeFromMessage(text: string): null | string {
+/** Match `link <code>`, `culture link <code>`, or legacy `ftc link <code>` (hex code from dashboard). */
+export function parseLinkCodeFromMessage(text: string): null | string {
   const t = text.trim();
-  const m = t.match(/^(?:ftc\s+link|link)\s+([a-f0-9]{6,64})$/i);
+  const m = t.match(/^(?:(?:culture|ftc)\s+link|link)\s+([a-f0-9]{6,64})$/i);
   return m?.[1]?.toLowerCase() ?? null;
 }
+
 
 export async function tryCompleteLinkByCode(options: {
   code: string;

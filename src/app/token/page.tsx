@@ -251,7 +251,8 @@ export default function TokenPage() {
         >
           <div
             className={`
-              relative z-10 mx-auto w-full max-w-3xl flex flex-col gap-6 text-center
+              relative z-10 mx-auto flex w-full max-w-3xl flex-col gap-6
+              text-center
             `}
           >
             <p className="text-base font-medium text-muted-foreground">
@@ -308,7 +309,8 @@ export default function TokenPage() {
 
         {/* Why Pump.fun, value cards, then What CULT Gets You */}
         <section
-          className={`flex flex-col gap-10 py-6
+          className={`
+            flex flex-col gap-10 py-6
             md:py-6
           `}
         >
@@ -382,7 +384,9 @@ export default function TokenPage() {
               What CULT gets you
             </h3>
             <ul
-              className={`list-inside list-disc flex flex-col gap-2 text-muted-foreground`}
+              className={`
+                flex list-inside list-disc flex-col gap-2 text-muted-foreground
+              `}
             >
               <li>
                 <strong className="text-foreground">Free Shipping</strong> for
@@ -412,7 +416,8 @@ export default function TokenPage() {
 
         {/* Membership */}
         <section
-          className={`flex flex-col gap-8 py-12
+          className={`
+            flex flex-col gap-8 py-12
             md:py-10
           `}
         >
@@ -469,7 +474,8 @@ export default function TokenPage() {
 
         {/* Proposed Token Allocation */}
         <section
-          className={`flex flex-col gap-8 py-12
+          className={`
+            flex flex-col gap-8 py-12
             md:py-6
           `}
         >
@@ -517,7 +523,8 @@ export default function TokenPage() {
 
         {/* Fair Launch Principles */}
         <section
-          className={`flex flex-col gap-6 py-6
+          className={`
+            flex flex-col gap-6 py-6
             md:py-6
           `}
         >
@@ -544,7 +551,8 @@ export default function TokenPage() {
 
         {/* Creator Fee Allocation */}
         <section
-          className={`flex flex-col gap-8 py-16
+          className={`
+            flex flex-col gap-8 py-16
             md:py-12
           `}
         >
@@ -732,7 +740,8 @@ export default function TokenPage() {
 
         {/* Hackathon Funding */}
         <section
-          className={`flex flex-col gap-6 py-6
+          className={`
+            flex flex-col gap-6 py-6
             md:py-6
           `}
         >
@@ -781,7 +790,8 @@ export default function TokenPage() {
 
         {/* Culture */}
         <section
-          className={`flex flex-col gap-6 py-6
+          className={`
+            flex flex-col gap-6 py-6
             md:py-6
           `}
         >
@@ -808,7 +818,8 @@ export default function TokenPage() {
 
         {/*  Governance */}
         <section
-          className={`flex flex-col gap-8 py-12
+          className={`
+            flex flex-col gap-8 py-12
             md:py-16
           `}
         >
@@ -840,7 +851,7 @@ export default function TokenPage() {
               <CardContent>
                 <ul
                   className={`
-                    list-inside list-disc flex flex-col gap-1 text-base
+                    flex list-inside list-disc flex-col gap-1 text-base
                     text-muted-foreground
                   `}
                 >
@@ -859,7 +870,7 @@ export default function TokenPage() {
               <CardContent>
                 <ul
                   className={`
-                    list-inside list-disc flex flex-col gap-1 text-base
+                    flex list-inside list-disc flex-col gap-1 text-base
                     text-muted-foreground
                   `}
                 >
@@ -874,7 +885,8 @@ export default function TokenPage() {
 
         {/* Token FAQ (dropdown accordion like tns.id/token) */}
         <section
-          className={`flex flex-col gap-6 py-6
+          className={`
+            flex flex-col gap-6 py-6
             md:py-6
           `}
         >

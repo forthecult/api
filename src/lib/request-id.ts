@@ -1,6 +1,6 @@
 /**
  * Request ID propagation for distributed tracing.
- * 
+ *
  * Request IDs flow through the system to trace requests across
  * API boundaries, async jobs, and service calls.
  *
@@ -18,9 +18,33 @@ const REQUEST_ID_HEADER = "x-request-id";
 export type RequestId = string;
 
 // Use AsyncLocalStorage for request context propagation
-import { AsyncLocalStorage } from "async_hooks";
+import { AsyncLocalStorage } from "node:async_hooks";
 
 const requestIdStorage = new AsyncLocalStorage<RequestId>();
+
+/**
+ * Extract or generate a request ID from incoming headers
+ */
+export function extractRequestId(
+  headers: Headers | Record<string, string | string[] | undefined>,
+): RequestId {
+  // Try to extract from headers
+  let headerValue: string | undefined;
+
+  if (headers instanceof Headers) {
+    headerValue = headers.get(REQUEST_ID_HEADER) ?? undefined;
+  } else {
+    const raw = headers[REQUEST_ID_HEADER.toLowerCase()];
+    headerValue = Array.isArray(raw) ? raw[0] : raw;
+  }
+
+  // Validate and use, or generate new
+  if (headerValue && isValidRequestId(headerValue)) {
+    return headerValue;
+  }
+
+  return generateRequestId();
+}
 
 /**
  * Generate a new request ID (UUID v4 format)
@@ -46,59 +70,12 @@ export function getRequestId(): RequestId | undefined {
 }
 
 /**
- * Run a function with a specific request ID in context
- */
-export async function withRequestId<T>(
-  requestId: RequestId,
-  fn: () => Promise<T>
-): Promise<T> {
-  return requestIdStorage.run(requestId, fn);
-}
-
-/**
- * Extract or generate a request ID from incoming headers
- */
-export function extractRequestId(
-  headers: Headers | Record<string, string | string[] | undefined>
-): RequestId {
-  // Try to extract from headers
-  let headerValue: string | undefined;
-
-  if (headers instanceof Headers) {
-    headerValue = headers.get(REQUEST_ID_HEADER) ?? undefined;
-  } else {
-    const raw = headers[REQUEST_ID_HEADER.toLowerCase()];
-    headerValue = Array.isArray(raw) ? raw[0] : raw;
-  }
-
-  // Validate and use, or generate new
-  if (headerValue && isValidRequestId(headerValue)) {
-    return headerValue;
-  }
-
-  return generateRequestId();
-}
-
-/**
- * Create headers with the current request ID for outgoing requests
- */
-export function withRequestIdHeaders(
-  headers: Record<string, string> = {}
-): Record<string, string> {
-  const requestId = getRequestId();
-  if (requestId) {
-    return { ...headers, [REQUEST_ID_HEADER]: requestId };
-  }
-  return headers;
-}
-
-/**
  * Log with request ID context
  */
 export function logWithRequestId(
-  level: "info" | "warn" | "error" | "debug",
+  level: "debug" | "error" | "info" | "warn",
   message: string,
-  meta?: Record<string, unknown>
+  meta?: Record<string, unknown>,
 ): void {
   const requestId = getRequestId();
   const fn = logger[level];
@@ -110,23 +87,11 @@ export function logWithRequestId(
 }
 
 /**
- * Validate request ID format (basic UUID-like check)
- */
-function isValidRequestId(id: string): boolean {
-  // Allow UUID v4 format: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
-  // Also allow simple request IDs like "req_" prefix or base64-like strings
-  if (id.length > 64) return false; // Too long
-  if (id.length < 8) return false; // Too short
-  // Basic validation - alphanumeric with dashes and underscores
-  return /^[a-zA-Z0-9_-]+$/.test(id);
-}
-
-/**
  * Next.js middleware helper to extract/inject request IDs
  */
 export function middlewareWithRequestId(
   request: Request,
-  handler: (req: Request, requestId: RequestId) => Response | Promise<Response>
+  handler: (req: Request, requestId: RequestId) => Promise<Response> | Response,
 ): Promise<Response> {
   const requestId = extractRequestId(request.headers);
 
@@ -144,4 +109,39 @@ export function middlewareWithRequestId(
 export function requestIdPrefix(): string {
   const id = getRequestId();
   return id ? `[${id.slice(0, 8)}] ` : "";
+}
+
+/**
+ * Run a function with a specific request ID in context
+ */
+export async function withRequestId<T>(
+  requestId: RequestId,
+  fn: () => Promise<T>,
+): Promise<T> {
+  return requestIdStorage.run(requestId, fn);
+}
+
+/**
+ * Create headers with the current request ID for outgoing requests
+ */
+export function withRequestIdHeaders(
+  headers: Record<string, string> = {},
+): Record<string, string> {
+  const requestId = getRequestId();
+  if (requestId) {
+    return { ...headers, [REQUEST_ID_HEADER]: requestId };
+  }
+  return headers;
+}
+
+/**
+ * Validate request ID format (basic UUID-like check)
+ */
+function isValidRequestId(id: string): boolean {
+  // Allow UUID v4 format: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
+  // Also allow simple request IDs like "req_" prefix or base64-like strings
+  if (id.length > 64) return false; // Too long
+  if (id.length < 8) return false; // Too short
+  // Basic validation - alphanumeric with dashes and underscores
+  return /^[a-zA-Z0-9_-]+$/.test(id);
 }

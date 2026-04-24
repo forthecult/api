@@ -15,9 +15,17 @@ export interface CartContextType {
   /** Controlled open state for cart drawer/sheet (used by CartClient). */
   cartOpen: boolean;
   clearCart: () => void;
+  /**
+   * Set of cart-item ids whose thumbnail URL failed to load at least once in
+   * this session. Hoisted out of CartClient so that it survives the Radix
+   * Sheet/Drawer mount cycle — without this, every close→reopen re-attempts
+   * broken image URLs and causes a visible placeholder flash.
+   */
+  failedImageIds: ReadonlySet<string>;
   isHydrated: boolean;
   itemCount: number;
   items: CartItem[];
+  markImageFailed: (id: string) => void;
   openCart: () => void;
   removeItem: (id: string) => void;
   setCartOpen: (open: boolean) => void;
@@ -61,6 +69,19 @@ export function CartProvider({ children }: React.PropsWithChildren) {
   const [items, setItems] = React.useState<CartItem[]>([]);
   const [cartHydrated, setCartHydrated] = React.useState(false);
   const [cartOpen, setCartOpen] = React.useState(false);
+  // Shared across every cart render (trigger badge, sheet view, drawer view,
+  // hidden Activity warm-cache). See CartContextType.failedImageIds.
+  const [failedImageIds, setFailedImageIds] = React.useState<Set<string>>(
+    () => new Set(),
+  );
+  const markImageFailed = React.useCallback((id: string) => {
+    setFailedImageIds((prev) => {
+      if (prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+  }, []);
 
   /* -------------------- Restore from localStorage on mount --------------- */
   React.useEffect(() => {
@@ -155,9 +176,11 @@ export function CartProvider({ children }: React.PropsWithChildren) {
       addItem,
       cartOpen,
       clearCart,
+      failedImageIds,
       isHydrated: cartHydrated,
       itemCount,
       items,
+      markImageFailed,
       openCart,
       removeItem,
       setCartOpen,
@@ -175,6 +198,8 @@ export function CartProvider({ children }: React.PropsWithChildren) {
       clearCart,
       itemCount,
       subtotal,
+      failedImageIds,
+      markImageFailed,
     ],
   );
 
@@ -190,9 +215,11 @@ const SSR_FALLBACK: CartContextType = {
   addItem: () => {},
   cartOpen: false,
   clearCart: () => {},
+  failedImageIds: new Set<string>(),
   isHydrated: false,
   itemCount: 0,
   items: [],
+  markImageFailed: () => {},
   openCart: () => {},
   removeItem: () => {},
   setCartOpen: () => {},

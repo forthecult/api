@@ -94,7 +94,9 @@ export default async function SitemapPage() {
             Main pages
           </h2>
           <ul
-            className={`list-inside list-disc flex flex-col gap-1.5 text-muted-foreground`}
+            className={`
+              flex list-inside list-disc flex-col gap-1.5 text-muted-foreground
+            `}
           >
             {STATIC_LINKS.map(({ href, label }) => (
               <li key={href}>
@@ -119,7 +121,8 @@ export default async function SitemapPage() {
             </h2>
             <ul
               className={`
-                list-inside list-disc flex flex-col gap-1.5 text-muted-foreground
+                flex list-inside list-disc flex-col gap-1.5
+                text-muted-foreground
               `}
             >
               {categoryLinks.map(({ href, label }) => (
@@ -144,7 +147,9 @@ export default async function SitemapPage() {
             Policies &amp; legal
           </h2>
           <ul
-            className={`list-inside list-disc flex flex-col gap-1.5 text-muted-foreground`}
+            className={`
+              flex list-inside list-disc flex-col gap-1.5 text-muted-foreground
+            `}
           >
             {POLICY_LINKS.map(({ href, label }) => (
               <li key={href}>

@@ -109,8 +109,8 @@ export default function RefundPolicyPage() {
           </p>
           <ul
             className={`
-              mt-3 list-inside list-disc flex flex-col gap-2 text-sm leading-relaxed
-              text-muted-foreground
+              mt-3 flex list-inside list-disc flex-col gap-2 text-sm
+              leading-relaxed text-muted-foreground
             `}
           >
             <li>

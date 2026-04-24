@@ -207,7 +207,9 @@ export function RefundRequestForm() {
 
           {showRefundAddressField && (
             <div
-              className={`flex flex-col gap-2 rounded-md border border-border bg-muted/30 p-4
+              className={`
+                flex flex-col gap-2 rounded-md border border-border bg-muted/30
+                p-4
               `}
             >
               <p className="text-sm font-medium text-foreground">

@@ -1,10 +1,14 @@
 "use client";
 
 import { ChevronDown } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import * as React from "react";
 
-import { getPaymentOptionsForDisplay } from "~/lib/checkout-payment-options";
+import {
+  getPaymentLogosByAccordionSection,
+  getPaymentOptionsForDisplay,
+} from "~/lib/checkout-payment-options";
 import { cn } from "~/lib/cn";
 import { useCryptoCurrency } from "~/lib/hooks/use-crypto-currency";
 import { usePaymentMethodSettings } from "~/lib/hooks/use-payment-method-settings";
@@ -38,6 +42,49 @@ interface SizeChartData {
 
 const FREE_SHIPPING_USD_THRESHOLD = 250; // $250 USD value
 
+function PaymentLogos({
+  label,
+  logos,
+}: {
+  label: string;
+  logos: { name: string; src: string }[];
+}) {
+  if (logos.length === 0) return null;
+  return (
+    <div
+      aria-label={label}
+      className="mt-2.5 flex flex-wrap items-center gap-2.5"
+      role="list"
+    >
+      {logos.map((i) => (
+        <div
+          className={`
+            flex h-8 min-w-0 max-w-[5.5rem] items-center justify-center
+            rounded-md border border-border/60 bg-white px-2.5
+            dark:bg-muted/20
+          `}
+          key={i.name}
+          role="listitem"
+          title={i.name}
+        >
+          <Image
+            alt={i.name}
+            className="h-5 w-auto max-w-full object-contain"
+            height={20}
+            src={i.src}
+            unoptimized={
+              i.src.endsWith(".png") ||
+              i.src.startsWith("data:") ||
+              i.src.startsWith("http://")
+            }
+            width={72}
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function CultFreeShippingText() {
   const { rates } = useCryptoCurrency();
   const cultRate = rates.CULT;
@@ -69,6 +116,17 @@ function CultFreeShippingText() {
   );
 }
 
+function DeliveryApparelExtra() {
+  return (
+    <p className="mt-3">
+      We offer free delivery on all apparel orders over $100 to United States
+      (US) and Europe. For customers in the rest of the world, enjoy free
+      shipping on all apparel orders over $250. Shop now and take advantage of
+      these great shipping deals!
+    </p>
+  );
+}
+
 function DeliveryCopy({ category }: { category: string }) {
   return (
     <>
@@ -81,7 +139,9 @@ function DeliveryCopy({ category }: { category: string }) {
       <p className="mb-3">
         Most orders placed in the USA arrive in 5-7 days after ordering.
       </p>
-      <p className="mb-3">Non-US orders arrive in 1 - 4 weeks after ordering.</p>
+      <p className="mb-3">
+        Non-US orders arrive in 1 - 4 weeks after ordering.
+      </p>
       <CultFreeShippingText />
       {isApparelCategory(category) && <DeliveryApparelExtra />}
       <p className="mb-3">
@@ -90,17 +150,6 @@ function DeliveryCopy({ category }: { category: string }) {
         below, or review totals in your cart at checkout.
       </p>
     </>
-  );
-}
-
-function DeliveryApparelExtra() {
-  return (
-    <p className="mt-3">
-      We offer free delivery on all apparel orders over $100 to United States
-      (US) and Europe. For customers in the rest of the world, enjoy free
-      shipping on all apparel orders over $250. Shop now and take advantage of
-      these great shipping deals!
-    </p>
   );
 }
 
@@ -193,6 +242,10 @@ export function ProductDetailAccordion({
     () => getPaymentOptionsForDisplay(visibility),
     [visibility],
   );
+  const paymentLogos = React.useMemo(
+    () => getPaymentLogosByAccordionSection(visibility),
+    [visibility],
+  );
 
   const renderContent = (itemId: string) => {
     switch (itemId) {
@@ -246,31 +299,48 @@ export function ProductDetailAccordion({
           );
         }
         return (
-          <div className="space-y-4 pb-4 text-sm text-muted-foreground">
-            {hasCrypto && (
+          <div className="space-y-5 pb-4 text-sm text-muted-foreground">
+            {hasCard && (
               <div>
                 <p className="mb-1 font-medium text-foreground">
-                  Cryptocurrency Payments
+                  Cards &amp; digital wallets
                 </p>
                 <p>
-                  We accept {paymentOptions.crypto.join(", ")} and other popular
-                  cryptocurrencies. Check the full list of accepted currencies
-                  at checkout.
+                  {paymentOptions.card.join(", ")} — secure card processing. Use
+                  the same methods at checkout.
                 </p>
+                <PaymentLogos
+                  label="Card and wallet marks"
+                  logos={paymentLogos.cardAndWallets}
+                />
               </div>
             )}
             {hasStablecoins && (
               <div>
                 <p className="mb-1 font-medium text-foreground">Stablecoins</p>
-                <p>{paymentOptions.stablecoins.join(". ")}</p>
+                <p>
+                  {paymentOptions.stablecoins.join(". ")}. Networks match what
+                  you select at checkout.
+                </p>
+                <PaymentLogos
+                  label="Stablecoin payment marks"
+                  logos={paymentLogos.stablecoins}
+                />
               </div>
             )}
-            {hasCard && (
+            {hasCrypto && (
               <div>
                 <p className="mb-1 font-medium text-foreground">
-                  Card Payments
+                  Other cryptocurrencies
                 </p>
-                <p>{paymentOptions.card.join(", ")}</p>
+                <p>
+                  We accept {paymentOptions.crypto.join(", ")}; see checkout for
+                  the full, up-to-date list.
+                </p>
+                <PaymentLogos
+                  label="Cryptocurrency payment marks"
+                  logos={paymentLogos.cryptos}
+                />
               </div>
             )}
           </div>
@@ -371,14 +441,57 @@ function isApparelCategory(category: string): boolean {
   );
 }
 
+function normalizeSizeDescriptionKey(
+  d: null | string | undefined,
+): null | string {
+  if (d == null) return null;
+  const t = d.trim();
+  if (!t) return null;
+  if (/<[a-z][\s\S]*/i.test(t)) {
+    return t
+      .replace(/<[^>]+>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .toLowerCase();
+  }
+  return t.toLowerCase();
+}
+
+function metricColumnLabel(
+  typeLabel: string,
+  table: { unit?: string },
+  systemUnit: "cm" | "in",
+): string {
+  const tl = typeLabel.trim();
+  if (/\([^)]*(cm|in|mm|")\s*[^)]*\)\s*$/i.test(tl)) {
+    return tl;
+  }
+  const u = table.unit?.trim();
+  if (u) return `${tl} (${u})`;
+  return `${tl} (${systemUnit})`;
+}
+
 function renderSizeChartData(
   data: null | SizeChartData | undefined,
   unitLabel: string,
 ) {
   if (!data?.sizeTables?.length) return null;
+  const systemUnit: "cm" | "in" = unitLabel.toLowerCase().includes("cm")
+    ? "cm"
+    : "in";
+  const descriptionSeen = new Set<string>();
+
+  const blockDescription = (d: null | string | undefined) => {
+    const k = normalizeSizeDescriptionKey(d);
+    if (k == null) return null;
+    if (descriptionSeen.has(k)) return null;
+    descriptionSeen.add(k);
+    return renderSizeChartDescription(d);
+  };
+
   return (
     <div className="mb-6">
-      <h4 className="mb-2 text-sm font-semibold text-foreground">
+      <h4 className="mb-2 text-base font-semibold text-foreground">
         {unitLabel}
       </h4>
       {data.sizeTables.map((table, idx) => {
@@ -396,19 +509,29 @@ function renderSizeChartData(
 
         if (canCombine && measurements.length > 0) {
           const sizeColumn = measurements[0]!.values.map((v) => v.size);
-          const columns = ["Size", ...measurements.map((m) => m.type_label)];
+          const columns = [
+            "Size",
+            ...measurements.map((m) =>
+              metricColumnLabel(m.type_label, table, systemUnit),
+            ),
+          ];
           return (
             <div className="mb-6" key={idx}>
-              {table.description != null &&
-                renderSizeChartDescription(table.description)}
+              {table.description != null && blockDescription(table.description)}
               <div className="overflow-x-auto rounded-md border border-border">
-                <table className="w-full min-w-[320px] border-collapse text-sm">
+                <table
+                  className={`
+                    w-full min-w-[320px] border-collapse text-base
+                    [&_td]:min-h-[2.5rem] [&_th]:text-base
+                  `}
+                >
                   <thead>
                     <tr className="bg-muted/60">
                       {columns.map((col, cidx) => (
                         <th
                           className={`
-                            px-3 py-2.5 text-left font-semibold text-foreground
+                            px-3 py-2.5 text-left font-semibold
+                            text-foreground
                             first:rounded-tl-md
                             last:rounded-tr-md
                           `}
@@ -428,7 +551,7 @@ function renderSizeChartData(
                         )}
                         key={rowIdx}
                       >
-                        <td className="px-3 py-2 font-medium text-foreground">
+                        <td className="px-3 py-2.5 font-medium text-foreground">
                           {size}
                         </td>
                         {measurements.map((m, midx) => {
@@ -441,7 +564,7 @@ function renderSizeChartData(
                                 : "—";
                           return (
                             <td
-                              className="px-3 py-2 text-muted-foreground"
+                              className="px-3 py-2.5 text-muted-foreground"
                               key={midx}
                             >
                               {cell}
@@ -459,29 +582,33 @@ function renderSizeChartData(
 
         return (
           <div className="mb-4" key={idx}>
-            {table.description != null &&
-              renderSizeChartDescription(table.description)}
+            {table.description != null && blockDescription(table.description)}
             {measurements.map((m, midx) => (
               <div
                 className="mb-3 overflow-x-auto rounded-md border border-border"
                 key={midx}
               >
-                <table className="w-full min-w-[200px] border-collapse text-sm">
+                <table
+                  className={`
+                    w-full min-w-[200px] border-collapse text-base
+                    [&_td]:min-h-[2.5rem] [&_th]:text-base
+                  `}
+                >
                   <thead>
                     <tr className="bg-muted/60">
                       <th
                         className={`
-                          px-3 py-2 text-left font-semibold text-foreground
+                          px-3 py-2.5 text-left font-semibold text-foreground
                         `}
                       >
                         Size
                       </th>
                       <th
                         className={`
-                          px-3 py-2 text-left font-semibold text-foreground
+                          px-3 py-2.5 text-left font-semibold text-foreground
                         `}
                       >
-                        {m.type_label}
+                        {metricColumnLabel(m.type_label, table, systemUnit)}
                       </th>
                     </tr>
                   </thead>
@@ -494,8 +621,8 @@ function renderSizeChartData(
                         )}
                         key={vidx}
                       >
-                        <td className="px-3 py-2 font-medium">{v.size}</td>
-                        <td className="px-3 py-2 text-muted-foreground">
+                        <td className="px-3 py-2.5 font-medium">{v.size}</td>
+                        <td className="px-3 py-2.5 text-muted-foreground">
                           {"value" in v
                             ? v.value
                             : `${v.min_value} – ${v.max_value}`}

@@ -1685,7 +1685,7 @@ export function CryptoPayClient({
                     </h2>
                     <div className="flex flex-col gap-5">
                       <div>
-                        <p className="mb-1.5 text-sm text-muted-foreground">
+                        <p className="mb-1.5 text-base font-medium text-foreground">
                           Pay to
                         </p>
                         <div className="flex flex-wrap items-center gap-2">
@@ -1714,7 +1714,7 @@ export function CryptoPayClient({
                         </div>
                       </div>
                       <div>
-                        <p className="mb-1.5 text-sm text-muted-foreground">
+                        <p className="mb-1.5 text-base font-medium text-foreground">
                           Amount to pay
                         </p>
                         <div className="flex flex-wrap items-center gap-2">
@@ -1744,7 +1744,7 @@ export function CryptoPayClient({
                         </div>
                       </div>
                       <div>
-                        <p className="mb-1.5 text-sm text-muted-foreground">
+                        <p className="mb-1.5 text-base font-medium text-foreground">
                           Expires in
                         </p>
                         <p

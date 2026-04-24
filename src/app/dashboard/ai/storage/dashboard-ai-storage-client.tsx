@@ -78,7 +78,7 @@ export function DashboardAiStorageClient() {
     try {
       const full = await buildAiFullExport();
       downloadJson(
-        `ftc-ai-export-${new Date().toISOString().slice(0, 10)}.json`,
+        `culture-ai-export-${new Date().toISOString().slice(0, 10)}.json`,
         full,
       );
       toast.success("Download started.");
@@ -188,7 +188,7 @@ export function DashboardAiStorageClient() {
         keyDerivation: {
           iterations: Number(
             (data.backup.keyDerivation as { iterations?: number }).iterations ??
-            250_000,
+              250_000,
           ),
           saltB64: String(
             (data.backup.keyDerivation as { saltB64?: string }).saltB64 ?? "",
@@ -230,7 +230,7 @@ export function DashboardAiStorageClient() {
   const projectsCount = (() => {
     try {
       const p = buildAiExportPayload();
-      const raw = p.localStorage["ftc-ai-projects"];
+      const raw = p.localStorage["culture-ai-projects"];
       if (!raw) return 0;
       const list = JSON.parse(raw) as unknown;
       return Array.isArray(list) ? list.length : 0;
@@ -246,9 +246,10 @@ export function DashboardAiStorageClient() {
           Storage &amp; data
         </h1>
         <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-          Chats and projects live in your browser unless you export them locally or save
-          an encrypted, password protected, backup to your FTC account. Your passphrase is never sent to
-          the server, so we will never be able to access your data.
+          Chats and projects live in your browser unless you export them locally
+          or save an encrypted, password protected, backup to your Culture account.
+          Your passphrase is never sent to the server, so we will never be able
+          to access your data.
         </p>
       </div>
 
@@ -438,7 +439,9 @@ export function DashboardAiStorageClient() {
         </h2>
         <div className="space-y-4 rounded-xl border border-border bg-card p-4">
           <p className="text-sm text-muted-foreground">
-            Stores your chat history, projects, and memories our database (cloud backup). You can replace it anytime. We cannot access or restore your data if you lose your passphrase.
+            Stores your chat history, projects, and memories our database (cloud
+            backup). You can replace it anytime. We cannot access or restore
+            your data if you lose your passphrase.
           </p>
           <div className="flex flex-col gap-2">
             <Label htmlFor="ai-bak-pass">Passphrase</Label>

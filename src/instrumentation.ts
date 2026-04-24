@@ -4,6 +4,60 @@
  * aren't available under Bun), and to stub browser-only globals so deps (e.g. uploadthing
  * or wallet libs) that use indexedDB don't throw ReferenceError on the server.
  */
+
+/**
+ * Next.js 16 `onRequestError` hook: invoked for every uncaught error thrown
+ * during a server render, a server action, or a route handler. We forward it
+ * to PostHog (server SDK) so server crashes show up in the same error stream
+ * as client-side `$exception` events. Paired with `capture_exceptions: true`
+ * on the client (see instrumentation-client.ts) this gives full-stack visibility.
+ *
+ * The `error`, `request`, and `context` arguments are typed by Next.js itself.
+ */
+export const onRequestError: (
+  error: unknown,
+  request: {
+    headers: Record<string, string | string[] | undefined>;
+    method: string;
+    path: string;
+  },
+  context: {
+    renderSource?:
+      | "react-server-components"
+      | "react-server-components-payload"
+      | "server-rendering";
+    renderType?: "dynamic" | "dynamic-resume";
+    revalidateReason?: "on-demand" | "stale" | undefined;
+    routePath: string;
+    routerKind: "App Router" | "Pages Router";
+    routeType: "action" | "middleware" | "render" | "route";
+  },
+) => Promise<void> = async (error, request, context) => {
+  try {
+    const { getPostHogServer } = await import("./lib/analytics/posthog-server");
+    const ph = getPostHogServer();
+    if (!ph) return;
+    // distinct_id: we can't see the user here (no headers helper outside a
+    // request scope), so bucket by route for now. Upstream PostHog will link
+    // session IDs via posthog-js auto-capture when available.
+    // captureExceptionImmediate returns a Promise we can await, so events
+    // are flushed even in serverless/edge environments where the function may
+    // exit right after this handler returns.
+    await ph.captureExceptionImmediate(
+      error instanceof Error ? error : new Error(String(error)),
+      `server:${context.routePath}`,
+      {
+        method: request.method,
+        path: request.path,
+        routerKind: context.routerKind,
+        routeType: context.routeType,
+      },
+    );
+  } catch {
+    // never let observability break the server
+  }
+};
+
 export function register(): void {
   // m8: enforce presence of a shared rate-limit store in prod before anything
   // accepts traffic. m6 / h3 do the same for virustotal / auth-secret, but we

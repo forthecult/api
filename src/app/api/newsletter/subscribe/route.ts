@@ -11,12 +11,12 @@ import {
   rateLimitResponse,
 } from "~/lib/rate-limit";
 
-export async function OPTIONS() {
-  return publicApiCorsPreflight();
-}
-
 interface SubscribeBody {
   email?: string;
+}
+
+export async function OPTIONS() {
+  return publicApiCorsPreflight();
 }
 
 /**
@@ -60,10 +60,7 @@ export async function POST(request: NextRequest) {
   } catch (err) {
     console.error("Newsletter subscribe error:", err);
     return withPublicApiCors(
-      NextResponse.json(
-        { error: "Failed to subscribe" },
-        { status: 500 },
-      ),
+      NextResponse.json({ error: "Failed to subscribe" }, { status: 500 }),
     );
   }
 }

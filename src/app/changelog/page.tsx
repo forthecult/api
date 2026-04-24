@@ -401,9 +401,10 @@ export default function ChangelogPage() {
               className={`
                 absolute top-1.5 left-[14px] h-[12px] w-[12px] rounded-full
                 border-2
-                ${idx === 0
-                  ? "border-primary bg-primary"
-                  : "border-border bg-background"
+                ${
+                  idx === 0
+                    ? "border-primary bg-primary"
+                    : "border-border bg-background"
                 }
               `}
             />

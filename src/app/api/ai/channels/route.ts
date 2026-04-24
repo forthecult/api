@@ -350,8 +350,8 @@ async function registerDiscordSlashCommand(
     {
       body: JSON.stringify([
         {
-          description: "Ask the For the Cult assistant",
-          name: "ftc",
+          description: "Ask the Culture assistant",
+          name: "culture",
           options: [
             {
               description: "Your message",

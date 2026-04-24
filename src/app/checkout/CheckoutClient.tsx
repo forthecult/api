@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, Loader2, Lock } from "lucide-react";
+import { ArrowLeft, Loader2, Lock, ShoppingBag, Sparkles } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import {
@@ -60,7 +60,7 @@ const PaymentMethodSection = dynamic(
           <Skeleton className="h-6 w-48" />
           <Skeleton className="mt-2 h-4 w-64" />
         </CardHeader>
-          <CardContent className="flex flex-col gap-4">
+        <CardContent className="flex flex-col gap-4">
           <Skeleton className="h-10 w-full" />
           <Skeleton className="h-32 w-full" />
         </CardContent>
@@ -395,19 +395,73 @@ export function CheckoutClient() {
 
   if (items.length === 0) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Your cart is empty</CardTitle>
-          <CardDescription>
-            Add items from the store before checking out.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button asChild>
-            <Link href="/products">Browse products</Link>
-          </Button>
-        </CardContent>
-      </Card>
+      <div className="mx-auto w-full max-w-lg px-4 py-8 sm:py-12">
+        <Card
+          className={`
+            overflow-hidden border-border/60 shadow-sm
+            sm:rounded-xl
+          `}
+        >
+          <CardHeader
+            className={`
+              space-y-3 pb-2 text-center
+              sm:px-8
+            `}
+          >
+            <div
+              className={`
+                mx-auto flex h-16 w-16 items-center justify-center
+                rounded-full bg-muted/50
+              `}
+              aria-hidden
+            >
+              <ShoppingBag className="h-7 w-7 text-muted-foreground" />
+            </div>
+            <div>
+              <CardTitle className="text-xl sm:text-2xl">
+                Nothing to check out yet
+              </CardTitle>
+              <CardDescription
+                className={`
+                  mt-2 text-base text-muted-foreground
+                `}
+              >
+                Your bag is empty. Add something you love, then come back to
+                complete a secure, fast checkout.
+              </CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent
+            className={`
+              flex flex-col items-stretch gap-3 pb-8
+              sm:px-8
+            `}
+          >
+            <Button
+              asChild
+              className="w-full gap-2"
+              size="lg"
+              variant="default"
+            >
+              <Link href="/products">
+                <Sparkles className="h-4 w-4" />
+                Shop all products
+              </Link>
+            </Button>
+            <Button asChild className="w-full" size="lg" variant="outline">
+              <Link href="/">Back to home</Link>
+            </Button>
+            <p
+              className={`
+                text-center text-sm text-muted-foreground
+              `}
+            >
+              You can return anytime — we&apos;ll keep your account and saved
+              addresses here.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
@@ -515,7 +569,7 @@ export function CheckoutClient() {
           {/* Left: contact, address, shipping method, payment, place order + policy links */}
           <div
             className={`
-              min-w-0 flex flex-col gap-6
+              flex min-w-0 flex-col gap-6
               sm:col-start-1
             `}
           >
@@ -565,7 +619,7 @@ export function CheckoutClient() {
           {/* Right: Your order only — sticky offset below header (max-h-24) so header doesn't overlap */}
           <div
             className={`
-              min-w-0 flex flex-col gap-6
+              flex min-w-0 flex-col gap-6
               sm:sticky sm:top-28 sm:col-start-2 sm:self-start
             `}
           >

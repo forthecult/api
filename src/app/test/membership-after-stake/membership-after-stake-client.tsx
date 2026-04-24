@@ -283,7 +283,9 @@ export function MembershipAfterStakeTestClient() {
             <div className="space-y-5 p-6">
               {/* Your stake — mock data per tier */}
               <div
-                className={`flex flex-col gap-3 rounded-xl border border-border bg-muted/20 p-4
+                className={`
+                  flex flex-col gap-3 rounded-xl border border-border
+                  bg-muted/20 p-4
                 `}
               >
                 <p className="text-sm font-medium text-foreground">

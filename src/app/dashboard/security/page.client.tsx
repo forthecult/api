@@ -924,7 +924,7 @@ export function SecurityPageClient() {
                 </p>
                 <ul
                   className={`
-                    list-inside list-disc flex flex-col gap-2 text-sm
+                    flex list-inside list-disc flex-col gap-2 text-sm
                     text-muted-foreground
                   `}
                 >
@@ -1098,7 +1098,7 @@ export function SecurityPageClient() {
               6-digit code it shows below to finish setup.
             </p>
             <div className="flex flex-wrap items-end gap-2">
-              <div className="min-w-[140px] flex-1 flex flex-col gap-2">
+              <div className="flex min-w-[140px] flex-1 flex-col gap-2">
                 <Label htmlFor="otp-code">6-digit code</Label>
                 <Input
                   id="otp-code"
@@ -1249,7 +1249,9 @@ export function SecurityPageClient() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5" />
-            Backup Codes
+            {user?.twoFactorEnabled
+              ? "Backup codes (MFA)"
+              : "Two-factor backup codes"}
           </CardTitle>
           <p className="text-sm text-muted-foreground">
             {user?.twoFactorEnabled

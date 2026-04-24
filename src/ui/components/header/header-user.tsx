@@ -119,7 +119,7 @@ export function HeaderUserDropdown({
               )}
             </AvatarFallback>
           </Avatar>
-          <div className="flex flex-col flex flex-col gap-0.5">
+          <div className="flex flex-col gap-0.5">
             <p className="text-sm font-medium">{userName || "User"}</p>
             <p className="max-w-[160px] truncate text-xs text-muted-foreground">
               {userEmail}

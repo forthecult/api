@@ -2,13 +2,13 @@
 
 import { cn } from "~/lib/cn";
 
-type StatusVariant = "success" | "error" | "warning" | "info";
-
 interface StatusBadgeProps {
   children: React.ReactNode;
   className?: string;
   variant?: StatusVariant;
 }
+
+type StatusVariant = "error" | "info" | "success" | "warning";
 
 const variantStyles: Record<StatusVariant, string> = {
   error:
@@ -20,6 +20,11 @@ const variantStyles: Record<StatusVariant, string> = {
     "bg-status-warning-bg text-status-warning dark:bg-status-warning-bg/30 dark:text-status-warning",
 };
 
+interface StatusDotProps {
+  className?: string;
+  variant?: StatusVariant;
+}
+
 export function StatusBadge({
   children,
   className,
@@ -30,17 +35,12 @@ export function StatusBadge({
       className={cn(
         "inline-flex items-center rounded-md px-2 py-1 text-xs font-medium",
         variantStyles[variant],
-        className
+        className,
       )}
     >
       {children}
     </span>
   );
-}
-
-interface StatusDotProps {
-  className?: string;
-  variant?: StatusVariant;
 }
 
 const dotStyles: Record<StatusVariant, string> = {
@@ -56,7 +56,7 @@ export function StatusDot({ className, variant = "info" }: StatusDotProps) {
       className={cn(
         "inline-block size-1.5 shrink-0 rounded-full",
         dotStyles[variant],
-        className
+        className,
       )}
     />
   );

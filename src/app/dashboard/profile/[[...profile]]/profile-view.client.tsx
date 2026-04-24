@@ -107,6 +107,7 @@ export function ProfileViewClient() {
   const wallet = connectedWallet ?? linkedSolanaWallet;
 
   const [profile, setProfile] = useState<null | {
+    birthDate: string;
     email: string;
     firstName: string;
     image: null | string;
@@ -312,6 +313,7 @@ export function ProfileViewClient() {
       ]);
       if (profileRes.ok) {
         const data = (await profileRes.json()) as {
+          birthDate?: string;
           email?: string;
           firstName?: string;
           image?: null | string;
@@ -320,6 +322,10 @@ export function ProfileViewClient() {
           phone?: string;
         };
         setProfile({
+          birthDate:
+            (data.birthDate && /^\d{4}-\d{2}-\d{2}$/.test(data.birthDate)
+              ? data.birthDate
+              : "") ?? "",
           email: data.email ?? user.email ?? "",
           firstName: data.firstName ?? "",
           image: data.image ?? null,
@@ -332,6 +338,7 @@ export function ProfileViewClient() {
         });
       } else {
         setProfile({
+          birthDate: "",
           email: user.email ?? "",
           firstName: "",
           image: user.image ?? null,
@@ -348,6 +355,7 @@ export function ProfileViewClient() {
       }
     } catch {
       setProfile({
+        birthDate: "",
         email: user.email ?? "",
         firstName: "",
         image: user.image ?? null,
@@ -649,7 +657,17 @@ export function ProfileViewClient() {
                 >
                   Birth date
                 </span>
-                <span className="text-sm text-foreground">—</span>
+                <span className="text-sm text-foreground">
+                  {profile?.birthDate
+                    ? new Date(
+                        `${profile.birthDate}T12:00:00.000Z`,
+                      ).toLocaleDateString(undefined, {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                      })
+                    : "—"}
+                </span>
               </div>
               <div
                 className={`

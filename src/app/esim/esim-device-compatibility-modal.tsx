@@ -61,7 +61,7 @@ function CategoryAccordionItem({
       {open && (
         <div className="pb-4 text-sm text-muted-foreground">
           <p className="mb-3 font-medium text-foreground">{IMPORTANT_NOTE}</p>
-          <ul className="list-inside list-disc flex flex-col gap-1">
+          <ul className="flex list-inside list-disc flex-col gap-1">
             {content.devices.map((line, i) => (
               <li key={`${categoryId}-${i}`}>{line}</li>
             ))}

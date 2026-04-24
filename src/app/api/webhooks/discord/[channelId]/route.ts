@@ -94,7 +94,7 @@ export async function POST(
   }
 
   const name = interaction.data?.name;
-  if (name !== "ftc") {
+  if (name !== "culture" && name !== "ftc") {
     return jsonResponse({
       data: { content: "Unknown command." },
       type: 4,

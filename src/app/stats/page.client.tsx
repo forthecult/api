@@ -167,7 +167,7 @@ export function StatsPageClient() {
           <Card key={card.title}>
             <CardHeader
               className={`
-                flex flex-row items-center justify-between flex flex-col gap-0 pb-2
+                flex flex-col flex-row items-center justify-between gap-0 pb-2
               `}
             >
               <CardTitle className="text-sm font-medium">

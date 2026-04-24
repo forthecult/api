@@ -6,6 +6,7 @@ import {
   useEffect,
   useImperativeHandle,
   useLayoutEffect,
+  useRef,
   useState,
 } from "react";
 
@@ -306,6 +307,7 @@ export const ShippingAddressForm = function ShippingAddressForm({
   );
   /** Track which fields the user has touched (blurred) for inline validation. */
   const [touchedFields, setTouchedFields] = useState<Set<string>>(new Set());
+  const guestRegionPrefillDone = useRef(false);
   /** Saved addresses for logged-in users. */
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
   /** Selected saved address id; empty string = manual entry. */
@@ -488,6 +490,45 @@ export const ShippingAddressForm = function ShippingAddressForm({
       setForm((prev) => ({ ...prev, ...updates }));
     }
   }, [user, form.email, form.firstName, form.lastName]);
+
+  /** Guests only: prefill state / province from IP when still empty. */
+  useEffect(() => {
+    if (isLoggedIn || emailOnly || guestRegionPrefillDone.current) return;
+    const c = form.country?.trim();
+    if (!c || !COUNTRIES_REQUIRING_STATE.has(c)) return;
+    if (form.state?.trim()) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/geo", { cache: "no-store" });
+        if (!res.ok) return;
+        const data = (await res.json()) as {
+          country?: null | string;
+          region?: null | string;
+        };
+        if (cancelled) return;
+        const gc = data.country?.trim().toUpperCase().slice(0, 2);
+        const reg = data.region?.trim();
+        if (!reg) return;
+        if (gc && gc !== c) return;
+        if (c === "US") {
+          const upper = reg.toUpperCase().slice(0, 2);
+          if (US_STATE_OPTIONS.some((o) => o.value === upper)) {
+            guestRegionPrefillDone.current = true;
+            setForm((prev) => ({ ...prev, state: upper }));
+          }
+        } else {
+          guestRegionPrefillDone.current = true;
+          setForm((prev) => ({ ...prev, state: reg }));
+        }
+      } catch {
+        /* ignore */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [emailOnly, form.country, form.state, isLoggedIn]);
 
   /** Fetch saved addresses for logged-in users. */
   useEffect(() => {

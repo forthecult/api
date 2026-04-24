@@ -35,5 +35,5 @@ function StorefrontOriginMeta() {
       ? `https://${raw}`
       : raw;
   if (!value) return null;
-  return <meta content={value} name="ftc-storefront-origin" />;
+  return <meta content={value} name="culture-storefront-origin" />;
 }

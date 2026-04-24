@@ -8,6 +8,7 @@ import {
   COUNTRIES_WITHOUT_POSTAL,
   US_STATE_OPTIONS,
 } from "~/app/checkout/checkout-shared";
+import { useSession } from "~/lib/auth-client";
 import { cn } from "~/lib/cn";
 import {
   COUNTRY_OPTIONS_ALPHABETICAL,
@@ -49,10 +50,13 @@ export function ProductShippingEstimateForm({
   const productId = ctx?.productId ?? productIdProp;
   const availableCountryCodes =
     ctx?.availableCountryCodes ?? availableCountryCodesProp;
+  const { data: sessionData } = useSession();
+  const isLoggedIn = Boolean(sessionData?.user);
   const { selectedCountry: preferredCountry } = useCountryCurrency();
   const [country, setCountry] = React.useState("");
   const [postal, setPostal] = React.useState("");
   const [stateCode, setStateCode] = React.useState("");
+  const ipRegionAppliedRef = React.useRef(false);
   const [options, setOptions] = React.useState<EstimateOption[]>([]);
   const [canShip, setCanShip] = React.useState(true);
   const [unavailable, setUnavailable] = React.useState(false);
@@ -91,6 +95,44 @@ export function ProductShippingEstimateForm({
     const first = countryOptions[0]?.code;
     if (first) setCountry(first);
   }, [country, countryOptions, preferredCountry]);
+
+  /** Unauthenticated: prefill state/province from IP (e.g. US state) for shipping estimate. */
+  React.useEffect(() => {
+    if (isLoggedIn || ipRegionAppliedRef.current) return;
+    if (!country || stateCode) return;
+    if (!COUNTRIES_REQUIRING_STATE.has(country)) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/geo", { cache: "no-store" });
+        if (!res.ok) return;
+        const data = (await res.json()) as {
+          country?: null | string;
+          region?: null | string;
+        };
+        if (cancelled) return;
+        const gc = data.country?.trim().toUpperCase().slice(0, 2);
+        const reg = data.region?.trim();
+        if (!reg) return;
+        if (gc && gc !== country) return;
+        if (country === "US") {
+          const upper = reg.toUpperCase().slice(0, 2);
+          if (US_STATE_OPTIONS.some((o) => o.value === upper)) {
+            ipRegionAppliedRef.current = true;
+            setStateCode(upper);
+          }
+        } else {
+          ipRegionAppliedRef.current = true;
+          setStateCode(reg);
+        }
+      } catch {
+        /* ignore */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [country, isLoggedIn, stateCode]);
 
   const needsState = country ? COUNTRIES_REQUIRING_STATE.has(country) : false;
   const needsPostal = country ? !COUNTRIES_WITHOUT_POSTAL.has(country) : true;
@@ -133,7 +175,7 @@ export function ProductShippingEstimateForm({
       setCanShip(data.canShipToCountry !== false);
       setUnavailable(
         Array.isArray(data.unavailableProducts) &&
-        data.unavailableProducts.length > 0,
+          data.unavailableProducts.length > 0,
       );
       setFulfillmentError(
         data.fulfillmentError != null && data.fulfillmentError !== ""
@@ -166,7 +208,8 @@ export function ProductShippingEstimateForm({
         Estimate shipping
       </h4>
       <p className="text-xs text-muted-foreground">
-        Final shipping rates may change based on multiple items in your cart and promotions.
+        Final shipping rates may change based on multiple items in your cart and
+        promotions.
       </p>
       <div
         className={`
@@ -288,7 +331,9 @@ export function ProductShippingEstimateForm({
       )}
       {options.length > 0 && (
         <ul
-          className={`flex flex-col gap-2 rounded-md border border-border bg-muted/30 p-3 text-sm
+          className={`
+            flex flex-col gap-2 rounded-md border border-border bg-muted/30 p-3
+            text-sm
           `}
         >
           {options.map((o) => (

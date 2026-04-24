@@ -405,7 +405,7 @@ export function BtcPayClient({
                     </h2>
                     <div className="flex flex-col gap-4">
                       <div className="text-sm">
-                        <p className="mb-1 text-muted-foreground">
+                        <p className="mb-1.5 text-base font-medium text-foreground">
                           Amount to pay
                         </p>
                         <p className="font-medium">USD {amountUsdStr}</p>
@@ -415,7 +415,9 @@ export function BtcPayClient({
                         </p>
                       </div>
                       <div className="text-sm">
-                        <p className="mb-1 text-muted-foreground">Expires in</p>
+                        <p className="mb-1.5 text-base font-medium text-foreground">
+                          Expires in
+                        </p>
                         <p className="font-mono font-medium tabular-nums">
                           {expiryDisplay}
                         </p>

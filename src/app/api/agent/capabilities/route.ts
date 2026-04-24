@@ -287,7 +287,7 @@ export async function GET() {
             },
             {
               action: "Sign USDC transfer",
-              note: "Build VersionedTransaction with USDC transfer + memo 'FTC Order: {orderId}'",
+              note: "Build VersionedTransaction with USDC transfer + memo 'Culture Order: {orderId}'",
               step: 2,
             },
             {

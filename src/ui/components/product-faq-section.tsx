@@ -22,8 +22,8 @@ export function ProductFaqSection({
             <dt className="font-medium text-foreground">{faq.question}</dt>
             <dd
               className={`
-              mt-2 text-sm whitespace-pre-wrap text-muted-foreground
-            `}
+                mt-2 text-sm whitespace-pre-wrap text-muted-foreground
+              `}
             >
               {faq.answer}
             </dd>

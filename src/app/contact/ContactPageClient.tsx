@@ -71,16 +71,16 @@ export function ContactPageClient({ pgpPublicKey }: { pgpPublicKey: string }) {
             We&apos;ll get back to you as soon as we can.
           </p>
         </CardHeader>
-    <CardContent>
-      <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+        <CardContent>
+          <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
             <div
               className={`
                 grid gap-2
                 sm:grid-cols-2
               `}
             >
-      <div className="flex flex-col gap-2">
-            <Label htmlFor="contact-name">Name</Label>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="contact-name">Name</Label>
                 <Input
                   className={inputClass}
                   id="contact-name"
@@ -128,13 +128,14 @@ export function ContactPageClient({ pgpPublicKey }: { pgpPublicKey: string }) {
                 value={message}
               />
             </div>
-      {status === "success" && (
-        <p
-          className={`
-            rounded-md bg-status-success-bg p-3 text-sm text-status-success
-            dark:bg-status-success-bg/30 dark:text-status-success
-          `}
-        >
+            {status === "success" && (
+              <p
+                className={`
+                  rounded-md bg-status-success-bg p-3 text-sm
+                  text-status-success
+                  dark:bg-status-success-bg/30 dark:text-status-success
+                `}
+              >
                 Message sent. We&apos;ll be in touch soon.
               </p>
             )}

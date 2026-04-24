@@ -480,7 +480,10 @@ export function AffiliatePageClient() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <form className="flex flex-col gap-2" onSubmit={handleCodeSave}>
+                  <form
+                    className="flex flex-col gap-2"
+                    onSubmit={handleCodeSave}
+                  >
                     <div className="flex gap-2">
                       <Input
                         aria-describedby="codeEditPendingHint"
@@ -754,7 +757,10 @@ export function AffiliatePageClient() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <form className="flex flex-col gap-4" onSubmit={handlePayoutSave}>
+                <form
+                  className="flex flex-col gap-4"
+                  onSubmit={handlePayoutSave}
+                >
                   <div
                     className={`
                       grid gap-4

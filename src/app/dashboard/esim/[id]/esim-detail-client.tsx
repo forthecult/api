@@ -181,7 +181,7 @@ export function EsimDetailClient({ esimOrderId }: { esimOrderId: string }) {
               sm:flex-row sm:items-start sm:justify-between
             `}
           >
-            <div className="min-w-0 flex-1 flex flex-col gap-3">
+            <div className="flex min-w-0 flex-1 flex-col gap-3">
               <div className="flex flex-wrap items-center gap-2">
                 <h1 className="text-xl font-semibold">{order.packageName}</h1>
                 <span

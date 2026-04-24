@@ -3,7 +3,10 @@
 import { useEffect, useState } from "react";
 
 import { cn } from "~/lib/cn";
-import { useCryptoCurrency } from "~/lib/hooks/use-crypto-currency";
+import {
+  type CryptoCode,
+  useCryptoCurrency,
+} from "~/lib/hooks/use-crypto-currency";
 
 interface CryptoPriceProps {
   className?: string;
@@ -12,7 +15,8 @@ interface CryptoPriceProps {
 
 export function CryptoPrice({ className, usdAmount }: CryptoPriceProps) {
   const [mounted, setMounted] = useState(false);
-  const { convertUsdToCrypto, formatCrypto } = useCryptoCurrency();
+  const { convertUsdToCryptoFor, formatCryptoFor, pricingCryptoCodes } =
+    useCryptoCurrency();
 
   useEffect(() => {
     setMounted(true);
@@ -34,17 +38,36 @@ export function CryptoPrice({ className, usdAmount }: CryptoPriceProps) {
     );
   }
 
-  const cryptoAmount = convertUsdToCrypto(usdAmount);
-  if (cryptoAmount == null) return null;
+  const lineRows: { code: CryptoCode; line: string }[] = [];
+  for (const code of pricingCryptoCodes) {
+    const a = convertUsdToCryptoFor(usdAmount, code);
+    if (a == null) continue;
+    lineRows.push({ code, line: formatCryptoFor(a, code) });
+  }
+  if (lineRows.length === 0) return null;
+  if (lineRows.length === 1) {
+    return (
+      <span
+        className={cn(
+          "font-mono-crypto text-sm text-muted-foreground",
+          className,
+        )}
+        data-crypto-price
+      >
+        {lineRows[0]!.line}
+      </span>
+    );
+  }
   return (
     <span
-      className={cn(
-        "font-mono-crypto text-sm text-muted-foreground",
-        className,
-      )}
+      className={cn("flex flex-col gap-0.5 font-mono-crypto", className)}
       data-crypto-price
     >
-      {formatCrypto(cryptoAmount)}
+      {lineRows.map(({ code, line }) => (
+        <span className="text-sm text-muted-foreground" key={code}>
+          {line}
+        </span>
+      ))}
     </span>
   );
 }

@@ -28,7 +28,7 @@ export type ProjectKnowledgeItem =
       url: string;
     };
 
-const STORAGE_KEY = "ftc-ai-project-knowledge-v1";
+const STORAGE_KEY = "culture-ai-project-knowledge-v1";
 
 /** Blocked extensions (executables, installers, risky types). */
 const BLOCKED_EXT = new Set([

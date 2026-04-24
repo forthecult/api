@@ -14,6 +14,11 @@ on:
 env:
   SEVERITY_THRESHOLD: high  # Block on HIGH and CRITICAL
 
+# Read-only by default; Snyk gate only needs to read the lockfile + post a
+# commit status if configured. Individual jobs can still escalate if needed.
+permissions:
+  contents: read
+
 jobs:
   snyk-security-gate:
     name: Snyk Security Gate

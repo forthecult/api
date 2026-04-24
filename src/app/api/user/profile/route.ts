@@ -4,6 +4,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { db } from "~/db";
 import { userTable } from "~/db/schema/users/tables";
 import { auth } from "~/lib/auth";
+import { combineToE164 } from "~/lib/phone-e164";
 import { csrfFailureResponse, verifyCsrfOrigin } from "~/lib/csrf";
 import {
   checkRateLimit,
@@ -27,6 +28,7 @@ export async function GET(request: NextRequest) {
 
   const [user] = await db
     .select({
+      birthDate: userTable.birthDate,
       email: userTable.email,
       firstName: userTable.firstName,
       id: userTable.id,
@@ -34,6 +36,7 @@ export async function GET(request: NextRequest) {
       lastName: userTable.lastName,
       name: userTable.name,
       phone: userTable.phone,
+      phoneCountry: userTable.phoneCountry,
       theme: userTable.theme,
     })
     .from(userTable)
@@ -50,6 +53,7 @@ export async function GET(request: NextRequest) {
       : "system";
 
   return NextResponse.json({
+    birthDate: user.birthDate ?? "",
     email: user.email ?? "",
     firstName: user.firstName ?? "",
     id: user.id,
@@ -57,6 +61,7 @@ export async function GET(request: NextRequest) {
     lastName: user.lastName ?? "",
     name: user.name ?? "",
     phone: user.phone ?? "",
+    phoneCountry: user.phoneCountry ?? "",
     theme,
   });
 }
@@ -78,10 +83,13 @@ export async function PATCH(request: NextRequest) {
   }
 
   let body: {
+    birthDate?: null | string;
     firstName?: string;
     image?: null | string;
     lastName?: string;
     phone?: null | string;
+    phoneCountry?: null | string;
+    phoneLocal?: null | string;
     theme?: "dark" | "light" | "system";
   };
   try {
@@ -97,13 +105,67 @@ export async function PATCH(request: NextRequest) {
   if (typeof body.lastName === "string") {
     updates.lastName = body.lastName.trim() || null;
   }
+  if (body.birthDate !== undefined) {
+    if (body.birthDate == null || body.birthDate === "") {
+      updates.birthDate = null;
+    } else if (typeof body.birthDate === "string") {
+      const t = body.birthDate.trim();
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(t)) {
+        return NextResponse.json(
+          { error: "Invalid birth date (use YYYY-MM-DD)" },
+          { status: 400 },
+        );
+      }
+      const d = new Date(`${t}T12:00:00.000Z`);
+      if (Number.isNaN(d.getTime())) {
+        return NextResponse.json(
+          { error: "Invalid birth date" },
+          { status: 400 },
+        );
+      }
+      updates.birthDate = t;
+    }
+  }
   if (body.image !== undefined) {
     updates.image =
       typeof body.image === "string" && body.image.trim()
         ? body.image.trim()
         : null;
   }
-  if (body.phone !== undefined) {
+  if (body.phoneCountry !== undefined) {
+    updates.phoneCountry =
+      typeof body.phoneCountry === "string" && body.phoneCountry.trim()
+        ? body.phoneCountry.trim().toUpperCase().slice(0, 2)
+        : null;
+  }
+  if (
+    body.phoneLocal !== undefined &&
+    (typeof body.phoneLocal === "string" || body.phoneLocal === null)
+  ) {
+    let iso: string | undefined;
+    if (typeof body.phoneCountry === "string" && body.phoneCountry.trim()) {
+      iso = body.phoneCountry.trim().toUpperCase().slice(0, 2);
+    } else {
+      const [row] = await db
+        .select({ phoneCountry: userTable.phoneCountry })
+        .from(userTable)
+        .where(eq(userTable.id, session.user.id))
+        .limit(1);
+      iso = row?.phoneCountry?.trim() || "US";
+    }
+    if (body.phoneLocal === null || (body.phoneLocal as string) === "") {
+      updates.phone = null;
+    } else if (typeof body.phoneLocal === "string" && iso) {
+      const e164 = combineToE164(iso, body.phoneLocal);
+      if (e164) updates.phone = e164;
+      else {
+        return NextResponse.json(
+          { error: "Invalid phone number for selected country" },
+          { status: 400 },
+        );
+      }
+    }
+  } else if (body.phone !== undefined) {
     updates.phone =
       typeof body.phone === "string" && body.phone.trim()
         ? body.phone.trim()
@@ -149,11 +211,14 @@ export async function PATCH(request: NextRequest) {
     .set({ ...updates, updatedAt: new Date() })
     .where(eq(userTable.id, session.user.id))
     .returning({
+      birthDate: userTable.birthDate,
       firstName: userTable.firstName,
       id: userTable.id,
       image: userTable.image,
       lastName: userTable.lastName,
       name: userTable.name,
+      phone: userTable.phone,
+      phoneCountry: userTable.phoneCountry,
       theme: userTable.theme,
     });
 
@@ -169,10 +234,13 @@ export async function PATCH(request: NextRequest) {
       : "system";
 
   return NextResponse.json({
+    birthDate: updated.birthDate ?? "",
     firstName: updated.firstName ?? "",
     image: updated.image ?? null,
     lastName: updated.lastName ?? "",
     name: updated.name ?? "",
+    phone: updated.phone ?? "",
+    phoneCountry: updated.phoneCountry ?? "",
     theme,
   });
 }

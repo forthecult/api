@@ -15,15 +15,12 @@ import {
   CURRENCY_OPTIONS,
   useCountryCurrency,
 } from "~/lib/hooks/use-country-currency";
-import {
-  CRYPTO_OPTIONS,
-  useCryptoCurrency,
-} from "~/lib/hooks/use-crypto-currency";
+import { CRYPTO_OPTIONS, useCryptoCurrency } from "~/lib/hooks/use-crypto-currency";
+import { CryptoPricingTogglesList } from "~/ui/components/crypto-pricing-toggles-list";
 import { Button } from "~/ui/primitives/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuTrigger,
 } from "~/ui/primitives/dropdown-menu";
 // Lazy load FooterPreferencesModal - only needed when user opens preferences
@@ -156,24 +153,24 @@ export function FooterBottom({
   const fiatPrice =
     mounted && usdPrice != null && usdPrice > 0
       ? (() => {
-        const fiat = convertUsdToFiat(usdPrice);
-        if (fiat == null) return null;
-        if (
-          selectedCrypto === "DOGE" ||
-          selectedCrypto === "PUMP" ||
-          selectedCrypto === "TROLL" ||
-          selectedCrypto === "XMR" ||
-          selectedCrypto === "CULT"
-        ) {
-          return new Intl.NumberFormat(undefined, {
-            currency,
-            maximumFractionDigits: 6,
-            minimumFractionDigits: 4,
-            style: "currency",
-          }).format(fiat);
-        }
-        return formatFiat(fiat);
-      })()
+          const fiat = convertUsdToFiat(usdPrice);
+          if (fiat == null) return null;
+          if (
+            selectedCrypto === "DOGE" ||
+            selectedCrypto === "PUMP" ||
+            selectedCrypto === "TROLL" ||
+            selectedCrypto === "XMR" ||
+            selectedCrypto === "CULT"
+          ) {
+            return new Intl.NumberFormat(undefined, {
+              currency,
+              maximumFractionDigits: 6,
+              minimumFractionDigits: 4,
+              style: "currency",
+            }).format(fiat);
+          }
+          return formatFiat(fiat);
+        })()
       : null;
 
   const prefsLabel =
@@ -204,11 +201,12 @@ export function FooterBottom({
               font-mono-crypto flex cursor-pointer items-center gap-1.5
               rounded-sm font-medium transition-opacity
               hover:opacity-80
-              ${selectedCrypto === "SOL" ||
+              ${
+                selectedCrypto === "SOL" ||
                 selectedCrypto === "PUMP" ||
                 selectedCrypto === "CULT"
-                ? `font-semibold`
-                : ""
+                  ? `font-semibold`
+                  : ""
               }
             `}
             onClick={() => {
@@ -277,26 +275,21 @@ export function FooterBottom({
                 <ChevronDown className="h-4 w-4 shrink-0" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {CRYPTO_OPTIONS.map(({ code, iconSrc, label }) => (
-                <DropdownMenuItem
-                  className="flex items-center gap-2"
-                  key={code}
-                  onClick={() => setSelectedCrypto(code)}
-                >
-                  <Image
-                    alt=""
-                    aria-hidden
-                    className="shrink-0 rounded object-contain"
-                    height={CRYPTO_ICON_SIZE}
-                    role="presentation"
-                    src={iconSrc}
-                    unoptimized
-                    width={CRYPTO_ICON_SIZE}
-                  />
-                  {label}
-                </DropdownMenuItem>
-              ))}
+            <DropdownMenuContent
+              align="end"
+              className="w-[min(100vw-2rem,22rem)] p-0"
+            >
+              <p
+                className={`
+                  border-b border-border px-2 py-1.5 text-xs text-muted-foreground
+                `}
+              >
+                Show prices in up to 2 cryptos (footer &amp; product pages).
+              </p>
+              <CryptoPricingTogglesList
+                menuMode
+                onCryptoSelect={setSelectedCrypto}
+              />
             </DropdownMenuContent>
           </DropdownMenu>
           <Button

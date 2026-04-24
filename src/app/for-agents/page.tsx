@@ -103,7 +103,7 @@ function ForAgentsPageAgentView({ apiBaseUrl }: { apiBaseUrl: string }) {
         </h2>
         <ol
           className={`
-            list-inside list-decimal flex flex-col gap-1 text-neutral-700
+            flex list-inside list-decimal flex-col gap-1 text-neutral-700
             dark:text-neutral-300
           `}
         >
@@ -133,7 +133,7 @@ function ForAgentsPageAgentView({ apiBaseUrl }: { apiBaseUrl: string }) {
         </h2>
         <ol
           className={`
-            list-inside list-decimal flex flex-col gap-1 text-neutral-700
+            flex list-inside list-decimal flex-col gap-1 text-neutral-700
             dark:text-neutral-300
           `}
         >
@@ -183,7 +183,8 @@ function ForAgentsPageAgentView({ apiBaseUrl }: { apiBaseUrl: string }) {
           Endpoint reference
         </h2>
         <dl
-          className={`flex flex-col gap-3 text-neutral-700
+          className={`
+            flex flex-col gap-3 text-neutral-700
             dark:text-neutral-300
           `}
         >
@@ -358,7 +359,7 @@ function ForAgentsPageHumanView({ apiBaseUrl }: { apiBaseUrl: string }) {
           <h2 className="font-heading text-xl font-semibold">Quick Start</h2>
           <ol
             className={`
-              list-inside list-decimal flex flex-col gap-2 text-muted-foreground
+              flex list-inside list-decimal flex-col gap-2 text-muted-foreground
             `}
           >
             <li>

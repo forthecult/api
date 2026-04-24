@@ -346,7 +346,7 @@ function EsimOrderCard({
           `}
         >
           {/* Left: Package info */}
-          <div className="min-w-0 flex-1 flex flex-col gap-2">
+          <div className="flex min-w-0 flex-1 flex-col gap-2">
             <div className="flex flex-wrap items-start gap-2">
               <h3 className="text-sm leading-tight font-semibold">
                 {order.packageName}
@@ -556,7 +556,8 @@ function EsimOrderCard({
                 )}
                 <div
                   className={`
-                    min-w-0 flex-1 flex flex-col gap-2 text-sm text-muted-foreground
+                    flex min-w-0 flex-1 flex-col gap-2 text-sm
+                    text-muted-foreground
                   `}
                 >
                   <p>

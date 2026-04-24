@@ -435,7 +435,8 @@ export function AddressesPageClient({ addresses }: AddressesPageClientProps) {
               <Card>
                 <CardHeader
                   className={`
-                    flex flex-row items-start justify-between flex flex-col gap-0 pb-2
+                    flex flex-col flex-row items-start justify-between gap-0
+                    pb-2
                   `}
                 >
                   <div>

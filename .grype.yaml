@@ -1,0 +1,31 @@
+# Grype configuration — webapp
+#
+# Accepted-risk suppressions. Reviewed quarterly by @forthecult/sec under
+# SOC 2 CC7.1, and re-evaluated every time a new critical upstream release
+# lands. See docs/compliance-audit-soc2-20260423.md for rationale.
+#
+# Rule: only suppress findings that are (a) in build-time tooling that never
+# ships to production, or (b) in a transitive dependency with no upstream fix
+# available and a documented compensating control.
+
+ignore:
+  # ---- Build-time only: esbuild binary bundles the Go stdlib ----
+  # esbuild ships a Go-compiled binary. Grype matches Go stdlib CVEs against
+  # the runtime embedded in that binary, not anything we serve. The binary
+  # only runs during `bun run build` / `drizzle-kit generate`; production
+  # serves the already-bundled output. Accepted until esbuild publishes a
+  # release built against a newer Go toolchain.
+  - package:
+      type: go-module
+      name: stdlib
+
+  # ---- Transitive deps with no upstream fix ----
+  # bigint-buffer@1.1.5 — GHSA-3gc7-fjrx-p6mg (buffer overflow DoS).
+  # Pulled via @solana/buffer-layout-utils. Input is our own on-chain ix
+  # construction, not reachable from untrusted request bodies.
+  - vulnerability: GHSA-3gc7-fjrx-p6mg
+
+  # lodash@4.17.21 / lodash-es — GHSA-r5fr-rjxr-66jc (regex DoS in template).
+  # We never call `template` on user input. Used transitively by drizzle-kit
+  # and a handful of build plugins; no newer major upstream release exists.
+  - vulnerability: GHSA-r5fr-rjxr-66jc

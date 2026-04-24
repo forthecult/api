@@ -30,8 +30,12 @@ export interface BreadcrumbItem {
 
 export interface CategoryBySlug {
   description: null | string;
+  footerReviewsEnabled: boolean;
+  footerReviewsStoreWide: boolean;
   id: string;
   imageUrl: null | string;
+  marketingBlockEnabled: boolean;
+  marketingBlockHtml: null | string;
   metaDescription: null | string;
   name: string;
   parentId: null | string;
@@ -304,8 +308,12 @@ export async function getCategoryBySlug(
   const [row] = await db
     .select({
       description: categoriesTable.description,
+      footerReviewsEnabled: categoriesTable.footerReviewsEnabled,
+      footerReviewsStoreWide: categoriesTable.footerReviewsStoreWide,
       id: categoriesTable.id,
       imageUrl: categoriesTable.imageUrl,
+      marketingBlockEnabled: categoriesTable.marketingBlockEnabled,
+      marketingBlockHtml: categoriesTable.marketingBlockHtml,
       metaDescription: categoriesTable.metaDescription,
       name: categoriesTable.name,
       parentId: categoriesTable.parentId,
@@ -319,8 +327,12 @@ export async function getCategoryBySlug(
   if (!row?.slug) return null;
   return {
     description: row.description ?? null,
+    footerReviewsEnabled: row.footerReviewsEnabled ?? false,
+    footerReviewsStoreWide: row.footerReviewsStoreWide ?? true,
     id: row.id,
     imageUrl: row.imageUrl ?? null,
+    marketingBlockEnabled: row.marketingBlockEnabled ?? false,
+    marketingBlockHtml: row.marketingBlockHtml ?? null,
     metaDescription: row.metaDescription ?? null,
     name: row.name,
     parentId: row.parentId ?? null,

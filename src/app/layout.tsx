@@ -7,6 +7,7 @@ import { Suspense } from "react";
 import { SEO_CONFIG } from "~/app";
 import { LazySolanaWalletProvider } from "~/app/checkout/crypto/lazy-solana-wallet-provider";
 import { AnalyticsProvider } from "~/lib/analytics/analytics-provider";
+import { PostHogIdentityBridge } from "~/lib/analytics/posthog-identity-bridge";
 import { getPublicSiteUrl, isAgentSubdomain } from "~/lib/app-url";
 import { CartProvider } from "~/lib/hooks/use-cart";
 import { CountryCurrencyProvider } from "~/lib/hooks/use-country-currency";
@@ -28,6 +29,7 @@ import { SupportChatWidgetWrapper } from "~/ui/components/support-chat/support-c
 import { ThemePersistSync } from "~/ui/components/theme-persist-sync";
 import { ThemeProvider } from "~/ui/components/theme-provider";
 import { WalletErrorBoundary } from "~/ui/components/wallet-error-boundary";
+import { WebVitalsReporter } from "~/ui/components/web-vitals-reporter";
 import { Toaster } from "~/ui/primitives/sonner";
 
 const geistSans = Geist({
@@ -174,6 +176,8 @@ export default async function RootLayout({
           enableSystem
         >
           <AnalyticsProvider>
+            <WebVitalsReporter />
+            <PostHogIdentityBridge />
             {/* no initial theme is fetched server-side: next-themes restores from localStorage for
               returning users, and ThemePersistSync backfills cross-device theme via idle fetch. */}
             <ThemePersistSync />

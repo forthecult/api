@@ -266,6 +266,21 @@ A minimal geometric shape: an open-topped rectangle or arch — like a container
 
 ## Vocabulary
 
+### How we name ourselves
+
+Every surface uses the right word for its audience. Pick the one that matches the context; do not mix them in the same paragraph.
+
+| Context | Term | Use it for |
+|---------|------|------------|
+| Primary customer-facing brand name | **Culture** | Headlines, meta titles, nav, footers, emails, marketing copy |
+| Wordmark / legal / URL | **For the Cult** | Logo, legal entity, `forthecult.store` |
+| Community identifier | **the Cult** | "Join the Cult," "Cult members" — community affinity only |
+| Tagline variant (optional) | **For the Culture** | Tagline / campaign copy; never as a brand name |
+| Token ticker | **CULT** (all caps) | On-chain, exchange listings, payment UIs, receipts |
+| Internal engineering shorthand | **Culture monorepo** | AGENTS.md, SKILL.md files, CODEOWNERS, internal docs |
+
+**Do not use:** **FTC** / **ftc**. Ambiguous with the US Federal Trade Commission, which undermines trust. Also a remnant of the upstream template. The five conventions above cover every case.
+
 ### 15 Words the Brand Owns
 
 These words appear regularly. They define the lexicon.
@@ -282,13 +297,13 @@ These words appear regularly. They define the lexicon.
 | **Open-source** | Technology you can inspect and trust. |
 | **Flourishing** | Our north star. Human thriving. |
 | **Pillar** | Our framework. Health, Autonomy. |
-| **Stake** | CULT token commitment. Also: having skin in the game. |
+| **Lock** | How members commit CULT for member benefits (preferred verb over "stake"). Use "lock," "hold," or "member" rather than "stake" / "stakeholder" when describing CULT. "Stake" is fine in the idiomatic "skin in the game" sense. |
 | **Considered** | Thoughtful purchase. Thoughtful brand. |
 | **Privacy** | Not a feature. A right. |
 | **Craft** | Care in making. Applies to products and to us. |
 | **Community** | CULT holders, customers, collaborators. |
 
-### 15 Words the Brand Never Uses
+### Words the Brand Never Uses
 
 | Word | Why it is banned |
 |------|-----------------|
@@ -307,6 +322,11 @@ These words appear regularly. They define the lexicon.
 | **Guru** | We are peers, not gurus. |
 | **Hack** / **Biohack** | Overused. Say what the practice actually is. |
 | **Unlock** | App Store marketing language. |
+| **FTC** / **ftc** | Ambiguous with the US regulator. Use Culture / For the Cult / CULT. |
+| **Loyalty token** | Regulatory friction. Say "rewards" or "points." |
+| **Stakeholder** (for CULT holders) | Implies equity-like participation in the business. Say "member," "holder," or "community" for CULT. |
+| **Revenue share** / **share of profits** | Howey-test triggers. Describe member benefits (free shipping, exclusive products, member rewards) and buyback-and-burn mechanics instead. |
+| **Staking** / **stakers** (for CULT) | Say "locking" / "locked-CULT holders" / "members." "Skin-in-the-game stake" is still fine; the product verb is not. |
 
 ---
 
@@ -438,9 +458,9 @@ Shop               Company            Support            Legal
 > Built with the CULT
 
 **Framing copy:**
-> CULT holders are not just customers — they are stakeholders. They vote on new products, access exclusive drops, and earn a share of the brand's revenue. This is commerce as community.
+> CULT holders are not just customers — they are members. They vote on new products, access exclusive drops, and earn member rewards as the program grows. This is commerce as community.
 
-**Design:** If reviews exist, show 3–4 in a clean horizontal layout — real names, real words, no star ratings (stars are generic). If no reviews yet, show CULT token stats: holder count, staking stats, governance votes completed. Use JetBrains Mono for all numbers.
+**Design:** If reviews exist, show 3–4 in a clean horizontal layout — real names, real words, no star ratings (stars are generic). If no reviews yet, show CULT token stats: holder count, locked-CULT totals, governance votes completed. Use JetBrains Mono for all numbers.
 
 ---
 
@@ -542,9 +562,9 @@ SPECIFICATIONS
 >
 > **The CULT**
 >
-> Culture is powered by the CULT token on Solana. Holders are not customers — they are stakeholders. Stake CULT for membership benefits: free shipping, exclusive products, early access to drops, governance votes on what we carry next, and a share of the brand's revenue.
+> Culture is powered by the CULT token on Solana. CULT is the points in our rewards program, tracked on-chain. Hold and lock CULT for member benefits: free shipping, exclusive products, early access to drops, and governance votes on what we carry next.
 >
-> This is not a loyalty program. It is ownership.
+> This is a rewards program, made in the open — not a private loyalty scheme.
 >
 > **Where we are going**
 >

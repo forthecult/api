@@ -2,10 +2,10 @@ import type { UIMessage } from "ai";
 
 import type { ChatProject, ChatSessionMeta } from "~/app/chat/chat-sidebar";
 
-const KEY_PROJECTS = "ftc-ai-projects";
-const KEY_SESSIONS = "ftc-ai-session-list";
-const KEY_SIDEBAR = "ftc-ai-sidebar-collapsed";
-const KEY_PROJECT_SETTINGS_PANEL = "ftc-ai-project-settings-panel-collapsed";
+const KEY_PROJECTS = "culture-ai-projects";
+const KEY_SESSIONS = "culture-ai-session-list";
+const KEY_SIDEBAR = "culture-ai-sidebar-collapsed";
+const KEY_PROJECT_SETTINGS_PANEL = "culture-ai-project-settings-panel-collapsed";
 
 export function loadProjects(): ChatProject[] {
   try {
@@ -112,7 +112,7 @@ export function saveSidebarCollapsed(collapsed: boolean): void {
 }
 
 function messagesKey(sessionId: string): string {
-  return `ftc-ai-messages-${sessionId}`;
+  return `culture-ai-messages-${sessionId}`;
 }
 
 function normalizeSession(raw: unknown): ChatSessionMeta | null {

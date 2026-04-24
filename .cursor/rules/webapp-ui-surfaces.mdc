@@ -1,15 +1,18 @@
 ---
-description: Webapp UI — flat surfaces, borders/rings over shadows (performance and consistency)
-globs: "webapp/**/*.tsx,webapp/**/globals.css,webapp/**/primitives/**/*.tsx"
+description: 
+globs: webapp/webapp/"webapp/**/*.tsx, webapp/webapp/webapp/**/globals.css, webapp/webapp/webapp/**/primitives/**/*.tsx"
 alwaysApply: false
 ---
 
-# webapp ui surfaces (speed-first)
+# webapp ui surfaces
 
-- **avoid decorative `shadow-*`** on buttons, inputs, cards, popovers, dialogs, and menus. shadows increase paint/compositing work; prefer `border border-border`, `bg-card` / `bg-muted`, and `focus-visible:ring-*` for hierarchy.
-- **do not add** `hover:shadow-md`, `shadow-sm`, `shadow-xs`, or `shadow-lg` to new components unless there is a strong accessibility reason already not covered by rings.
-- **forms:** inputs use border + ring on focus only; no box shadow for elevation.
+less is always more. but we want elegant and professional (think tesla or apple, as design companies)
+
+customer conversions, and therefore platform performance (quality, funnel, page speed, marketing/sales, features, accessibility, security, and privacy) are a top priority.
+
+we can take bold, futuristic, never before done design and functionality choices as long as they do not compromise our values. we make technology sexy (think tesla roadster or cybertruck) with our UI. we care rigorously about A/B testing and customer segmenting to maximize reach. 
+
 - **primitives:** shared controls live under `webapp/src/ui/primitives/`; change primitives instead of one-off shadows in feature code.
-- **exceptions:** rare marketing hero sections may use minimal shadow only when explicitly designed; default store ui stays flat.
+- prefer to use UI elements that are optimized for performance, eCommerce, and conversions. However, not afraid to try unconventional UI elements in an unusual way to see if it looks refreshing or beautiful on the website.
 
 when editing legacy files, remove redundant shadows in the same area if the change already touches that component.

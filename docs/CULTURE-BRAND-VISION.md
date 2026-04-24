@@ -87,7 +87,7 @@ Age 25-50. Urban or suburban. Values quality over quantity. Researches purchases
 We are building Culture to be natively accessible to AI systems. As AI agents increasingly handle commerce on behalf of humans, we're positioning Culture as the trusted destination for AI-assisted purchasing. Our APIs are designed for machine consumption. Our product data is structured and transparent. We welcome our new robot customers.
 
 **The Wellness Seeker**
-Discovered us through health content. Interested in longevity, biohacking, clean eating, and toxin-free living. May not care about crypto but deeply cares about what they put in and on their bodies.
+Discovered us through health content. Interested in longevity, clean eating, evidence-based wellness, and toxin-free living. May not care about crypto but deeply cares about what they put in and on their bodies.
 
 ---
 
@@ -140,18 +140,18 @@ Every product in our catalog must pass our curation criteria:
 ### Future Categories (Roadmap)
 - GrapheneOS phones
 - DePIN nodes (Helium, etc.)
-- Biohacking test kits
+- At-home health and lab test kits
 - 3D printed products
 
 ---
 
 ## The CULT
 
-Culture is powered by the CULT token on Solana. Token holders are more than customers—they're stakeholders in our mission.
+Culture is powered by the CULT token on Solana. CULT holders are more than customers — they are members of the community.
 
 ### Become a CULT Member
 
-Stake CULT for membership benefits that range based on your stake. They include
+Hold and lock CULT for member benefits that scale with your tier:
 
 - **Free Shipping and discounted shipping**
 - **Early Access**: First access to limited-edition drops
@@ -161,11 +161,11 @@ Stake CULT for membership benefits that range based on your stake. They include
 
 ### Token Economics
 
-- **Transaction Fee Revenue**: 65% of CULT creator fees flow to operations
-- **Regular Burns**: Deflationary mechanism to reward holders
+- **Creator Fees Funding Operations**: 65% of CULT creator fees fund operations
+- **Regular Burns**: Deflationary mechanism that reduces supply over time
 - **Creator Fees Distribution**:
   - 5% burned
-  - 5% to stakers
+  - 5% to locked-CULT holders
   - 10% to inventory and artwork
   - 5% to charity/research
   - Remainder to operations and AI development

@@ -1183,7 +1183,8 @@ export const PaymentMethodSelector = forwardRef<
                       {opt.value === "eth" && paymentSubOption === "eth" && (
                         <div
                           className={`
-                            mt-2 ml-5 flex flex-col gap-2 border-l-2 border-muted pl-4
+                            mt-2 ml-5 flex flex-col gap-2 border-l-2
+                            border-muted pl-4
                           `}
                         >
                           {ETH_CHAIN_OPTIONS.map((chainOpt) => (
@@ -1228,7 +1229,8 @@ export const PaymentMethodSelector = forwardRef<
                         paymentSubOption === "other" && (
                           <div
                             className={`
-                              mt-2 ml-5 flex flex-col gap-2 border-l-2 border-muted pl-4
+                              mt-2 ml-5 flex flex-col gap-2 border-l-2
+                              border-muted pl-4
                             `}
                           >
                             {OTHER_SUB_OPTIONS.map((otherOpt) => (
@@ -1724,48 +1726,51 @@ export const PaymentMethodSelector = forwardRef<
                             {navigatingToPay ? "Redirecting…" : "Pay with TON"}
                           </Button>
                         ))
-            : paymentMethod === ""
-              ? ((payHandlerRef.current = () => {}),
-                (
-                  <Alert variant="default">
-                    <AlertTitle>Payment required</AlertTitle>
-                    <AlertDescription>
-                      Select a payment method above to continue.
-                    </AlertDescription>
-                  </Alert>
-                ))
-              : paymentMethod === "crypto" && paymentSubOption === ""
-                ? ((payHandlerRef.current = () => {}),
-                  (
-                    <Alert variant="default">
-                      <AlertTitle>Crypto option required</AlertTitle>
-                      <AlertDescription>
-                        Select a cryptocurrency (e.g., Ethereum, Solana, or
-                        CULT) to continue.
-                      </AlertDescription>
-                    </Alert>
-                  ))
-                : paymentMethod === "stablecoins"
-                  ? ((payHandlerRef.current = () => {}),
-                    (
-                      <Alert variant="default">
-                        <AlertTitle>Stablecoin option required</AlertTitle>
-                        <AlertDescription>
-                          Select USDC or USDT and a network to continue.
-                        </AlertDescription>
-                      </Alert>
-                    ))
-                  : ((payHandlerRef.current = () => {}),
-                    (
-                      <Alert variant="destructive">
-                        <AlertTitle>Unavailable</AlertTitle>
-                        <AlertDescription>
-                          This payment option is not available yet. Please use
-                          Credit/debit card, Crypto, Stablecoins (USDC/USDT), or
-                          PayPal.
-                        </AlertDescription>
-                      </Alert>
-                    ))}
+                      : paymentMethod === ""
+                        ? ((payHandlerRef.current = () => {}),
+                          (
+                            <Alert variant="default">
+                              <AlertTitle>Payment required</AlertTitle>
+                              <AlertDescription>
+                                Select a payment method above to continue.
+                              </AlertDescription>
+                            </Alert>
+                          ))
+                        : paymentMethod === "crypto" && paymentSubOption === ""
+                          ? ((payHandlerRef.current = () => {}),
+                            (
+                              <Alert variant="default">
+                                <AlertTitle>Crypto option required</AlertTitle>
+                                <AlertDescription>
+                                  Select a cryptocurrency (e.g., Ethereum,
+                                  Solana, or CULT) to continue.
+                                </AlertDescription>
+                              </Alert>
+                            ))
+                          : paymentMethod === "stablecoins"
+                            ? ((payHandlerRef.current = () => {}),
+                              (
+                                <Alert variant="default">
+                                  <AlertTitle>
+                                    Stablecoin option required
+                                  </AlertTitle>
+                                  <AlertDescription>
+                                    Select USDC or USDT and a network to
+                                    continue.
+                                  </AlertDescription>
+                                </Alert>
+                              ))
+                            : ((payHandlerRef.current = () => {}),
+                              (
+                                <Alert variant="destructive">
+                                  <AlertTitle>Unavailable</AlertTitle>
+                                  <AlertDescription>
+                                    This payment option is not available yet.
+                                    Please use Credit/debit card, Crypto,
+                                    Stablecoins (USDC/USDT), or PayPal.
+                                  </AlertDescription>
+                                </Alert>
+                              ))}
         {/* Reassurance messaging */}
         <div
           className={`
@@ -1902,7 +1907,9 @@ export const PaymentMethodSelector = forwardRef<
                         eSIM plans (in your cart)
                       </p>
                       <ul
-                        className={`flex flex-col gap-1.5 text-sm text-muted-foreground`}
+                        className={`
+                          flex flex-col gap-1.5 text-sm text-muted-foreground
+                        `}
                       >
                         {ESIM_REFUND_POPUP_ITEMS.map((item, i) => (
                           <li className="flex items-start gap-2" key={i}>
@@ -2106,8 +2113,8 @@ export const PaymentMethodSelector = forwardRef<
               richContent={
                 <div className="flex flex-col gap-3">
                   <p className="text-sm">
-                    By completing your purchase you agree to these terms and our
-                    Privacy, Refund, and Shipping policies.
+                    When you place an order, you agree to these terms along with
+                    our Privacy, Refund, and Shipping policies.
                   </p>
                   <ul className="space-y-2 text-sm">
                     <li className="flex items-start gap-2">
@@ -2117,7 +2124,8 @@ export const PaymentMethodSelector = forwardRef<
                           bg-foreground/40
                         `}
                       />
-                      You must be the age of majority in your jurisdiction
+                      You confirm you are old enough to make this purchase
+                      under the laws that apply to you
                     </li>
                     <li className="flex items-start gap-2">
                       <span
@@ -2126,7 +2134,8 @@ export const PaymentMethodSelector = forwardRef<
                           bg-foreground/40
                         `}
                       />
-                      We may correct pricing errors or limit order quantities
+                      We may correct pricing errors, cancel or limit orders, or
+                      adjust item availability
                     </li>
                     <li className="flex items-start gap-2">
                       <span
@@ -2135,8 +2144,8 @@ export const PaymentMethodSelector = forwardRef<
                           bg-foreground/40
                         `}
                       />
-                      Questions? Contact us first — we&apos;re happy to help
-                      resolve any issue
+                      If something is wrong, reach out — we prefer to help before
+                      anything escalates
                     </li>
                     <li className="flex items-start gap-2">
                       <span
@@ -2145,7 +2154,8 @@ export const PaymentMethodSelector = forwardRef<
                           bg-foreground/40
                         `}
                       />
-                      Governing law: United States
+                      These terms are governed by United States law (see full
+                      policy for details)
                     </li>
                   </ul>
                 </div>

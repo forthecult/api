@@ -448,7 +448,7 @@ export function EthPayClient({
           flex min-h-screen w-full items-center justify-center bg-background
         `}
       >
-        <div className="max-w-md flex flex-col gap-4 px-4 text-center">
+        <div className="flex max-w-md flex-col gap-4 px-4 text-center">
           <div className="text-4xl text-destructive">⚠️</div>
           <h1 className="text-xl font-semibold">Order Not Found</h1>
           <p className="text-muted-foreground">
@@ -654,7 +654,9 @@ export function EthPayClient({
                 </h2>
                 <div className="space-y-4 text-base">
                   <div>
-                    <p className="mb-1 text-muted-foreground">Amount to pay</p>
+                    <p className="mb-1.5 text-base font-medium text-foreground">
+                      Amount to pay
+                    </p>
                     <p className="font-mono font-medium">
                       {isStablecoin
                         ? `${amountUsdStr} ${tokenLabel}`

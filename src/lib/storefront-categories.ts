@@ -57,6 +57,27 @@ export function computeCategoryIdAndDescendantIds(
  * that are crypto (by name) or any descendant of those. Used to exclude crypto
  * and subcategories from "all products" unless in show-in-all-products.
  */
+/**
+ * True when the category for `slug` is the crypto tree (or a descendant of it).
+ */
+export function isCryptoStorefrontCategorySlug(
+  rows: {
+    id: string;
+    name: string;
+    parentId: null | string;
+    slug: null | string;
+  }[],
+  categorySlug: string,
+): boolean {
+  const norm = categorySlug.trim().toLowerCase();
+  const root = rows.find((r) => (r.slug ?? "").trim().toLowerCase() === norm);
+  if (!root) return false;
+  const cryptoIds = computeCryptoCategoryIdsIncludingDescendants(
+    rows.map((r) => ({ id: r.id, name: r.name, parentId: r.parentId })),
+  );
+  return cryptoIds.has(root.id);
+}
+
 export function computeCryptoCategoryIdsIncludingDescendants(
   rows: { id: string; name: string; parentId: null | string }[],
 ): Set<string> {

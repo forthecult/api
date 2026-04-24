@@ -9,10 +9,10 @@ export const logger = {
       console.debug("[DEBUG]", ...args);
     }
   },
+  error: (...args: unknown[]) => console.error("[ERROR]", ...args),
   info: (...args: unknown[]) => console.info("[INFO]", ...args),
   log: (...args: unknown[]) => console.log(...args),
   warn: (...args: unknown[]) => console.warn("[WARN]", ...args),
-  error: (...args: unknown[]) => console.error("[ERROR]", ...args),
 };
 
 export default logger;

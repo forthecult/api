@@ -13,7 +13,7 @@ import { addCurrentProductToCart, gotoFirstProduct } from "./helpers";
 test.describe("site shell", () => {
   test("homepage loads with branded title", async ({ page }) => {
     await page.goto("/");
-    await expect(page).toHaveTitle(/FTC|For the Cult/i);
+    await expect(page).toHaveTitle(/Culture|For the Cult/i);
     await expect(page.getByRole("navigation").first()).toBeVisible();
   });
 
@@ -176,5 +176,16 @@ test.describe("public api contract", () => {
       expect(response.status()).toBeGreaterThanOrEqual(400);
       expect(response.status()).toBeLessThan(500);
     }
+  });
+
+  test("newsletter subscribe returns JSON success", async ({ request }) => {
+    const unique = `newsletter-smoke-${Date.now()}@gmail.com`;
+    const response = await request.post("/api/newsletter/subscribe", {
+      data: { email: unique },
+      headers: { "Content-Type": "application/json" },
+    });
+    expect(response.ok()).toBeTruthy();
+    const body = (await response.json()) as { success?: boolean };
+    expect(body.success).toBe(true);
   });
 });

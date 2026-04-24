@@ -5,7 +5,7 @@ import { db } from "~/db";
 import { aiMessagingChannelTable } from "~/db/schema/ai-chat/tables";
 import {
   getLinkedFtcUserId,
-  parseFtcLinkCodeFromMessage,
+  parseLinkCodeFromMessage,
   tryCompleteLinkByCode,
 } from "~/lib/messaging/linked-user";
 import {
@@ -59,7 +59,7 @@ export async function POST(request: Request) {
 
   const token = row.discordBotToken.trim();
 
-  const linkCode = parseFtcLinkCodeFromMessage(content);
+  const linkCode = parseLinkCodeFromMessage(content);
   if (linkCode) {
     const res = await tryCompleteLinkByCode({
       code: linkCode,

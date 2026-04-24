@@ -10,7 +10,7 @@ export default function OrdersLoading() {
           key={`order-skeleton-${i}`}
         >
           <Skeleton className="h-16 w-16 rounded" />
-          <div className="flex-1 flex flex-col gap-2">
+          <div className="flex flex-1 flex-col gap-2">
             <Skeleton className="h-4 w-1/2" />
             <Skeleton className="h-4 w-1/3" />
           </div>

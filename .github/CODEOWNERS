@@ -1,0 +1,30 @@
+# CODEOWNERS — webapp (forthecult/api)
+#
+# Required-reviewer policy for security-critical surfaces. Pair with GitHub
+# branch protection "require review from Code Owners" to make this enforceable.
+#
+# Replace the @forthecult/* teams below with the real team handles once the
+# GitHub org teams exist. Until then, listing an individual maintainer is fine:
+#   /webapp/src/lib/auth.ts  @jamesfor
+#
+# Control mapping: SOC 2 CC8.1 (change management).
+
+# Auth + admin + CSRF — anything that gates privilege
+/src/lib/auth.ts                        @forthecult/sec
+/src/lib/admin-api-auth.ts              @forthecult/sec
+/src/lib/csrf.ts                        @forthecult/sec
+/src/lib/rate-limit.ts                  @forthecult/sec
+/scripts/verify-admin-auth.ts           @forthecult/sec
+
+# All webhooks accept money or fulfillment from third parties
+/src/app/api/webhooks/**                @forthecult/sec
+/src/app/api/membership/paypal-webhook/**   @forthecult/sec
+/src/app/api/payments/stripe/webhook/**     @forthecult/sec
+
+# Database schema + RLS
+/src/db/**                              @forthecult/sec @forthecult/platform
+/scripts/migrate-enable-rls-*.sql       @forthecult/sec
+
+# CI/CD, husky, and secret-handling scripts
+/.github/workflows/**                   @forthecult/sec
+/.husky/**                              @forthecult/sec

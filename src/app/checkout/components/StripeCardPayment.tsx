@@ -77,9 +77,7 @@ const StripeCardPaymentInner = function StripeCardPaymentInner({
     const phoneNumber = phoneSource?.phone?.trim();
     const cardPhoneErr: string[] = [];
     if (!phoneNumber) {
-      cardPhoneErr.push(
-        "Phone number is required for credit card payments"
-      );
+      cardPhoneErr.push("Phone number is required for credit card payments");
     }
 
     const allErrors = [...shippingErr, ...billingErr, ...cardPhoneErr];

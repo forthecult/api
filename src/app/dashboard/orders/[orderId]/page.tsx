@@ -86,7 +86,9 @@ export default async function OrderDetailPage({
 
       <Card>
         <CardHeader
-          className={`flex flex-row items-center justify-between flex flex-col gap-0 pb-2`}
+          className={`
+            flex flex-col flex-row items-center justify-between gap-0 pb-2
+          `}
         >
           <span className="text-sm font-medium text-muted-foreground capitalize">
             Status
@@ -154,7 +156,7 @@ export default async function OrderDetailPage({
       {esimOrders.length > 0 && (
         <Card>
           <CardHeader
-            className={`flex flex-row items-center gap-2 flex flex-col gap-0 pb-2`}
+            className={`flex flex-col flex-row items-center gap-0 gap-2 pb-2`}
           >
             <Smartphone className="size-5 text-muted-foreground" />
             <div>

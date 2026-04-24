@@ -1,4 +1,6 @@
-# Security standards for development (env, errors, and customer surfaces)
+# Security — customer surfaces
+
+> Scope: what can and cannot appear in customer-facing experiences. For the operator runbook (admin routes, API keys, auth mechanics), see [`../../SECURITY.md`](../../SECURITY.md). For the source-code rule that backs this doc, see [`../../.cursor/rules/no-sensitive-auth-in-public-docs.mdc`](../../.cursor/rules/no-sensitive-auth-in-public-docs.mdc).
 
 These rules apply to **customer-facing** experiences: storefront UI, signed-in **dashboard** pages, **API JSON** returned to browsers, **toast and inline error messages**, and any **vendor-facing** or **public** documentation we ship or host.
 

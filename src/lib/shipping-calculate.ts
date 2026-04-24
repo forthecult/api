@@ -48,6 +48,53 @@ import { calculatePrintifyShippingOptions } from "~/lib/printify-orders";
 import { isShippingExcluded } from "~/lib/shipping-restrictions";
 import { userMeetsTokenHolderCondition } from "~/lib/token-holder-balance";
 
+const EST_HANDLING_MIN = 2;
+const EST_HANDLING_MAX = 5;
+const EST_TRANSIT_STD_MIN = 3;
+const EST_TRANSIT_STD_MAX = 7;
+const EST_TRANSIT_EXP_MIN = 2;
+const EST_TRANSIT_EXP_MAX = 4;
+
+/**
+ * Public shipping-estimate line: show handling + transit window (matches PDP defaults when data is null).
+ */
+function productEstimateDeliveryHint(
+  p: {
+    handlingDaysMax: null | number;
+    handlingDaysMin: null | number;
+    transitDaysMax: null | number;
+    transitDaysMin: null | number;
+  },
+  speed: "express" | "standard",
+): string {
+  const hMin = p.handlingDaysMin ?? p.handlingDaysMax ?? EST_HANDLING_MIN;
+  const hMax = p.handlingDaysMax ?? p.handlingDaysMin ?? EST_HANDLING_MAX;
+  const transitMinBase = p.transitDaysMin ?? EST_TRANSIT_STD_MIN;
+  const transitMaxBase = p.transitDaysMax ?? EST_TRANSIT_STD_MAX;
+  const tMin =
+    speed === "express"
+      ? Math.max(
+          EST_TRANSIT_EXP_MIN,
+          Math.min(EST_TRANSIT_EXP_MIN + 1, Math.floor(transitMinBase * 0.6)),
+        )
+      : transitMinBase;
+  const tMax =
+    speed === "express"
+      ? Math.max(
+          tMin,
+          Math.min(
+            EST_TRANSIT_EXP_MAX,
+            Math.max(EST_TRANSIT_EXP_MIN, Math.floor(transitMaxBase * 0.55)),
+          ),
+        )
+      : transitMaxBase;
+  const low = Math.max(1, hMin + tMin);
+  const high = Math.max(low, hMax + tMax);
+  return low === high
+    ? `Est. delivery: about ${low} business days after the order is placed.`
+    : `Est. delivery: about ${low}–${high} business days after the order is placed.`;
+}
+
 interface ShippingOptionRow {
   additionalItemCents: null | number;
   amountCents: null | number;
@@ -523,11 +570,15 @@ export async function runProductShippingOptionsEstimate(
   interface ProductInfo {
     brand: null | string;
     externalId: null | string;
+    handlingDaysMax: null | number;
+    handlingDaysMin: null | number;
     id: string;
     priceCents: number;
     printifyPrintProviderId: null | number;
     printifyProductId: null | string;
     source: string;
+    transitDaysMax: null | number;
+    transitDaysMin: null | number;
     weightGrams: null | number;
   }
   let products: ProductInfo[] = [];
@@ -555,11 +606,15 @@ export async function runProductShippingOptionsEstimate(
         .select({
           brand: productsTable.brand,
           externalId: productsTable.externalId,
+          handlingDaysMax: productsTable.handlingDaysMax,
+          handlingDaysMin: productsTable.handlingDaysMin,
           id: productsTable.id,
           priceCents: productsTable.priceCents,
           printifyPrintProviderId: productsTable.printifyPrintProviderId,
           printifyProductId: productsTable.printifyProductId,
           source: productsTable.source,
+          transitDaysMax: productsTable.transitDaysMax,
+          transitDaysMin: productsTable.transitDaysMin,
           weightGrams: productsTable.weightGrams,
         })
         .from(productsTable)
@@ -838,16 +893,17 @@ export async function runProductShippingOptionsEstimate(
           label.toLowerCase().includes("2-5 days")
             ? "Express delivery (about 2–5 business days)"
             : label;
+        const shippingSpeed =
+          o.method === "express" ||
+          o.method === "priority" ||
+          o.method === "printify_express"
+            ? "express"
+            : "standard";
         combined.push({
-          deliveryHint: null,
+          deliveryHint: productEstimateDeliveryHint(product, shippingSpeed),
           label: safeLabel,
           shippingCents: o.costCents,
-          shippingSpeed:
-            o.method === "express" ||
-            o.method === "priority" ||
-            o.method === "printify_express"
-              ? "express"
-              : "standard",
+          shippingSpeed,
         });
       }
     } else if (printifyItems.length > 0) {
@@ -859,7 +915,7 @@ export async function runProductShippingOptionsEstimate(
           );
           if (catalog.shippingCents >= 0 && catalog.canShipToCountry) {
             combined.push({
-              deliveryHint: null,
+              deliveryHint: productEstimateDeliveryHint(product, "standard"),
               label: "Standard",
               shippingCents: catalog.shippingCents,
               shippingSpeed: "standard",
@@ -879,7 +935,7 @@ export async function runProductShippingOptionsEstimate(
         );
         if (catalog.shippingCents >= 0 && catalog.canShipToCountry) {
           combined.push({
-            deliveryHint: null,
+            deliveryHint: productEstimateDeliveryHint(product, "standard"),
             label: "Standard",
             shippingCents: catalog.shippingCents,
             shippingSpeed: "standard",

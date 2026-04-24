@@ -300,29 +300,29 @@ export function LongFormProductPage({
             </div>
           </div>
 
-{/* Share section */}
-      <section
-        className={`
-          border-b py-12
-          md:py-16
-        `}
-      >
-        <div
-          className={`
-            container px-4
-            md:px-6
-          `}
-        >
-          <div className={`mx-auto max-w-xl text-center`}>
-            <ProductShare
-              title={product.name}
-              url={`${siteUrl}/${canonicalSlug}`}
-            />
-          </div>
-        </div>
-      </section>
+          {/* Share section */}
+          <section
+            className={`
+              border-b py-12
+              md:py-16
+            `}
+          >
+            <div
+              className={`
+                container px-4
+                md:px-6
+              `}
+            >
+              <div className={`mx-auto max-w-xl text-center`}>
+                <ProductShare
+                  title={product.name}
+                  url={`${siteUrl}/${canonicalSlug}`}
+                />
+              </div>
+            </div>
+          </section>
 
-      <RelatedProductsSection products={relatedProducts} />
+          <RelatedProductsSection products={relatedProducts} />
           <ProductReviewsCarousel />
         </ProductShippingEstimateProvider>
       </main>

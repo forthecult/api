@@ -301,8 +301,8 @@ export function DashboardAiChannelsClient() {
             >
               @BotFather
             </a>
-            , paste the token, save, then open the telegram link provided once to link your
-            chat.
+            , paste the token, save, then open the telegram link provided once
+            to link your chat.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
@@ -389,7 +389,7 @@ export function DashboardAiChannelsClient() {
             , enable the bot, copy the application ID, public key, and bot
             token. Set the Interactions endpoint URL to the webhook below
             (POST). We register a{" "}
-            <code className="rounded bg-muted px-1 py-0.5 text-xs">/ftc</code>{" "}
+            <code className="rounded bg-muted px-1 py-0.5 text-xs">/culture</code>{" "}
             slash command with a{" "}
             <code className={`rounded bg-muted px-1 py-0.5 text-xs`}>
               message
@@ -413,18 +413,18 @@ export function DashboardAiChannelsClient() {
             {dc?.discordLinkCode ? (
               <p>
                 <span className="font-medium">
-                  Link your FTC account (slash + DM)
+                  Link your Culture account (slash + DM)
                 </span>{" "}
                 <code className="rounded bg-muted px-1 py-0.5 text-xs break-all">
                   {dc.discordLinkCode}
                 </code>{" "}
                 — message the bot{" "}
                 <code className="rounded bg-muted px-1 py-0.5 text-xs">
-                  ftc link {dc.discordLinkCode}
+                  link {dc.discordLinkCode}
                 </code>{" "}
                 or{" "}
                 <code className="rounded bg-muted px-1 py-0.5 text-xs">
-                  link {dc.discordLinkCode}
+                  culture link {dc.discordLinkCode}
                 </code>
                 .
               </p>
@@ -527,13 +527,13 @@ export function DashboardAiChannelsClient() {
           ) : null}
           {sl?.slackLinkCode ? (
             <p className="text-sm">
-              <span className="font-medium">Link your FTC account</span>{" "}
+              <span className="font-medium">Link your Culture account</span>{" "}
               <code className="rounded bg-muted px-1 py-0.5 text-xs break-all">
                 {sl.slackLinkCode}
               </code>{" "}
               — message the app{" "}
               <code className="rounded bg-muted px-1 py-0.5 text-xs">
-                ftc link {sl.slackLinkCode}
+                link {sl.slackLinkCode}
               </code>
             </p>
           ) : null}
@@ -591,14 +591,13 @@ export function DashboardAiChannelsClient() {
       <Card>
         <CardHeader>
           <CardTitle>WhatsApp (coming soon)</CardTitle>
-          <CardDescription>
-            Support coming soon.
-          </CardDescription>
+          <CardDescription>Support coming soon.</CardDescription>
         </CardHeader>
         <CardContent
-          className={`flex flex-col gap-3 text-sm leading-relaxed text-muted-foreground`}
-        >
-        </CardContent>
+          className={`
+            flex flex-col gap-3 text-sm leading-relaxed text-muted-foreground
+          `}
+        ></CardContent>
       </Card>
 
       <section
@@ -610,7 +609,9 @@ export function DashboardAiChannelsClient() {
           SMS &amp; voice (under development)
         </h2>
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-          We are working on providing this service. Voice and SMS conversations are not private. We recommend using our website or an encrypted messaging service if you want to increase your privacy.
+          We are working on providing this service. Voice and SMS conversations
+          are not private. We recommend using our website or an encrypted
+          messaging service if you want to increase your privacy.
         </p>
       </section>
     </div>

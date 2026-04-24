@@ -20,6 +20,7 @@ const PATH_TITLES: Record<string, string> = {
   "/dashboard/orders": "My Orders",
   "/dashboard/payment-methods": "Payment Methods",
   "/dashboard/profile": "Profile Info",
+  "/dashboard/reviews/write": "Write a review",
   "/dashboard/security": "Security",
   "/dashboard/settings": "Notifications",
   "/dashboard/support-tickets": "Support Tickets",
@@ -83,7 +84,7 @@ export function DashboardLayoutClient({
 
           <div
             className={cn(
-              "w-full flex flex-col gap-6 p-4",
+              "flex w-full flex-col gap-6 p-4",
               "sm:p-6",
               "md:p-8",
               "[&_[data-slot=card]]:shadow-none",

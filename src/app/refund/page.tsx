@@ -48,7 +48,7 @@ export default function RefundPage() {
           </h2>
           <ul
             className={`
-              mt-3 list-inside list-disc flex flex-col gap-2 leading-relaxed
+              mt-3 flex list-inside list-disc flex-col gap-2 leading-relaxed
               text-muted-foreground
             `}
           >

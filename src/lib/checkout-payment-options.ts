@@ -17,8 +17,8 @@ export const HIDDEN_PAYMENT_OPTIONS = {
 /** Enabled flags per UI bucket; derived from API settings. Default true when method not in list. */
 export interface PaymentVisibility {
   creditCard: boolean;
-  cryptoBnb: boolean;
   cryptoBitcoin: boolean;
+  cryptoBnb: boolean;
   cryptoCrust: boolean;
   cryptoCult: boolean;
   cryptoDogecoin: boolean;
@@ -41,8 +41,8 @@ export interface PaymentVisibility {
 }
 
 const METHOD_KEY_MAP: Record<string, keyof PaymentVisibility> = {
-  crypto_bnb: "cryptoBnb",
   crypto_bitcoin: "cryptoBitcoin",
+  crypto_bnb: "cryptoBnb",
   crypto_crust: "cryptoCrust",
   crypto_cult: "cryptoCult",
   crypto_dogecoin: "cryptoDogecoin",
@@ -66,8 +66,8 @@ const BTCPAY_DISABLED = true;
 
 const DEFAULT_VISIBILITY: PaymentVisibility = {
   creditCard: true,
-  cryptoBnb: true,
   cryptoBitcoin: false, // BTCPay not implemented
+  cryptoBnb: true,
   cryptoCrust: true,
   cryptoCult: true,
   cryptoDogecoin: false, // BTCPay not implemented
@@ -308,6 +308,48 @@ export function getFooterPaymentItems(
   }
 
   return items;
+}
+
+/**
+ * Logos for the product PDP "Payment options" accordion: group by section for
+ * conversion-focused layout (card + wallets, then stablecoins, then other crypto).
+ */
+export function getPaymentLogosByAccordionSection(
+  visibility: null | PaymentVisibility,
+): {
+  cardAndWallets: { name: string; src: string }[];
+  cryptos: { name: string; src: string }[];
+  stablecoins: { name: string; src: string }[];
+} {
+  const all = getFooterPaymentItems(visibility);
+  const cardNames = new Set([
+    "Visa",
+    "Mastercard",
+    "Diners Club",
+    "Discover",
+    "American Express",
+    "Google Pay",
+    "Apple Pay",
+    "PayPal",
+  ]);
+  const cardAndWallets: { name: string; src: string }[] = [];
+  const stablecoins: { name: string; src: string }[] = [];
+  const cryptos: { name: string; src: string }[] = [];
+  for (const item of all) {
+    if (item.name === "USDC" || item.name === "USDT") {
+      if (!stablecoins.some((s) => s.name === item.name))
+        stablecoins.push(item);
+      continue;
+    }
+    if (cardNames.has(item.name)) {
+      if (!cardAndWallets.some((c) => c.name === item.name)) {
+        cardAndWallets.push(item);
+      }
+      continue;
+    }
+    if (!cryptos.some((c) => c.name === item.name)) cryptos.push(item);
+  }
+  return { cardAndWallets, cryptos, stablecoins };
 }
 
 /** Icon paths for payment methods (for product page "Secure Checkout" strip). Only visible methods. */

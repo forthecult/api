@@ -248,8 +248,8 @@ export function SupportTicketDetailClient() {
             </h3>
             <div
               className={`
-                max-h-[400px] flex flex-col gap-3 overflow-y-auto rounded-md border
-                bg-muted/20 p-3
+                flex max-h-[400px] flex-col gap-3 overflow-y-auto rounded-md
+                border bg-muted/20 p-3
               `}
             >
               {ticket.messages.map((msg) => (

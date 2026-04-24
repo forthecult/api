@@ -1,4 +1,6 @@
-# Row Level Security (RLS) – Table Classification
+# Row Level Security (RLS) — table classification
+
+> Scope: reviewer reference for which tables are backend-only vs. partially exposed via PostgREST. See [`../../SECURITY.md`](../../SECURITY.md) for the broader operator runbook and [`SECURITY-DEVELOPMENT-STANDARDS.md`](SECURITY-DEVELOPMENT-STANDARDS.md) for the customer-surface policy.
 
 All tables in the `public` schema are exposed to PostgREST (e.g. Supabase). The migration `scripts/migrate-enable-rls-auth-tables.sql` enables RLS on **every** such table so that:
 
@@ -19,6 +21,8 @@ These hold PII, auth data, payments, or secrets. They must **not** be readable o
 | `order`, `order_item`, `refund_request`, `payment_method_setting`, `polar_customer`, `polar_subscription`, `custom_print` | Orders, payment methods, refunds |
 | **Support** | |
 | `support_ticket`, `support_ticket_message`, `support_chat_conversation`, `support_chat_message`, `support_chat_setting` | Customer support; may contain PII |
+| **Email** | |
+| `email_event`, `email_suppression`, `newsletter_subscriber` | Send logs, bounces/complaints, newsletter signups (PII) |
 | **Affiliates / internal** | |
 | `affiliate`, `affiliate_attribution`, `webhook_registration`, `customer_comment` | Affiliate data; webhook secrets; internal comments |
 | **eSIM & membership** | |

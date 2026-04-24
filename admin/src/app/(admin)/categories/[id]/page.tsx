@@ -34,6 +34,10 @@ interface Category {
   tokenGated?: boolean;
   tokenGates?: TokenGateRow[];
   visible?: boolean;
+  footerReviewsEnabled?: boolean;
+  footerReviewsStoreWide?: boolean;
+  marketingBlockEnabled?: boolean;
+  marketingBlockHtml?: null | string;
 }
 
 interface CategoryOption {
@@ -66,6 +70,10 @@ export default function AdminCategoryEditPage() {
   const [parentId, setParentId] = useState("");
   const [tokenGated, setTokenGated] = useState(false);
   const [tokenGates, setTokenGates] = useState<TokenGateRow[]>([]);
+  const [footerReviewsEnabled, setFooterReviewsEnabled] = useState(false);
+  const [footerReviewsStoreWide, setFooterReviewsStoreWide] = useState(true);
+  const [marketingBlockEnabled, setMarketingBlockEnabled] = useState(false);
+  const [marketingBlockHtml, setMarketingBlockHtml] = useState("");
 
   const [bulkTitleContains, setBulkTitleContains] = useState("");
   const [bulkCreatedWithinDays, setBulkCreatedWithinDays] = useState("");
@@ -131,6 +139,22 @@ export default function AdminCategoryEditPage() {
         Array.isArray((data as { tokenGates?: TokenGateRow[] }).tokenGates)
           ? (data as { tokenGates: TokenGateRow[] }).tokenGates
           : [],
+      );
+      setFooterReviewsEnabled(
+        (data as { footerReviewsEnabled?: boolean }).footerReviewsEnabled ??
+          false,
+      );
+      setFooterReviewsStoreWide(
+        (data as { footerReviewsStoreWide?: boolean })
+          .footerReviewsStoreWide ?? true,
+      );
+      setMarketingBlockEnabled(
+        (data as { marketingBlockEnabled?: boolean })
+          .marketingBlockEnabled ?? false,
+      );
+      setMarketingBlockHtml(
+        (data as { marketingBlockHtml?: null | string })
+          .marketingBlockHtml ?? "",
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load category");
@@ -240,6 +264,12 @@ export default function AdminCategoryEditPage() {
             seoOptimized,
             slug: slug.trim() || null,
             title: title.trim() || null,
+            footerReviewsEnabled,
+            footerReviewsStoreWide,
+            marketingBlockEnabled,
+            marketingBlockHtml: marketingBlockEnabled
+              ? marketingBlockHtml || null
+              : null,
             tokenGated,
             tokenGates,
             visible,
@@ -278,6 +308,10 @@ export default function AdminCategoryEditPage() {
       parentId,
       tokenGated,
       tokenGates,
+      footerReviewsEnabled,
+      footerReviewsStoreWide,
+      marketingBlockEnabled,
+      marketingBlockHtml,
     ],
   );
 
@@ -1037,6 +1071,83 @@ export default function AdminCategoryEditPage() {
                     Featured category
                   </label>
                 </div>
+              </div>
+            </div>
+
+            <div
+              className={`
+                space-y-3 rounded-md border border-border p-4
+              `}
+            >
+              <h3 className="text-sm font-semibold">Storefront: footer &amp; SEO block</h3>
+              <div className="flex flex-wrap items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <input
+                    checked={footerReviewsEnabled}
+                    className={`
+                      size-4 rounded border-input text-primary
+                      focus:ring-ring
+                    `}
+                    id="footerReviews"
+                    onChange={(e) =>
+                      setFooterReviewsEnabled(e.target.checked)
+                    }
+                    type="checkbox"
+                  />
+                  <label className="text-sm font-medium" htmlFor="footerReviews">
+                    Show reviews in category footer
+                  </label>
+                </div>
+                {footerReviewsEnabled && (
+                  <div className="flex items-center gap-2">
+                    <input
+                      checked={footerReviewsStoreWide}
+                      className={`
+                        size-4 rounded border-input text-primary
+                        focus:ring-ring
+                      `}
+                      id="footerReviewsScope"
+                      onChange={(e) =>
+                        setFooterReviewsStoreWide(e.target.checked)
+                      }
+                      type="checkbox"
+                    />
+                    <label
+                      className="text-sm font-medium"
+                      htmlFor="footerReviewsScope"
+                    >
+                      Use store-wide reviews (off = this category only)
+                    </label>
+                  </div>
+                )}
+              </div>
+              <div className="mt-2 flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <input
+                    checked={marketingBlockEnabled}
+                    className={`
+                      size-4 rounded border-input text-primary
+                      focus:ring-ring
+                    `}
+                    id="marketingBlock"
+                    onChange={(e) =>
+                      setMarketingBlockEnabled(e.target.checked)
+                    }
+                    type="checkbox"
+                  />
+                  <label className="text-sm font-medium" htmlFor="marketingBlock">
+                    Show marketing / SEO content below products
+                  </label>
+                </div>
+                {marketingBlockEnabled && (
+                  <textarea
+                    className={cn(inputClass, "min-h-[120px] font-mono text-xs")}
+                    id="marketingBlockHtml"
+                    onChange={(e) => setMarketingBlockHtml(e.target.value)}
+                    placeholder="HTML (sanitized on storefront)…"
+                    value={marketingBlockHtml}
+                  />
+                )}
               </div>
             </div>
 

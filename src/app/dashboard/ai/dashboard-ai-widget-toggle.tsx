@@ -83,11 +83,13 @@ export function DashboardAiWidgetToggle() {
             Personal AI in the floating chat
           </Label>
           <p className="text-sm text-muted-foreground">
-            When on, the chat bubble will include your Personal AI on most pages. Turn off to hide it from the chat widget only. Full chat
-            is still accessible{" "}
+            When on, the chat bubble will include your Personal AI on most
+            pages. Turn off to hide it from the chat widget only. Full chat is
+            still accessible{" "}
             <a className="text-primary underline" href="/chat">
               here
-            </a>.
+            </a>
+            .
           </p>
         </div>
         <Switch

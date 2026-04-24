@@ -51,6 +51,7 @@ import { ProjectSettingsPanel } from "~/app/chat/project-settings-panel";
 import { useChatSession } from "~/app/chat/use-chat-session";
 import { useLocalStorageState } from "~/app/chat/use-local-storage-state";
 import { useVeniceTts } from "~/app/chat/use-venice-tts";
+import { migrateLegacyAiKeys } from "~/lib/ai-local-bundle";
 import { useSession } from "~/lib/auth-client";
 import { cn } from "~/lib/cn";
 import { Button } from "~/ui/primitives/button";
@@ -72,13 +73,13 @@ import {
 import { Slider } from "~/ui/primitives/slider";
 import { Switch } from "~/ui/primitives/switch";
 
-const GUEST_KEY = "ftc-ai-guest-id";
-const TEMP_KEY = "ftc-ai-temperature";
-const TOP_P_KEY = "ftc-ai-top-p";
-const WEB_KEY = "ftc-ai-web-enabled";
-const URL_SCRAPE_KEY = "ftc-ai-url-scraping";
-const SIDEBAR_KEY = "ftc-ai-sidebar-collapsed";
-const PROJECT_PANEL_KEY = "ftc-ai-project-settings-panel-collapsed";
+const GUEST_KEY = "culture-ai-guest-id";
+const TEMP_KEY = "culture-ai-temperature";
+const TOP_P_KEY = "culture-ai-top-p";
+const WEB_KEY = "culture-ai-web-enabled";
+const URL_SCRAPE_KEY = "culture-ai-url-scraping";
+const SIDEBAR_KEY = "culture-ai-sidebar-collapsed";
+const PROJECT_PANEL_KEY = "culture-ai-project-settings-panel-collapsed";
 
 interface AiCharacter {
   description?: null | string;
@@ -90,6 +91,10 @@ interface AiCharacter {
 export function ChatPageClient() {
   const { data: sessionData } = useSession();
   const userId = sessionData?.user?.id ?? null;
+
+  useEffect(() => {
+    migrateLegacyAiKeys();
+  }, []);
 
   const [guestId, setGuestId] = useState("");
   const [input, setInput] = useState("");
@@ -464,7 +469,7 @@ export function ChatPageClient() {
   const deleteSession = useCallback(
     (id: string) => {
       try {
-        localStorage.removeItem(`ftc-ai-messages-${id}`);
+        localStorage.removeItem(`culture-ai-messages-${id}`);
       } catch {
         /* ignore */
       }
@@ -755,9 +760,9 @@ export function ChatPageClient() {
           <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
             <header
               className={`
-                  flex shrink-0 items-center justify-between gap-2 border-b
-                  border-border px-4 py-2
-                `}
+                flex shrink-0 items-center justify-between gap-2 border-b
+                border-border px-4 py-2
+              `}
             >
               <div className="min-w-0 flex-1">
                 {selectedProject ? (
@@ -778,8 +783,8 @@ export function ChatPageClient() {
                     <div className="min-w-0">
                       <h1
                         className={`
-                            truncate text-lg font-semibold tracking-tight
-                          `}
+                          truncate text-lg font-semibold tracking-tight
+                        `}
                       >
                         {selectedProject.name}
                       </h1>
@@ -791,9 +796,7 @@ export function ChatPageClient() {
                 ) : (
                   <div>
                     <h1
-                      className={`
-                          truncate text-lg font-semibold tracking-tight
-                        `}
+                      className={`truncate text-lg font-semibold tracking-tight`}
                     >
                       Chat
                     </h1>
@@ -861,7 +864,9 @@ export function ChatPageClient() {
                         />
                       </div>
                       <div
-                        className={`flex flex-col gap-4 border-t border-border/60 pt-3`}
+                        className={`
+                          flex flex-col gap-4 border-t border-border/60 pt-3
+                        `}
                       >
                         <p className="text-sm font-medium">Advanced</p>
                         <div className="flex flex-col gap-2">
@@ -892,30 +897,28 @@ export function ChatPageClient() {
                     </div>
                   </PopoverContent>
                 </Popover>
-            <Button
-              onClick={newChat}
-              size="sm"
-              type="button"
-              variant="outline"
-            >
-              <Plus aria-hidden className="mr-1 h-4 w-4" />
-              New
-            </Button>
-          </div>
-        </header>
+                <Button
+                  onClick={newChat}
+                  size="sm"
+                  type="button"
+                  variant="outline"
+                >
+                  <Plus aria-hidden className="mr-1 h-4 w-4" />
+                  New
+                </Button>
+              </div>
+            </header>
 
             {error ? (
               <div
                 className={`
-                    mx-4 mt-2 rounded-lg border border-destructive/40
-                    bg-destructive/10 px-4 py-3 text-sm text-destructive
-                  `}
+                  mx-4 mt-2 rounded-lg border border-destructive/40
+                  bg-destructive/10 px-4 py-3 text-sm text-destructive
+                `}
                 role="alert"
               >
                 <div
-                  className={`
-                      flex flex-wrap items-start justify-between gap-2
-                    `}
+                  className={`flex flex-wrap items-start justify-between gap-2`}
                 >
                   <p className="min-w-0 flex-1 font-medium">{error.message}</p>
                   <Button
@@ -1079,9 +1082,9 @@ export function ChatPageClient() {
                 <Button
                   aria-label="Scroll to latest"
                   className={`
-                      absolute right-4 bottom-4 z-10 h-9 w-9 rounded-full
-                      shadow-md
-                    `}
+                    absolute right-4 bottom-4 z-10 h-9 w-9 rounded-full
+                    shadow-md
+                  `}
                   onClick={scrollToBottom}
                   size="icon"
                   type="button"

@@ -57,9 +57,13 @@ export async function GET(
         createdAt: categoriesTable.createdAt,
         description: categoriesTable.description,
         featured: categoriesTable.featured,
+        footerReviewsEnabled: categoriesTable.footerReviewsEnabled,
+        footerReviewsStoreWide: categoriesTable.footerReviewsStoreWide,
         id: categoriesTable.id,
         imageUrl: categoriesTable.imageUrl,
         level: categoriesTable.level,
+        marketingBlockEnabled: categoriesTable.marketingBlockEnabled,
+        marketingBlockHtml: categoriesTable.marketingBlockHtml,
         metaDescription: categoriesTable.metaDescription,
         name: categoriesTable.name,
         parentId: categoriesTable.parentId,
@@ -108,9 +112,13 @@ export async function GET(
       createdAt: category.createdAt,
       description: category.description,
       featured: category.featured,
+      footerReviewsEnabled: category.footerReviewsEnabled ?? false,
+      footerReviewsStoreWide: category.footerReviewsStoreWide ?? true,
       id: category.id,
       imageUrl: category.imageUrl,
       level: category.level,
+      marketingBlockEnabled: category.marketingBlockEnabled ?? false,
+      marketingBlockHtml: category.marketingBlockHtml ?? null,
       metaDescription: category.metaDescription,
       name: category.name,
       parentId: category.parentId,
@@ -147,8 +155,12 @@ export async function PATCH(
     const body = (await request.json()) as {
       description?: null | string;
       featured?: boolean;
+      footerReviewsEnabled?: boolean;
+      footerReviewsStoreWide?: boolean;
       imageUrl?: null | string;
       level?: number;
+      marketingBlockEnabled?: boolean;
+      marketingBlockHtml?: null | string;
       metaDescription?: null | string;
       name?: string;
       parentId?: null | string;
@@ -182,6 +194,14 @@ export async function PATCH(
     if (typeof body.level === "number") updates.level = body.level;
     if (typeof body.featured === "boolean") updates.featured = body.featured;
     if (typeof body.visible === "boolean") updates.visible = body.visible;
+    if (typeof body.footerReviewsEnabled === "boolean")
+      updates.footerReviewsEnabled = body.footerReviewsEnabled;
+    if (typeof body.footerReviewsStoreWide === "boolean")
+      updates.footerReviewsStoreWide = body.footerReviewsStoreWide;
+    if (typeof body.marketingBlockEnabled === "boolean")
+      updates.marketingBlockEnabled = body.marketingBlockEnabled;
+    if (body.marketingBlockHtml !== undefined)
+      updates.marketingBlockHtml = body.marketingBlockHtml;
     if (typeof body.seoOptimized === "boolean")
       updates.seoOptimized = body.seoOptimized;
     if (body.parentId !== undefined) updates.parentId = body.parentId ?? null;

@@ -84,7 +84,7 @@ interface X402PaymentRequirements {
  *
  * Flow:
  * 1. Agent POSTs order details (no payment header) → returns 402 with payment requirements
- * 2. Agent builds USDC transfer transaction with memo "FTC Order: {orderId}"
+ * 2. Agent builds USDC transfer transaction with memo "Culture Order: {orderId}"
  * 3. Agent retries with X-PAYMENT header containing signed transaction
  * 4. Server verifies/settles via facilitator, creates order
  */
@@ -292,7 +292,7 @@ export async function POST(request: NextRequest) {
               amount: paymentRequirements.accepts[0]?.amount,
               amountHuman: totalUsd.toFixed(2),
               maxTimeoutSeconds: 300,
-              memo: `FTC Order: ${orderId}`,
+              memo: `Culture Order: ${orderId}`,
               network: "solana",
               payTo: paymentRequirements.accepts[0]?.payTo,
               protocol: "x402",
@@ -590,7 +590,7 @@ function buildX402PaymentRequirements(
         amount: amountBaseUnits,
         asset: USDC_MINT_MAINNET,
         extra: {
-          memo: `FTC Order: ${orderId}`,
+          memo: `Culture Order: ${orderId}`,
           orderId,
         },
         maxAmountRequired: amountBaseUnits,

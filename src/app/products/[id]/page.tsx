@@ -363,7 +363,11 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
                       {/* Features only at top (bullet points); description is in accordion below */}
                       {product.features.length > 0 && (
-                        <ul className="mb-6 flex flex-col gap-2 text-muted-foreground">
+                        <ul
+                          className={`
+                            mb-6 flex flex-col gap-2 text-muted-foreground
+                          `}
+                        >
                           {product.features.map((feature) => (
                             <li
                               className="flex items-start"

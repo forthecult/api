@@ -12,7 +12,7 @@ export const metadata: Metadata = {
     canonical: `${siteUrl}/membership`,
   },
   description:
-    "Stake CULT to unlock exclusive membership benefits. Free eSIM cards, VPN subscription at APEX, free shipping, and member-only discounts. Stake for 12 months and get eSIM benefits for 14 months.",
+    "Hold and lock CULT for member benefits — free eSIM cards, APEX VPN, free shipping, and member-only discounts. Lock for 12 months and eSIM benefits extend to 14.",
   title: `Join the Cult | Membership | ${SEO_CONFIG.name}`,
 };
 

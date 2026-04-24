@@ -2,6 +2,8 @@ export * from "./addresses/relations";
 export * from "./addresses/tables";
 export * from "./addresses/types";
 
+export * from "./admin-audit/tables";
+
 export * from "./admin-membership-grant/tables";
 
 export * from "./affiliates/relations";
@@ -33,6 +35,8 @@ export * from "./coupons/types";
 export * from "./customer-comments/relations";
 export * from "./customer-comments/tables";
 export * from "./customer-comments/types";
+
+export * from "./email/tables";
 
 export * from "./esim/membership-claims";
 export * from "./esim/relations";

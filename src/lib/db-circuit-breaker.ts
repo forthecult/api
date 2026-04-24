@@ -10,39 +10,39 @@
 
 import { logger } from "./logger";
 
-export type CircuitState = "CLOSED" | "OPEN" | "HALF_OPEN";
-
 export interface CircuitBreakerConfig {
   /** Number of failures before opening circuit */
   failureThreshold: number;
-  /** Time in ms to wait before attempting reset (HALF_OPEN) */
-  resetTimeoutMs: number;
   /** Half-open request count for testing */
   halfOpenMaxRequests: number;
+  /** Time in ms to wait before attempting reset (HALF_OPEN) */
+  resetTimeoutMs: number;
 }
 
 export interface CircuitBreakerStats {
-  state: CircuitState;
   failures: number;
+  lastFailureTime: null | number;
+  lastSuccessTime: null | number;
+  state: CircuitState;
   successes: number;
-  lastFailureTime: number | null;
-  lastSuccessTime: number | null;
 }
+
+export type CircuitState = "CLOSED" | "HALF_OPEN" | "OPEN";
 
 const defaultConfig: CircuitBreakerConfig = {
   failureThreshold: 5,
-  resetTimeoutMs: 30000, // 30 seconds
   halfOpenMaxRequests: 3,
+  resetTimeoutMs: 30000, // 30 seconds
 };
 
 export class DBCircuitBreaker {
-  private state: CircuitState = "CLOSED";
-  private failures = 0;
-  private successes = 0;
-  private lastFailureTime: number | null = null;
-  private lastSuccessTime: number | null = null;
-  private halfOpenRequests = 0;
   private config: CircuitBreakerConfig;
+  private failures = 0;
+  private halfOpenRequests = 0;
+  private lastFailureTime: null | number = null;
+  private lastSuccessTime: null | number = null;
+  private state: CircuitState = "CLOSED";
+  private successes = 0;
 
   constructor(config: Partial<CircuitBreakerConfig> = {}) {
     this.config = { ...defaultConfig, ...config };
@@ -58,7 +58,7 @@ export class DBCircuitBreaker {
         this.transitionTo("HALF_OPEN");
       } else {
         throw new Error(
-          `Circuit breaker OPEN for DB (failed ${this.failures} times, cooldown active)`
+          `Circuit breaker OPEN for DB (failed ${this.failures} times, cooldown active)`,
         );
       }
     }
@@ -81,6 +81,19 @@ export class DBCircuitBreaker {
   }
 
   /**
+   * Get current circuit state and statistics
+   */
+  getStats(): CircuitBreakerStats {
+    return {
+      failures: this.failures,
+      lastFailureTime: this.lastFailureTime,
+      lastSuccessTime: this.lastSuccessTime,
+      state: this.state,
+      successes: this.successes,
+    };
+  }
+
+  /**
    * Check if circuit is currently open (failing fast)
    */
   isOpen(): boolean {
@@ -88,19 +101,6 @@ export class DBCircuitBreaker {
       return true;
     }
     return false;
-  }
-
-  /**
-   * Get current circuit state and statistics
-   */
-  getStats(): CircuitBreakerStats {
-    return {
-      state: this.state,
-      failures: this.failures,
-      successes: this.successes,
-      lastFailureTime: this.lastFailureTime,
-      lastSuccessTime: this.lastSuccessTime,
-    };
   }
 
   /**
@@ -114,21 +114,12 @@ export class DBCircuitBreaker {
     logger.info("[CircuitBreaker] Manually reset to CLOSED");
   }
 
-  private shouldAttemptReset(): boolean {
-    if (this.lastFailureTime === null) return true;
-    return Date.now() - this.lastFailureTime >= this.config.resetTimeoutMs;
-  }
+  private onFailure(): void {
+    this.failures++;
+    this.lastFailureTime = Date.now();
 
-  private transitionTo(newState: CircuitState): void {
-    if (this.state !== newState) {
-      logger.info(
-        `[CircuitBreaker] ${this.state} -> ${newState}`
-      );
-      this.state = newState;
-
-      if (newState === "HALF_OPEN") {
-        this.halfOpenRequests = 0;
-      }
+    if (this.failures >= this.config.failureThreshold) {
+      this.transitionTo("OPEN");
     }
   }
 
@@ -148,35 +139,38 @@ export class DBCircuitBreaker {
     }
   }
 
-  private onFailure(): void {
-    this.failures++;
-    this.lastFailureTime = Date.now();
+  private shouldAttemptReset(): boolean {
+    if (this.lastFailureTime === null) return true;
+    return Date.now() - this.lastFailureTime >= this.config.resetTimeoutMs;
+  }
 
-    if (this.failures >= this.config.failureThreshold) {
-      this.transitionTo("OPEN");
+  private transitionTo(newState: CircuitState): void {
+    if (this.state !== newState) {
+      logger.info(`[CircuitBreaker] ${this.state} -> ${newState}`);
+      this.state = newState;
+
+      if (newState === "HALF_OPEN") {
+        this.halfOpenRequests = 0;
+      }
     }
   }
 }
 
 // Global circuit breaker instance for DB operations
 export const dbCircuitBreaker = new DBCircuitBreaker({
-  failureThreshold: parseInt(process.env.DB_CIRCUIT_FAILURE_THRESHOLD || "5", 10),
-  resetTimeoutMs: parseInt(process.env.DB_CIRCUIT_RESET_TIMEOUT_MS || "30000", 10),
-  halfOpenMaxRequests: parseInt(process.env.DB_CIRCUIT_HALF_OPEN_MAX || "3", 10),
+  failureThreshold: parseInt(
+    process.env.DB_CIRCUIT_FAILURE_THRESHOLD || "5",
+    10,
+  ),
+  halfOpenMaxRequests: parseInt(
+    process.env.DB_CIRCUIT_HALF_OPEN_MAX || "3",
+    10,
+  ),
+  resetTimeoutMs: parseInt(
+    process.env.DB_CIRCUIT_RESET_TIMEOUT_MS || "30000",
+    10,
+  ),
 });
-
-/**
- * Wrapper function to execute DB operations with circuit breaker
- * Usage:
- *   const result = await withCircuitBreaker(() => db.query.users.findFirst());
- */
-export async function withCircuitBreaker<T>(
-  operation: () => Promise<T>,
-  options?: Partial<CircuitBreakerConfig>
-): Promise<T> {
-  const breaker = options ? new DBCircuitBreaker(options) : dbCircuitBreaker;
-  return breaker.execute(operation);
-}
 
 /**
  * Health check function for monitoring
@@ -190,4 +184,17 @@ export function getDbCircuitHealth(): {
     healthy: stats.state === "CLOSED",
     state: stats.state,
   };
+}
+
+/**
+ * Wrapper function to execute DB operations with circuit breaker
+ * Usage:
+ *   const result = await withCircuitBreaker(() => db.query.users.findFirst());
+ */
+export async function withCircuitBreaker<T>(
+  operation: () => Promise<T>,
+  options?: Partial<CircuitBreakerConfig>,
+): Promise<T> {
+  const breaker = options ? new DBCircuitBreaker(options) : dbCircuitBreaker;
+  return breaker.execute(operation);
 }

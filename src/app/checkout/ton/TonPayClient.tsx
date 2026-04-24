@@ -383,7 +383,7 @@ export function TonPayClient({
                     </h2>
                     <div className="flex flex-col gap-4">
                       <div className="text-sm">
-                        <p className="mb-1 text-muted-foreground">
+                        <p className="mb-1.5 text-base font-medium text-foreground">
                           Amount to pay
                         </p>
                         <p className="font-mono font-medium">{tonAmount} TON</p>
@@ -392,14 +392,16 @@ export function TonPayClient({
                         </p>
                       </div>
                       <div className="text-sm">
-                        <p className="mb-1 text-muted-foreground">Expires in</p>
+                        <p className="mb-1.5 text-base font-medium text-foreground">
+                          Expires in
+                        </p>
                         <p className="font-mono font-medium tabular-nums">
                           {expiryDisplay}
                         </p>
                       </div>
                       {depositAddress && (
                         <div className="text-sm">
-                          <p className="mb-1 text-muted-foreground">
+                          <p className="mb-1.5 text-base font-medium text-foreground">
                             Wallet address
                           </p>
                           <div className="flex flex-wrap items-center gap-2">

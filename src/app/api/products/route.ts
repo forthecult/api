@@ -17,6 +17,7 @@ import {
 import {
   computeCategoryIdAndDescendantIds,
   computeCryptoCategoryIdsIncludingDescendants,
+  isCryptoStorefrontCategorySlug,
   SHOW_IN_ALL_PRODUCTS_CATEGORY_SLUG,
 } from "~/lib/storefront-categories";
 import {
@@ -74,6 +75,7 @@ export async function GET(request: NextRequest) {
     );
     const category = searchParams.get("category")?.trim() || null;
     const subcategory = searchParams.get("subcategory")?.trim() || null;
+    const merchCategory = searchParams.get("merchCategory")?.trim() || null;
     const forStorefront =
       searchParams.get("forStorefront") === "1" ||
       searchParams.get("forStorefront") === "true";
@@ -226,6 +228,41 @@ export async function GET(request: NextRequest) {
           .map((r) => r.id);
         if (productIdsFilter.length === 0) {
           productIdsFilter = null;
+        }
+      }
+    }
+
+    if (
+      merchCategory &&
+      categorySlugToFilter &&
+      categorySlugToFilter !== "__featured__" &&
+      productIdsFilter &&
+      productIdsFilter.length > 0
+    ) {
+      const allRows = await db
+        .select({
+          id: categoriesTable.id,
+          name: categoriesTable.name,
+          parentId: categoriesTable.parentId,
+          slug: categoriesTable.slug,
+        })
+        .from(categoriesTable);
+      if (isCryptoStorefrontCategorySlug(allRows, categorySlugToFilter)) {
+        const merchIds = computeCategoryIdAndDescendantIds(
+          allRows,
+          merchCategory,
+        );
+        if (merchIds.size === 0) {
+          productIdsFilter = [];
+        } else {
+          const merchProducts = await db
+            .select({ productId: productCategoriesTable.productId })
+            .from(productCategoriesTable)
+            .where(
+              inArray(productCategoriesTable.categoryId, [...merchIds]),
+            );
+          const merchSet = new Set(merchProducts.map((r) => r.productId));
+          productIdsFilter = productIdsFilter.filter((id) => merchSet.has(id));
         }
       }
     }

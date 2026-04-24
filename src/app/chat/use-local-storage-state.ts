@@ -64,7 +64,7 @@ export function useLocalStorageState<T>(
   return [value, set];
 }
 
-const SYNTHETIC_EVENT = "ftc-ai-localstorage";
+const SYNTHETIC_EVENT = "culture-ai-localstorage";
 
 /**
  * Cache snapshot results so `useSyncExternalStore` returns a stable reference

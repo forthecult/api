@@ -176,7 +176,7 @@ export function ChatSidebar({
         ) : null}
       </div>
 
-      <div className="min-h-0 flex-1 flex flex-col gap-4 overflow-y-auto p-2">
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-2">
         <div>
           {!collapsed ? (
             <p
@@ -536,67 +536,67 @@ function SessionRow({
             </span>
           )}
         </button>
-      {!collapsed ? (
-        <div
-          className={`
-            flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity
-            group-hover:opacity-100
-            focus-within:opacity-100
-          `}
-        >
-          <Button
-            className="h-6 w-6 p-0"
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleFavorite();
-            }}
-            size="icon"
-            title={session.favorite ? "Unfavorite" : "Favorite"}
-            type="button"
-            variant="ghost"
+        {!collapsed ? (
+          <div
+            className={`
+              flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity
+              group-hover:opacity-100
+              focus-within:opacity-100
+            `}
           >
-            <Star
-              className={cn(
-                "h-3 w-3",
-                session.favorite
-                  ? "fill-amber-400 text-amber-400"
-                  : "text-muted-foreground",
-              )}
-            />
-          </Button>
-          {showRemoveFromProject ? (
             <Button
               className="h-6 w-6 p-0"
               onClick={(e) => {
                 e.stopPropagation();
-                onRemoveFromProject();
+                onToggleFavorite();
               }}
               size="icon"
-              title="Remove from project"
+              title={session.favorite ? "Unfavorite" : "Favorite"}
               type="button"
               variant="ghost"
             >
-              <Unlink className="h-3 w-3 text-muted-foreground" />
+              <Star
+                className={cn(
+                  "h-3 w-3",
+                  session.favorite
+                    ? "fill-amber-400 text-amber-400"
+                    : "text-muted-foreground",
+                )}
+              />
             </Button>
-          ) : null}
-          <Button
-            className={`
-              h-6 w-6 p-0 text-destructive
-              hover:text-destructive
-            `}
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete();
-            }}
-            size="icon"
-            title="Delete chat"
-            type="button"
-            variant="ghost"
-          >
-            <Trash2 className="h-3 w-3" />
-          </Button>
-        </div>
-      ) : null}
+            {showRemoveFromProject ? (
+              <Button
+                className="h-6 w-6 p-0"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRemoveFromProject();
+                }}
+                size="icon"
+                title="Remove from project"
+                type="button"
+                variant="ghost"
+              >
+                <Unlink className="h-3 w-3 text-muted-foreground" />
+              </Button>
+            ) : null}
+            <Button
+              className={`
+                h-6 w-6 p-0 text-destructive
+                hover:text-destructive
+              `}
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete();
+              }}
+              size="icon"
+              title="Delete chat"
+              type="button"
+              variant="ghost"
+            >
+              <Trash2 className="h-3 w-3" />
+            </Button>
+          </div>
+        ) : null}
       </div>
     </li>
   );

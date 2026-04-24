@@ -1,6 +1,6 @@
 declare global {
   interface Window {
-    /** @deprecated use meta ftc-storefront-origin; still set when present */
+    /** @deprecated use meta culture-storefront-origin; still set when present */
     __MAIN_APP_URL?: string;
   }
 }
@@ -35,7 +35,7 @@ export function getAuthClientBaseUrl(): string {
 
 /**
  * Public storefront URL (customer site). Used for links and sign-in redirects.
- * Client prefers meta `ftc-storefront-origin` (set in layout) so runtime env works on Railway.
+ * Client prefers meta `culture-storefront-origin` (set in layout) so runtime env works on Railway.
  */
 export function getMainAppUrl(): string {
   if (typeof window !== "undefined") {
@@ -59,7 +59,7 @@ function normalizeMainAppUrl(raw: string): string {
 
 function readStorefrontUrlFromDom(): string {
   if (typeof document === "undefined") return "";
-  const meta = document.querySelector('meta[name="ftc-storefront-origin"]');
+  const meta = document.querySelector('meta[name="culture-storefront-origin"]');
   const c = meta?.getAttribute("content")?.trim();
   return c ? normalizeMainAppUrl(c) : "";
 }

@@ -1471,7 +1471,7 @@ export function EsimStorePage() {
           >
             Frequently asked questions
           </h2>
-          <div className="mx-auto w-full max-w-7xl flex flex-col gap-3">
+          <div className="mx-auto flex w-full max-w-7xl flex-col gap-3">
             {[
               {
                 a: (

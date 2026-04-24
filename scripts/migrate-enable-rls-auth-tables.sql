@@ -82,3 +82,8 @@ ALTER TABLE public.brand_asset ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.shipping_option ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.size_chart ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.page_token_gate ENABLE ROW LEVEL SECURITY;
+
+-- --- Email (events, suppression, newsletter) - SENSITIVE ---
+ALTER TABLE public.email_event ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.email_suppression ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.newsletter_subscriber ENABLE ROW LEVEL SECURITY;

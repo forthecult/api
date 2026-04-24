@@ -261,8 +261,8 @@ export function DashboardAiPromptsClient() {
         </h2>
         <div className="rounded-xl border border-border bg-card p-4">
           <p className="mb-3 text-sm text-muted-foreground">
-            Short notes the model can retrieve (RAG, for the techies) when relevant. Delete or
-            add anytime.
+            Short notes the model can retrieve (RAG, for the techies) when
+            relevant. Delete or add anytime.
           </p>
           <div
             className={`
@@ -270,7 +270,7 @@ export function DashboardAiPromptsClient() {
               sm:flex-row sm:items-end
             `}
           >
-            <div className="min-w-0 flex-1 flex flex-col gap-1">
+            <div className="flex min-w-0 flex-1 flex-col gap-1">
               <Label className="text-xs" htmlFor="mem-cat">
                 Category (optional)
               </Label>
@@ -282,7 +282,7 @@ export function DashboardAiPromptsClient() {
                 value={newMemCategory}
               />
             </div>
-            <div className="min-w-0 flex-[2] flex flex-col gap-1">
+            <div className="flex min-w-0 flex-[2] flex-col gap-1">
               <Label className="text-xs" htmlFor="mem-body">
                 Content
               </Label>

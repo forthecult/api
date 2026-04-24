@@ -12,6 +12,7 @@ import { useShippingCountry } from "~/lib/hooks/use-shipping-country";
 import { isShippingExcluded } from "~/lib/shipping-restrictions";
 import { PRELOAD_CART } from "~/ui/components/cart";
 import { CryptoPrice } from "~/ui/components/CryptoPrice";
+import { CryptoPricingSettingsPopover } from "~/ui/components/crypto-pricing-settings-popover";
 import { FiatPrice } from "~/ui/components/FiatPrice";
 import { TokenGateGuard } from "~/ui/components/token-gate/TokenGateGuard";
 import { Badge } from "~/ui/primitives/badge";
@@ -507,10 +508,16 @@ function ProductCardInner({
                       />
                     ) : null}
                   </div>
-                  <CryptoPrice
-                    className="mt-0.5 text-sm text-[#F5F1EB]/80"
-                    usdAmount={product.price}
-                  />
+                  <div className="mt-0.5 flex min-w-0 items-start justify-between gap-1">
+                    <CryptoPrice
+                      className="text-sm text-[#F5F1EB]/80"
+                      usdAmount={product.price}
+                    />
+                    <CryptoPricingSettingsPopover
+                      className="shrink-0"
+                      compact
+                    />
+                  </div>
                 </>
               )}
             </CardContent>
@@ -573,10 +580,18 @@ function ProductCardInner({
                       />
                     ) : null}
                   </div>
-                  <CryptoPrice
-                    className="text-[#F5F1EB]/80"
-                    usdAmount={product.price}
-                  />
+                  <div className="flex min-w-0 items-start justify-end gap-1">
+                    <div className="min-w-0 flex-1">
+                      <CryptoPrice
+                        className="text-[#F5F1EB]/80"
+                        usdAmount={product.price}
+                      />
+                    </div>
+                    <CryptoPricingSettingsPopover
+                      className="shrink-0"
+                      compact
+                    />
+                  </div>
                 </div>
                 {unavailableInCountry ? (
                   <span

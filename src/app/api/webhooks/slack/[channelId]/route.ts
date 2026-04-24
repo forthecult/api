@@ -9,7 +9,7 @@ import {
 } from "~/db/schema/ai-chat/tables";
 import {
   getLinkedFtcUserId,
-  parseFtcLinkCodeFromMessage,
+  parseLinkCodeFromMessage,
   tryCompleteLinkByCode,
 } from "~/lib/messaging/linked-user";
 import {
@@ -141,7 +141,7 @@ export async function POST(
 
   const channel = ev.channel ?? "unknown";
 
-  const linkCode = parseFtcLinkCodeFromMessage(text);
+  const linkCode = parseLinkCodeFromMessage(text);
   if (linkCode) {
     const res = await tryCompleteLinkByCode({
       code: linkCode,
@@ -177,10 +177,10 @@ export async function POST(
       body: JSON.stringify({
         channel,
         text: [
-          "Link your For the Cult account first:",
+          "Link your Culture account first:",
           "1) Open the site → Dashboard → AI → Channels.",
           "2) Copy your Slack link code.",
-          `3) Message this app: \`ftc link YOURCODE\` (or \`link YOURCODE\`).`,
+          `3) Message this app: \`link YOURCODE\` (or \`culture link YOURCODE\`).`,
         ].join("\n"),
       }),
       headers: {

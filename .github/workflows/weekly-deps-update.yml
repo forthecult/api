@@ -6,6 +6,12 @@ on:
     - cron: "0 9 * * 1"
   workflow_dispatch: # Allow manual trigger
 
+# Default to read-only; the update-dependencies job escalates to write for the
+# branch + PR it creates. Keeps CKV2_GHA_1 satisfied without stripping the
+# write-access this particular job legitimately needs.
+permissions:
+  contents: read
+
 jobs:
   update-dependencies:
     name: Update Dependencies

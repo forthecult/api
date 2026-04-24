@@ -3,6 +3,7 @@
 import { Lock, Minus, Plus, ShoppingCart, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { Activity } from "react";
 import * as React from "react";
 
 import { prefetchCheckout } from "~/app/checkout/prefetch-checkout";
@@ -51,14 +52,13 @@ const CART_PLACEHOLDER = "/placeholder.svg";
 
 export function CartClient({ className }: CartClientProps) {
   const [isMounted, setIsMounted] = React.useState(false);
-  const [failedImageIds, setFailedImageIds] = React.useState<Set<string>>(
-    () => new Set(),
-  );
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const {
     cartOpen: isOpen,
+    failedImageIds,
     itemCount: totalItems,
     items: cartItems,
+    markImageFailed,
     removeItem,
     setCartOpen: setIsOpen,
     subtotal,
@@ -72,6 +72,40 @@ export function CartClient({ className }: CartClientProps) {
   React.useEffect(() => {
     if (isOpen) prefetchCheckout();
   }, [isOpen]);
+
+  // Once the user opens the cart a first time, flip `keepCartMounted` on — this
+  // lets us pass `forceMount` to Radix's desktop Sheet so the cart tree stays
+  // alive between open→close cycles. We wrap that tree in <Activity> below so
+  // React 19.2 unmounts effects while the cart is closed but preserves state
+  // (scroll position, any local UI flags) for the next open. The mobile Drawer
+  // (vaul) keeps its default mount/unmount behaviour — mobile sessions rarely
+  // flip-flop the cart and the DOM cost matters more on low-end devices.
+  const [keepCartMounted, setKeepCartMounted] = React.useState(false);
+  React.useEffect(() => {
+    if (isOpen && !keepCartMounted) setKeepCartMounted(true);
+  }, [isOpen, keepCartMounted]);
+
+  // Flip Activity back to `hidden` only *after* Radix's slide-out animation
+  // has finished. Activity `hidden` applies `display: none` to its subtree, so
+  // flipping synchronously with `isOpen=false` would cause the exit transition
+  // to animate an empty container. Opening is synchronous (visible) — if we
+  // were to lag it, the first frame after click would render an empty sheet.
+  // We seed `hasLaggedClose` to `true` so on first render the value equals
+  // `isOpen` (hidden when closed, visible when open); the lag only kicks in
+  // on subsequent close transitions.
+  const [hasLaggedClose, setHasLaggedClose] = React.useState(true);
+  React.useEffect(() => {
+    if (isOpen) {
+      setHasLaggedClose(false);
+      return;
+    }
+    // Matches the Sheet's data-[state=closed]:duration-300 slide-out + a small
+    // safety buffer; see src/ui/primitives/sheet.tsx.
+    const timeout = setTimeout(() => setHasLaggedClose(true), 400);
+    return () => clearTimeout(timeout);
+  }, [isOpen]);
+  const activityMode: "hidden" | "visible" =
+    isOpen || !hasLaggedClose ? "visible" : "hidden";
 
   const handleUpdateQuantity = (id: string, newQuantity: number) => {
     if (newQuantity < 1) return;
@@ -92,7 +126,10 @@ export function CartClient({ className }: CartClientProps) {
       <ShoppingCart className="h-4 w-4" />
       {totalItems > 0 && (
         <Badge
-        className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary p-0 text-[10px] font-bold text-primary-foreground"
+          className={`
+            absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary p-0
+            text-[10px] font-bold text-primary-foreground
+          `}
           variant="default"
         >
           {totalItems}
@@ -186,11 +223,7 @@ export function CartClient({ className }: CartClientProps) {
                         alt={item.name}
                         className="object-contain"
                         fill
-                        onError={() =>
-                          setFailedImageIds((prev) =>
-                            new Set(prev).add(item.id),
-                          )
-                        }
+                        onError={() => markImageFailed(item.id)}
                         sizes="80px"
                         src={item.image!.trim()}
                         unoptimized={
@@ -234,54 +267,58 @@ export function CartClient({ className }: CartClientProps) {
                     </div>
                     <div className="mt-2 flex items-center justify-between">
                       <div className="flex items-center rounded-md border">
-            <button
-              className={`
-                flex h-7 w-7 items-center justify-center
-                rounded-l-md border-r text-muted-foreground
-                transition-colors
-                hover:bg-muted hover:text-foreground
-              `}
-              disabled={item.quantity <= 1}
-              onClick={() =>
-                handleUpdateQuantity(item.id, item.quantity - 1)
-              }
-              type="button"
-            >
-              <Minus className="h-3 w-3" />
-              <span className="sr-only">Decrease quantity</span>
-            </button>
-            <input
-              aria-label="Quantity"
-              className={`
-                h-7 w-12 border-0 bg-transparent text-center text-xs
-                font-medium focus:outline-none focus:ring-1 focus:ring-inset
-                focus:ring-primary [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none
-              `}
-              min={1}
-              onChange={(e) => {
-                const val = parseInt(e.target.value, 10);
-                if (!Number.isNaN(val) && val >= 1) {
-                  handleUpdateQuantity(item.id, val);
-                }
-              }}
-              type="number"
-              value={item.quantity}
-            />
-            <button
-              className={`
-                flex h-7 w-7 items-center justify-center
-                rounded-r-md border-l text-muted-foreground
-                transition-colors
-                hover:bg-muted hover:text-foreground
-              `}
-              onClick={() =>
-                handleUpdateQuantity(item.id, item.quantity + 1)
-              }
-              type="button"
-            >
-              <Plus className="h-3 w-3" />
-              <span className="sr-only">Increase quantity</span>
-            </button>
+                        <button
+                          className={`
+                            flex h-7 w-7 items-center justify-center
+                            rounded-l-md border-r text-muted-foreground
+                            transition-colors
+                            hover:bg-muted hover:text-foreground
+                          `}
+                          disabled={item.quantity <= 1}
+                          onClick={() =>
+                            handleUpdateQuantity(item.id, item.quantity - 1)
+                          }
+                          type="button"
+                        >
+                          <Minus className="h-3 w-3" />
+                          <span className="sr-only">Decrease quantity</span>
+                        </button>
+                        <input
+                          aria-label="Quantity"
+                          className={`
+                            h-7 w-12 border-0 bg-transparent text-center text-xs
+                            font-medium
+                            [appearance:textfield]
+                            focus:ring-1 focus:ring-primary focus:outline-none
+                            focus:ring-inset
+                            [&::-webkit-inner-spin-button]:appearance-none
+                            [&::-webkit-outer-spin-button]:appearance-none
+                          `}
+                          min={1}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value, 10);
+                            if (!Number.isNaN(val) && val >= 1) {
+                              handleUpdateQuantity(item.id, val);
+                            }
+                          }}
+                          type="number"
+                          value={item.quantity}
+                        />
+                        <button
+                          className={`
+                            flex h-7 w-7 items-center justify-center
+                            rounded-r-md border-l text-muted-foreground
+                            transition-colors
+                            hover:bg-muted hover:text-foreground
+                          `}
+                          onClick={() =>
+                            handleUpdateQuantity(item.id, item.quantity + 1)
+                          }
+                          type="button"
+                        >
+                          <Plus className="h-3 w-3" />
+                          <span className="sr-only">Increase quantity</span>
+                        </button>
                       </div>
                       <div className="text-sm font-medium">
                         <FiatPrice usdAmount={item.price * item.quantity} />
@@ -396,17 +433,30 @@ export function CartClient({ className }: CartClientProps) {
       {isDesktop ? (
         <Sheet onOpenChange={setIsOpen} open={isOpen}>
           <SheetTrigger asChild>{CartTrigger}</SheetTrigger>
-          <SheetContent className="flex w-[400px] flex-col p-0">
+          <SheetContent
+            className="flex w-[400px] flex-col p-0"
+            // forceMount is wired up on the first open so the cart sheet DOM
+            // (and its Activity subtree) survive close animations. Radix still
+            // drives the slide-in/out via data-state on this element's CSS, so
+            // visual behaviour is unchanged.
+            {...(keepCartMounted ? { forceMount: true } : {})}
+          >
             <SheetHeader className="sr-only">
               <SheetTitle>Your cart</SheetTitle>
             </SheetHeader>
-            {CartContent}
+            <Activity mode={activityMode} name="cart-drawer">
+              {CartContent}
+            </Activity>
           </SheetContent>
         </Sheet>
       ) : (
         <Drawer onOpenChange={setIsOpen} open={isOpen}>
           <DrawerTrigger asChild>{CartTrigger}</DrawerTrigger>
-          <DrawerContent className="max-h-[85dvh]">{CartContent}</DrawerContent>
+          <DrawerContent className="max-h-[85dvh]">
+            <Activity mode={activityMode} name="cart-drawer">
+              {CartContent}
+            </Activity>
+          </DrawerContent>
         </Drawer>
       )}
     </div>

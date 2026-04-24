@@ -2,10 +2,10 @@
 
 import { useEffect } from "react";
 
-const TEMP_KEY = "ftc-ai-temperature";
-const TOP_P_KEY = "ftc-ai-top-p";
-const WEB_KEY = "ftc-ai-web-enabled";
-const URL_SCRAPE_KEY = "ftc-ai-url-scraping";
+const TEMP_KEY = "culture-ai-temperature";
+const TOP_P_KEY = "culture-ai-top-p";
+const WEB_KEY = "culture-ai-web-enabled";
+const URL_SCRAPE_KEY = "culture-ai-url-scraping";
 
 /**
  * Sync AI UI prefs across tabs/windows via the StorageEvent API (same origin).

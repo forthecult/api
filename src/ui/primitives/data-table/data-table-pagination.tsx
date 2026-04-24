@@ -16,12 +16,12 @@ export function DataTablePagination<TData>({ table }: { table: Table<TData> }) {
         {table.getFilteredSelectedRowModel().rows.length} of{" "}
         {table.getFilteredRowModel().rows.length} row(s) selected.
       </div>
-    <div
-      className={`
-        flex items-center gap-6
-        lg:gap-8
-      `}
-    >
+      <div
+        className={`
+          flex items-center gap-6
+          lg:gap-8
+        `}
+      >
         <div className="flex items-center gap-2">
           <p className="text-sm font-medium">Rows per page</p>
           <select

@@ -11,6 +11,7 @@ import {
   Shield,
   Smartphone,
   Sparkles,
+  Star,
   UserIcon,
 } from "lucide-react";
 import Link from "next/link";
@@ -132,13 +133,13 @@ export function DashboardNavContent({
           >
             Dashboard
           </h2>
-      <ul className="flex flex-col gap-0.5">
-        <li>
-          <Link {...linkProps("/dashboard/orders")}>
-            <span className="flex items-center gap-2">
-              <Package aria-hidden className="h-4 w-4 shrink-0" />
-              Orders
-            </span>
+          <ul className="flex flex-col gap-0.5">
+            <li>
+              <Link {...linkProps("/dashboard/orders")}>
+                <span className="flex items-center gap-2">
+                  <Package aria-hidden className="h-4 w-4 shrink-0" />
+                  Orders
+                </span>
                 <span className="text-muted-foreground tabular-nums">
                   {counts.orders}
                 </span>
@@ -152,6 +153,14 @@ export function DashboardNavContent({
                 </span>
                 <span className="text-muted-foreground tabular-nums">
                   {counts.wishlist}
+                </span>
+              </Link>
+            </li>
+            <li>
+              <Link {...linkProps("/dashboard/reviews/write")}>
+                <span className="flex items-center gap-2">
+                  <Star aria-hidden className="h-4 w-4 shrink-0" />
+                  Write a review
                 </span>
               </Link>
             </li>
@@ -204,13 +213,13 @@ export function DashboardNavContent({
           >
             Account Settings
           </h2>
-      <ul className="flex flex-col gap-0.5">
-        <li>
-          <Link {...linkProps("/dashboard/profile")}>
-            <span className="flex items-center gap-2">
-              <UserIcon aria-hidden className="h-4 w-4 shrink-0" />
-              Profile Info
-            </span>
+          <ul className="flex flex-col gap-0.5">
+            <li>
+              <Link {...linkProps("/dashboard/profile")}>
+                <span className="flex items-center gap-2">
+                  <UserIcon aria-hidden className="h-4 w-4 shrink-0" />
+                  Profile Info
+                </span>
               </Link>
             </li>
             <li>

@@ -7,14 +7,15 @@
 #
 # If the job is cancelled due to timeout, the database may still have been fully seeded
 # (schema, categories, brands, shipping, products, reviews). Check your DB before re-running.
-#
-# If this repo is a monorepo (e.g. repo root is Cult with ftc/ inside), each step
-# runs from ftc/ so that bun and db commands use the correct package.json and schema.
 
 name: Seed staging (DB schema + categories)
 
 on:
   workflow_dispatch:
+
+# Seed job only reads the repo for scripts; pin to read-only.
+permissions:
+  contents: read
 
 jobs:
   seed:
@@ -30,36 +31,22 @@ jobs:
         with:
           bun-version: latest
 
-      - name: Use ftc dir in monorepo
-        id: wd
-        run: |
-          if [ -d ftc ] && [ -f ftc/package.json ]; then
-            echo "dir=ftc" >> "$GITHUB_OUTPUT"
-          else
-            echo "dir=." >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Install dependencies
-        working-directory: ${{ steps.wd.outputs.dir }}
         run: bun install --frozen-lockfile
 
       - name: Push schema
-        working-directory: ${{ steps.wd.outputs.dir }}
         run: bun run db:push
 
       - name: Seed categories
-        working-directory: ${{ steps.wd.outputs.dir }}
         run: bun run db:seed-categories
+
       - name: Seed brands
-        working-directory: ${{ steps.wd.outputs.dir }}
         run: bun run db:seed-brands
 
       - name: Seed brand shipping options (US / International)
-        working-directory: ${{ steps.wd.outputs.dir }}
         run: bun run db:seed-shipping-by-brand
 
       - name: Seed products and reviews
-        working-directory: ${{ steps.wd.outputs.dir }}
         run: |
           bun run db:seed-products
           # Reviews are seeded from data/reviews-seed.json (JSON). File must be committed for staging.
@@ -73,7 +60,6 @@ jobs:
       # When token is set, we run upload steps and fail the job if uploads fail. When token is missing, we skip upload steps.
       - name: Check UploadThing token
         id: check_uploadthing
-        working-directory: ${{ steps.wd.outputs.dir }}
         env:
           UPLOADTHING_TOKEN: ${{ secrets.UPLOADTHING_TOKEN }}
         run: |
@@ -84,35 +70,35 @@ jobs:
             echo "token_set=false" >> "$GITHUB_OUTPUT"
             echo "UploadThing: token not set — add UPLOADTHING_TOKEN in repo Settings → Secrets and variables → Actions to upload brand logos, lookbook, and curated product images."
           fi
-      # Optional: if token is missing/invalid or upload fails, these steps are skipped or don't fail the job
+
       - name: Upload brand logos to UploadThing and update DB
         if: steps.check_uploadthing.outputs.token_set == 'true'
-        working-directory: ${{ steps.wd.outputs.dir }}
         env:
           UPLOADTHING_TOKEN: ${{ secrets.UPLOADTHING_TOKEN }}
         run: bun run db:upload-brand-assets
         timeout-minutes: 10
         continue-on-error: true
+
       - name: Upload lookbook to UploadThing
         if: steps.check_uploadthing.outputs.token_set == 'true'
-        working-directory: ${{ steps.wd.outputs.dir }}
         env:
           UPLOADTHING_TOKEN: ${{ secrets.UPLOADTHING_TOKEN }}
         run: bun run db:upload-lookbook
         timeout-minutes: 8
         continue-on-error: true
+
       - name: Upload curated product images to UploadThing
         if: steps.check_uploadthing.outputs.token_set == 'true'
-        working-directory: ${{ steps.wd.outputs.dir }}
         env:
           UPLOADTHING_TOKEN: ${{ secrets.UPLOADTHING_TOKEN }}
         run: bun run db:upload-curated-product-images
         timeout-minutes: 15
         continue-on-error: true
+
       - name: Upload lookbook manifest artifact (optional)
         if: steps.check_uploadthing.outputs.token_set == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: lookbook-images-json
-          path: ${{ steps.wd.outputs.dir }}/data/lookbook-images.json
+          path: data/lookbook-images.json
           if-no-files-found: ignore

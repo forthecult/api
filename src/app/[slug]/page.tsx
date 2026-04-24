@@ -123,6 +123,7 @@ async function fetchCategoryPage(
   subcategory?: string,
   q?: string,
   cookieHeader?: string,
+  merchCategory?: string,
 ): Promise<ProductListResponse> {
   const params = new URLSearchParams({
     category: slug,
@@ -132,6 +133,7 @@ async function fetchCategoryPage(
   if (sort) params.set("sort", sort);
   if (subcategory) params.set("subcategory", subcategory);
   if (q?.trim()) params.set("q", q.trim());
+  if (merchCategory?.trim()) params.set("merchCategory", merchCategory.trim());
   try {
     const res = await fetch(`${baseUrl()}/api/products?${params}`, {
       next: { revalidate: 60 },
@@ -142,6 +144,26 @@ async function fetchCategoryPage(
     return (await res.json()) as ProductListResponse;
   } catch {
     return { categories: [], items: [], total: 0, totalPages: 1 };
+  }
+}
+
+async function fetchMerchFilterOptions(
+  forSlug: string,
+): Promise<{ name: string; slug: string }[]> {
+  try {
+    const res = await fetch(
+      `${baseUrl()}/api/categories/merch-filters?forCategory=${encodeURIComponent(
+        forSlug,
+      )}`,
+      { next: { revalidate: 120 }, signal: AbortSignal.timeout(5000) },
+    );
+    if (!res.ok) return [];
+    const j = (await res.json()) as {
+      items?: { name: string; slug: string }[];
+    };
+    return j.items ?? [];
+  } catch {
+    return [];
   }
 }
 
@@ -536,8 +558,8 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
                         <div className="mb-2">
                           <p
                             className={`
-                            text-lg font-medium text-muted-foreground
-                          `}
+                              text-lg font-medium text-muted-foreground
+                            `}
                           >
                             {product.category}
                           </p>
@@ -548,7 +570,11 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
                         />
                         {/* Features only at top; description is in accordion below */}
                         {product.features.length > 0 && (
-                          <ul className="mb-6 flex flex-col gap-2 text-muted-foreground">
+                          <ul
+                            className={`
+                              mb-6 flex flex-col gap-2 text-muted-foreground
+                            `}
+                          >
                             {product.features.map((feature) => (
                               <li
                                 className="flex items-start"
@@ -679,6 +705,7 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
   }
 
   const resolvedSearchParams = (await searchParams) as {
+    merch?: string;
     page?: string;
     q?: string;
     sort?: string;
@@ -700,6 +727,7 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
     ? sortParam
     : "manual";
   const subcategoryParam = resolvedSearchParams.subcategory?.trim() || "";
+  const merchParam = resolvedSearchParams.merch?.trim() || "";
   const searchQuery = resolvedSearchParams.q?.trim() ?? "";
   const limit = 12;
 
@@ -709,7 +737,7 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
     .map((c) => `${c.name}=${c.value}`)
     .join("; ");
 
-  const [data, subcategories, parent] = await Promise.all([
+  const [data, subcategories, parent, merchOptions] = await Promise.all([
     fetchCategoryPage(
       slug,
       page,
@@ -718,11 +746,13 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
       subcategoryParam || undefined,
       searchQuery || undefined,
       cookieHeader,
+      merchParam || undefined,
     ),
     getSubcategories(category.id),
     category.parentId
       ? getCategoryParent(category.parentId)
       : Promise.resolve(null),
+    fetchMerchFilterOptions(slug),
   ]);
 
   const products = (data.items ?? []).map((p) => ({
@@ -801,10 +831,38 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
           initialSubcategory={subcategoryParam || undefined}
           initialTotal={data.total ?? 0}
           initialTotalPages={data.totalPages ?? 1}
+          merchFilterOptions={merchOptions}
+          initialMerchCategory={merchParam || undefined}
           subcategories={subcategories}
           title={category.name}
         />
       </Suspense>
+      {category.marketingBlockEnabled &&
+        category.marketingBlockHtml &&
+        category.marketingBlockHtml.trim().length > 0 && (
+          <section
+            className={`
+              mx-auto max-w-4xl border-t border-border px-4 py-10
+              text-foreground
+            `}
+            suppressHydrationWarning
+          >
+            <div
+              className="prose prose-invert max-w-none dark:prose-invert"
+              // Admin-controlled HTML: sanitize in admin before save in production
+              dangerouslySetInnerHTML={{ __html: category.marketingBlockHtml }}
+            />
+          </section>
+        )}
+      {category.footerReviewsEnabled && (
+        <div className="border-t border-border">
+          <ProductReviewsCarousel
+            forCategorySlug={
+              category.footerReviewsStoreWide ? undefined : slug
+            }
+          />
+        </div>
+      )}
     </>
   );
 }

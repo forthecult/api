@@ -320,14 +320,14 @@ export async function fetchStakeEntry(
         ? new PublicKeyClass(walletAddress)
         : walletAddress;
     const [stakeEntryPda] = getStakeEntryPda(programId, user, lockTier);
-  const account = await connection.getAccountInfo(stakeEntryPda);
-  if (!account) return null;
-  const parsed = parseStakeEntry(Buffer.from(account.data));
-  if (!parsed || parsed.isWithdrawn) return null;
-  return parsed;
-} catch {
-  return null;
-}
+    const account = await connection.getAccountInfo(stakeEntryPda);
+    if (!account) return null;
+    const parsed = parseStakeEntry(Buffer.from(account.data));
+    if (!parsed || parsed.isWithdrawn) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
 }
 
 /**

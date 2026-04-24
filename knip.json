@@ -22,7 +22,8 @@
     "src/ui/primitives/**/*.tsx": ["exports", "types"],
     "src/ui/components/layout/page-container.tsx": ["exports"],
     "src/ui/components/page-header.tsx": ["exports"],
-    "src/ui/components/structured-data.tsx": ["exports"]
+    "src/ui/components/structured-data.tsx": ["exports"],
+    "src/app/chat/chat-local.ts": ["exports"]
   },
   "ignoreBinaries": ["psql"],
   "ignoreDependencies": [
@@ -30,9 +31,15 @@
     "@tanstack/react-form",
     "@tanstack/react-table",
     "@tanstack/table-core",
+    "axios",
     "cmdk",
+    "dompurify",
+    "effect",
+    "follow-redirects",
     "nuqs",
     "ofetch",
-    "react-day-picker"
+    "protobufjs",
+    "react-day-picker",
+    "socket.io-parser"
   ]
 }

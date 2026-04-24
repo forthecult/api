@@ -693,7 +693,7 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
         `}
       >
         {/* Package Info - Left */}
-        <div className="min-w-0 flex flex-col gap-6">
+        <div className="flex min-w-0 flex-col gap-6">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">{displayName}</h1>
             <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -1077,8 +1077,9 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
                         {/* Ethereum chain picker */}
                         {cryptoSub === "eth" && (
                           <div
-                            className={`flex flex-col gap-1 rounded-lg border border-border
-                              bg-muted/30 p-3
+                            className={`
+                              flex flex-col gap-1 rounded-lg border
+                              border-border bg-muted/30 p-3
                             `}
                           >
                             <p
@@ -1111,8 +1112,9 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
                         {/* Other sub-options (Sui, TON) */}
                         {cryptoSub === "other" && (
                           <div
-                            className={`flex flex-col gap-1 rounded-lg border border-border
-                              bg-muted/30 p-3
+                            className={`
+                              flex flex-col gap-1 rounded-lg border
+                              border-border bg-muted/30 p-3
                             `}
                           >
                             <div className="flex flex-wrap gap-2">
@@ -1257,7 +1259,8 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
                 </Button>
 
                 <div
-                  className={`flex flex-col gap-2 rounded-lg bg-muted/50 p-4 text-sm
+                  className={`
+                    flex flex-col gap-2 rounded-lg bg-muted/50 p-4 text-sm
                     text-muted-foreground
                   `}
                 >
@@ -1290,8 +1293,8 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
           </p>
           <ul
             className={`
-              list-outside list-disc flex flex-col gap-3 pl-5 text-sm break-words
-              text-muted-foreground
+              flex list-outside list-disc flex-col gap-3 pl-5 text-sm
+              break-words text-muted-foreground
             `}
           >
             <li className="leading-relaxed">
