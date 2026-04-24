@@ -3,6 +3,7 @@ import type { NextRequest } from "next/server";
 import { toNextJsHandler } from "better-auth/next-js";
 
 import { auth } from "~/lib/auth";
+import { isAllowedAuthCorsOrigin } from "~/lib/auth-trusted-origins";
 import {
   checkRateLimit,
   getClientIp,
@@ -12,19 +13,9 @@ import {
 
 const { GET: authGet, POST: authPost } = toNextJsHandler(auth);
 
-/** Allowed origins for CORS (admin app calling main app auth API). Must match trustedOrigins in auth config. */
-function getAllowedAuthOrigins(): string[] {
-  if (process.env.NODE_ENV === "development") {
-    return ["http://localhost:3001", "http://127.0.0.1:3001"];
-  }
-  const adminUrl = process.env.NEXT_PUBLIC_ADMIN_APP_URL;
-  return adminUrl ? [adminUrl] : [];
-}
-
 function withCorsIfAllowed(request: NextRequest, res: Response): Response {
   const origin = request.headers.get("origin");
-  const allowed = getAllowedAuthOrigins();
-  if (!origin || !allowed.includes(origin)) return res;
+  if (!origin || !isAllowedAuthCorsOrigin(origin)) return res;
 
   const headers = new Headers(res.headers);
   headers.set("Access-Control-Allow-Origin", origin);
@@ -52,9 +43,8 @@ export async function GET(request: NextRequest) {
 // CORS preflight: allow admin app (localhost:3001) to send credentialed requests
 export async function OPTIONS(request: NextRequest) {
   const origin = request.headers.get("origin");
-  const allowed = getAllowedAuthOrigins();
   const headers = new Headers();
-  if (origin && allowed.includes(origin)) {
+  if (origin && isAllowedAuthCorsOrigin(origin)) {
     headers.set("Access-Control-Allow-Origin", origin);
     headers.set("Access-Control-Allow-Credentials", "true");
     headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");

@@ -27,16 +27,17 @@ export const PAYMENT_METHOD_DEFAULTS: {
   { displayOrder: 17, label: "Troll (TROLL)", methodKey: "crypto_troll" },
   { displayOrder: 18, label: "SOLUNA (SOLUNA)", methodKey: "crypto_soluna" },
   { displayOrder: 19, label: "Seeker (SKR)", methodKey: "crypto_seeker" },
-  { displayOrder: 19.5, label: "Culture (CULT)", methodKey: "crypto_cult" },
-  { displayOrder: 20, label: "Sui (SUI)", methodKey: "crypto_sui" },
-  { displayOrder: 21, label: "TON", methodKey: "crypto_ton" },
+  /** Between Seeker and Sui; must stay integer (DB column is `integer`). */
+  { displayOrder: 20, label: "Culture (CULT)", methodKey: "crypto_cult" },
+  { displayOrder: 21, label: "Sui (SUI)", methodKey: "crypto_sui" },
+  { displayOrder: 22, label: "TON", methodKey: "crypto_ton" },
   {
-    displayOrder: 22,
+    displayOrder: 23,
     label: "USDC (Stablecoin)",
     methodKey: "stablecoin_usdc",
   },
   {
-    displayOrder: 23,
+    displayOrder: 24,
     label: "USDT (Stablecoin)",
     methodKey: "stablecoin_usdt",
   },
@@ -61,6 +62,11 @@ export const PAYMENT_METHOD_NETWORKS: Record<
     { label: "Polygon", value: "polygon" },
   ],
 };
+
+/** Coerce to a non-negative integer for DB `display_order` (Postgres `integer`). */
+export function toPaymentMethodDisplayOrder(displayOrder: number): number {
+  return Math.max(0, Math.round(displayOrder));
+}
 
 export interface PaymentMethodSetting {
   displayOrder: number;

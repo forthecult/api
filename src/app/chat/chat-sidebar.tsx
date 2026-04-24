@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Archive,
   ChevronLeft,
   ChevronRight,
   Clock,
@@ -20,6 +21,13 @@ import { useMemo } from "react";
 
 import { cn } from "~/lib/cn";
 import { Button } from "~/ui/primitives/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "~/ui/primitives/dropdown-menu";
 import { Input } from "~/ui/primitives/input";
 
 export interface CharacterOption {
@@ -30,6 +38,8 @@ export interface CharacterOption {
 }
 
 export interface ChatProject {
+  /** When true, hidden from the main list until restored (full Projects page). */
+  archived?: boolean;
   createdAt: number;
   id: string;
   instructions: string;
@@ -51,6 +61,7 @@ interface ChatSidebarProps {
   collapsed: boolean;
   loadingCharacters: boolean;
   mainView: "chat" | "projects";
+  onArchiveProject?: (id: string) => void;
   onCollapseToggle: () => void;
   onDeleteProject?: (id: string) => void;
   onDeleteSession: (id: string) => void;
@@ -77,6 +88,7 @@ export function ChatSidebar({
   collapsed,
   loadingCharacters,
   mainView,
+  onArchiveProject,
   onCollapseToggle,
   onDeleteProject,
   onDeleteSession,
@@ -276,59 +288,137 @@ export function ChatSidebar({
                   selectedProjectId === p.id && mainView === "chat";
                 return (
                   <li key={p.id}>
-                    <div
-                      className={cn(
-                        `
+                    {collapsed ? (
+                      <div className="flex justify-center py-0.5">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button
+                              aria-label={`Project ${p.name}, open menu`}
+                              className={cn(
+                                `
+                                  flex size-9 items-center justify-center
+                                  rounded-md transition-colors
+                                `,
+                                active
+                                  ? "bg-primary/15 text-foreground"
+                                  : `
+                                    text-muted-foreground
+                                    hover:bg-muted/80 hover:text-foreground
+                                  `,
+                              )}
+                              type="button"
+                            >
+                              <Folder className="h-4 w-4 shrink-0 opacity-90" />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="start" className="w-48">
+                            <DropdownMenuItem
+                              onSelect={() => {
+                                onSelectProject(active ? null : p.id);
+                              }}
+                            >
+                              {active ? "Leave project" : "Open project"}
+                            </DropdownMenuItem>
+                            {onArchiveProject ? (
+                              <DropdownMenuItem
+                                onSelect={() => {
+                                  onArchiveProject(p.id);
+                                }}
+                              >
+                                <Archive
+                                  aria-hidden
+                                  className="mr-2 h-4 w-4 opacity-70"
+                                />
+                                Archive project
+                              </DropdownMenuItem>
+                            ) : null}
+                            {onDeleteProject ? (
+                              <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  className="text-destructive focus:text-destructive"
+                                  onSelect={() => {
+                                    onDeleteProject(p.id);
+                                  }}
+                                >
+                                  <Trash2
+                                    aria-hidden
+                                    className="mr-2 h-4 w-4 opacity-80"
+                                  />
+                                  Delete project
+                                </DropdownMenuItem>
+                              </>
+                            ) : null}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    ) : (
+                      <div
+                        className={`
                           group flex w-full items-center gap-0.5 rounded-lg px-1
                           py-0.5
-                        `,
-                        collapsed && "justify-center px-0",
-                      )}
-                    >
-                      <button
-                        className={cn(
-                          `
-                            flex min-w-0 flex-1 items-center gap-2 rounded-md
-                            px-2 py-1.5 text-left text-base transition-colors
-                          `,
-                          active
-                            ? "bg-primary/15 font-medium text-foreground"
-                            : `
-                              text-muted-foreground
-                              hover:bg-muted/80 hover:text-foreground
-                            `,
-                          collapsed && "justify-center px-0",
-                        )}
-                        onClick={() => onSelectProject(active ? null : p.id)}
-                        title={p.name}
-                        type="button"
+                        `}
                       >
-                        <Folder className="h-4 w-4 shrink-0 opacity-80" />
-                        {!collapsed ? (
+                        <button
+                          className={cn(
+                            `
+                              flex min-w-0 flex-1 items-center gap-2 rounded-md
+                              px-2 py-1.5 text-left text-base transition-colors
+                            `,
+                            active
+                              ? "bg-primary/15 font-medium text-foreground"
+                              : `
+                                text-muted-foreground
+                                hover:bg-muted/80 hover:text-foreground
+                              `,
+                          )}
+                          onClick={() => onSelectProject(active ? null : p.id)}
+                          title={p.name}
+                          type="button"
+                        >
+                          <Folder className="h-4 w-4 shrink-0 opacity-80" />
                           <span className="min-w-0 flex-1 truncate">
                             {p.name}
                           </span>
-                        ) : null}
-                      </button>
-                      {!collapsed && onDeleteProject ? (
-                        <button
-                          aria-label={`Delete project ${p.name}`}
-                          className={`
-                            shrink-0 rounded p-1 text-muted-foreground opacity-0
-                            transition-opacity
-                            group-hover:opacity-100
-                            hover:bg-destructive/10 hover:text-destructive
-                          `}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onDeleteProject(p.id);
-                          }}
-                          type="button"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
                         </button>
-                      ) : null}
-                    </div>
+                        <div className="flex shrink-0 items-center gap-0.5">
+                          {onArchiveProject ? (
+                            <button
+                              aria-label={`Archive project ${p.name}`}
+                              className={`
+                                rounded p-1.5 text-muted-foreground
+                                hover:bg-muted hover:text-foreground
+                              `}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onArchiveProject(p.id);
+                              }}
+                              title="Archive project"
+                              type="button"
+                            >
+                              <Archive className="h-3.5 w-3.5" />
+                            </button>
+                          ) : null}
+                          {onDeleteProject ? (
+                            <button
+                              aria-label={`Delete project ${p.name}`}
+                              className={`
+                                rounded p-1.5 text-muted-foreground
+                                hover:bg-destructive/10 hover:text-destructive
+                              `}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onDeleteProject(p.id);
+                              }}
+                              title="Delete project permanently"
+                              type="button"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          ) : null}
+                        </div>
+                      </div>
+                    )}
                   </li>
                 );
               })}

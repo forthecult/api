@@ -12,6 +12,13 @@ Rate limits are applied to checkout, contact, refund, auth, Loqate, **order stat
 
 Set both env vars in production if you run multiple instances (e.g. Vercel, Railway) and want consistent limits.
 
+### Staging (`NODE_ENV=production` without Upstash)
+
+Boot calls `assertRateLimitStoreConfigured()` in `instrumentation.ts`. If Upstash is unset, the server throws unless you explicitly allow in-memory limits:
+
+- Set `RATE_LIMIT_ALLOW_IN_MEMORY=true` on **single-instance** staging only. You will see a console warning at boot.
+- Prefer adding **Upstash** and `TRUSTED_PROXY_HEADER` (e.g. `cf-connecting-ip` or `fly-client-ip`) so limits match production behavior.
+
 ## Presets (generous to avoid blocking normal use)
 
 | Preset        | Limit      | Window | Used for                          |

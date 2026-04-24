@@ -4,20 +4,49 @@ import { createAuthClient } from "better-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
-// baseURL must match the app origin so get-session etc. hit the right API.
-// Fallback to window.location.origin in browser when env is missing.
-// Ensure protocol (https://) so Railway/env without protocol doesn't cause Invalid URL.
+// baseURL must match the browser origin for credentialed fetches, or the browser
+// blocks CORS when NEXT_PUBLIC_APP_URL points at a different host (e.g. Railway
+// URL while users open the custom domain).
+function canonicalizeAppBaseUrl(raw: string): string {
+  const trimmed = raw.trim();
+  const withProto = /^https?:\/\//i.test(trimmed)
+    ? trimmed
+    : `https://${trimmed.replace(/^\/+/, "")}`;
+  try {
+    const u = new URL(withProto);
+    return `${u.protocol}//${u.host}`;
+  } catch {
+    return withProto.replace(/\/+$/, "");
+  }
+}
+
 function getBaseUrl(): string {
-  const raw =
+  const fromEnv =
     typeof process.env.NEXT_PUBLIC_APP_URL === "string" &&
     process.env.NEXT_PUBLIC_APP_URL.length > 0
       ? process.env.NEXT_PUBLIC_APP_URL.trim()
-      : typeof window !== "undefined"
-        ? window.location.origin
-        : "";
-  if (!raw) return "";
-  if (/^https?:\/\//i.test(raw)) return raw;
-  return `https://${raw.replace(/^\/+/, "")}`;
+      : "";
+
+  if (typeof window !== "undefined") {
+    const pageOrigin = window.location.origin;
+    if (!fromEnv) return pageOrigin;
+    const envOrigin = canonicalizeAppBaseUrl(fromEnv);
+    try {
+      const envHost = new URL(envOrigin).hostname;
+      const pageHost = window.location.hostname;
+      const isLocal =
+        pageHost === "localhost" ||
+        pageHost === "127.0.0.1" ||
+        pageHost.endsWith(".localhost");
+      if (!isLocal && envHost !== pageHost) return pageOrigin;
+    } catch {
+      return pageOrigin;
+    }
+    return envOrigin;
+  }
+
+  if (!fromEnv) return "";
+  return canonicalizeAppBaseUrl(fromEnv);
 }
 
 const baseURL = getBaseUrl();

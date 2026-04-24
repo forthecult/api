@@ -97,8 +97,9 @@ export default function TermsOfServicePage() {
             Eligibility and acceptable use
           </h2>
           <p className="mt-3 leading-relaxed text-muted-foreground">
-            You must be at least the age of majority in your jurisdiction to use
-            the Service. You may not use the Service for any illegal or
+            You must be of legal age where you live to use the Service (in many
+            places, that means you have reached the age of majority). You may
+            not use the Service for any illegal or
             unauthorized purpose, or in violation of any applicable laws
             (including intellectual property laws). You must not transmit
             malware or any code of a destructive nature. We may refuse service

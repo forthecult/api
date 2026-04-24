@@ -2116,8 +2116,8 @@ export const PaymentMethodSelector = forwardRef<
                           bg-foreground/40
                         `}
                       />
-                      You confirm you meet the legal age to purchase in your
-                      country or region
+                      You confirm you are of legal age to shop with us where you
+                      live
                     </li>
                     <li className="flex items-start gap-2">
                       <span

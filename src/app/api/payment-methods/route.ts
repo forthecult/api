@@ -5,6 +5,7 @@ import { paymentMethodSettingTable } from "~/db/schema";
 import {
   PAYMENT_METHOD_DEFAULTS,
   type PaymentMethodSetting,
+  toPaymentMethodDisplayOrder,
 } from "~/lib/payment-method-settings";
 import { getSupportedChains } from "~/lib/supported-payment-chains";
 
@@ -61,7 +62,7 @@ export async function GET() {
       } else {
         toInsert.push(d);
         list.push({
-          displayOrder: d.displayOrder,
+          displayOrder: toPaymentMethodDisplayOrder(d.displayOrder),
           enabled: true,
           label: d.label,
           methodKey: d.methodKey,
@@ -74,7 +75,7 @@ export async function GET() {
       for (const d of toInsert) {
         await db.insert(paymentMethodSettingTable).values({
           createdAt: now,
-          displayOrder: d.displayOrder,
+          displayOrder: toPaymentMethodDisplayOrder(d.displayOrder),
           enabled: true,
           label: d.label,
           methodKey: d.methodKey,

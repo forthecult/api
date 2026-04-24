@@ -9,6 +9,7 @@
 
 | Variable | Purpose |
 |----------|---------|
+| `NEXT_PUBLIC_APP_URL` | **Storefront origin** (e.g. `https://forthecult.store`) — must match the URL users open; Better Auth rejects `Origin` if it is not trusted (see `auth-trusted-origins.ts`). Railway also injects `RAILWAY_PUBLIC_DOMAIN` (`*.up.railway.app`), which is trusted automatically when set. |
 | `DATABASE_URL` | Postgres (Drizzle) |
 | `RESEND_API_KEY` | Send email |
 | `RESEND_FROM_EMAIL` | Verified sender (`Name <noreply@domain>`) |
@@ -24,6 +25,14 @@ Optional:
 - `EMAIL_UNSUBSCRIBE_MAILTO` — default `mailto:` for `List-Unsubscribe`
 - `NEWSLETTER_WELCOME_DISCOUNT_CODE` — code in welcome email after double opt-in
 - `NEXT_PUBLIC_POSTHOG_HOST` — override if not using same-origin `/ingest`
+
+**Rate limiting (avoids boot `unhandledRejection` on staging):**
+
+| Variable | When |
+|----------|------|
+| `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` | Recommended — same as prod for shared limits |
+| `RATE_LIMIT_ALLOW_IN_MEMORY=true` | Only if staging runs `NODE_ENV=production` without Upstash **and** a single instance |
+| `TRUSTED_PROXY_HEADER` | Set to `cf-connecting-ip`, `fly-client-ip`, or another header your edge sets (see `TRUSTED_PROXY_HEADERS` in `webapp/src/lib/rate-limit.ts`) — fixes “rate limits are not per-client-ip” warnings |
 
 ## Health
 

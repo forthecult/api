@@ -241,61 +241,63 @@ export function OrderSummary({
             </p>
           </div>
         ))}
-        <div className="space-y-2 border-t border-border pt-3 text-left text-sm">
-          <div className="flex w-full flex-col items-start gap-2">
-            {!showDiscountCode ? (
+        <div className="space-y-2 border-t border-border pt-3 text-sm">
+          {!showDiscountCode ? (
+            <div className="flex w-full justify-start">
               <button
                 className={`
-                  self-start text-left text-primary underline-offset-4
+                  inline-flex text-left text-primary underline-offset-4
                   hover:underline
+                  focus-visible:rounded-sm focus-visible:ring-2
+                  focus-visible:ring-ring focus-visible:outline-none
                 `}
                 onClick={onShowDiscountCode}
                 type="button"
               >
                 Have a code?
               </button>
-            ) : (
-              <div className="flex w-full max-w-[65%] flex-col gap-2">
-                <div className="flex gap-2">
-                  <Input
-                    aria-label="Discount code"
-                    className={`
-                      ${checkoutFieldHeight}
-                      min-w-0 flex-1
-                    `}
-                    disabled={couponLoading}
-                    onChange={(e) => onDiscountCodeInputChange(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        onApplyCoupon();
-                      }
-                    }}
-                    placeholder="Discount code or gift card"
-                    type="text"
-                    value={discountCodeInput}
-                  />
-                  <Button
-                    className={`
-                      ${checkoutFieldHeight}
-                      shrink-0
-                    `}
-                    disabled={couponLoading || !discountCodeInput.trim()}
-                    onClick={onApplyCoupon}
-                    size="sm"
-                    type="button"
-                    variant="secondary"
-                  >
-                    {couponLoading ? <Spinner variant="inline" /> : "Apply"}
-                  </Button>
-                </div>
-                {couponError ? (
-                  <p className="text-xs text-destructive">{couponError}</p>
-                ) : null}
+            </div>
+          ) : (
+            <div className="flex w-full flex-col gap-2">
+              <div className="flex w-full min-w-0 gap-2">
+                <Input
+                  aria-label="Discount code"
+                  className={`
+                    ${checkoutFieldHeight}
+                    min-w-0 flex-1
+                  `}
+                  disabled={couponLoading}
+                  onChange={(e) => onDiscountCodeInputChange(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      onApplyCoupon();
+                    }
+                  }}
+                  placeholder="Discount code or gift card"
+                  type="text"
+                  value={discountCodeInput}
+                />
+                <Button
+                  className={`
+                    ${checkoutFieldHeight}
+                    shrink-0
+                  `}
+                  disabled={couponLoading || !discountCodeInput.trim()}
+                  onClick={onApplyCoupon}
+                  size="sm"
+                  type="button"
+                  variant="secondary"
+                >
+                  {couponLoading ? <Spinner variant="inline" /> : "Apply"}
+                </Button>
               </div>
-            )}
-          </div>
-          <div className="flex justify-between">
+              {couponError ? (
+                <p className="text-xs text-destructive">{couponError}</p>
+              ) : null}
+            </div>
+          )}
+          <div className="flex justify-between gap-2">
             <span className="text-muted-foreground">Subtotal</span>
             <span className="font-medium">
               <FiatPrice usdAmount={subtotal} />

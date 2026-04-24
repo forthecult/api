@@ -7,6 +7,7 @@ import { adminAuthFailureResponse, getAdminAuth } from "~/lib/admin-api-auth";
 import {
   PAYMENT_METHOD_DEFAULTS,
   type PaymentMethodSetting,
+  toPaymentMethodDisplayOrder,
 } from "~/lib/payment-method-settings";
 
 const now = new Date();
@@ -61,7 +62,7 @@ export async function GET(request: NextRequest) {
     } else {
       toInsert.push(d);
       list.push({
-        displayOrder: d.displayOrder,
+        displayOrder: toPaymentMethodDisplayOrder(d.displayOrder),
         enabled: true,
         label: d.label,
         methodKey: d.methodKey,
@@ -75,7 +76,7 @@ export async function GET(request: NextRequest) {
     for (const d of toInsert) {
       await db.insert(paymentMethodSettingTable).values({
         createdAt: now,
-        displayOrder: d.displayOrder,
+        displayOrder: toPaymentMethodDisplayOrder(d.displayOrder),
         enabled: false,
         label: d.label,
         methodKey: d.methodKey,
@@ -157,7 +158,7 @@ export async function PATCH(request: NextRequest) {
     }
     await db.insert(paymentMethodSettingTable).values({
       createdAt: now,
-      displayOrder: def.displayOrder,
+      displayOrder: toPaymentMethodDisplayOrder(def.displayOrder),
       enabled: enabled ?? true,
       enabledNetworks: enabledNetworks ?? null,
       label: def.label,

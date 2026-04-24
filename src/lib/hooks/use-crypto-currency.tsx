@@ -38,7 +38,9 @@ const _COINGECKO_IDS: Record<
 const STORAGE_KEY = "crypto-currency";
 const PRICING_STORAGE_KEY = "crypto-pricing-codes";
 const DEFAULT_CRYPTO: CryptoCode = "BTC";
-const MAX_PRICING_CRYPTOS = 2;
+
+/** Max number of crypto price lines on product cards, PDP, and quick view. */
+export const MAX_PRICING_CRYPTO_LINES = 2;
 
 export type Rates = Partial<Record<CryptoCode, number>>;
 
@@ -161,7 +163,7 @@ export function CryptoCurrencyProvider({ children }: React.PropsWithChildren) {
         .filter(
           (c): c is string => typeof c === "string" && isValidCryptoCode(c),
         )
-        .slice(0, MAX_PRICING_CRYPTOS) as CryptoCode[];
+        .slice(0, MAX_PRICING_CRYPTO_LINES) as CryptoCode[];
       if (next.length) setPricingCryptoCodesState(next);
     } catch {
       // ignore
@@ -183,7 +185,7 @@ export function CryptoCurrencyProvider({ children }: React.PropsWithChildren) {
       if (!isValidCryptoCode(c)) continue;
       if (uniq.includes(c)) continue;
       uniq.push(c);
-      if (uniq.length >= MAX_PRICING_CRYPTOS) break;
+      if (uniq.length >= MAX_PRICING_CRYPTO_LINES) break;
     }
     if (uniq.length === 0) uniq.push(DEFAULT_CRYPTO);
     setPricingCryptoCodesState(uniq);
@@ -200,7 +202,7 @@ export function CryptoCurrencyProvider({ children }: React.PropsWithChildren) {
       if (prev.includes(code)) {
         if (prev.length === 1) return prev;
         next = prev.filter((c) => c !== code);
-      } else if (prev.length < MAX_PRICING_CRYPTOS) {
+      } else if (prev.length < MAX_PRICING_CRYPTO_LINES) {
         next = [...prev, code];
       } else {
         next = [prev[1]!, code];
@@ -221,7 +223,7 @@ export function CryptoCurrencyProvider({ children }: React.PropsWithChildren) {
         selectedCrypto,
         ...p.filter((c) => c !== selectedCrypto),
       ];
-      if (next.length > MAX_PRICING_CRYPTOS) next.length = MAX_PRICING_CRYPTOS;
+      if (next.length > MAX_PRICING_CRYPTO_LINES) next.length = MAX_PRICING_CRYPTO_LINES;
       try {
         localStorage.setItem(PRICING_STORAGE_KEY, JSON.stringify(next));
       } catch {

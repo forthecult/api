@@ -19,5 +19,7 @@ describe("React Email marketing templates", () => {
     const bytes = Buffer.byteLength(html, "utf8");
     expect(bytes).toBeLessThan(MAX_BYTES);
     expect(html.toLowerCase()).toContain("unsubscribe");
+    expect(html).toContain("marketing-hero.jpg");
+    expect(html).toContain("utm_campaign=");
   });
 });

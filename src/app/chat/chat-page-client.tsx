@@ -122,6 +122,14 @@ export function ChatPageClient() {
   );
   const [searchQuery, setSearchQuery] = useState("");
   const [projects, setProjects] = useState<ChatProject[]>([]);
+  const activeProjects = useMemo(
+    () => projects.filter((p) => !p.archived),
+    [projects],
+  );
+  const archivedProjects = useMemo(
+    () => projects.filter((p) => p.archived),
+    [projects],
+  );
   const [sessions, setSessions] = useState<ChatSessionMeta[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<null | string>(
     null,
@@ -666,7 +674,7 @@ export function ChatPageClient() {
       if (
         typeof window !== "undefined" &&
         !window.confirm(
-          "Delete this project? Chats stay in your history but are unlinked from this project.",
+          "Delete this project permanently? Chats stay in your history but are unlinked from this project. This cannot be undone.",
         )
       ) {
         return;
@@ -680,10 +688,33 @@ export function ChatPageClient() {
       setSessions((prev) =>
         prev.map((s) => (s.projectId === id ? { ...s, projectId: null } : s)),
       );
-      toast.message("Project removed");
+      toast.message("Project deleted");
     },
     [selectedProjectId],
   );
+
+  const archiveProject = useCallback(
+    (id: string) => {
+      setProjects((prev) =>
+        prev.map((p) => (p.id === id ? { ...p, archived: true } : p)),
+      );
+      if (selectedProjectId === id) {
+        setSelectedProjectId(null);
+        setKnowledgeItems([]);
+      }
+      toast.message(
+        "Project archived. Find it under Archived on the Projects page, or restore it from there.",
+      );
+    },
+    [selectedProjectId],
+  );
+
+  const restoreProject = useCallback((id: string) => {
+    setProjects((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, archived: false } : p)),
+    );
+    toast.success("Project restored to your list");
+  }, []);
 
   const createProject = () => {
     const name = newProjectName.trim();
@@ -739,6 +770,7 @@ export function ChatPageClient() {
         collapsed={sidebarCollapsed}
         loadingCharacters={loadingCharacters}
         mainView={mainView}
+        onArchiveProject={archiveProject}
         onCollapseToggle={() => setSidebarCollapsed((v) => !v)}
         onDeleteProject={deleteProject}
         onDeleteSession={deleteSession}
@@ -756,7 +788,7 @@ export function ChatPageClient() {
         }}
         onSelectSession={handleSelectSession}
         onToggleFavorite={toggleFavorite}
-        projects={projects}
+        projects={activeProjects}
         searchQuery={searchQuery}
         selectedCharacterSlug={selectedMeta?.slug ?? null}
         selectedProjectId={selectedProjectId}
@@ -767,13 +799,17 @@ export function ChatPageClient() {
 
       {mainView === "projects" ? (
         <ProjectsBrowseView
+          archivedProjects={archivedProjects}
+          onArchiveProject={archiveProject}
+          onDeleteProject={deleteProject}
           onNewProject={() => setProjectDialogOpen(true)}
           onOpenChat={() => setMainView("chat")}
           onOpenProject={(pid) => {
             setSelectedProjectId(pid);
             setMainView("chat");
           }}
-          projects={projects}
+          onRestoreProject={restoreProject}
+          projects={activeProjects}
           sessions={sessions}
         />
       ) : (
@@ -1386,15 +1422,23 @@ function parseTopP(raw: null | string): number {
 }
 
 function ProjectsBrowseView({
+  archivedProjects,
+  onArchiveProject,
+  onDeleteProject,
   onNewProject,
   onOpenChat,
   onOpenProject,
+  onRestoreProject,
   projects,
   sessions,
 }: {
+  archivedProjects: ChatProject[];
+  onArchiveProject: (id: string) => void;
+  onDeleteProject: (id: string) => void;
   onNewProject: () => void;
   onOpenChat: () => void;
   onOpenProject: (id: string) => void;
+  onRestoreProject: (id: string) => void;
   projects: ChatProject[];
   sessions: ChatSessionMeta[];
 }) {
@@ -1406,6 +1450,104 @@ function ProjectsBrowseView({
     }
     return m;
   }, [sessions]);
+
+  const projectCard = (p: ChatProject, opts: { archived: boolean }) => {
+    const n = counts.get(p.id) ?? 0;
+    return (
+      <div
+        className={cn(
+          `
+            flex flex-col overflow-hidden rounded-xl border border-border
+            bg-card transition-shadow
+            hover:shadow-sm
+          `,
+          opts.archived && "opacity-90",
+        )}
+        key={p.id}
+      >
+        <button
+          className={`
+            flex flex-1 flex-col p-4 text-left transition-colors
+            hover:bg-muted/40
+          `}
+          disabled={opts.archived}
+          onClick={() => {
+            if (!opts.archived) onOpenProject(p.id);
+          }}
+          type="button"
+        >
+          <div className="flex items-center gap-2 font-medium">
+            <Folder className="h-4 w-4 shrink-0 opacity-80" />
+            <span className="truncate">{p.name}</span>
+          </div>
+          {p.instructions ? (
+            <p
+              className={`
+                mt-2 line-clamp-2 text-sm text-muted-foreground
+              `}
+            >
+              {p.instructions}
+            </p>
+          ) : null}
+          <p
+            className={`
+              mt-3 flex items-center gap-1.5 text-xs text-muted-foreground
+            `}
+          >
+            <MessageSquare className="h-3.5 w-3.5" />
+            {n} chat{n === 1 ? "" : "s"}
+          </p>
+        </button>
+        <div
+          className={`
+            flex flex-wrap items-center justify-end gap-2 border-t border-border
+            bg-muted/25 px-3 py-2
+          `}
+        >
+          {opts.archived ? (
+            <>
+              <Button
+                onClick={() => onRestoreProject(p.id)}
+                size="sm"
+                type="button"
+                variant="secondary"
+              >
+                Restore
+              </Button>
+              <Button
+                onClick={() => onDeleteProject(p.id)}
+                size="sm"
+                type="button"
+                variant="destructive"
+              >
+                Delete permanently
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                onClick={() => onArchiveProject(p.id)}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                Archive
+              </Button>
+              <Button
+                onClick={() => onDeleteProject(p.id)}
+                size="sm"
+                type="button"
+                variant="outline"
+                className="text-destructive hover:bg-destructive/10"
+              >
+                Delete
+              </Button>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
@@ -1432,55 +1574,51 @@ function ProjectsBrowseView({
         </div>
       </header>
       <div className="min-h-0 flex-1 overflow-y-auto p-4">
-        {projects.length === 0 ? (
+        {projects.length === 0 && archivedProjects.length === 0 ? (
           <p className="text-center text-sm text-muted-foreground">
             No projects yet. Create one to get started.
           </p>
         ) : (
-          <div
-            className={`
-              mx-auto grid max-w-4xl gap-4
-              sm:grid-cols-2
-            `}
-          >
-            {projects.map((p) => {
-              const n = counts.get(p.id) ?? 0;
-              return (
-                <button
+          <div className="mx-auto max-w-4xl space-y-10">
+            {projects.length > 0 ? (
+              <div>
+                <h2 className="mb-3 text-sm font-medium text-muted-foreground">
+                  Active projects
+                </h2>
+                <div
                   className={`
-                    rounded-xl border border-border bg-card p-4 text-left
-                    transition-colors
-                    hover:bg-muted/40
+                    grid gap-4
+                    sm:grid-cols-2
                   `}
-                  key={p.id}
-                  onClick={() => onOpenProject(p.id)}
-                  type="button"
                 >
-                  <div className="flex items-center gap-2 font-medium">
-                    <Folder className="h-4 w-4 shrink-0 opacity-80" />
-                    <span className="truncate">{p.name}</span>
-                  </div>
-                  {p.instructions ? (
-                    <p
-                      className={`
-                        mt-2 line-clamp-2 text-sm text-muted-foreground
-                      `}
-                    >
-                      {p.instructions}
-                    </p>
-                  ) : null}
-                  <p
-                    className={`
-                      mt-3 flex items-center gap-1.5 text-xs
-                      text-muted-foreground
-                    `}
-                  >
-                    <MessageSquare className="h-3.5 w-3.5" />
-                    {n} chat{n === 1 ? "" : "s"}
-                  </p>
-                </button>
-              );
-            })}
+                  {projects.map((p) => projectCard(p, { archived: false }))}
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                No active projects. Create one or restore an archived project
+                below.
+              </p>
+            )}
+            {archivedProjects.length > 0 ? (
+              <div>
+                <h2 className="mb-3 text-sm font-medium text-muted-foreground">
+                  Archived ({archivedProjects.length})
+                </h2>
+                <p className="mb-3 text-xs text-muted-foreground">
+                  Archived projects stay in your browser only. Restore to use them
+                  in the sidebar again, or delete to remove them permanently.
+                </p>
+                <div
+                  className={`
+                    grid gap-4
+                    sm:grid-cols-2
+                  `}
+                >
+                  {archivedProjects.map((p) => projectCard(p, { archived: true }))}
+                </div>
+              </div>
+            ) : null}
           </div>
         )}
       </div>

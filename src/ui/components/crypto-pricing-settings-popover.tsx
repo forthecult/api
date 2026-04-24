@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import {
   type CryptoCode,
+  MAX_PRICING_CRYPTO_LINES,
   useCryptoCurrency,
 } from "~/lib/hooks/use-crypto-currency";
 import { CryptoPricingTogglesList } from "~/ui/components/crypto-pricing-toggles-list";
@@ -14,8 +15,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "~/ui/primitives/popover";
-
-const MAX_PRICING = 2 as const;
 
 /**
  * Same “up to 2” crypto price lines as the footer, without scrolling away from PDP / cards.
@@ -58,16 +57,16 @@ export function CryptoPricingSettingsPopover({
             </Button>
           )}
         </PopoverTrigger>
-        <PopoverContent align={align} className="w-[min(100vw-2rem,20rem)] p-0">
+        <PopoverContent align={align} className="w-[min(100vw-2rem,26rem)] p-0">
           <p
             className={`
               border-b border-border px-3 py-2 text-xs text-muted-foreground
             `}
             id="crypto-pricing-hint"
           >
-            Check up to {String(MAX_PRICING)} cryptos to show as price lines
-            here, in the footer, and in quick view. Tap a row to set the spot
-            price ticker in the footer.
+            Check up to {String(MAX_PRICING_CRYPTO_LINES)} cryptos (right column)
+            for stacked price lines here, in the footer, and in quick view. Tap
+            the left column to set the footer spot ticker.
           </p>
           <div className="max-h-64 overflow-y-auto">
             <CryptoPricingTogglesList

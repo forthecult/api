@@ -1,5 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 
+import { resolveGeoRegionForCheckout } from "~/lib/geo-subdivision";
+
 export async function GET(request: NextRequest) {
   const vercelCountry = request.headers.get("x-vercel-ip-country");
   const cloudflareCountry = request.headers.get("cf-ipcountry");
@@ -16,41 +18,37 @@ export async function GET(request: NextRequest) {
   const genericRegion = request.headers.get("x-region-code");
 
   let regionCode =
-    (vercelRegion || cloudflareRegion || genericRegion)
-      ?.trim()
-      .toUpperCase()
-      .replace(/[^A-Z]/g, "")
-      .slice(0, 5) || null;
+    (vercelRegion || cloudflareRegion || genericRegion)?.trim() || null;
   if (regionCode === "") regionCode = null;
-  if (regionCode && regionCode.length < 2) regionCode = null;
 
-  if (!country || country.length !== 2 || !regionCode) {
+  let regionName: string | null = null;
+
+  const clientIp = getClientIp(request);
+  if (clientIp) {
     try {
-      const ip = getClientIp(request);
-      if (ip) {
-        // NOTE: ip-api.com free tier uses HTTP. Consider an HTTPS provider for production.
-        const geoResponse = await fetch(
-          `http://ip-api.com/json/${ip}?fields=countryCode,region`,
-          { signal: AbortSignal.timeout(2000) },
-        );
-        if (geoResponse.ok) {
-          const data = (await geoResponse.json()) as {
-            countryCode?: string;
-            region?: string;
-          };
-          if ((!country || country.length !== 2) && data.countryCode) {
-            const c = data.countryCode.trim().toUpperCase();
-            if (c.length === 2) country = c;
-          }
-          if (!regionCode && data.region) {
-            regionCode =
-              data.region
-                .trim()
-                .toUpperCase()
-                .replace(/[^A-Z]/g, "")
-                .slice(0, 5) || null;
-            if (regionCode && regionCode.length < 2) regionCode = null;
-          }
+      const geoResponse = await fetch(
+        `http://ip-api.com/json/${clientIp}?fields=countryCode,region,regionName`,
+        { signal: AbortSignal.timeout(2000) },
+      );
+      if (geoResponse.ok) {
+        const data = (await geoResponse.json()) as {
+          countryCode?: string;
+          region?: string;
+          regionName?: string;
+        };
+        if ((!country || country.length !== 2) && data.countryCode) {
+          const c = data.countryCode.trim().toUpperCase();
+          if (c.length === 2) country = c;
+        }
+        const ipRegion =
+          typeof data.region === "string" ? data.region.trim() : "";
+        if (ipRegion && (regionCode ?? "").trim() === "") {
+          regionCode = ipRegion;
+        }
+        const ipRegionName =
+          typeof data.regionName === "string" ? data.regionName.trim() : "";
+        if (ipRegionName && (regionName ?? "").trim() === "") {
+          regionName = ipRegionName;
         }
       }
     } catch {
@@ -58,30 +56,54 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  if (country === "US" && regionCode && regionCode.length > 2) {
-    regionCode = regionCode.slice(0, 2);
+  let finalRegion: null | string = null;
+  if (country && country.length === 2) {
+    finalRegion = resolveGeoRegionForCheckout(
+      country,
+      regionCode ?? undefined,
+      regionName ?? undefined,
+    );
+    if (!finalRegion && regionCode?.trim()) {
+      finalRegion = regionCode.trim();
+    }
+  } else {
+    finalRegion = regionCode?.trim() || null;
   }
 
   return NextResponse.json({
     country: country && country.length === 2 ? country : null,
-    region: regionCode,
+    region: finalRegion && finalRegion.length > 0 ? finalRegion : null,
+    regionName: regionName && regionName.length > 0 ? regionName : null,
   });
 }
 
 /**
- * Returns coarse client geo: ISO country and region (e.g. US state code) when available.
+ * Returns coarse client geo: ISO country, normalized subdivision (`region`),
+ * and optional `regionName` when available (e.g. from ip-api).
+ *
  * Sources (in order):
  * 1. Vercel: x-vercel-ip-country, x-vercel-ip-country-region
- * 2. Cloudflare: cf-ipcountry, cf-ipregion (when present)
+ * 2. Cloudflare: cf-ipcountry, cf-ipregion
  * 3. Generic: x-country, x-region-code
- * 4. ip-api.com (HTTP) for country/region from client IP
+ * 4. ip-api.com (HTTP) when client IP is known — fills missing country, region,
+ *    or regionName without overwriting values already set from headers.
+ *
+ * `region` is normalized for checkout where we can (US, CA, AU); elsewhere the
+ * best subdivision string from geo is returned.
  *
  * GET /api/geo
  */
 function getClientIp(request: NextRequest): null | string {
+  const cfConnecting = request.headers.get("cf-connecting-ip")?.trim();
+  const flyClient = request.headers.get("fly-client-ip")?.trim();
   const forwardedFor = request.headers.get("x-forwarded-for");
-  const realIp = request.headers.get("x-real-ip");
-  const ip = forwardedFor?.split(",")[0]?.trim() || realIp || null;
+  const realIp = request.headers.get("x-real-ip")?.trim();
+  const ip =
+    cfConnecting ||
+    flyClient ||
+    forwardedFor?.split(",")[0]?.trim() ||
+    realIp ||
+    null;
   if (
     !ip ||
     ip === "127.0.0.1" ||

@@ -30,6 +30,11 @@ import {
 import { getNotificationTemplate } from "~/lib/notification-templates";
 import { sendVerificationOTPEmail } from "~/lib/send-otp-email";
 import { sendResetPasswordEmail } from "~/lib/send-reset-password";
+import {
+  getDevelopmentAuthOrigins,
+  getProductionAuthOrigins,
+} from "~/lib/auth-trusted-origins";
+import { getPublicSiteUrl } from "~/lib/app-url";
 import { sendWelcomeEmail } from "~/lib/send-welcome-email";
 
 interface DiscordProfile {
@@ -213,11 +218,13 @@ export const auth = betterAuth({
   baseURL: (() => {
     if (process.env.NODE_ENV === "development") return "http://localhost:3000";
     const publicUrl = ensureAbsoluteUrl(process.env.NEXT_PUBLIC_APP_URL);
-    if (publicUrl) return publicUrl;
+    if (publicUrl) return publicUrl.replace(/\/$/, "");
     if (typeof process.env.VERCEL_URL === "string" && process.env.VERCEL_URL)
-      return `https://${process.env.VERCEL_URL}`;
+      return `https://${process.env.VERCEL_URL}`.replace(/\/$/, "");
     const server = ensureAbsoluteUrl(process.env.NEXT_SERVER_APP_URL);
-    return server ?? undefined;
+    if (server) return server.replace(/\/$/, "");
+    // Railway etc.: avoid using internal bind URL as Better Auth base when public env is unset
+    return getPublicSiteUrl().replace(/\/$/, "");
   })(),
 
   database: drizzleAdapter(db, {
@@ -383,43 +390,14 @@ export const auth = betterAuth({
   // Trusted origins for CORS/auth - use explicit allowlist for security (never throw)
   trustedOrigins: () => {
     try {
-      const origins: string[] = [];
-
       if (process.env.NODE_ENV === "development") {
-        origins.push(
-          "http://localhost:3000",
-          "http://127.0.0.1:3000",
-          "http://localhost:3001",
-          "http://127.0.0.1:3001",
-        );
+        return getDevelopmentAuthOrigins();
       }
-
-      const appUrl = ensureAbsoluteUrl(process.env.NEXT_PUBLIC_APP_URL) ?? "";
-      const adminUrl =
-        ensureAbsoluteUrl(process.env.NEXT_PUBLIC_ADMIN_APP_URL) ?? "";
-      const serverUrl =
-        ensureAbsoluteUrl(process.env.NEXT_SERVER_APP_URL) ?? "";
-      if (appUrl) origins.push(appUrl);
-      if (adminUrl) origins.push(adminUrl);
-      if (serverUrl && serverUrl !== appUrl) origins.push(serverUrl);
-
-      if (
-        typeof process.env.VERCEL_URL === "string" &&
-        process.env.VERCEL_URL.length > 0
-      ) {
-        origins.push(`https://${process.env.VERCEL_URL}`);
-      }
-
-      return origins.filter(Boolean);
+      return getProductionAuthOrigins();
     } catch (e) {
       console.error("[auth] trustedOrigins error:", e);
       return process.env.NODE_ENV === "development"
-        ? [
-            "http://localhost:3000",
-            "http://127.0.0.1:3000",
-            "http://localhost:3001",
-            "http://127.0.0.1:3001",
-          ]
+        ? getDevelopmentAuthOrigins()
         : [];
     }
   },

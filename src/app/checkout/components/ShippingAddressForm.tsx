@@ -15,6 +15,7 @@ import type { MappedShippingAddress } from "~/lib/loqate";
 import { useLoqateAutocomplete } from "~/hooks/use-loqate-autocomplete";
 import { signIn } from "~/lib/auth-client";
 import { cn } from "~/lib/cn";
+import { resolveGeoRegionForCheckout } from "~/lib/geo-subdivision";
 import { isShippingExcluded } from "~/lib/shipping-restrictions";
 import { FiatPrice } from "~/ui/components/FiatPrice";
 import { Button } from "~/ui/primitives/button";
@@ -308,7 +309,7 @@ export const ShippingAddressForm = function ShippingAddressForm({
   );
   /** Track which fields the user has touched (blurred) for inline validation. */
   const [touchedFields, setTouchedFields] = useState<Set<string>>(new Set());
-  const guestRegionPrefillDone = useRef(false);
+  const shippingIpRegionPrefillDone = useRef(false);
   /** Saved addresses for logged-in users. */
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
   /** Selected saved address id; empty string = manual entry. */
@@ -492,11 +493,11 @@ export const ShippingAddressForm = function ShippingAddressForm({
     }
   }, [user, form.email, form.firstName, form.lastName]);
 
-  /** Guests only: prefill state / province from IP when still empty. */
+  /** Prefill state / province from IP geo when empty and geo country matches (any ISO country). */
   useEffect(() => {
-    if (isLoggedIn || emailOnly || guestRegionPrefillDone.current) return;
-    const c = form.country?.trim();
-    if (!c || !COUNTRIES_REQUIRING_STATE.has(c)) return;
+    if (emailOnly || shippingIpRegionPrefillDone.current) return;
+    const c = form.country?.trim().toUpperCase().slice(0, 2);
+    if (c.length !== 2) return;
     if (form.state?.trim()) return;
     let cancelled = false;
     (async () => {
@@ -506,22 +507,19 @@ export const ShippingAddressForm = function ShippingAddressForm({
         const data = (await res.json()) as {
           country?: null | string;
           region?: null | string;
+          regionName?: null | string;
         };
         if (cancelled) return;
         const gc = data.country?.trim().toUpperCase().slice(0, 2);
-        const reg = data.region?.trim();
-        if (!reg) return;
         if (gc && gc !== c) return;
-        if (c === "US") {
-          const upper = reg.toUpperCase().slice(0, 2);
-          if (US_STATE_OPTIONS.some((o) => o.value === upper)) {
-            guestRegionPrefillDone.current = true;
-            setForm((prev) => ({ ...prev, state: upper }));
-          }
-        } else {
-          guestRegionPrefillDone.current = true;
-          setForm((prev) => ({ ...prev, state: reg }));
-        }
+        const merged = resolveGeoRegionForCheckout(
+          c,
+          data.region?.trim() || undefined,
+          data.regionName?.trim() || undefined,
+        );
+        if (!merged) return;
+        shippingIpRegionPrefillDone.current = true;
+        setForm((prev) => ({ ...prev, state: merged }));
       } catch {
         /* ignore */
       }
@@ -529,7 +527,7 @@ export const ShippingAddressForm = function ShippingAddressForm({
     return () => {
       cancelled = true;
     };
-  }, [emailOnly, form.country, form.state, isLoggedIn]);
+  }, [emailOnly, form.country, form.state]);
 
   /** Fetch saved addresses for logged-in users. */
   useEffect(() => {

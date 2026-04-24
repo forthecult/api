@@ -1,7 +1,12 @@
 import { Heading, Link, Text } from "@react-email/components";
 
-import { type EmailProductPick, EmailShell } from "~/emails/shell";
+import {
+  type EmailProductPick,
+  CtaButton,
+  EmailShell,
+} from "~/emails/shell";
 import { getPublicSiteUrl } from "~/lib/app-url";
+import { appendEmailUtm, emailUtmQueryString } from "~/lib/email/marketing-email-url";
 
 export function MarketingFunnelDripEmail({
   bodyLines,
@@ -12,6 +17,8 @@ export function MarketingFunnelDripEmail({
   primaryCtaLabel,
   productPicks,
   picksSubtitle,
+  utmCampaign = "email_funnel",
+  utmContent = "drip",
 }: Readonly<{
   bodyLines: readonly string[];
   couponCode?: string;
@@ -21,6 +28,8 @@ export function MarketingFunnelDripEmail({
   primaryCtaLabel: string;
   productPicks?: readonly EmailProductPick[];
   picksSubtitle?: string;
+  utmCampaign?: string;
+  utmContent?: string;
 }>) {
   const base = getPublicSiteUrl().replace(/\/$/, "");
   const banner =
@@ -28,13 +37,28 @@ export function MarketingFunnelDripEmail({
       `Your code: ${couponCode} — enter it at checkout. One use per customer unless noted in admin.`
     : undefined;
 
+  const taggedPrimary = appendEmailUtm(primaryCtaHref, utmCampaign, utmContent);
+  const heroHref = appendEmailUtm(primaryCtaHref, utmCampaign, "hero_banner");
+  const videoHref = appendEmailUtm(`${base}/shop`, utmCampaign, "video_spotlight");
+  const utmFooterQuery = emailUtmQueryString(utmCampaign, "footer_links");
+  const utmProductQuery = emailUtmQueryString(utmCampaign, "product_recs");
+
   return (
     <EmailShell
       couponBanner={banner}
+      marketingHeroHref={heroHref}
       picksSubtitle={picksSubtitle ?? "You might be interested in these products"}
       preview={preview}
       productPicks={productPicks}
       showBrandStoryFooter
+      showMarketingCompliance
+      showMarketingHero
+      utmFooterQuery={utmFooterQuery}
+      utmProductQuery={utmProductQuery}
+      videoSpotlight={{
+        href: videoHref,
+        label: "Spotlight: shop preview",
+      }}
     >
       <Heading
         as="h1"
@@ -50,32 +74,23 @@ export function MarketingFunnelDripEmail({
           {line}
         </Text>
       ))}
-      <Text style={{ margin: "16px 0 8px" }}>
-        <Link
-          href={primaryCtaHref}
-          style={{
-            backgroundColor: "#0f172a",
-            borderRadius: "8px",
-            color: "#ffffff",
-            display: "inline-block",
-            fontWeight: 600,
-            padding: "12px 24px",
-            textDecoration: "none",
-          }}
-        >
-          {primaryCtaLabel}
-        </Link>
-      </Text>
+      <CtaButton href={taggedPrimary} label={primaryCtaLabel} variant="brand" />
       <Text style={{ color: "#64748b", fontSize: "13px", lineHeight: 1.7, margin: "16px 0 0" }}>
-        <Link href={`${base}/shop`} style={{ color: "#0f172a" }}>
+        <Link href={appendEmailUtm(`${base}/shop`, utmCampaign, "nav_shop")} style={{ color: "#0f172a" }}>
           Shop
         </Link>
         {" · "}
-        <Link href={`${base}/membership`} style={{ color: "#0f172a" }}>
+        <Link
+          href={appendEmailUtm(`${base}/membership`, utmCampaign, "nav_membership")}
+          style={{ color: "#0f172a" }}
+        >
           Membership
         </Link>
         {" · "}
-        <Link href={`${base}/services`} style={{ color: "#0f172a" }}>
+        <Link
+          href={appendEmailUtm(`${base}/services`, utmCampaign, "nav_services")}
+          style={{ color: "#0f172a" }}
+        >
           Services
         </Link>
       </Text>

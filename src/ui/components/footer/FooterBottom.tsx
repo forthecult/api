@@ -280,7 +280,7 @@ export function FooterBottom({
             </DropdownMenuTrigger>
             <DropdownMenuContent
               align="end"
-              className="w-[min(100vw-2rem,22rem)] p-0"
+              className="w-[min(100vw-2rem,26rem)] p-0"
             >
               <p
                 className={`
@@ -288,7 +288,8 @@ export function FooterBottom({
                   text-muted-foreground
                 `}
               >
-                Show prices in up to 2 cryptos (footer &amp; product pages).
+                Left: footer spot price. Right: up to 2 checkmarks for stacked
+                crypto lines on product cards and product pages.
               </p>
               <CryptoPricingTogglesList
                 menuMode

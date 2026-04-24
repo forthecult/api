@@ -10,6 +10,7 @@ import { createElement, type ReactElement } from "react";
 
 import { AddEmailCodeEmail } from "../src/emails/add-email-code";
 import { EsimActivationEmail } from "../src/emails/esim-activation";
+import { MarketingFunnelDripEmail } from "../src/emails/marketing-funnel-drip";
 import { NewsletterConfirmEmail } from "../src/emails/newsletter-confirm";
 import { NewsletterWelcomeDiscountEmail } from "../src/emails/newsletter-welcome-discount";
 import { OrderPlacedEmail } from "../src/emails/order-placed";
@@ -117,6 +118,19 @@ const samples: Array<{ name: string; node: ReactElement }> = [
     node: createElement(NewsletterWelcomeDiscountEmail, {
       discountCode: "WELCOME10",
       unsubscribeUrl: "https://example.com/api/email/unsubscribe?token=dummy",
+    }),
+  },
+  {
+    name: "marketing-drip",
+    node: createElement(MarketingFunnelDripEmail, {
+      bodyLines: ["Line one.", "Line two."],
+      couponCode: "SAVE10",
+      headline: "Still interested?",
+      preview: "Your cart",
+      primaryCtaHref: "https://example.com/shop",
+      primaryCtaLabel: "Finish checkout",
+      utmCampaign: "abandon_cart_funnel",
+      utmContent: "abandon_cart_2",
     }),
   },
   {

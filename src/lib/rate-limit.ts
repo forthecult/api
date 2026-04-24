@@ -90,12 +90,22 @@ const redisLimiterCache = new Map<
 /**
  * m8: fail boot in production if upstash isn't configured — without it
  * rate-limits are per-instance and therefore per-deploy-lottery-bypass.
+ *
+ * Staging often sets `NODE_ENV=production` without Upstash; set
+ * `RATE_LIMIT_ALLOW_IN_MEMORY=true` only there (never in multi-instance prod).
  */
 export function assertRateLimitStoreConfigured(): void {
   if (process.env.NODE_ENV !== "production") return;
   if (isRedisConfigured()) return;
+  if (process.env.RATE_LIMIT_ALLOW_IN_MEMORY?.trim().toLowerCase() === "true") {
+    console.warn(
+      "[rate-limit] RATE_LIMIT_ALLOW_IN_MEMORY=true — Upstash unset; limits are per process. " +
+        "Set UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN for shared limits.",
+    );
+    return;
+  }
   throw new Error(
-    "Rate limiting requires UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN in production. In-memory is per-instance and effectively bypassable.",
+    "Rate limiting requires UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN in production. In-memory is per-instance and effectively bypassable. For single-instance staging, set RATE_LIMIT_ALLOW_IN_MEMORY=true (see docs/RATE-LIMITING.md).",
   );
 }
 

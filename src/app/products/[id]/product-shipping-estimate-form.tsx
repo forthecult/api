@@ -7,12 +7,12 @@ import {
   COUNTRIES_WITHOUT_POSTAL,
   US_STATE_OPTIONS,
 } from "~/app/checkout/checkout-shared";
-import { useSession } from "~/lib/auth-client";
 import { cn } from "~/lib/cn";
 import {
   COUNTRY_OPTIONS_ALPHABETICAL,
   useCountryCurrency,
 } from "~/lib/hooks/use-country-currency";
+import { resolveGeoRegionForCheckout } from "~/lib/geo-subdivision";
 import { isShippingExcluded } from "~/lib/shipping-restrictions";
 import { FiatPrice } from "~/ui/components/FiatPrice";
 import { Button } from "~/ui/primitives/button";
@@ -50,8 +50,6 @@ export function ProductShippingEstimateForm({
   const productId = ctx?.productId ?? productIdProp;
   const availableCountryCodes =
     ctx?.availableCountryCodes ?? availableCountryCodesProp;
-  const { data: sessionData } = useSession();
-  const isLoggedIn = Boolean(sessionData?.user);
   const { selectedCountry: preferredCountry } = useCountryCurrency();
   const [country, setCountry] = React.useState("");
   const [postal, setPostal] = React.useState("");
@@ -96,11 +94,13 @@ export function ProductShippingEstimateForm({
     if (first) setCountry(first);
   }, [country, countryOptions, preferredCountry]);
 
-  /** Unauthenticated: prefill state/province from IP (e.g. US state) for shipping estimate. */
+  /** Prefill state/province from IP geo when the estimate form collects it. */
   React.useEffect(() => {
-    if (isLoggedIn || ipRegionAppliedRef.current) return;
+    if (ipRegionAppliedRef.current) return;
     if (!country || stateCode) return;
     if (!COUNTRIES_REQUIRING_STATE.has(country)) return;
+    const c = country.trim().toUpperCase().slice(0, 2);
+    if (c.length !== 2) return;
     let cancelled = false;
     (async () => {
       try {
@@ -109,22 +109,19 @@ export function ProductShippingEstimateForm({
         const data = (await res.json()) as {
           country?: null | string;
           region?: null | string;
+          regionName?: null | string;
         };
         if (cancelled) return;
         const gc = data.country?.trim().toUpperCase().slice(0, 2);
-        const reg = data.region?.trim();
-        if (!reg) return;
-        if (gc && gc !== country) return;
-        if (country === "US") {
-          const upper = reg.toUpperCase().slice(0, 2);
-          if (US_STATE_OPTIONS.some((o) => o.value === upper)) {
-            ipRegionAppliedRef.current = true;
-            setStateCode(upper);
-          }
-        } else {
-          ipRegionAppliedRef.current = true;
-          setStateCode(reg);
-        }
+        if (gc && gc !== c) return;
+        const merged = resolveGeoRegionForCheckout(
+          c,
+          data.region?.trim() || undefined,
+          data.regionName?.trim() || undefined,
+        );
+        if (!merged) return;
+        ipRegionAppliedRef.current = true;
+        setStateCode(merged);
       } catch {
         /* ignore */
       }
@@ -132,7 +129,7 @@ export function ProductShippingEstimateForm({
     return () => {
       cancelled = true;
     };
-  }, [country, isLoggedIn, stateCode]);
+  }, [country, stateCode]);
 
   const needsState = country ? COUNTRIES_REQUIRING_STATE.has(country) : false;
   const needsPostal = country ? !COUNTRIES_WITHOUT_POSTAL.has(country) : true;

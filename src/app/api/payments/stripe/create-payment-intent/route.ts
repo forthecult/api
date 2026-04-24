@@ -199,11 +199,15 @@ export async function POST(request: NextRequest) {
     );
 
     const stripe = getStripe();
+    // Card checkout only: do not use automatic_payment_methods — that pulls in
+    // every Dashboard-eligible method (Affirm, Klarna, Cash App Pay, etc.)
+    // into the Payment Element under "Credit/Debit card". Express Checkout
+    // (Apple Pay / Google Pay) still uses card-funded payments.
     const paymentIntent = await stripe.paymentIntents.create({
       amount: totalCents,
-      automatic_payment_methods: { enabled: true },
       currency: "usd",
       metadata: { orderId },
+      payment_method_types: ["card"],
     });
 
     const clientSecret = paymentIntent.client_secret;
