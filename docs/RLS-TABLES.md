@@ -1,64 +1,62 @@
-# Row Level Security (RLS) — table classification
+# Row Level Security (RLS) – public schema
 
-> Scope: reviewer reference for which tables are backend-only vs. partially exposed via PostgREST. See [`../../SECURITY.md`](../../SECURITY.md) for the broader operator runbook and [`SECURITY-DEVELOPMENT-STANDARDS.md`](SECURITY-DEVELOPMENT-STANDARDS.md) for the customer-surface policy.
+> Scope: reviewer reference for which tables are backend-only vs. candidates for PostgREST exposure. See [`../../SECURITY.md`](../../SECURITY.md) for the broader operator runbook and [`SECURITY-DEVELOPMENT-STANDARDS.md`](SECURITY-DEVELOPMENT-STANDARDS.md) for the customer-surface policy.
 
-All tables in the `public` schema are exposed to PostgREST (e.g. Supabase). The migration `scripts/migrate-enable-rls-auth-tables.sql` enables RLS on **every** such table so that:
+## Current state
 
-- No table is left without RLS (clears “RLS Disabled in Public” warnings).
-- With RLS enabled and **no policies**, only roles that bypass RLS (e.g. `service_role` or your app’s DB connection) can read/write. Your app uses that connection, so behaviour is unchanged.
+**Both Supabase projects (FTC dev and FTC Production) have RLS enabled on every base table in `public`.** No RLS policies are attached by default. Supabase advisors `rls_disabled_in_public` and `sensitive_columns_exposed` are both clean.
 
-## Tables that MUST have RLS (sensitive – backend only)
+Applied via migrations:
 
-These hold PII, auth data, payments, or secrets. They must **not** be readable or writable via PostgREST with anon/authenticated. No policies are added; only the backend (service role) can access them.
+- `enable_rls_on_public_tables` – idempotent DO block that enables RLS on every `relkind = 'r'` in `public` where `relrowsecurity = false`.
+- `add_missing_foreign_key_indexes` – covers every FK flagged by the `unindexed_foreign_keys` advisor.
 
-| Table | Reason |
-|------|--------|
-| **Auth** | |
-| `account`, `user`, `session`, `verification`, `two_factor`, `passkey` | Better Auth; credentials, sessions, 2FA, passkeys |
-| **User-scoped** | |
-| `address`, `user_notification`, `user_wallet`, `wishlist`, `uploads`, `agent_preference` | Per-user data; PII or preferences |
-| **Orders & payments** | |
-| `order`, `order_item`, `refund_request`, `payment_method_setting`, `polar_customer`, `polar_subscription`, `custom_print` | Orders, payment methods, refunds |
-| **Support** | |
-| `support_ticket`, `support_ticket_message`, `support_chat_conversation`, `support_chat_message`, `support_chat_setting` | Customer support; may contain PII |
-| **Email** | |
-| `email_event`, `email_suppression`, `newsletter_subscriber` | Send logs, bounces/complaints, newsletter signups (PII) |
-| **Affiliates / internal** | |
-| `affiliate`, `affiliate_attribution`, `webhook_registration`, `customer_comment` | Affiliate data; webhook secrets; internal comments |
-| **eSIM & membership** | |
-| `esim_order`, `membership_esim_claim`, `membership_tier_history`, `member_tier_discount` | Purchases, claims, tier history |
-| **Governance** | |
-| `governance_proposal`, `governance_vote`, `creator_fee_distribution`, `creator_fee_payout` | Proposals, votes, payouts |
-| **Coupons** | |
-| `coupon`, `coupon_category`, `coupon_product`, `coupon_redemption` | Coupon definitions and redemptions |
+Canonical versions of both scripts live at:
 
-## Tables that still have RLS enabled (catalog/config)
+- `webapp/scripts/migrate-enable-rls-auth-tables.sql`
+- `webapp/scripts/migrate-add-fk-indexes.sql`
 
-These are catalog or config tables. RLS is **enabled** so the “RLS Disabled in Public” warning is resolved. No policies are added by default, so only the backend can access them.
+## Why RLS-on / policies-off is safe for this app
 
-If you later want to expose **read-only** data via PostgREST (e.g. product/category listing for the storefront), you can add a policy on the specific table, for example:
+The webapp connects **directly to Postgres** via Supavisor using `DATABASE_URL`, not through PostgREST. The `postgres` role has `BYPASSRLS = true`, so enabling RLS has no runtime effect on queries issued by the app. What it *does* block is any call hitting PostgREST as `anon` or `authenticated` — which is the threat model the Supabase advisor cares about.
+
+Verified roles (production):
+
+| Role             | `rolbypassrls` |
+|------------------|----------------|
+| `postgres`       | true           |
+| `service_role`   | true           |
+| `supabase_admin` | true           |
+| `authenticator`  | false          |
+| `authenticated`  | false          |
+| `anon`           | false          |
+
+## When to add policies
+
+Only add a policy on a table if you intentionally want to expose it through PostgREST. Example (read-only public catalog):
 
 ```sql
-CREATE POLICY "Allow public read" ON public.product FOR SELECT USING (true);
+CREATE POLICY "allow anon read"
+  ON public.product
+  FOR SELECT
+  TO anon, authenticated
+  USING (true);
 ```
 
-| Table | Notes |
-|------|--------|
-| `product`, `product_variant`, `product_image`, `product_tag`, `product_available_country`, `product_token_gate`, `product_category`, `product_review` | Product catalog and reviews |
-| `category`, `category_token_gate`, `category_auto_assign_rule` | Category tree and token gates |
-| `brand`, `brand_asset` | Brands and assets |
-| `shipping_option`, `size_chart`, `page_token_gate` | Store config |
+Keep sensitive tables (auth, orders, payments, support, webhook secrets, etc.) **policy-free** so only BYPASSRLS roles can touch them.
 
-## Tables that do NOT need RLS
+## Rough table classification
 
-**None.** In this project every table lives in `public` and is exposed to PostgREST, so every table “needs” RLS enabled to satisfy the security check. The distinction above is:
-
-- **Sensitive**: RLS on, no policies → backend only.
-- **Catalog/config**: RLS on, no policies by default; add a SELECT policy only if you intentionally expose that table via PostgREST.
-
-## Applying the migration
-
-- **Supabase**: Dashboard → SQL Editor → paste contents of `webapp/scripts/migrate-enable-rls-auth-tables.sql` → Run.
-- **Other Postgres**: `psql -f webapp/scripts/migrate-enable-rls-auth-tables.sql` (or your migration runner).
-
-After running it, all “RLS Disabled in Public” findings for these tables should be resolved.
+| Class | Tables (examples) | Notes |
+|-------|-------------------|-------|
+| Auth / credentials | `account`, `user`, `session`, `verification`, `two_factor`, `passkey` | Keep policy-free. |
+| User-scoped PII | `address`, `user_notification`, `user_wallet`, `wishlist`, `uploads`, `agent_preference` | Keep policy-free. |
+| Orders & payments | `order`, `order_item`, `refund_request`, `payment_method_setting`, `custom_print`, `stripe_customer` | Keep policy-free. |
+| Subscriptions | `subscription_plan`, `subscription_offer`, `subscription_instance` | Keep policy-free. |
+| Support | `support_ticket`, `support_ticket_message`, `support_chat_conversation`, `support_chat_message`, `support_chat_setting` | May contain PII. Keep policy-free. |
+| Affiliates / internal | `affiliate`, `affiliate_attribution`, `webhook_registration`, `customer_comment`, `slack_event_processed` | Keep policy-free. |
+| eSIM & membership | `esim_order`, `membership_esim_claim`, `membership_tier_history`, `member_tier_discount`, `admin_membership_grant` | Keep policy-free. |
+| Governance / payouts | `governance_proposal`, `governance_vote`, `creator_fee_distribution`, `creator_fee_payout`, `solana_wallet_stake_claimed` | Keep policy-free. |
+| Coupons | `coupon`, `coupon_category`, `coupon_product`, `coupon_redemption` | Keep policy-free. |
+| AI | `ai_agent`, `ai_memory`, `ai_rag_chunk`, `ai_chat_conversation`, `ai_messaging_channel`, `ai_messaging_user_link`, `ai_encrypted_backup`, `ai_guest_usage`, `ai_character_quota`, `ai_admin_prompt` | Keep policy-free. |
+| Catalog / config | `product`, `product_variant`, `product_image`, `product_tag`, `product_available_country`, `product_token_gate`, `product_category`, `product_review`, `category`, `category_token_gate`, `category_auto_assign_rule`, `brand`, `brand_asset`, `shipping_option`, `size_chart`, `page_token_gate`, `blog_post` | Candidates for a read-only PostgREST SELECT policy if the storefront ever wants to query Supabase directly. |
