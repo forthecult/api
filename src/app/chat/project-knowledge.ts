@@ -95,6 +95,13 @@ const ALLOWED_EXT = new Set([
 
 const MAX_TEXT_CHARS = 120_000;
 
+/** Remove stored knowledge for a deleted project. */
+export function clearProjectKnowledge(projectId: string): void {
+  const s = loadStore();
+  delete s[projectId];
+  saveStore(s);
+}
+
 /** Best-effort text extraction for browser-readable formats. */
 export async function extractKnowledgeText(
   file: File,

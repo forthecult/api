@@ -261,6 +261,12 @@ export const ordersTable = pgTable(
     paymentMethod: text("payment_method").notNull().default("stripe"), // "stripe" | "solana_pay" | "eth_pay" | "btcpay" | "ton_pay" | "paypal" | "crypto"
     // TODO (L17): migrate paymentStatus to pgEnum for type safety
     paymentStatus: text("payment_status"), // "pending" | "paid" | "refund_pending" | "refunded" | "cancelled"
+    /**
+     * When set, the customer asked to delete personal data for this order after
+     * delivery + 60 days (shipping address, phone, etc.). Purge is applied by
+     * scheduled job / ops process querying `delivered_at`.
+     */
+    piiDeletionRequestedAt: timestamp("pii_deletion_requested_at"),
 
     /** Printful shipping cost in cents (USD). */
     printfulCostShippingCents: integer("printful_cost_shipping_cents"),

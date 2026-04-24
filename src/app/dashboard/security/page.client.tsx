@@ -1122,7 +1122,7 @@ export function SecurityPageClient() {
         </Card>
       )}
 
-      <Card>
+      <Card className="scroll-mt-28" id="mfa-authenticator-setup">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5" />
@@ -1266,7 +1266,9 @@ export function SecurityPageClient() {
             </Button>
           ) : (
             <Button asChild variant="outline">
-              <Link href="/auth/mfa">Set up MFA</Link>
+              <Link href="/dashboard/security#mfa-authenticator-setup">
+                Set up MFA
+              </Link>
             </Button>
           )}
         </CardContent>

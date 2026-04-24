@@ -1,6 +1,6 @@
 "use client";
 
-import { CircleHelp, Loader2, Minus, Plus, Trash2 } from "lucide-react";
+import { CircleHelp, Minus, Plus, Trash2 } from "lucide-react";
 import Image from "next/image";
 import * as React from "react";
 
@@ -24,6 +24,7 @@ import {
   DialogTrigger,
 } from "~/ui/primitives/dialog";
 import { Input } from "~/ui/primitives/input";
+import { Spinner } from "~/ui/primitives/spinner";
 
 import type { TierDiscountLine } from "../hooks/useCoupons";
 
@@ -98,14 +99,14 @@ export function OrderSummary({
   );
 
   return (
-    <Card className="shadow-none">
+    <Card className="text-left shadow-none">
       <CardHeader>
         <CardTitle>Your order</CardTitle>
         <CardDescription>
           {itemCount} item{itemCount !== 1 ? "s" : ""} in your cart
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-col gap-4">
+      <CardContent className="flex flex-col gap-4 text-left">
         {items.map((item) => (
           <div
             className={`
@@ -240,12 +241,12 @@ export function OrderSummary({
             </p>
           </div>
         ))}
-        <div className="space-y-2 border-t border-border pt-3 text-sm">
-          <div className="flex flex-col gap-2">
+        <div className="space-y-2 border-t border-border pt-3 text-left text-sm">
+          <div className="flex w-full flex-col items-start gap-2">
             {!showDiscountCode ? (
               <button
                 className={`
-                  text-primary underline-offset-4
+                  self-start text-left text-primary underline-offset-4
                   hover:underline
                 `}
                 onClick={onShowDiscountCode}
@@ -285,11 +286,7 @@ export function OrderSummary({
                     type="button"
                     variant="secondary"
                   >
-                    {couponLoading ? (
-                      <Loader2 aria-hidden className="size-4 animate-spin" />
-                    ) : (
-                      "Apply"
-                    )}
+                    {couponLoading ? <Spinner variant="inline" /> : "Apply"}
                   </Button>
                 </div>
                 {couponError ? (

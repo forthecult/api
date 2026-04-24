@@ -50,8 +50,8 @@ export const PII_KEY_DENYLIST: ReadonlySet<string> = new Set([
   "last_name",
   "mobile",
   "name",
-  "password",
   "passwd",
+  "password",
   "phone",
   "phone_number",
   "pin",
@@ -59,8 +59,8 @@ export const PII_KEY_DENYLIST: ReadonlySet<string> = new Set([
   "postal_code",
   "private_key",
   "routing_number",
-  "seed_phrase",
   "secret",
+  "seed_phrase",
   "session",
   "set-cookie",
   "ssn",
@@ -79,8 +79,11 @@ const EMAIL_RE = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
 const PHONE_RE = /\+?\d[\d\s().-]{7,}\d/g;
 const CREDIT_CARD_RE = /\b(?:\d[ -]*?){13,19}\b/g;
 // Solana (base58, 32-44 chars) and ETH (0x + 40 hex).
-const CRYPTO_ADDR_RE =
-  /\b(?:0x[a-fA-F0-9]{40}|[1-9A-HJ-NP-Za-km-z]{32,44})\b/g;
+const CRYPTO_ADDR_RE = /\b(?:0x[a-fA-F0-9]{40}|[1-9A-HJ-NP-Za-km-z]{32,44})\b/g;
+
+function normaliseKey(k: string): string {
+  return k.toLowerCase().replace(/[_-]/g, "");
+}
 
 function redactString(s: string): string {
   return s
@@ -90,16 +93,29 @@ function redactString(s: string): string {
     .replace(CRYPTO_ADDR_RE, "[redacted:wallet]");
 }
 
-function normaliseKey(k: string): string {
-  return k.toLowerCase().replace(/[_-]/g, "");
-}
-
 const NORMALISED_DENY: ReadonlySet<string> = new Set(
   [...PII_KEY_DENYLIST].map(normaliseKey),
 );
 
 export function isPiiKey(key: string): boolean {
   return NORMALISED_DENY.has(normaliseKey(key));
+}
+
+/**
+ * Scrub a properties object in place (or return a new one). Drops any key
+ * whose name is in the denylist and runs regex-based redaction on every
+ * remaining string leaf.
+ */
+export function redactProperties(
+  properties: null | Record<string, unknown> | undefined,
+): Record<string, unknown> {
+  if (!properties) return {};
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(properties)) {
+    if (isPiiKey(k)) continue;
+    out[k] = redactValue(v);
+  }
+  return out;
 }
 
 export function redactValue(v: unknown): unknown {
@@ -119,21 +135,4 @@ export function redactValue(v: unknown): unknown {
     return out;
   }
   return v;
-}
-
-/**
- * Scrub a properties object in place (or return a new one). Drops any key
- * whose name is in the denylist and runs regex-based redaction on every
- * remaining string leaf.
- */
-export function redactProperties(
-  properties: null | Record<string, unknown> | undefined,
-): Record<string, unknown> {
-  if (!properties) return {};
-  const out: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(properties)) {
-    if (isPiiKey(k)) continue;
-    out[k] = redactValue(v);
-  }
-  return out;
 }

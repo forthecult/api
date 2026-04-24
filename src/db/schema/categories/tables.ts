@@ -17,11 +17,25 @@ export const categoriesTable = pgTable(
     createdAt: timestamp("created_at").notNull(),
     description: text("description"),
     featured: boolean("featured").notNull().default(false),
+    /** When true, category page shows the reviews block in the footer (store-wide or category-only per `footerReviewsStoreWide`). */
+    footerReviewsEnabled: boolean("footer_reviews_enabled")
+      .notNull()
+      .default(false),
+    /** When true (and footer reviews on), use all visible reviews; when false, only reviews for products in this category. */
+    footerReviewsStoreWide: boolean("footer_reviews_store_wide")
+      .notNull()
+      .default(true),
     /** Default Google Merchant category path for products assigned to this category (unless the product overrides it). */
     googleProductCategory: text("google_product_category"),
     id: text("id").primaryKey(),
     imageUrl: text("image_url"),
     level: integer("level").notNull().default(1),
+    /** When true, show extra HTML block below the product grid (SEO / marketing). */
+    marketingBlockEnabled: boolean("marketing_block_enabled")
+      .notNull()
+      .default(false),
+    /** Sanitized rich text / HTML for the marketing block (admin-edited). */
+    marketingBlockHtml: text("marketing_block_html"),
     metaDescription: text("meta_description"),
     name: text("name").notNull(),
     parentId: text("parent_id"),
@@ -36,20 +50,6 @@ export const categoriesTable = pgTable(
     updatedAt: timestamp("updated_at").notNull(),
     /** When false, category is hidden from the mega menu and public browsing. */
     visible: boolean("visible").notNull().default(true),
-    /** When true, category page shows the reviews block in the footer (store-wide or category-only per `footerReviewsStoreWide`). */
-    footerReviewsEnabled: boolean("footer_reviews_enabled")
-      .notNull()
-      .default(false),
-    /** When true (and footer reviews on), use all visible reviews; when false, only reviews for products in this category. */
-    footerReviewsStoreWide: boolean("footer_reviews_store_wide")
-      .notNull()
-      .default(true),
-    /** When true, show extra HTML block below the product grid (SEO / marketing). */
-    marketingBlockEnabled: boolean("marketing_block_enabled")
-      .notNull()
-      .default(false),
-    /** Sanitized rich text / HTML for the marketing block (admin-edited). */
-    marketingBlockHtml: text("marketing_block_html"),
   },
   (t) => [
     // L15: ON DELETE set null so child categories survive parent removal

@@ -808,10 +808,11 @@ export function CryptoPayClient({
                       : "SOL";
 
   const copyAmount = useCallback(() => {
-    void navigator.clipboard.writeText(`${amountDisplayStr} ${amountUnit}`);
+    // Wallets and explorers expect the raw numeric amount only (no symbol/network).
+    void navigator.clipboard.writeText(amountDisplayStr.trim());
     setCopied("amount");
     setTimeout(() => setCopied(null), 2000);
-  }, [amountDisplayStr, amountUnit]);
+  }, [amountDisplayStr]);
 
   const requiredLamports =
     Math.ceil(amountSol * LAMPORTS_PER_SOL) + TX_FEE_BUFFER_LAMPORTS;
@@ -1685,7 +1686,11 @@ export function CryptoPayClient({
                     </h2>
                     <div className="flex flex-col gap-5">
                       <div>
-                        <p className="mb-1.5 text-base font-medium text-foreground">
+                        <p
+                          className={`
+                            mb-1.5 text-base font-medium text-foreground
+                          `}
+                        >
                           Pay to
                         </p>
                         <div className="flex flex-wrap items-center gap-2">
@@ -1714,7 +1719,11 @@ export function CryptoPayClient({
                         </div>
                       </div>
                       <div>
-                        <p className="mb-1.5 text-base font-medium text-foreground">
+                        <p
+                          className={`
+                            mb-1.5 text-base font-medium text-foreground
+                          `}
+                        >
                           Amount to pay
                         </p>
                         <div className="flex flex-wrap items-center gap-2">
@@ -1744,7 +1753,11 @@ export function CryptoPayClient({
                         </div>
                       </div>
                       <div>
-                        <p className="mb-1.5 text-base font-medium text-foreground">
+                        <p
+                          className={`
+                            mb-1.5 text-base font-medium text-foreground
+                          `}
+                        >
                           Expires in
                         </p>
                         <p

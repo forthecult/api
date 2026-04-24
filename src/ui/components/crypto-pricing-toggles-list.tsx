@@ -2,12 +2,12 @@
 
 import Image from "next/image";
 
+import { cn } from "~/lib/cn";
 import {
   CRYPTO_OPTIONS,
-  useCryptoCurrency,
   type CryptoCode,
+  useCryptoCurrency,
 } from "~/lib/hooks/use-crypto-currency";
-import { cn } from "~/lib/cn";
 import { Checkbox } from "~/ui/primitives/checkbox";
 import { DropdownMenuItem } from "~/ui/primitives/dropdown-menu";
 
@@ -34,8 +34,8 @@ export function CryptoPricingTogglesList({
       {CRYPTO_OPTIONS.map(({ code, iconSrc, label }) => (
         <div
           className={`
-            flex items-center justify-between gap-2 border-b
-            border-border/50 px-2 py-1.5
+            flex items-center justify-between gap-2 border-b border-border/50
+            px-2 py-1.5
             last:border-0
           `}
           key={code}
@@ -43,8 +43,7 @@ export function CryptoPricingTogglesList({
           {menuMode ? (
             <DropdownMenuItem
               className={`
-                flex min-w-0 flex-1 cursor-pointer items-center gap-2
-                p-0
+                flex min-w-0 flex-1 cursor-pointer items-center gap-2 p-0
               `}
               onClick={() => onCryptoSelect(code)}
             >
@@ -63,9 +62,8 @@ export function CryptoPricingTogglesList({
           ) : (
             <button
               className={`
-                flex min-w-0 flex-1 cursor-pointer items-center gap-2
-                rounded-sm px-2 py-1.5 text-left
-                text-sm
+                flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-sm
+                px-2 py-1.5 text-left text-sm
                 hover:bg-muted/50
               `}
               onClick={() => onCryptoSelect(code)}
@@ -85,7 +83,9 @@ export function CryptoPricingTogglesList({
             </button>
           )}
           <label
-            className="flex shrink-0 cursor-pointer items-center gap-1.5 pl-1 pr-2"
+            className={`
+              flex shrink-0 cursor-pointer items-center gap-1.5 pr-2 pl-1
+            `}
             onClick={(e) => e.stopPropagation()}
             onPointerDown={(e) => e.stopPropagation()}
           >

@@ -11,7 +11,10 @@ import { getPublicSiteUrl } from "~/lib/app-url";
 import { sendEmail } from "~/lib/email/send-email";
 import { getNotificationTemplate } from "~/lib/notification-templates";
 
-export type OrderStatusEmailKind = Exclude<OrderStatusKind, "order_shipped">;
+export type OrderStatusEmailKind = Exclude<
+  OrderStatusKind,
+  "order_out_for_delivery" | "order_shipped"
+>;
 
 export async function sendOrderStatusEmail(params: {
   kind: OrderStatusEmailKind;

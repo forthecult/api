@@ -11,10 +11,6 @@ import { Input } from "~/ui/primitives/input";
 import { Label } from "~/ui/primitives/label";
 import { Textarea } from "~/ui/primitives/textarea";
 
-const inputClass = `
-  w-full rounded-md border border-input bg-background px-3 py-2 text-sm
-`;
-
 export type WriteReviewVisibility = "account" | "anonymous" | "custom";
 
 /**
@@ -132,24 +128,30 @@ export function WriteReviewClient({
             Overall rating
           </p>
           <div
+            aria-labelledby="rating-stars"
             className="mt-2 flex gap-1"
             role="group"
-            aria-labelledby="rating-stars"
           >
             {[1, 2, 3, 4, 5].map((n) => (
               <button
                 aria-label={`${n} star${n === 1 ? "" : "s"}`}
-                className="rounded p-0.5 text-amber-400 transition-opacity hover:opacity-90"
+                className={`
+                  rounded p-0.5 text-amber-400 transition-opacity
+                  hover:opacity-90
+                `}
                 key={n}
                 onClick={() => setRating(n)}
                 type="button"
               >
                 <Star
-                  className={`h-7 w-7 ${
-                    n <= rating
-                      ? "fill-current"
-                      : "fill-transparent text-muted-foreground/35"
-                  }`}
+                  className={`
+                    h-7 w-7
+                    ${
+                      n <= rating
+                        ? "fill-current"
+                        : "fill-transparent text-muted-foreground/35"
+                    }
+                  `}
                 />
               </button>
             ))}

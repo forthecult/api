@@ -4,8 +4,8 @@ import { type NextRequest, NextResponse } from "next/server";
 import { db } from "~/db";
 import { userTable } from "~/db/schema/users/tables";
 import { auth } from "~/lib/auth";
-import { combineToE164 } from "~/lib/phone-e164";
 import { csrfFailureResponse, verifyCsrfOrigin } from "~/lib/csrf";
+import { combineToE164 } from "~/lib/phone-e164";
 import {
   checkRateLimit,
   getClientIp,

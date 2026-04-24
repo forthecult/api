@@ -433,24 +433,18 @@ export const auth = betterAuth({
         required: false,
         type: "number",
       },
-      firstName: {
-        input: true,
-        required: false,
-        type: "string",
-      },
-      lastName: {
-        input: true,
-        required: false,
-        type: "string",
-      },
       /** ISO 8601 date (YYYY-MM-DD) for profile / age-gated flows. */
       birthDate: {
         input: true,
         required: false,
         type: "string",
       },
-      /** ISO 3166-1 alpha-2; default country for phone dialing (can differ from IP). */
-      phoneCountry: {
+      firstName: {
+        input: true,
+        required: false,
+        type: "string",
+      },
+      lastName: {
         input: true,
         required: false,
         type: "string",
@@ -494,6 +488,30 @@ export const auth = betterAuth({
       },
       phone: {
         input: true,
+        required: false,
+        type: "string",
+      },
+      /** ISO 3166-1 alpha-2; default country for phone dialing (can differ from IP). */
+      phoneCountry: {
+        input: true,
+        required: false,
+        type: "string",
+      },
+      /** Self-reported; optional CRM segmentation (e.g. prefer_not_to_say, female, male, non_binary). */
+      sex: {
+        input: true,
+        required: false,
+        type: "string",
+      },
+      /** JSON array of interest slugs or comma-separated tags — admin/profile can normalize. */
+      interestTags: {
+        input: true,
+        required: false,
+        type: "string",
+      },
+      /** Internal admin CRM notes (not shown on storefront). */
+      crmNotes: {
+        input: false,
         required: false,
         type: "string",
       },

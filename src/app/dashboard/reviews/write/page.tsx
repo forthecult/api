@@ -8,9 +8,9 @@ export const metadata: Metadata = {
   title: "Write a review",
 };
 
-type PageProps = {
+interface PageProps {
   searchParams: Promise<{ product?: string }>;
-};
+}
 
 export default async function WriteReviewPage({ searchParams }: PageProps) {
   const { product: productQ } = await searchParams;

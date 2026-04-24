@@ -1,12 +1,13 @@
 "use client";
 
-import { Loader2, RotateCcw } from "lucide-react";
+import { RotateCcw } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 
 import { useCart } from "~/lib/hooks/use-cart";
 import { Button } from "~/ui/primitives/button";
+import { Spinner } from "~/ui/primitives/spinner";
 
 interface ReorderButtonProps {
   children?: React.ReactNode;
@@ -122,7 +123,7 @@ export function ReorderButton({
     >
       {loading ? (
         <>
-          <Loader2 aria-hidden className="mr-1.5 size-3.5 animate-spin" />
+          <Spinner className="mr-1.5 size-3.5" variant="inline" />
           Loading…
         </>
       ) : (

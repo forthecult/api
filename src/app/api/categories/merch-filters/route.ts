@@ -8,14 +8,14 @@ import {
   productsTable,
 } from "~/db/schema";
 import {
+  publicApiCorsPreflight,
+  withPublicApiCors,
+} from "~/lib/cors-public-api";
+import {
   computeCategoryIdAndDescendantIds,
   computeCryptoCategoryIdsIncludingDescendants,
   isCryptoStorefrontCategorySlug,
 } from "~/lib/storefront-categories";
-import {
-  publicApiCorsPreflight,
-  withPublicApiCors,
-} from "~/lib/cors-public-api";
 
 /**
  * For a crypto category page: top-level non-crypto categories that share

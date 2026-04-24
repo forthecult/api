@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, CircleHelp, Eye, EyeOff, Loader2 } from "lucide-react";
+import { ChevronDown, CircleHelp, Eye, EyeOff } from "lucide-react";
 import {
   useCallback,
   useEffect,
@@ -34,6 +34,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "~/ui/primitives/popover";
+import { Spinner } from "~/ui/primitives/spinner";
 
 import {
   checkoutFieldHeight,
@@ -224,7 +225,7 @@ function CheckoutSignInDialog() {
           <Button className="w-full" disabled={loading} type="submit">
             {loading ? (
               <>
-                <Loader2 className="mr-1.5 size-3.5 animate-spin" />
+                <Spinner className="mr-1.5 size-3.5" variant="inline" />
                 Signing in…
               </>
             ) : (
@@ -1024,10 +1025,7 @@ export const ShippingAddressForm = function ShippingAddressForm({
                             text-muted-foreground
                           `}
                         >
-                          <Loader2
-                            aria-hidden
-                            className="h-4 w-4 shrink-0 animate-spin"
-                          />
+                          <Spinner className="shrink-0" variant="inline" />
                           Finding addresses…
                         </div>
                       ) : (
@@ -1256,9 +1254,9 @@ export const ShippingAddressForm = function ShippingAddressForm({
                 </div>
                 <span className="text-sm font-medium text-muted-foreground">
                   {shippingLoading ? (
-                    <Loader2
+                    <Spinner
                       aria-label="Calculating shipping"
-                      className="size-4 animate-spin"
+                      variant="inline"
                     />
                   ) : shippingFree ? (
                     <span

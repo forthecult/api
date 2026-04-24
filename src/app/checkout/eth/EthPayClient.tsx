@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertCircle, CheckCircle2, ChevronRight, Loader2 } from "lucide-react";
+import { AlertCircle, CheckCircle2, ChevronRight } from "lucide-react";
 import { ChevronDown } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -21,6 +21,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "~/ui/primitives/dropdown-menu";
+import { Spinner } from "~/ui/primitives/spinner";
 
 const METAMASK_LOGO =
   "https://images.ctfassets.net/clixtyxoaeas/4rnpEzy1ATWRKVBOLxZ1Fm/a74dc1eed36d23d7ea6030383a4d5163/MetaMask-icon-fox.svg";
@@ -736,7 +737,7 @@ export function EthPayClient({
                   >
                     {isProcessing ? (
                       <>
-                        <Loader2 className="mr-2 size-4 animate-spin" />
+                        <Spinner className="mr-2" variant="inline" />
                         {paymentStatus.status === "switching_chain" &&
                           "Switching network..."}
                         {paymentStatus.status === "sending" &&

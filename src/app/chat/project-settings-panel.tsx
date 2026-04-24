@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  FileText,
-  Info,
-  Link2,
-  Loader2,
-  Paperclip,
-  Trash2,
-} from "lucide-react";
+import { FileText, Info, Link2, Paperclip, Trash2 } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -41,6 +34,7 @@ import {
   DropdownMenuTrigger,
 } from "~/ui/primitives/dropdown-menu";
 import { Label } from "~/ui/primitives/label";
+import { Spinner } from "~/ui/primitives/spinner";
 
 const ACCEPT_KNOWLEDGE =
   ".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.csv,.tsv,.txt,.md,.html,.json,.xml,.rtf,.odt,.ods,.odp";
@@ -230,10 +224,7 @@ export function ProjectSettingsPanel({
               variant="outline"
             >
               {busy ? (
-                <Loader2
-                  aria-hidden
-                  className="mr-1.5 h-3.5 w-3.5 animate-spin"
-                />
+                <Spinner className="mr-1.5 size-3.5" variant="inline" />
               ) : (
                 <Paperclip aria-hidden className="mr-1.5 h-3.5 w-3.5" />
               )}

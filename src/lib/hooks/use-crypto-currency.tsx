@@ -111,10 +111,6 @@ const ALL_CRYPTO_CODES: CryptoCode[] = [
   "XMR",
 ];
 
-function isValidCryptoCode(x: string): x is CryptoCode {
-  return (ALL_CRYPTO_CODES as string[]).includes(x);
-}
-
 export function CryptoCurrencyProvider({ children }: React.PropsWithChildren) {
   const [selectedCrypto, setSelectedCryptoState] =
     React.useState<CryptoCode>(DEFAULT_CRYPTO);
@@ -370,6 +366,10 @@ export function CryptoCurrencyProvider({ children }: React.PropsWithChildren) {
   return (
     <CryptoCurrencyContext value={value}>{children}</CryptoCurrencyContext>
   );
+}
+
+function isValidCryptoCode(x: string): x is CryptoCode {
+  return (ALL_CRYPTO_CODES as string[]).includes(x);
 }
 
 /** SSR-safe fallback when CryptoCurrencyProvider is not in the tree. */

@@ -1,11 +1,13 @@
 /**
  * Sends the eSIM activation email after fulfillment.
- * Includes activation link(s) and, for guests, a signup CTA so they can
- * create an account and see their eSIMs in the dashboard.
  */
 
+import { createElement } from "react";
+
+import { EsimActivationEmail } from "~/emails/esim-activation";
 import { getPublicSiteUrl } from "~/lib/app-url";
-import { buildEmailHtml, plainTextToHtml } from "~/lib/email-layout";
+import { fetchRecommendedProductsForEmail } from "~/lib/email/email-product-recs";
+import { sendEmail } from "~/lib/email/send-email";
 
 export interface EsimActivationItem {
   activationLink: null | string;
@@ -45,36 +47,33 @@ export async function sendEsimActivationEmail(
       "\nCreate an account with this email to manage your eSIM and view it anytime in your dashboard.";
   }
 
-  const contentHtml = plainTextToHtml(body);
   const ctaUrl = isGuest ? signupUrl : dashboardEsimUrl;
   const ctaLabel = isGuest ? "Create account" : "View my eSIMs";
-  const html = buildEmailHtml(contentHtml, { ctaLabel, ctaUrl });
-
   const subject = "Your eSIM is ready to activate";
 
-  if (process.env.RESEND_API_KEY) {
-    try {
-      const { Resend } = await import("resend");
-      const resend = new Resend(process.env.RESEND_API_KEY);
-      const from =
-        typeof process.env.RESEND_FROM_EMAIL === "string" &&
-        process.env.RESEND_FROM_EMAIL.length > 0
-          ? process.env.RESEND_FROM_EMAIL
-          : "onboarding@resend.dev";
-      await resend.emails.send({
-        from,
-        html,
-        subject,
-        text: `${body}\n\n${ctaLabel}: ${ctaUrl}`,
-        to,
-      });
-    } catch (err) {
-      console.error("[sendEsimActivationEmail] Resend send failed:", err);
-    }
-    return;
+  const picks = await fetchRecommendedProductsForEmail({
+    orderId,
+    limit: 4,
+  });
+
+  try {
+    await sendEmail({
+      correlationId: `${orderId}-esim-activation`,
+      kind: "esim_activation",
+      react: createElement(EsimActivationEmail, {
+        bodyText: body,
+        ctaLabel,
+        ctaUrl,
+        productPicks: picks,
+      }),
+      subject,
+      to,
+    });
+  } catch (err) {
+    console.error("[sendEsimActivationEmail] send failed:", err);
   }
 
-  if (process.env.NODE_ENV === "development") {
+  if (process.env.NODE_ENV === "development" && !process.env.RESEND_API_KEY) {
     console.log("[sendEsimActivationEmail] No RESEND_API_KEY - would send:", {
       isGuest,
       items: items.length,

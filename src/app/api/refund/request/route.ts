@@ -1,10 +1,13 @@
 import { createId } from "@paralleldrive/cuid2";
 import { eq } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
+import { createElement } from "react";
 
 import { db } from "~/db";
 import { ordersTable, refundRequestsTable } from "~/db/schema";
+import { StaffRefundAlertEmail } from "~/emails/staff-refund-alert";
 import { onRefundRequestSubmitted } from "~/lib/create-user-notification";
+import { sendEmail } from "~/lib/email/send-email";
 import { cancelPrintfulOrder } from "~/lib/printful-orders";
 import { cancelPrintifyOrder } from "~/lib/printify-orders";
 import {
@@ -217,23 +220,18 @@ export async function POST(request: NextRequest) {
 
     if (process.env.RESEND_API_KEY) {
       try {
-        const { Resend } = await import("resend");
-        const resend = new Resend(process.env.RESEND_API_KEY);
-        const from =
-          typeof process.env.RESEND_FROM_EMAIL === "string" &&
-          process.env.RESEND_FROM_EMAIL.length > 0
-            ? process.env.RESEND_FROM_EMAIL.trim()
-            : "onboarding@resend.dev";
-        const { error } = await resend.emails.send({
-          from,
-          html: `<!DOCTYPE html><html><body>${htmlParts.join("")}</body></html>`,
-          replyTo: replyTo ?? undefined,
+        const htmlBody = htmlParts.join("");
+        const res = await sendEmail({
+          correlationId: `refund-staff-${orderId}`,
+          internal: true,
+          kind: "internal_staff_refund_alert",
+          react: createElement(StaffRefundAlertEmail, { htmlBody }),
+          replyTo,
           subject: `[Refund request] Order ${orderId.slice(0, 12)}…`,
-          text: `Refund request\nOrder ID: ${orderId}\nLookup value: ${lookupValue}\nOrder billing email: ${order.email ?? "—"}\n${isCrypto && refundAddress ? `Refund address (stablecoin): ${refundAddress}\n` : ""}\nProcess in admin and mark as refunded.`,
           to,
         });
-        if (error) {
-          console.error("[Refund request] Resend error:", error);
+        if (res.ok === false && !("skipped" in res && res.skipped)) {
+          console.error("[Refund request] sendEmail failed:", res);
           return NextResponse.json(
             {
               error: {

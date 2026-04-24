@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, MapPin, Pencil, Plus, Trash2 } from "lucide-react";
+import { MapPin, Pencil, Plus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 
@@ -27,6 +27,7 @@ import {
 } from "~/ui/primitives/dialog";
 import { Input } from "~/ui/primitives/input";
 import { Label } from "~/ui/primitives/label";
+import { Spinner } from "~/ui/primitives/spinner";
 
 interface AddressesPageClientProps {
   addresses: Address[];
@@ -267,10 +268,7 @@ export function AddressesPageClient({ addresses }: AddressesPageClientProps) {
                                 text-muted-foreground
                               `}
                             >
-                              <Loader2
-                                aria-hidden
-                                className="h-4 w-4 shrink-0 animate-spin"
-                              />
+                              <Spinner className="shrink-0" variant="inline" />
                               Finding addresses…
                             </div>
                           ) : (

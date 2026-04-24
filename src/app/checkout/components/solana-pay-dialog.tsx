@@ -1,7 +1,7 @@
 "use client";
 
 import { createQR } from "@solana/pay";
-import { Check, Loader2, X } from "lucide-react";
+import { Check, X } from "lucide-react";
 import Image from "next/image";
 import { useCallback, useEffect, useRef } from "react";
 
@@ -15,6 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "~/ui/primitives/dialog";
+import { Spinner } from "~/ui/primitives/spinner";
 
 interface SolanaPayDialogProps {
   amountUsd: number;
@@ -100,7 +101,7 @@ export function SolanaPayDialog({
       case "error":
         return <X className="h-5 w-5 text-red-500" />;
       case "polling":
-        return <Loader2 className="h-5 w-5 animate-spin" />;
+        return <Spinner className="size-5" variant="inline" />;
       default:
         return null;
     }
@@ -143,7 +144,7 @@ export function SolanaPayDialog({
             ref={qrContainerRef}
           >
             {!paymentUrl && (
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              <Spinner className="border-muted-foreground" variant="page" />
             )}
           </div>
 

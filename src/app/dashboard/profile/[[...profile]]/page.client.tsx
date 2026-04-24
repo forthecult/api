@@ -3,16 +3,16 @@
 import { Camera, ChevronLeft } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { useCurrentUserOrRedirect } from "~/lib/auth-client";
 import { compressAvatarImage } from "~/lib/avatar-image-compress";
-import { isRealEmail } from "~/lib/is-real-email";
 import {
   COUNTRY_OPTIONS_ALPHABETICAL,
   useCountryCurrency,
 } from "~/lib/hooks/use-country-currency";
+import { isRealEmail } from "~/lib/is-real-email";
 import { getDialCodeForIso, parseE164ToForm } from "~/lib/phone-e164";
 import { useUploadThing } from "~/lib/uploadthing";
 import { Button } from "~/ui/primitives/button";
@@ -37,6 +37,12 @@ export function ProfilePageClient() {
     null,
   );
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const maxBirthDateIso = useMemo(() => {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() - 18);
+    return d.toISOString().slice(0, 10);
+  }, []);
 
   const { isUploading, startUpload } = useUploadThing("avatarUploader", {
     onClientUploadComplete: (res) => {
@@ -133,9 +139,7 @@ export function ProfilePageClient() {
           if (pc) {
             setPhoneCountry(pc);
           } else {
-            setPhoneCountry(
-              (selectedCountry ?? "US") as string,
-            );
+            setPhoneCountry((selectedCountry ?? "US") as string);
           }
           const parsed = parseE164ToForm(data.phone ?? "");
           setPhoneLocal(parsed.national);
@@ -315,10 +319,16 @@ export function ProfilePageClient() {
                 </p>
               </div>
             )}
-            <div className="flex flex-col gap-2 sm:col-span-2">
+            <div
+              className={`
+                flex flex-col gap-2
+                sm:col-span-2
+              `}
+            >
               <Label htmlFor="birthDate">Birth date</Label>
               <Input
                 id="birthDate"
+                max={maxBirthDateIso}
                 onChange={(e) => setBirthDate(e.target.value)}
                 type="date"
                 value={birthDate}

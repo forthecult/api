@@ -247,9 +247,9 @@ export function DashboardAiStorageClient() {
         </h1>
         <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
           Chats and projects live in your browser unless you export them locally
-          or save an encrypted, password protected, backup to your Culture account.
-          Your passphrase is never sent to the server, so we will never be able
-          to access your data.
+          or save an encrypted, password protected, backup to your Culture
+          account. Your passphrase is never sent to the server, so we will never
+          be able to access your data.
         </p>
       </div>
 

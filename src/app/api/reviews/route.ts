@@ -35,7 +35,7 @@ export async function GET(request: Request) {
       url.searchParams.get("includeProductName") === "true";
     const forCategorySlug = url.searchParams.get("forCategory")?.trim() || null;
 
-    let productIdsInCategory: string[] | null = null;
+    let productIdsInCategory: null | string[] = null;
     if (forCategorySlug) {
       const allCats = await db
         .select({

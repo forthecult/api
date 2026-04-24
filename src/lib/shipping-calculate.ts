@@ -55,46 +55,6 @@ const EST_TRANSIT_STD_MAX = 7;
 const EST_TRANSIT_EXP_MIN = 2;
 const EST_TRANSIT_EXP_MAX = 4;
 
-/**
- * Public shipping-estimate line: show handling + transit window (matches PDP defaults when data is null).
- */
-function productEstimateDeliveryHint(
-  p: {
-    handlingDaysMax: null | number;
-    handlingDaysMin: null | number;
-    transitDaysMax: null | number;
-    transitDaysMin: null | number;
-  },
-  speed: "express" | "standard",
-): string {
-  const hMin = p.handlingDaysMin ?? p.handlingDaysMax ?? EST_HANDLING_MIN;
-  const hMax = p.handlingDaysMax ?? p.handlingDaysMin ?? EST_HANDLING_MAX;
-  const transitMinBase = p.transitDaysMin ?? EST_TRANSIT_STD_MIN;
-  const transitMaxBase = p.transitDaysMax ?? EST_TRANSIT_STD_MAX;
-  const tMin =
-    speed === "express"
-      ? Math.max(
-          EST_TRANSIT_EXP_MIN,
-          Math.min(EST_TRANSIT_EXP_MIN + 1, Math.floor(transitMinBase * 0.6)),
-        )
-      : transitMinBase;
-  const tMax =
-    speed === "express"
-      ? Math.max(
-          tMin,
-          Math.min(
-            EST_TRANSIT_EXP_MAX,
-            Math.max(EST_TRANSIT_EXP_MIN, Math.floor(transitMaxBase * 0.55)),
-          ),
-        )
-      : transitMaxBase;
-  const low = Math.max(1, hMin + tMin);
-  const high = Math.max(low, hMax + tMax);
-  return low === high
-    ? `Est. delivery: about ${low} business days after the order is placed.`
-    : `Est. delivery: about ${low}–${high} business days after the order is placed.`;
-}
-
 interface ShippingOptionRow {
   additionalItemCents: null | number;
   amountCents: null | number;
@@ -273,6 +233,46 @@ function normalizeThirdPartyShippingLabel(
   if (looksSpecific) return withoutVendor;
 
   return isExpressKeyword ? "Express" : "Standard";
+}
+
+/**
+ * Public shipping-estimate line: show handling + transit window (matches PDP defaults when data is null).
+ */
+function productEstimateDeliveryHint(
+  p: {
+    handlingDaysMax: null | number;
+    handlingDaysMin: null | number;
+    transitDaysMax: null | number;
+    transitDaysMin: null | number;
+  },
+  speed: "express" | "standard",
+): string {
+  const hMin = p.handlingDaysMin ?? p.handlingDaysMax ?? EST_HANDLING_MIN;
+  const hMax = p.handlingDaysMax ?? p.handlingDaysMin ?? EST_HANDLING_MAX;
+  const transitMinBase = p.transitDaysMin ?? EST_TRANSIT_STD_MIN;
+  const transitMaxBase = p.transitDaysMax ?? EST_TRANSIT_STD_MAX;
+  const tMin =
+    speed === "express"
+      ? Math.max(
+          EST_TRANSIT_EXP_MIN,
+          Math.min(EST_TRANSIT_EXP_MIN + 1, Math.floor(transitMinBase * 0.6)),
+        )
+      : transitMinBase;
+  const tMax =
+    speed === "express"
+      ? Math.max(
+          tMin,
+          Math.min(
+            EST_TRANSIT_EXP_MAX,
+            Math.max(EST_TRANSIT_EXP_MIN, Math.floor(transitMaxBase * 0.55)),
+          ),
+        )
+      : transitMaxBase;
+  const low = Math.max(1, hMin + tMin);
+  const high = Math.max(low, hMax + tMax);
+  return low === high
+    ? `Est. delivery: about ${low} business days after the order is placed.`
+    : `Est. delivery: about ${low}–${high} business days after the order is placed.`;
 }
 
 export const ZERO_SHIPPING = {

@@ -75,6 +75,7 @@ interface ProductsClientProps {
   description?: string;
   initialCategories: CategoryOption[];
   initialCategory: string;
+  initialMerchCategory?: string;
   initialPage: number;
   initialProducts: Product[];
   /** Initial search query (for category pages) */
@@ -83,11 +84,10 @@ interface ProductsClientProps {
   initialSubcategory?: string;
   initialTotal: number;
   initialTotalPages: number;
-  /** Child categories for subcategory filter (when on a category page) */
-  subcategories?: CategoryOption[];
   /** For crypto category pages: non-crypto top-level categories with overlapping products */
   merchFilterOptions?: CategoryOption[];
-  initialMerchCategory?: string;
+  /** Child categories for subcategory filter (when on a category page) */
+  subcategories?: CategoryOption[];
   /** For category pages: heading and subtext (default: "Products" / "Browse our latest...") */
   title?: string;
 }
@@ -107,6 +107,7 @@ export function ProductsClient({
   description = "Browse our latest products and find something you'll love.",
   initialCategories,
   initialCategory,
+  initialMerchCategory = "",
   initialPage,
   initialProducts,
   initialSearch = "",
@@ -114,9 +115,8 @@ export function ProductsClient({
   initialSubcategory,
   initialTotal,
   initialTotalPages,
-  subcategories = [],
   merchFilterOptions = [],
-  initialMerchCategory = "",
+  subcategories = [],
   title = "Products",
 }: ProductsClientProps) {
   const router = useRouter();
@@ -188,11 +188,11 @@ export function ProductsClient({
   const buildPath = React.useCallback(
     (opts: {
       category?: string;
+      merch?: string;
       page?: number;
       q?: string;
       sort?: SortOption;
       subcategory?: string;
-      merch?: string;
     }) => {
       const cat = opts.category ?? selectedCategory;
       const path = cat === "all" ? "/products" : `/${cat}`;
@@ -410,7 +410,7 @@ export function ProductsClient({
     (merchSlug: string) => {
       setSelectedMerch(merchSlug);
       setPage(1);
-      router.push(buildPath({ page: 1, merch: merchSlug }), { scroll: false });
+      router.push(buildPath({ merch: merchSlug, page: 1 }), { scroll: false });
       fetchProducts(
         1,
         selectedCategory,
@@ -809,11 +809,11 @@ export function ProductsClient({
               </label>
               <select
                 className={`
-                  h-9 max-w-full rounded-md border border-input
-                  bg-background px-3 py-1 text-sm
-                  sm:max-w-xs
+                  h-9 max-w-full rounded-md border border-input bg-background
+                  px-3 py-1 text-sm
                   focus-visible:ring-2 focus-visible:ring-ring
                   focus-visible:outline-none
+                  sm:max-w-xs
                 `}
                 id="merch-category-filter"
                 onChange={(e) => handleMerchChange(e.target.value)}
@@ -903,10 +903,10 @@ export function ProductsClient({
                             );
                             router.push(
                               buildPath({
+                                merch: "",
                                 page: 1,
                                 q: "",
                                 subcategory: "",
-                                merch: "",
                               }),
                               { scroll: false },
                             );

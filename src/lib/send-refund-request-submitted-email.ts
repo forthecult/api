@@ -1,9 +1,14 @@
 /**
- * Sends the "refund request received" transactional email when a customer submits a refund request.
- * Uses Resend when RESEND_API_KEY is set. Caller should check userWantsTransactionalEmail.
+ * Sends the "refund request received" transactional email.
+ * Caller should check userWantsTransactionalEmail.
  */
 
+import { createElement } from "react";
+
+import { RefundRequestReceivedEmail } from "~/emails/refund-request-received";
 import { getPublicSiteUrl } from "~/lib/app-url";
+import { fetchRecommendedProductsForEmail } from "~/lib/email/email-product-recs";
+import { sendEmail } from "~/lib/email/send-email";
 import { getNotificationTemplate } from "~/lib/notification-templates";
 
 export interface SendRefundRequestSubmittedEmailParams {
@@ -26,32 +31,28 @@ export async function sendRefundRequestSubmittedEmail(
   body += `\n\nOrder ID: ${shortId}`;
   body += `\n\nTrack or submit another request: ${refundPageUrl}`;
 
-  if (process.env.RESEND_API_KEY) {
-    try {
-      const { Resend } = await import("resend");
-      const resend = new Resend(process.env.RESEND_API_KEY);
-      const from =
-        typeof process.env.RESEND_FROM_EMAIL === "string" &&
-        process.env.RESEND_FROM_EMAIL.length > 0
-          ? process.env.RESEND_FROM_EMAIL
-          : "onboarding@resend.dev";
-      await resend.emails.send({
-        from,
-        html: `<!DOCTYPE html><html><body><p>${body.replace(/\n/g, "<br/>")}</p></body></html>`,
-        subject,
-        text: body,
-        to,
-      });
-    } catch (err) {
-      console.error(
-        "[sendRefundRequestSubmittedEmail] Resend send failed:",
-        err,
-      );
-    }
-    return;
+  const picks = await fetchRecommendedProductsForEmail({
+    orderId,
+    limit: 4,
+  });
+
+  try {
+    await sendEmail({
+      correlationId: `${orderId}-refund-request`,
+      kind: "refund_request_submitted",
+      react: createElement(RefundRequestReceivedEmail, {
+        bodyText: body,
+        ctaUrl: refundPageUrl,
+        productPicks: picks,
+      }),
+      subject,
+      to,
+    });
+  } catch (err) {
+    console.error("[sendRefundRequestSubmittedEmail] send failed:", err);
   }
 
-  if (process.env.NODE_ENV === "development") {
+  if (process.env.NODE_ENV === "development" && !process.env.RESEND_API_KEY) {
     console.log(
       "[sendRefundRequestSubmittedEmail] No RESEND_API_KEY - would send:",
       {

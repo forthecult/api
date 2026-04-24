@@ -26,8 +26,8 @@ import {
   isPhoneModelsOption,
   type PhoneBrand,
 } from "~/lib/sort-phone-models";
-import { CryptoPrice } from "~/ui/components/CryptoPrice";
 import { CryptoPricingSettingsPopover } from "~/ui/components/crypto-pricing-settings-popover";
+import { CryptoPrice } from "~/ui/components/CryptoPrice";
 import { FiatPrice } from "~/ui/components/FiatPrice";
 import { Badge } from "~/ui/primitives/badge";
 import { Button } from "~/ui/primitives/button";
@@ -407,14 +407,16 @@ export function ProductQuickView({
                           />
                         )}
                       </div>
-                      <div className="flex min-w-0 items-start justify-between gap-2">
+                      <div
+                        className={`
+                          flex min-w-0 items-start justify-between gap-2
+                        `}
+                      >
                         <CryptoPrice
                           className="text-sm text-muted-foreground"
                           usdAmount={currentPrice}
                         />
-                        <CryptoPricingSettingsPopover
-                          className="shrink-0"
-                        />
+                        <CryptoPricingSettingsPopover className="shrink-0" />
                       </div>
                     </div>
 

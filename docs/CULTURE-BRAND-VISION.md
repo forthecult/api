@@ -197,6 +197,21 @@ We believe AI agents will increasingly handle commerce for humans. When your AI 
 
 ---
 
+## How We Operate
+
+These are internal values — they shape how the team works, what we build with, and how we treat customer data. They are not customer-facing marketing copy; those cues belong in the [Brand Direction Guide](CULTURE-BRAND-GUIDE.md).
+
+- **Meritocracy.** Ideas win on substance. Seniority is a tiebreaker, not an argument. Anyone can push back on any proposal if they bring the data, the constraint, or the simpler alternative.
+- **Open source first.** We default to permissively-licensed, actively-maintained open-source tools — for what we build with, for what we sell, and for what we recommend. Proprietary SDKs require a reason.
+- **Fewer libraries, not more.** Every dependency is a long-term liability (bundle size, supply chain, patching, privacy surface). We add only when the platform and what we already use cannot cover the case. Running a lean stack is a quality posture, not a cost posture.
+- **Data minimization.** We collect only what a feature needs, keep it for as short as the feature allows, and give customers explicit control (export, delete). Long-term identifying data is minimized by design. This is also why we run a reverse-proxy for analytics and forbid third-party pixels on the storefront — see [ADS-STRATEGY.md](../../docs/operations/ADS-STRATEGY.md).
+- **Performance is a product feature.** A slow site looks cheap regardless of the design. We treat LCP / INP / CLS regressions as regressions.
+- **Legibility is non-negotiable.** No tiny type on the site, in email, or in ads. People should never have to squint to buy from us. Floor: body ≥ 16px, interactive text ≥ 14px, prices ≥ 16px. Canonical: [CULTURE-BRAND-GUIDE.md → Typography](CULTURE-BRAND-GUIDE.md#legibility-floor-non-negotiable).
+- **Measure what ships.** Customer-visible changes answer the four questions in [DATA-DRIVEN.md § the rule](../../docs/operations/DATA-DRIVEN.md#the-rule) before they ship. The north-star metrics are conversions first, qualified leads second; everything else is a diagnostic.
+- **Forward without the word *innovative*.** We move first on product, curation, and support — and we let the work speak. The Brand Guide still bans the word; the behavior is the proof.
+- **Exceptional where it shows — especially support.** The experience people will tell others about is often "they actually helped." Scripts are a floor, not a ceiling. We aim for a bar people notice: clarity, follow-through, and solutions when the answer is not "buy more from us."
+- **Lifestyle = customer at the center.** The brand is something people **choose** to be part of. That means warmth, helping them toward their own goals, and when we do not have the product — a straight answer plus a real path (referral, spec, vetted link). Integrity is not a slide; it is what happens when the ticket is hard.
+
 ## Autonomy Commitment
 
 ### What We Don't Do
@@ -254,7 +269,7 @@ We believe AI agents will increasingly handle commerce for humans. When your AI 
 | Payment | Cards, PayPal | Cards + 50 cryptocurrencies |
 | Product Quality | Race to bottom | Premium only |
 | Materials | Cheapest available | Health-conscious, natural |
-| Customer Relationship | Transaction | Community |
+| Customer relationship | Transactional; support is a cost center | Intentional; support is a **differentiator** — people feel wanted, helped, and able to choose membership |
 | AI Integration | Chatbot FAQ | Native AI commerce |
 
 ---

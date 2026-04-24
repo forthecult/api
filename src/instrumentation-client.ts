@@ -22,10 +22,7 @@
 
 import posthog from "posthog-js";
 
-import {
-  PII_KEY_DENYLIST,
-  redactProperties,
-} from "~/lib/analytics/pii-redact";
+import { PII_KEY_DENYLIST, redactProperties } from "~/lib/analytics/pii-redact";
 
 const POSTHOG_KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY?.trim();
 const POSTHOG_HOST =

@@ -1,6 +1,5 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
 import * as React from "react";
 
 import {
@@ -19,6 +18,7 @@ import { FiatPrice } from "~/ui/components/FiatPrice";
 import { Button } from "~/ui/primitives/button";
 import { Input } from "~/ui/primitives/input";
 import { Label } from "~/ui/primitives/label";
+import { Spinner } from "~/ui/primitives/spinner";
 
 import { useProductShippingEstimateContext } from "./product-shipping-estimate-context";
 
@@ -310,7 +310,7 @@ export function ProductShippingEstimateForm({
       >
         {loading ? (
           <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            <Spinner className="mr-2" variant="inline" />
             Calculating…
           </>
         ) : (

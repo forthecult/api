@@ -8,8 +8,8 @@ const ISO_TO_DIAL: Record<string, string> = {
   AT: "43",
   AU: "61",
   BE: "32",
-  BZ: "501",
   BR: "55",
+  BZ: "501",
   CA: "1",
   CH: "41",
   CL: "56",
@@ -60,11 +60,6 @@ const DIAL_SORTED: { dial: string; iso: string }[] = (() => {
   return out.sort((a, b) => b.dial.length - a.dial.length);
 })();
 
-export function getDialCodeForIso(iso: null | string | undefined): string {
-  if (!iso) return "1";
-  return ISO_TO_DIAL[iso.toUpperCase()] ?? "1";
-}
-
 /**
  * Strips to digits; builds E.164: +<dial><national>
  */
@@ -76,6 +71,11 @@ export function combineToE164(
   const n = nationalDigits.replace(/\D/g, "");
   if (n.length < 4) return null;
   return `+${d}${n}`;
+}
+
+export function getDialCodeForIso(iso: null | string | undefined): string {
+  if (!iso) return "1";
+  return ISO_TO_DIAL[iso.toUpperCase()] ?? "1";
 }
 
 export function parseE164ToForm(e164: null | string | undefined): {

@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertCircle, Clock, Info, Loader2 } from "lucide-react";
+import { AlertCircle, Clock, Info } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -8,6 +8,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useCurrentUser } from "~/lib/auth-client";
 import { Button } from "~/ui/primitives/button";
+import { Spinner } from "~/ui/primitives/spinner";
 
 const EXPIRY_MINUTES = 60;
 
@@ -405,7 +406,11 @@ export function BtcPayClient({
                     </h2>
                     <div className="flex flex-col gap-4">
                       <div className="text-sm">
-                        <p className="mb-1.5 text-base font-medium text-foreground">
+                        <p
+                          className={`
+                            mb-1.5 text-base font-medium text-foreground
+                          `}
+                        >
                           Amount to pay
                         </p>
                         <p className="font-medium">USD {amountUsdStr}</p>
@@ -415,7 +420,11 @@ export function BtcPayClient({
                         </p>
                       </div>
                       <div className="text-sm">
-                        <p className="mb-1.5 text-base font-medium text-foreground">
+                        <p
+                          className={`
+                            mb-1.5 text-base font-medium text-foreground
+                          `}
+                        >
                           Expires in
                         </p>
                         <p className="font-mono font-medium tabular-nums">
@@ -445,10 +454,7 @@ export function BtcPayClient({
                           flex items-center gap-2 text-sm text-muted-foreground
                         `}
                       >
-                        <Loader2
-                          aria-hidden
-                          className="size-4 shrink-0 animate-spin"
-                        />
+                        <Spinner className="shrink-0" variant="inline" />
                         Waiting for payment…
                       </div>
                     </div>

@@ -36,7 +36,6 @@ export function parseLinkCodeFromMessage(text: string): null | string {
   return m?.[1]?.toLowerCase() ?? null;
 }
 
-
 export async function tryCompleteLinkByCode(options: {
   code: string;
   externalTeamId: null | string;

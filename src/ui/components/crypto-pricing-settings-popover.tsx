@@ -4,8 +4,8 @@ import { Bitcoin } from "lucide-react";
 import { useState } from "react";
 
 import {
-  useCryptoCurrency,
   type CryptoCode,
+  useCryptoCurrency,
 } from "~/lib/hooks/use-crypto-currency";
 import { CryptoPricingTogglesList } from "~/ui/components/crypto-pricing-toggles-list";
 import { Button } from "~/ui/primitives/button";
@@ -21,14 +21,14 @@ const MAX_PRICING = 2 as const;
  * Same “up to 2” crypto price lines as the footer, without scrolling away from PDP / cards.
  */
 export function CryptoPricingSettingsPopover({
+  align = "end",
   className = "",
   compact = false,
-  align = "end",
 }: {
+  align?: "center" | "end" | "start";
   className?: string;
   /** Icon-only control for dense layouts (e.g. product card). */
   compact?: boolean;
-  align?: "end" | "start" | "center";
 }) {
   const [open, setOpen] = useState(false);
   const { setSelectedCrypto } = useCryptoCurrency();
@@ -48,7 +48,9 @@ export function CryptoPricingSettingsPopover({
             </Button>
           ) : (
             <Button
-              className="h-auto shrink-0 px-0 py-0 text-xs text-muted-foreground"
+              className={`
+                h-auto shrink-0 px-0 py-0 text-xs text-muted-foreground
+              `}
               type="button"
               variant="link"
             >
@@ -58,12 +60,14 @@ export function CryptoPricingSettingsPopover({
         </PopoverTrigger>
         <PopoverContent align={align} className="w-[min(100vw-2rem,20rem)] p-0">
           <p
-            className="border-b border-border px-3 py-2 text-xs text-muted-foreground"
+            className={`
+              border-b border-border px-3 py-2 text-xs text-muted-foreground
+            `}
             id="crypto-pricing-hint"
           >
-            Check up to {String(MAX_PRICING)} cryptos to show as price lines here,
-            in the footer, and in quick view. Tap a row to set the spot price
-            ticker in the footer.
+            Check up to {String(MAX_PRICING)} cryptos to show as price lines
+            here, in the footer, and in quick view. Tap a row to set the spot
+            price ticker in the footer.
           </p>
           <div className="max-h-64 overflow-y-auto">
             <CryptoPricingTogglesList

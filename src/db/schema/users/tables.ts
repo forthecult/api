@@ -18,14 +18,18 @@ import {
 
 export const userTable = pgTable("user", {
   age: integer("age"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  email: text("email").notNull().unique(),
-  emailVerified: boolean("email_verified").default(false).notNull(),
   /** ISO 8601 date string YYYY-MM-DD */
   birthDate: text("birth_date"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  /** Internal admin CRM notes (not exposed on storefront). */
+  crmNotes: text("crm_notes"),
+  email: text("email").notNull().unique(),
+  emailVerified: boolean("email_verified").default(false).notNull(),
   firstName: text("first_name"),
   id: text("id").primaryKey(),
   image: text("image"),
+  /** JSON array string or comma-separated interest slugs for segmentation. */
+  interestTags: text("interest_tags"),
   lastName: text("last_name"),
   marketingAiCompanion: boolean("marketing_ai_companion").default(false),
   marketingDiscord: boolean("marketing_discord").default(false),
@@ -43,6 +47,8 @@ export const userTable = pgTable("user", {
   ).default(false),
   receiveSmsMarketing: boolean("receive_sms_marketing").default(false),
   role: text("role").default("user"),
+  /** Self-reported segmentation (e.g. prefer_not_to_say, female, male, non_binary). */
+  sex: text("sex"),
   theme: text("theme").default("system"),
   transactionalAiCompanion: boolean("transactional_ai_companion").default(
     false,

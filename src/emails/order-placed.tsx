@@ -1,18 +1,25 @@
 import { Text } from "@react-email/components";
 
-import { CtaButton, EmailShell } from "~/emails/shell";
+import { type EmailProductPick, CtaButton, EmailShell } from "~/emails/shell";
 
 export function OrderPlacedEmail({
   bodyText,
   ctaLabel,
   ctaUrl,
+  productPicks,
 }: Readonly<{
   bodyText: string;
   ctaLabel: string;
   ctaUrl: string;
+  productPicks?: readonly EmailProductPick[];
 }>) {
   return (
-    <EmailShell preview="Your order is confirmed">
+    <EmailShell
+      picksSubtitle="Complete the look — picks for you"
+      preview="Your order is confirmed"
+      productPicks={productPicks}
+      showBrandStoryFooter
+    >
       <Text style={{ fontSize: "16px", lineHeight: 1.6, margin: "0 0 12px" }}>
         {bodyText.split("\n").map((line, i) => (
           <span key={i}>

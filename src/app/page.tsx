@@ -178,18 +178,25 @@ export default async function HomePage() {
     }
   }
 
-  const topLevelShopFiltered = shopCategories.filter(
-    (c) => c.slug && c.productCount > 0 && !EXCLUDED_SLUGS.includes(c.slug),
+  // categoriesWithImage is already top-level only (parentId is null) and
+  // restricted to categories that have published products, so it's the source
+  // of truth for which categories appear in "Shop by category". shopCategories
+  // is only used to join in product counts — it includes subcategories, so we
+  // must NOT use it as the list source or crypto subcategories (bitcoin,
+  // crustafarian, etc.) leak onto the home grid without thumbnails.
+  const countBySlug = new Map(
+    shopCategories.map((c) => [c.slug, c.productCount] as const),
   );
-  const imageBySlug = new Map(
-    categoriesWithImage
-      .filter((c) => c.image)
-      .map((c) => [c.slug, c.image] as const),
-  );
-  const topLevelShop = topLevelShopFiltered.map((c) => ({
-    ...c,
-    image: imageBySlug.get(c.slug ?? "") ?? null,
-  }));
+  const topLevelShop = categoriesWithImage
+    .filter((c) => c.slug && !EXCLUDED_SLUGS.includes(c.slug))
+    .map((c) => ({
+      id: c.slug,
+      image: c.image ?? null,
+      name: c.name,
+      productCount: countBySlug.get(c.slug) ?? 0,
+      slug: c.slug,
+    }))
+    .filter((c) => c.productCount > 0);
 
   const testimonials: TestimonialItem[] =
     reviewTestimonials.length > 0 ? reviewTestimonials : mockTestimonials;

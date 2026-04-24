@@ -52,6 +52,7 @@ interface ChatSidebarProps {
   loadingCharacters: boolean;
   mainView: "chat" | "projects";
   onCollapseToggle: () => void;
+  onDeleteProject?: (id: string) => void;
   onDeleteSession: (id: string) => void;
   onNewChat: () => void;
   onOpenCreateProject: () => void;
@@ -77,6 +78,7 @@ export function ChatSidebar({
   loadingCharacters,
   mainView,
   onCollapseToggle,
+  onDeleteProject,
   onDeleteSession,
   onNewChat,
   onOpenCreateProject,
@@ -274,31 +276,59 @@ export function ChatSidebar({
                   selectedProjectId === p.id && mainView === "chat";
                 return (
                   <li key={p.id}>
-                    <button
+                    <div
                       className={cn(
                         `
-                          flex w-full items-center gap-2 rounded-lg px-2 py-1.5
-                          text-left text-base transition-colors
+                          group flex w-full items-center gap-0.5 rounded-lg px-1
+                          py-0.5
                         `,
-                        active
-                          ? "bg-primary/15 font-medium text-foreground"
-                          : `
-                            text-muted-foreground
-                            hover:bg-muted/80 hover:text-foreground
-                          `,
                         collapsed && "justify-center px-0",
                       )}
-                      onClick={() => onSelectProject(active ? null : p.id)}
-                      title={p.name}
-                      type="button"
                     >
-                      <Folder className="h-4 w-4 shrink-0 opacity-80" />
-                      {!collapsed ? (
-                        <span className="min-w-0 flex-1 truncate">
-                          {p.name}
-                        </span>
+                      <button
+                        className={cn(
+                          `
+                            flex min-w-0 flex-1 items-center gap-2 rounded-md
+                            px-2 py-1.5 text-left text-base transition-colors
+                          `,
+                          active
+                            ? "bg-primary/15 font-medium text-foreground"
+                            : `
+                              text-muted-foreground
+                              hover:bg-muted/80 hover:text-foreground
+                            `,
+                          collapsed && "justify-center px-0",
+                        )}
+                        onClick={() => onSelectProject(active ? null : p.id)}
+                        title={p.name}
+                        type="button"
+                      >
+                        <Folder className="h-4 w-4 shrink-0 opacity-80" />
+                        {!collapsed ? (
+                          <span className="min-w-0 flex-1 truncate">
+                            {p.name}
+                          </span>
+                        ) : null}
+                      </button>
+                      {!collapsed && onDeleteProject ? (
+                        <button
+                          aria-label={`Delete project ${p.name}`}
+                          className={`
+                            shrink-0 rounded p-1 text-muted-foreground opacity-0
+                            transition-opacity
+                            group-hover:opacity-100
+                            hover:bg-destructive/10 hover:text-destructive
+                          `}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDeleteProject(p.id);
+                          }}
+                          type="button"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
                       ) : null}
-                    </button>
+                    </div>
                   </li>
                 );
               })}

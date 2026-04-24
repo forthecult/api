@@ -264,18 +264,41 @@ export function ConnectWalletModal({
             ? mwaAdapter.adapter.name
             : wallet.adapter.name;
 
-          select(adapterName ?? undefined);
-          // Give the adapter time to register the selected wallet before connect() to reduce WalletNotSelectedError
-          await new Promise((r) => setTimeout(r, 400));
-          const connectPromise = connect();
-          const timeoutPromise = new Promise<"timeout">((resolve) =>
-            setTimeout(() => resolve("timeout"), CONNECT_WAIT_MS),
-          );
-          const result = await Promise.race([
-            connectPromise.then(() => "ok"),
-            timeoutPromise,
-          ]);
-          if (result === "timeout" && !connectedRef.current) {
+          const delaysMs = [500, 900, 1400];
+          let sawTimeout = false;
+          for (let attempt = 0; attempt < delaysMs.length; attempt++) {
+            select(adapterName ?? undefined);
+            await new Promise((r) => setTimeout(r, delaysMs[attempt] ?? 500));
+            const connectPromise = connect().then(() => "ok" as const);
+            const timeoutPromise = new Promise<"timeout">((resolve) =>
+              setTimeout(() => resolve("timeout"), CONNECT_WAIT_MS),
+            );
+            try {
+              const result = await Promise.race([
+                connectPromise,
+                timeoutPromise,
+              ]);
+              if (result === "timeout" && !connectedRef.current) {
+                sawTimeout = true;
+                break;
+              }
+              if (result === "ok" || connectedRef.current) {
+                sawTimeout = false;
+                break;
+              }
+            } catch (err) {
+              const isNotSelected =
+                err instanceof Error &&
+                (err.name === "WalletNotSelectedError" ||
+                  err.message?.includes("WalletNotSelected") ||
+                  err.message?.includes("not selected"));
+              if (isNotSelected && attempt < delaysMs.length - 1) {
+                continue;
+              }
+              throw err;
+            }
+          }
+          if (sawTimeout && !connectedRef.current) {
             const timeoutName = wallet?.adapter.name ?? "your wallet";
             setConnectError(
               `Connection is taking a while. Open the ${timeoutName} extension to approve, or use Back to try again.`,

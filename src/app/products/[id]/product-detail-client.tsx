@@ -9,8 +9,8 @@ import { useCountryCurrency } from "~/lib/hooks/use-country-currency";
 import { useShippingCountry } from "~/lib/hooks/use-shipping-country";
 import { useWishlist } from "~/lib/hooks/use-wishlist";
 import { isShippingExcluded } from "~/lib/shipping-restrictions";
-import { CryptoPrice } from "~/ui/components/CryptoPrice";
 import { CryptoPricingSettingsPopover } from "~/ui/components/crypto-pricing-settings-popover";
+import { CryptoPrice } from "~/ui/components/CryptoPrice";
 import { FiatPrice } from "~/ui/components/FiatPrice";
 import { Button } from "~/ui/primitives/button";
 

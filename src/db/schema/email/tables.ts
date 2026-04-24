@@ -1,4 +1,12 @@
-import { index, jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import {
+  boolean,
+  index,
+  integer,
+  jsonb,
+  pgTable,
+  text,
+  timestamp,
+} from "drizzle-orm/pg-core";
 
 import { userTable } from "../users/tables";
 
@@ -64,3 +72,33 @@ export const newsletterSubscriberTable = pgTable("newsletter_subscriber", {
     .notNull(),
   userAgentAtSignup: text("user_agent_at_signup"),
 });
+
+/**
+ * Multi-step marketing funnels (welcome follow-up, abandon cart, post-delivery review).
+ * Cron advances `last_step_sent` and schedules `next_send_at`. A/B variant from PostHog is stored for analysis.
+ */
+export const emailFunnelEnrollmentTable = pgTable(
+  "email_funnel_enrollment",
+  {
+    completed: boolean("completed").notNull().default(false),
+    context: jsonb("context").$type<Record<string, unknown>>(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    email: text("email").notNull(),
+    experimentVariant: text("experiment_variant"),
+    funnel: text("funnel").notNull(),
+    id: text("id").primaryKey(),
+    lastStepSent: integer("last_step_sent").notNull().default(0),
+    nextSendAt: timestamp("next_send_at").notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+    userId: text("user_id").references(() => userTable.id, {
+      onDelete: "set null",
+    }),
+  },
+  (t) => [
+    index("email_funnel_enrollment_next_send_idx").on(t.nextSendAt, t.completed),
+    index("email_funnel_enrollment_email_funnel_idx").on(t.email, t.funnel),
+  ],
+);

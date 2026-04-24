@@ -5,7 +5,6 @@ import {
   CheckCircle,
   Clock,
   ExternalLink,
-  Loader2,
   Signal,
   Smartphone,
   Wifi,
@@ -17,6 +16,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Badge } from "~/ui/primitives/badge";
 import { Button } from "~/ui/primitives/button";
 import { Card, CardContent } from "~/ui/primitives/card";
+import { Spinner } from "~/ui/primitives/spinner";
 
 const STATUS_CONFIG: Record<
   string,
@@ -126,7 +126,7 @@ export function EsimDetailClient({ esimOrderId }: { esimOrderId: string }) {
   if (loading && !order) {
     return (
       <div className="flex flex-col items-center justify-center gap-2 py-16">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <Spinner className="border-muted-foreground" variant="page" />
         <span className="text-sm text-muted-foreground">
           Loading eSIM details…
         </span>
@@ -240,7 +240,7 @@ export function EsimDetailClient({ esimOrderId }: { esimOrderId: string }) {
                 >
                   {checking ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <Spinner className="mr-2" variant="inline" />
                       Checking…
                     </>
                   ) : (

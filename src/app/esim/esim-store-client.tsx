@@ -1,15 +1,6 @@
 "use client";
 
-import {
-  Globe,
-  Loader2,
-  MapPin,
-  Minus,
-  Plus,
-  Search,
-  Signal,
-  Wifi,
-} from "lucide-react";
+import { Globe, MapPin, Minus, Plus, Search, Signal, Wifi } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -33,6 +24,7 @@ import { Badge } from "~/ui/primitives/badge";
 import { Button } from "~/ui/primitives/button";
 import { Card, CardContent } from "~/ui/primitives/card";
 import { Input } from "~/ui/primitives/input";
+import { Spinner } from "~/ui/primitives/spinner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/ui/primitives/tabs";
 
 // ---------- Types ----------
@@ -185,7 +177,7 @@ function groupPackagesForDisplay(packages: Package[]): PlanItem[] {
 function LoadingSpinner({ text = "Loading..." }: { text?: string }) {
   return (
     <div className="flex items-center justify-center gap-2 py-16">
-      <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      <Spinner className="size-5 border-muted-foreground" variant="inline" />
       <span className="text-sm text-muted-foreground">{text}</span>
     </div>
   );
@@ -986,7 +978,7 @@ export function EsimStorePage() {
                       text-muted-foreground
                     `}
                   >
-                    <Loader2 className="h-5 w-5 animate-spin" />
+                    <Spinner className="size-5" variant="inline" />
                     <span>Loading countries…</span>
                   </div>
                 ) : (

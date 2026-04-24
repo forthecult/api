@@ -1,6 +1,6 @@
 "use client";
 
-import { Heart, Loader2, ShoppingCart, Trash2 } from "lucide-react";
+import { Heart, ShoppingCart, Trash2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
@@ -12,6 +12,7 @@ import { CryptoPrice } from "~/ui/components/CryptoPrice";
 import { FiatPrice } from "~/ui/components/FiatPrice";
 import { Button } from "~/ui/primitives/button";
 import { Card, CardContent } from "~/ui/primitives/card";
+import { Spinner } from "~/ui/primitives/spinner";
 
 interface WishlistItem {
   createdAt: string;
@@ -114,7 +115,7 @@ export function WishlistPageClient() {
             flex min-h-[200px] items-center justify-center text-muted-foreground
           `}
         >
-          <Loader2 aria-hidden className="h-8 w-8 animate-spin" />
+          <Spinner variant="page" />
         </div>
       </>
     );
@@ -227,10 +228,7 @@ export function WishlistPageClient() {
                           variant="default"
                         >
                           {addingId === item.product.id ? (
-                            <Loader2
-                              aria-hidden
-                              className="size-3.5 animate-spin"
-                            />
+                            <Spinner className="size-3.5" variant="inline" />
                           ) : (
                             <ShoppingCart aria-hidden className="size-3.5" />
                           )}
@@ -257,7 +255,7 @@ export function WishlistPageClient() {
                         type="button"
                       >
                         {removingId === item.productId ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <Spinner variant="inline" />
                         ) : (
                           <Trash2 className="h-4 w-4" />
                         )}

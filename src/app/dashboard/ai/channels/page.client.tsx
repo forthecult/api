@@ -389,7 +389,9 @@ export function DashboardAiChannelsClient() {
             , enable the bot, copy the application ID, public key, and bot
             token. Set the Interactions endpoint URL to the webhook below
             (POST). We register a{" "}
-            <code className="rounded bg-muted px-1 py-0.5 text-xs">/culture</code>{" "}
+            <code className="rounded bg-muted px-1 py-0.5 text-xs">
+              /culture
+            </code>{" "}
             slash command with a{" "}
             <code className={`rounded bg-muted px-1 py-0.5 text-xs`}>
               message

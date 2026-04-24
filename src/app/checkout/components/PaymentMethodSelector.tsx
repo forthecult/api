@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, Lock } from "lucide-react";
+import { Lock } from "lucide-react";
 import nextDynamic from "next/dynamic";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -46,6 +46,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "~/ui/primitives/popover";
+import { Spinner } from "~/ui/primitives/spinner";
 
 import type { OrderPayload } from "../checkout-shared";
 import type { ShippingAddressFormRef } from "./ShippingAddressForm";
@@ -1565,7 +1566,7 @@ export const PaymentMethodSelector = forwardRef<
               >
                 {navigatingToPay ? (
                   <>
-                    <Loader2 aria-hidden className="mr-2 size-4 animate-spin" />
+                    <Spinner className="mr-2" variant="inline" />
                     Securing your payment…
                   </>
                 ) : (
@@ -1588,10 +1589,7 @@ export const PaymentMethodSelector = forwardRef<
                 >
                   {navigatingToPay ? (
                     <>
-                      <Loader2
-                        aria-hidden
-                        className="mr-2 size-4 animate-spin"
-                      />
+                      <Spinner className="mr-2" variant="inline" />
                       Redirecting to PayPal…
                     </>
                   ) : (
@@ -1620,10 +1618,7 @@ export const PaymentMethodSelector = forwardRef<
                   >
                     {navigatingToPay ? (
                       <>
-                        <Loader2
-                          aria-hidden
-                          className="mr-2 size-4 animate-spin"
-                        />
+                        <Spinner className="mr-2" variant="inline" />
                         Creating order…
                       </>
                     ) : paymentSubOption === "bitcoin" ? (
@@ -1647,10 +1642,7 @@ export const PaymentMethodSelector = forwardRef<
                     >
                       {navigatingToPay ? (
                         <>
-                          <Loader2
-                            aria-hidden
-                            className="mr-2 size-4 animate-spin"
-                          />
+                          <Spinner className="mr-2" variant="inline" />
                           Creating order…
                         </>
                       ) : paymentMethod === "crypto" ? (
@@ -2124,8 +2116,8 @@ export const PaymentMethodSelector = forwardRef<
                           bg-foreground/40
                         `}
                       />
-                      You confirm you are old enough to make this purchase
-                      under the laws that apply to you
+                      You confirm you meet the legal age to purchase in your
+                      country or region
                     </li>
                     <li className="flex items-start gap-2">
                       <span
@@ -2134,8 +2126,8 @@ export const PaymentMethodSelector = forwardRef<
                           bg-foreground/40
                         `}
                       />
-                      We may correct pricing errors, cancel or limit orders, or
-                      adjust item availability
+                      We may cancel or adjust orders for incorrect prices, fraud
+                      checks, or inventory limits
                     </li>
                     <li className="flex items-start gap-2">
                       <span
@@ -2144,8 +2136,8 @@ export const PaymentMethodSelector = forwardRef<
                           bg-foreground/40
                         `}
                       />
-                      If something is wrong, reach out — we prefer to help before
-                      anything escalates
+                      If something is wrong, reach out — we prefer to help
+                      before anything escalates
                     </li>
                     <li className="flex items-start gap-2">
                       <span

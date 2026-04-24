@@ -310,48 +310,6 @@ export function getFooterPaymentItems(
   return items;
 }
 
-/**
- * Logos for the product PDP "Payment options" accordion: group by section for
- * conversion-focused layout (card + wallets, then stablecoins, then other crypto).
- */
-export function getPaymentLogosByAccordionSection(
-  visibility: null | PaymentVisibility,
-): {
-  cardAndWallets: { name: string; src: string }[];
-  cryptos: { name: string; src: string }[];
-  stablecoins: { name: string; src: string }[];
-} {
-  const all = getFooterPaymentItems(visibility);
-  const cardNames = new Set([
-    "Visa",
-    "Mastercard",
-    "Diners Club",
-    "Discover",
-    "American Express",
-    "Google Pay",
-    "Apple Pay",
-    "PayPal",
-  ]);
-  const cardAndWallets: { name: string; src: string }[] = [];
-  const stablecoins: { name: string; src: string }[] = [];
-  const cryptos: { name: string; src: string }[] = [];
-  for (const item of all) {
-    if (item.name === "USDC" || item.name === "USDT") {
-      if (!stablecoins.some((s) => s.name === item.name))
-        stablecoins.push(item);
-      continue;
-    }
-    if (cardNames.has(item.name)) {
-      if (!cardAndWallets.some((c) => c.name === item.name)) {
-        cardAndWallets.push(item);
-      }
-      continue;
-    }
-    if (!cryptos.some((c) => c.name === item.name)) cryptos.push(item);
-  }
-  return { cardAndWallets, cryptos, stablecoins };
-}
-
 /** Icon paths for payment methods (for product page "Secure Checkout" strip). Only visible methods. */
 export function getPaymentIconPaths(
   visibility?: null | PaymentVisibility,
@@ -500,6 +458,48 @@ export function getPaymentIconPaths(
     );
   }
   return icons;
+}
+
+/**
+ * Logos for the product PDP "Payment options" accordion: group by section for
+ * conversion-focused layout (card + wallets, then stablecoins, then other crypto).
+ */
+export function getPaymentLogosByAccordionSection(
+  visibility: null | PaymentVisibility,
+): {
+  cardAndWallets: { name: string; src: string }[];
+  cryptos: { name: string; src: string }[];
+  stablecoins: { name: string; src: string }[];
+} {
+  const all = getFooterPaymentItems(visibility);
+  const cardNames = new Set([
+    "American Express",
+    "Apple Pay",
+    "Diners Club",
+    "Discover",
+    "Google Pay",
+    "Mastercard",
+    "PayPal",
+    "Visa",
+  ]);
+  const cardAndWallets: { name: string; src: string }[] = [];
+  const stablecoins: { name: string; src: string }[] = [];
+  const cryptos: { name: string; src: string }[] = [];
+  for (const item of all) {
+    if (item.name === "USDC" || item.name === "USDT") {
+      if (!stablecoins.some((s) => s.name === item.name))
+        stablecoins.push(item);
+      continue;
+    }
+    if (cardNames.has(item.name)) {
+      if (!cardAndWallets.some((c) => c.name === item.name)) {
+        cardAndWallets.push(item);
+      }
+      continue;
+    }
+    if (!cryptos.some((c) => c.name === item.name)) cryptos.push(item);
+  }
+  return { cardAndWallets, cryptos, stablecoins };
 }
 
 /** Payment options derived from checkout config for use on product page accordion. */

@@ -11,15 +11,6 @@ import { getPublicSiteUrl } from "~/lib/app-url";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-function x(s: null | string | undefined): string {
-  if (s == null || s === "") return "";
-  return String(s)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
-
 export async function GET() {
   const site = getPublicSiteUrl().replace(/\/$/, "");
   const reviews = await db
@@ -134,4 +125,13 @@ export async function GET() {
   return new Response(out.join("\n"), {
     headers: { "Content-Type": "application/xml; charset=utf-8" },
   });
+}
+
+function x(s: null | string | undefined): string {
+  if (s == null || s === "") return "";
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }

@@ -42,3 +42,22 @@ CREATE TABLE IF NOT EXISTS public.newsletter_subscriber (
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
+
+CREATE TABLE IF NOT EXISTS public.email_funnel_enrollment (
+  id text PRIMARY KEY,
+  email text NOT NULL,
+  user_id text REFERENCES public."user"(id) ON DELETE SET NULL,
+  funnel text NOT NULL,
+  last_step_sent integer NOT NULL DEFAULT 0,
+  next_send_at timestamptz NOT NULL,
+  experiment_variant text,
+  context jsonb,
+  completed boolean NOT NULL DEFAULT false,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS email_funnel_enrollment_next_send_idx
+  ON public.email_funnel_enrollment (next_send_at, completed);
+CREATE INDEX IF NOT EXISTS email_funnel_enrollment_email_funnel_idx
+  ON public.email_funnel_enrollment (email, funnel);

@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, MessageSquare, Trash2 } from "lucide-react";
+import { MessageSquare, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -8,6 +8,7 @@ import { useSession } from "~/lib/auth-client";
 import { Button } from "~/ui/primitives/button";
 import { Input } from "~/ui/primitives/input";
 import { Label } from "~/ui/primitives/label";
+import { Spinner } from "~/ui/primitives/spinner";
 
 interface ConversationRow {
   characterSlug: null | string;
@@ -168,7 +169,8 @@ export function DashboardAiCloudClient() {
         <div className="rounded-xl border border-border bg-card p-4">
           {busy && chunks.length === 0 ? (
             <p className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+              <Spinner variant="inline" />
+              Loading…
             </p>
           ) : chunks.length === 0 ? (
             <p className="text-sm text-muted-foreground">No chunks yet.</p>

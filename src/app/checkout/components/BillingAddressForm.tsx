@@ -1,6 +1,5 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
 import { useCallback, useImperativeHandle, useState } from "react";
 
 import type { MappedShippingAddress } from "~/lib/loqate";
@@ -9,6 +8,7 @@ import { useLoqateAutocomplete } from "~/hooks/use-loqate-autocomplete";
 import { cn } from "~/lib/cn";
 import { Checkbox } from "~/ui/primitives/checkbox";
 import { Input } from "~/ui/primitives/input";
+import { Spinner } from "~/ui/primitives/spinner";
 
 import type { ShippingAddressFormRef } from "./ShippingAddressForm";
 
@@ -250,10 +250,7 @@ export const BillingAddressForm = function BillingAddressForm({
                           text-muted-foreground
                         `}
                       >
-                        <Loader2
-                          aria-hidden
-                          className="h-4 w-4 shrink-0 animate-spin"
-                        />
+                        <Spinner className="shrink-0" variant="inline" />
                         Finding addresses…
                       </div>
                     ) : (

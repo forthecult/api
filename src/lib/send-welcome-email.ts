@@ -1,11 +1,17 @@
-import { getPublicSiteUrl } from "~/lib/app-url";
+import { createElement } from "react";
+
+import { WelcomeEmail } from "~/emails/welcome";
+import { fetchRecommendedProductsForEmail } from "~/lib/email/email-product-recs";
+import {
+  enrollWelcomeMarketingSeries,
+} from "~/lib/email/funnel-enrollment";
+import { getEmailFunnelCouponExperimentVariant } from "~/lib/email/posthog-email-experiments";
+import { sendEmail } from "~/lib/email/send-email";
 import { getNotificationTemplate } from "~/lib/notification-templates";
 
 /**
- * Sends the welcome email after a user signs up.
- * - With RESEND_API_KEY: sends via Resend.
- * - Otherwise in development: logs to console.
- * - In production without RESEND_API_KEY: no email is sent.
+ * Sends the welcome email after a user signs up (marketing consent applies).
+ * Schedules follow-up drip steps via `email_funnel_enrollment` + `/api/cron/email-funnels`.
  */
 export async function sendWelcomeEmail(params: {
   to: string;
@@ -14,57 +20,46 @@ export async function sendWelcomeEmail(params: {
   const { to, user } = params;
   const template = getNotificationTemplate("welcome_email");
   const userName = user.name || "there";
+  const subject = template.emailSubject || "Welcome!";
+  const bodyText =
+    template.emailBody ??
+    "You're in. We're glad to have you. The shop's ready when you are.";
 
-  if (process.env.RESEND_API_KEY) {
-    try {
-      const { Resend } = await import("resend");
-      const resend = new Resend(process.env.RESEND_API_KEY);
-      const from =
-        typeof process.env.RESEND_FROM_EMAIL === "string" &&
-        process.env.RESEND_FROM_EMAIL.length > 0
-          ? process.env.RESEND_FROM_EMAIL
-          : "onboarding@resend.dev";
+  const picks = await fetchRecommendedProductsForEmail({
+    limit: 4,
+    userId: user.id ?? null,
+  });
 
-      const appUrl = getPublicSiteUrl();
-
-      await resend.emails.send({
-        from,
-        html: `<!DOCTYPE html>
-<html>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-  <h1 style="color: #111;">Welcome, ${userName}!</h1>
-  <p style="color: #333; font-size: 16px; line-height: 1.6;">
-    ${template.emailBody}
-  </p>
-  <p style="margin-top: 24px;">
-    <a href="${appUrl}/shop" style="display: inline-block; background: #111; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px;">
-      Start Shopping
-    </a>
-  </p>
-  <p style="color: #666; font-size: 14px; margin-top: 32px;">
-    Thanks for joining us!<br/>
-    — For the Culture
-  </p>
-</body>
-</html>`,
-        subject: template.emailSubject || "Welcome!",
-        text: `Welcome, ${userName}!\n\n${template.emailBody}\n\nStart shopping: ${appUrl}/shop\n\nThanks for joining us!\n— For the Culture`,
-        to,
-      });
-
-      if (process.env.NODE_ENV === "development") {
-        console.log("[sendWelcomeEmail] Welcome email sent to:", to);
-      }
-    } catch (err) {
-      console.error("[sendWelcomeEmail] Resend send failed:", err);
-    }
-    return;
-  }
-
-  if (process.env.NODE_ENV === "development") {
-    console.log(
-      "[sendWelcomeEmail] No RESEND_API_KEY - would send welcome email to:",
+  try {
+    const res = await sendEmail({
+      correlationId: user.id ? `welcome-${user.id}` : `welcome-${to}`,
+      kind: "welcome_email",
+      react: createElement(WelcomeEmail, {
+        bodyText,
+        productPicks: picks,
+        userName,
+      }),
+      subject,
       to,
-    );
+    });
+
+    if (res.ok === true) {
+      const distinct = (user.id && user.id.trim()) || to.trim().toLowerCase();
+      const variant = await getEmailFunnelCouponExperimentVariant(distinct, {
+        email: to,
+        userId: user.id ?? null,
+      });
+      await enrollWelcomeMarketingSeries({
+        email: to,
+        experimentVariant: variant,
+        userId: user.id ?? null,
+      });
+    }
+
+    if (process.env.NODE_ENV === "development" && res.ok === true) {
+      console.log("[sendWelcomeEmail] Welcome email sent to:", to);
+    }
+  } catch (err) {
+    console.error("[sendWelcomeEmail] send failed:", err);
   }
 }

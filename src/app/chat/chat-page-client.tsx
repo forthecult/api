@@ -10,7 +10,6 @@ import {
   ChevronLeft,
   Copy,
   Folder,
-  Loader2,
   MessageSquare,
   PanelRightClose,
   Plus,
@@ -41,6 +40,7 @@ import {
   type ChatSessionMeta,
   ChatSidebar,
 } from "~/app/chat/chat-sidebar";
+import { clearProjectKnowledge } from "~/app/chat/project-knowledge";
 import {
   loadProjectKnowledge,
   type ProjectKnowledgeItem,
@@ -71,6 +71,7 @@ import {
   PopoverTrigger,
 } from "~/ui/primitives/popover";
 import { Slider } from "~/ui/primitives/slider";
+import { Spinner } from "~/ui/primitives/spinner";
 import { Switch } from "~/ui/primitives/switch";
 
 const GUEST_KEY = "culture-ai-guest-id";
@@ -660,6 +661,30 @@ export function ChatPageClient() {
     setInput("");
   };
 
+  const deleteProject = useCallback(
+    (id: string) => {
+      if (
+        typeof window !== "undefined" &&
+        !window.confirm(
+          "Delete this project? Chats stay in your history but are unlinked from this project.",
+        )
+      ) {
+        return;
+      }
+      clearProjectKnowledge(id);
+      setProjects((prev) => prev.filter((p) => p.id !== id));
+      if (selectedProjectId === id) {
+        setSelectedProjectId(null);
+        setKnowledgeItems([]);
+      }
+      setSessions((prev) =>
+        prev.map((s) => (s.projectId === id ? { ...s, projectId: null } : s)),
+      );
+      toast.message("Project removed");
+    },
+    [selectedProjectId],
+  );
+
   const createProject = () => {
     const name = newProjectName.trim();
     if (!name) return;
@@ -715,6 +740,7 @@ export function ChatPageClient() {
         loadingCharacters={loadingCharacters}
         mainView={mainView}
         onCollapseToggle={() => setSidebarCollapsed((v) => !v)}
+        onDeleteProject={deleteProject}
         onDeleteSession={deleteSession}
         onNewChat={newChat}
         onOpenCreateProject={() => setProjectDialogOpen(true)}
@@ -934,6 +960,20 @@ export function ChatPageClient() {
               </div>
             ) : null}
 
+            {messages.length === 0 ? (
+              <div className="shrink-0 border-b border-border px-4 py-3">
+                <ChatComposer
+                  busy={busy}
+                  input={input}
+                  onImagePicked={(files) => void handleImages(files)}
+                  onInputChange={setInput}
+                  onStartSpeech={startSpeech}
+                  onStop={stop}
+                  onSubmit={handleSubmit}
+                />
+              </div>
+            ) : null}
+
             <div className="relative min-h-0 flex-1">
               <div
                 className={`absolute inset-0 overflow-y-auto px-4 py-6`}
@@ -944,7 +984,7 @@ export function ChatPageClient() {
                   {messages.length === 0 ? (
                     <div
                       className={`
-                        flex flex-col items-center justify-center gap-2 py-6
+                        flex flex-col items-center justify-center gap-2 py-4
                         text-center
                       `}
                     >
@@ -1019,9 +1059,9 @@ export function ChatPageClient() {
                                 variant="ghost"
                               >
                                 {ttsLoadingId === m.id ? (
-                                  <Loader2
-                                    aria-hidden
-                                    className="mr-1 h-3 w-3 animate-spin"
+                                  <Spinner
+                                    className="mr-1 size-3 border"
+                                    variant="inline"
                                   />
                                 ) : (
                                   <Volume2
@@ -1072,7 +1112,7 @@ export function ChatPageClient() {
                         flex items-center gap-2 text-sm text-muted-foreground
                       `}
                     >
-                      <Loader2 aria-hidden className="h-4 w-4 animate-spin" />
+                      <Spinner variant="inline" />
                       Thinking…
                     </div>
                   ) : null}
@@ -1095,15 +1135,19 @@ export function ChatPageClient() {
               ) : null}
             </div>
 
-            <ChatComposer
-              busy={busy}
-              input={input}
-              onImagePicked={(files) => void handleImages(files)}
-              onInputChange={setInput}
-              onStartSpeech={startSpeech}
-              onStop={stop}
-              onSubmit={handleSubmit}
-            />
+            {messages.length > 0 ? (
+              <div className="shrink-0 border-t border-border px-4 py-3">
+                <ChatComposer
+                  busy={busy}
+                  input={input}
+                  onImagePicked={(files) => void handleImages(files)}
+                  onInputChange={setInput}
+                  onStartSpeech={startSpeech}
+                  onStop={stop}
+                  onSubmit={handleSubmit}
+                />
+              </div>
+            ) : null}
           </div>
           {selectedProject && !projectSettingsPanelCollapsed ? (
             <div

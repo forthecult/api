@@ -1,11 +1,12 @@
 "use client";
 
-import { Loader2, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "~/ui/primitives/button";
+import { Spinner } from "~/ui/primitives/spinner";
 
 interface CancelOrderButtonProps {
   className?: string;
@@ -78,7 +79,7 @@ export function CancelOrderButton({
       variant="ghost"
     >
       {loading ? (
-        <Loader2 aria-hidden className="size-4 animate-spin" />
+        <Spinner variant="inline" />
       ) : (
         <Trash2 aria-hidden className="size-4" />
       )}

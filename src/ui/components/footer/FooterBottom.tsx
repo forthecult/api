@@ -15,7 +15,10 @@ import {
   CURRENCY_OPTIONS,
   useCountryCurrency,
 } from "~/lib/hooks/use-country-currency";
-import { CRYPTO_OPTIONS, useCryptoCurrency } from "~/lib/hooks/use-crypto-currency";
+import {
+  CRYPTO_OPTIONS,
+  useCryptoCurrency,
+} from "~/lib/hooks/use-crypto-currency";
 import { CryptoPricingTogglesList } from "~/ui/components/crypto-pricing-toggles-list";
 import { Button } from "~/ui/primitives/button";
 import {
@@ -281,7 +284,8 @@ export function FooterBottom({
             >
               <p
                 className={`
-                  border-b border-border px-2 py-1.5 text-xs text-muted-foreground
+                  border-b border-border px-2 py-1.5 text-xs
+                  text-muted-foreground
                 `}
               >
                 Show prices in up to 2 cryptos (footer &amp; product pages).

@@ -112,6 +112,20 @@ The palette is restrained by design. Let the products provide color. The brand p
 - Max width for prose: 680px. Never let body text run edge-to-edge.
 - Paragraph spacing: 1.5em between paragraphs. No indent.
 
+### Legibility floor (non-negotiable)
+
+People should never have to squint. Small text is a conversion leak and an accessibility failure, and it is not a design choice we make.
+
+| Element | Minimum size | Notes |
+|---------|--------------|-------|
+| Body copy | **16px / 1rem** | Below this, prose is rejected regardless of layout. |
+| Interactive text (buttons, links, form labels, nav, pills) | **14px / 0.875rem** | On tap targets ≥ 44px. |
+| Captions, secondary metadata | **14px / 0.875rem** | Reserve smaller sizes for decorative monospace flourishes only. |
+| Fine print, legal disclaimers | **12px / 0.75rem** | Only in contexts the reader does not need for a decision (footer legal, receipt tail). Never for product copy, CTAs, error messages, or prices. |
+| Price displays | **≥ 16px** | Prices carry decisions. Treat them as interactive text, even when static. |
+
+Scale text up for large hero surfaces; never scale it down to fit a layout. If copy does not fit at these sizes, the copy is too long or the layout is wrong — fix those, not the type size.
+
 ### Accent: Data & Crypto — *JetBrains Mono*
 
 **Family:** [JetBrains Mono](https://www.jetbrains.com/lp/mono/) (already implemented)
@@ -134,7 +148,9 @@ The palette is restrained by design. Let the products provide color. The brand p
 
 ## Visual Language
 
-Culture's visual identity is **editorial restraint with quiet technical confidence**. Think: a well-curated independent magazine about how to live — laid out by someone who trained in Swiss design but lives in Joshua Tree.
+Culture's visual identity is **editorial restraint with quiet technical confidence — modern, precise, almost future-facing**. Think: a well-curated independent magazine about how to live — laid out by someone who trained in Swiss design but lives in Joshua Tree, and who reads the latest papers in materials science over breakfast. The brand feels like tomorrow without trying to look like a concept video.
+
+**Quiet futurism, not retro-futurism.** The aesthetic is contemporary and forward — clean geometry, generous typography, tactile textures, subtle technical detail (a JetBrains Mono timestamp, a structured spec table, a crypto price next to a fiat one). What it is not: neon grids, cyberpunk pastiche, "sci-fi" chrome, metaverse gradients. The future this brand points at is calm and built, not performed.
 
 **The aesthetic is defined by generous negative space.** Every element earns its place. If something can be removed without losing meaning, it should be removed. The white space is not emptiness — it is a statement that says: *we are not desperate for your attention*.
 
@@ -226,6 +242,8 @@ A minimal geometric shape: an open-topped rectangle or arch — like a container
 
 9. **Never let the design compete with the product.** The website, the packaging, the brand system — all of it is a frame. The product is the painting. If someone remembers the animation more than the product, the design failed.
 
+10. **Never ship tiny text.** Body copy below 16px, interactive text below 14px, or prices below 16px is rejected on sight. People should not squint, zoom, or ask "what does that say?" to buy from us. See the legibility floor in the Typography section.
+
 ---
 
 # 2. BRAND VOICE GUIDE
@@ -262,6 +280,14 @@ A minimal geometric shape: an open-topped rectangle or arch — like a container
 - **Do:** "We test every batch of coffee for mycotoxins. Most brands don't."
 - **Don't:** "We're SO excited to bring you the most AMAZING coffee experience ever!! You deserve it!! 🎉☕"
 
+### 5. Customer-first (lifestyle brand, not a catalog robot)
+
+**Description:** A lifestyle brand is not "we have SKUs, pick one." The customer is the point of the story. They should feel **seen and wanted** — not flattered, not manipulated; **genuinely considered**. We meet them with warmth, help them toward **where they are trying to go**, and hold a high bar for **how** we do it: especially in **customer support** (response quality, follow-through, ownership, going past the first script answer). When someone needs something we do not sell, we do not shrug. We help them get there: a vetted link, a referral, a half-step we can own — so they leave the interaction with their problem *handled*, not with a "not our problem." That is not scope creep; it is **integrity**. It is the brand a person **chooses** to be part of, not a transaction they forget.
+
+- **Do:** "We do not stock that, but here are two options that fit what you asked for, and what to look for in the spec."
+- **Do:** (Support) Resolve the case; if handoff is needed, the customer gets a name, a next step, and a time window — not a closed ticket in limbo.
+- **Don't:** "That is outside our product line." (full stop — no help)
+
 ---
 
 ## Vocabulary
@@ -281,9 +307,9 @@ Every surface uses the right word for its audience. Pick the one that matches th
 
 **Do not use:** **FTC** / **ftc**. Ambiguous with the US Federal Trade Commission, which undermines trust. Also a remnant of the upstream template. The five conventions above cover every case.
 
-### 15 Words the Brand Owns
+### Core words the brand owns
 
-These words appear regularly. They define the lexicon.
+These words appear regularly. They define the lexicon. (The count is not the point — the meaning is.)
 
 | Word | Why it belongs |
 |------|----------------|
@@ -294,7 +320,7 @@ These words appear regularly. They define the lexicon.
 | **Natural fibers** | Specific, factual. Not "sustainable" (overused). |
 | **Self-custody** | Applies to data, crypto, and personal agency. |
 | **Toxin-free** | Direct. Says what it means. |
-| **Open-source** | Technology you can inspect and trust. |
+| **Open-source** | Technology you can inspect and trust. Our default for what we sell, what we recommend, and what we build with. |
 | **Flourishing** | Our north star. Human thriving. |
 | **Pillar** | Our framework. Health, Autonomy. |
 | **Lock** | How members commit CULT for member benefits (preferred verb over "stake"). Use "lock," "hold," or "member" rather than "stake" / "stakeholder" when describing CULT. "Stake" is fine in the idiomatic "skin in the game" sense. |
@@ -302,6 +328,8 @@ These words appear regularly. They define the lexicon.
 | **Privacy** | Not a feature. A right. |
 | **Craft** | Care in making. Applies to products and to us. |
 | **Community** | CULT holders, customers, collaborators. |
+| **Integrity** | We do what we say, including when the answer is inconvenient. The customer can trust the hand that holds the pen. |
+| **Exceptional (as a bar)** | We do not use it as a buzzword in every headline. In practice, it means: support and touchpoints that people **notice** for the right reasons — clear, human, and willing to go one step past "policy says no." |
 
 ### Words the Brand Never Uses
 
@@ -316,7 +344,7 @@ These words appear regularly. They define the lexicon.
 | **Game-changer** | See "revolutionary." |
 | **Eco-friendly** | Greenwashing territory. Be specific instead. |
 | **Sustainable** | Too broad, too diluted. Name the actual practice. |
-| **Innovative** | Everything claims this. Nothing means it. |
+| **Innovative** | The word is banned; the substance is not. We are forward in *what we do* — curation, API-native commerce, craft, and support that does not stop at the policy line. **Show it. Never say "innovative."** (Same class as "revolutionary": let the work speak.) |
 | **Best-in-class** | Sounds like a PowerPoint deck. |
 | **Hustle** | Antithetical to intentional living. |
 | **Guru** | We are peers, not gurus. |
@@ -345,6 +373,8 @@ These words appear regularly. They define the lexicon.
 **Self-reference:** "We" is natural and human. "Culture" for formal contexts. Never "the Culture team" (sounds corporate) or "us here at Culture" (sounds like a small-town car dealership). The brand refers to CULT holders as "members" or "holders," never "our community of amazing supporters."
 
 **Numbers:** Use numerals for prices, quantities, and specs. Spell out numbers one through nine in prose. Use the monospace font (JetBrains Mono) for crypto amounts, order IDs, and technical data.
+
+**Innovation in behavior, not in adjectives:** We push forward in how we curate, how we build (APIs, structure, support). We do not **claim** "innovative" or "pioneering" in copy. Demonstrate it — a faster answer, a clearer spec table, a problem solved off-catalog — and let the customer conclude.
 
 **Product descriptions:** Lead with what the product does, not what it is. "Filters 99.9% of contaminants from tap water" before "Stainless steel gravity-fed filtration system." Benefits first, specifications second.
 

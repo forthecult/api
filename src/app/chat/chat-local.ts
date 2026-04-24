@@ -5,7 +5,8 @@ import type { ChatProject, ChatSessionMeta } from "~/app/chat/chat-sidebar";
 const KEY_PROJECTS = "culture-ai-projects";
 const KEY_SESSIONS = "culture-ai-session-list";
 const KEY_SIDEBAR = "culture-ai-sidebar-collapsed";
-const KEY_PROJECT_SETTINGS_PANEL = "culture-ai-project-settings-panel-collapsed";
+const KEY_PROJECT_SETTINGS_PANEL =
+  "culture-ai-project-settings-panel-collapsed";
 
 export function loadProjects(): ChatProject[] {
   try {

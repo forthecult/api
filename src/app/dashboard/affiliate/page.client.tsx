@@ -1,6 +1,6 @@
 "use client";
 
-import { Link2, Loader2, Share2 } from "lucide-react";
+import { Link2, Share2 } from "lucide-react";
 import * as React from "react";
 
 import { SEO_CONFIG } from "~/app";
@@ -17,6 +17,7 @@ import {
 } from "~/ui/primitives/card";
 import { Input } from "~/ui/primitives/input";
 import { Label } from "~/ui/primitives/label";
+import { Spinner } from "~/ui/primitives/spinner";
 
 interface AffiliateMe {
   applicationNote: null | string;
@@ -268,10 +269,7 @@ export function AffiliatePageClient() {
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <Loader2
-          aria-hidden
-          className="h-8 w-8 animate-spin text-muted-foreground"
-        />
+        <Spinner className="border-muted-foreground" variant="page" />
       </div>
     );
   }
@@ -431,7 +429,7 @@ export function AffiliatePageClient() {
               <Button disabled={applying} type="submit">
                 {applying ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Spinner className="mr-2" variant="inline" />
                     Submitting…
                   </>
                 ) : (
@@ -512,7 +510,7 @@ export function AffiliatePageClient() {
                       >
                         {codeSaving ? (
                           <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            <Spinner className="mr-2" variant="inline" />
                             Updating…
                           </>
                         ) : (
@@ -624,7 +622,7 @@ export function AffiliatePageClient() {
                     >
                       {codeSaving ? (
                         <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          <Spinner className="mr-2" variant="inline" />
                           Updating…
                         </>
                       ) : (
@@ -830,7 +828,7 @@ export function AffiliatePageClient() {
                   <Button disabled={payoutSaving} type="submit">
                     {payoutSaving ? (
                       <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        <Spinner className="mr-2" variant="inline" />
                         Saving…
                       </>
                     ) : (

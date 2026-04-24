@@ -4,7 +4,6 @@ import {
   ArrowLeft,
   CreditCard,
   Globe,
-  Loader2,
   Signal,
   Smartphone,
   Wallet,
@@ -40,6 +39,7 @@ import { Card, CardContent, CardHeader } from "~/ui/primitives/card";
 import { Input } from "~/ui/primitives/input";
 import { Label } from "~/ui/primitives/label";
 import { Separator } from "~/ui/primitives/separator";
+import { Spinner } from "~/ui/primitives/spinner";
 
 interface CoverageCountry {
   id: number;
@@ -622,7 +622,10 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
         `}
       >
         <div className="flex items-center justify-center gap-2 py-24">
-          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          <Spinner
+            className="size-5 border-muted-foreground"
+            variant="inline"
+          />
           <span className="text-sm text-muted-foreground">
             Loading package details...
           </span>
@@ -654,7 +657,7 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
             >
               {loading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Spinner className="mr-2" variant="inline" />
                   Loading…
                 </>
               ) : (
@@ -1239,7 +1242,7 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
                 >
                   {purchasing ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <Spinner className="mr-2" variant="inline" />
                       Preparing checkout...
                     </>
                   ) : discountPreview ? (

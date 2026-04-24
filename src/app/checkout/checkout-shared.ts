@@ -219,7 +219,7 @@ export const PRIVACY_POLICY_SUMMARY =
   "Your privacy matters to us. We collect only what we need—contact and account details, order and shipping info, and basic usage data for security. We do not sell your data or use it for targeted advertising. We only use essential cookies (sign-in, cart, security). You have rights to access, correct, delete, or port your data.";
 
 export const TERMS_POLICY_SUMMARY =
-  "By using the site, you agree to our terms, Privacy, Refund, and Shipping policies. You confirm you meet the minimum age required in your place of residence. We may refuse or cancel orders, limit quantities, and correct errors. Products are provided \"as is.\" We are not liable for indirect or consequential damages. We encourage you to contact us first about disputes. These terms are governed by the laws of the United States; see the full terms for details.";
+  'By using the site, you agree to our terms, Privacy, Refund, and Shipping policies. You confirm you meet the minimum age required in your place of residence. We may refuse or cancel orders, limit quantities, and correct errors. Products are provided "as is." We are not liable for indirect or consequential damages. We encourage you to contact us first about disputes. These terms are governed by the laws of the United States; see the full terms for details.';
 
 /** Applied coupon as returned from validate/automatic APIs */
 export interface AppliedCoupon {

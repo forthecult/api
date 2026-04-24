@@ -1,20 +1,19 @@
+import { createElement } from "react";
 import { eq } from "drizzle-orm";
 
+import { PasswordResetEmail } from "~/emails/password-reset";
 import { db } from "~/db";
 import { userTable } from "~/db/schema";
 import {
   createUserNotification,
   userWantsTransactionalWebsite,
 } from "~/lib/create-user-notification";
+import { sendEmail } from "~/lib/email/send-email";
 import { getNotificationTemplate } from "~/lib/notification-templates";
 import { notifyTransactionalTelegram } from "~/lib/telegram-notify";
 
 /**
  * Sends the password reset email. Called by Better Auth when a user requests a password reset.
- * - With RESEND_API_KEY: sends via Resend (install the `resend` package).
- * - Otherwise in development: logs the link to the server console so you can open it.
- * - In production without RESEND_API_KEY: no email is sent (configure a provider for production).
- * Also sends transactional Telegram + website notification if user has them enabled.
  */
 export async function sendResetPasswordEmail(params: {
   to: string;
@@ -55,32 +54,25 @@ export async function sendResetPasswordEmail(params: {
     }
   }
 
-  if (process.env.RESEND_API_KEY) {
-    try {
-      const { Resend } = await import("resend");
-      const resend = new Resend(process.env.RESEND_API_KEY);
-      const from =
-        typeof process.env.RESEND_FROM_EMAIL === "string" &&
-        process.env.RESEND_FROM_EMAIL.length > 0
-          ? process.env.RESEND_FROM_EMAIL
-          : "onboarding@resend.dev";
-      void resend.emails.send({
-        from,
-        html: `<!DOCTYPE html><html><body><p>Click the link below to set a new password:</p><p><a href="${url}">${url}</a></p><p>This link expires in 1 hour. If you didn't request this, you can ignore this email.</p></body></html>`,
-        subject: "Change your password",
-        text: `Click the link to set a new password: ${url}\n\nThis link expires in 1 hour.`,
-        to,
-      });
-    } catch (err) {
-      console.error("[sendResetPassword] Resend send failed:", err);
-      if (process.env.NODE_ENV === "development") {
-        console.log("[sendResetPassword] Dev fallback - use this link:", url);
-      }
+  const t = getNotificationTemplate("password_reset");
+  const subject = t.emailSubject ?? "Reset your password";
+
+  try {
+    await sendEmail({
+      correlationId: userId ? `pwd-reset-${userId}` : `pwd-reset-${to}`,
+      kind: "password_reset",
+      react: createElement(PasswordResetEmail, { resetUrl: url }),
+      subject,
+      to,
+    });
+  } catch (err) {
+    console.error("[sendResetPassword] send failed:", err);
+    if (process.env.NODE_ENV === "development") {
+      console.log("[sendResetPassword] Dev fallback - use this link:", url);
     }
-    return;
   }
 
-  if (process.env.NODE_ENV === "development") {
+  if (process.env.NODE_ENV === "development" && !process.env.RESEND_API_KEY) {
     console.log(
       "[sendResetPassword] No RESEND_API_KEY - use this link to reset password:",
       url,

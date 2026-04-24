@@ -42,49 +42,6 @@ interface SizeChartData {
 
 const FREE_SHIPPING_USD_THRESHOLD = 250; // $250 USD value
 
-function PaymentLogos({
-  label,
-  logos,
-}: {
-  label: string;
-  logos: { name: string; src: string }[];
-}) {
-  if (logos.length === 0) return null;
-  return (
-    <div
-      aria-label={label}
-      className="mt-2.5 flex flex-wrap items-center gap-2.5"
-      role="list"
-    >
-      {logos.map((i) => (
-        <div
-          className={`
-            flex h-8 min-w-0 max-w-[5.5rem] items-center justify-center
-            rounded-md border border-border/60 bg-white px-2.5
-            dark:bg-muted/20
-          `}
-          key={i.name}
-          role="listitem"
-          title={i.name}
-        >
-          <Image
-            alt={i.name}
-            className="h-5 w-auto max-w-full object-contain"
-            height={20}
-            src={i.src}
-            unoptimized={
-              i.src.endsWith(".png") ||
-              i.src.startsWith("data:") ||
-              i.src.startsWith("http://")
-            }
-            width={72}
-          />
-        </div>
-      ))}
-    </div>
-  );
-}
-
 function CultFreeShippingText() {
   const { rates } = useCryptoCurrency();
   const cultRate = rates.CULT;
@@ -150,6 +107,49 @@ function DeliveryCopy({ category }: { category: string }) {
         below, or review totals in your cart at checkout.
       </p>
     </>
+  );
+}
+
+function PaymentLogos({
+  label,
+  logos,
+}: {
+  label: string;
+  logos: { name: string; src: string }[];
+}) {
+  if (logos.length === 0) return null;
+  return (
+    <div
+      aria-label={label}
+      className="mt-2.5 flex flex-wrap items-center gap-2.5"
+      role="list"
+    >
+      {logos.map((i) => (
+        <div
+          className={`
+            flex h-8 max-w-[5.5rem] min-w-0 items-center justify-center
+            rounded-md border border-border/60 bg-white px-2.5
+            dark:bg-muted/20
+          `}
+          key={i.name}
+          role="listitem"
+          title={i.name}
+        >
+          <Image
+            alt={i.name}
+            className="h-5 w-auto max-w-full object-contain"
+            height={20}
+            src={i.src}
+            unoptimized={
+              i.src.endsWith(".png") ||
+              i.src.startsWith("data:") ||
+              i.src.startsWith("http://")
+            }
+            width={72}
+          />
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -441,6 +441,20 @@ function isApparelCategory(category: string): boolean {
   );
 }
 
+function metricColumnLabel(
+  typeLabel: string,
+  table: { unit?: string },
+  systemUnit: "cm" | "in",
+): string {
+  const tl = typeLabel.trim();
+  if (/\([^)]*(cm|in|mm|")\s*[^)]*\)\s*$/i.test(tl)) {
+    return tl;
+  }
+  const u = table.unit?.trim();
+  if (u) return `${tl} (${u})`;
+  return `${tl} (${systemUnit})`;
+}
+
 function normalizeSizeDescriptionKey(
   d: null | string | undefined,
 ): null | string {
@@ -455,20 +469,6 @@ function normalizeSizeDescriptionKey(
       .toLowerCase();
   }
   return t.toLowerCase();
-}
-
-function metricColumnLabel(
-  typeLabel: string,
-  table: { unit?: string },
-  systemUnit: "cm" | "in",
-): string {
-  const tl = typeLabel.trim();
-  if (/\([^)]*(cm|in|mm|")\s*[^)]*\)\s*$/i.test(tl)) {
-    return tl;
-  }
-  const u = table.unit?.trim();
-  if (u) return `${tl} (${u})`;
-  return `${tl} (${systemUnit})`;
 }
 
 function renderSizeChartData(
@@ -522,7 +522,8 @@ function renderSizeChartData(
                 <table
                   className={`
                     w-full min-w-[320px] border-collapse text-base
-                    [&_td]:min-h-[2.5rem] [&_th]:text-base
+                    [&_td]:min-h-[2.5rem]
+                    [&_th]:text-base
                   `}
                 >
                   <thead>
@@ -530,8 +531,7 @@ function renderSizeChartData(
                       {columns.map((col, cidx) => (
                         <th
                           className={`
-                            px-3 py-2.5 text-left font-semibold
-                            text-foreground
+                            px-3 py-2.5 text-left font-semibold text-foreground
                             first:rounded-tl-md
                             last:rounded-tr-md
                           `}
@@ -591,7 +591,8 @@ function renderSizeChartData(
                 <table
                   className={`
                     w-full min-w-[200px] border-collapse text-base
-                    [&_td]:min-h-[2.5rem] [&_th]:text-base
+                    [&_td]:min-h-[2.5rem]
+                    [&_th]:text-base
                   `}
                 >
                   <thead>

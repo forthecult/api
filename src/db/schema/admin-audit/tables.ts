@@ -33,6 +33,10 @@ export type AdminAuditEvent =
 export const adminAuditLogTable = pgTable(
   "admin_audit_log",
   {
+    // "api_key" | "session" | "unauthenticated"
+    authMethod: text("auth_method").notNull(),
+    // "admin" | "ai" | null — distinguishes rotated vs human keys
+    authSource: text("auth_source"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -43,10 +47,6 @@ export const adminAuditLogTable = pgTable(
     ipHash: text("ip_hash"),
     metadata: jsonb("metadata").$type<Record<string, unknown>>(),
     method: text("method").notNull(),
-    // "api_key" | "session" | "unauthenticated"
-    authMethod: text("auth_method").notNull(),
-    // "admin" | "ai" | null — distinguishes rotated vs human keys
-    authSource: text("auth_source"),
     path: text("path").notNull(),
     status: integer("status").notNull(),
     userEmail: text("user_email"),

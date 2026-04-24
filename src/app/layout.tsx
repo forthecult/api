@@ -11,12 +11,13 @@ import { PostHogIdentityBridge } from "~/lib/analytics/posthog-identity-bridge";
 import { getPublicSiteUrl, isAgentSubdomain } from "~/lib/app-url";
 import { CartProvider } from "~/lib/hooks/use-cart";
 import { CountryCurrencyProvider } from "~/lib/hooks/use-country-currency";
-import "~/css/globals.css";
 import { CryptoCurrencyProvider } from "~/lib/hooks/use-crypto-currency";
+import "~/css/globals.css";
 import { LazyWagmiProvider } from "~/lib/lazy-wagmi-provider";
 import { AgentSubdomainLayout } from "~/ui/components/agent-subdomain-layout";
 import { AuthWalletModalProvider } from "~/ui/components/auth/auth-wallet-modal-provider";
 import { BackToTopButton } from "~/ui/components/back-to-top-button";
+import { CartMarketingSync } from "~/ui/components/cart-marketing-sync";
 import { ChunkLoadErrorHandler } from "~/ui/components/chunk-load-error-handler";
 import { ConditionalFooter } from "~/ui/components/conditional-footer";
 import { ConsoleSecurityWarning } from "~/ui/components/console-security-warning";
@@ -183,6 +184,7 @@ export default async function RootLayout({
             <ThemePersistSync />
             <DeferredCriticalRoutePrefetcher />
             <CartProvider>
+              <CartMarketingSync />
               <CryptoCurrencyProvider>
                 <Suspense
                   fallback={

@@ -1,15 +1,25 @@
 import { Heading, Link, Text } from "@react-email/components";
 
-import { EmailShell } from "~/emails/shell";
+import { type EmailProductPick, EmailShell } from "~/emails/shell";
 import { getPublicSiteUrl } from "~/lib/app-url";
 
 export function WelcomeEmail({
   bodyText,
+  productPicks,
   userName,
-}: Readonly<{ bodyText: string; userName: string }>) {
+}: Readonly<{
+  bodyText: string;
+  productPicks?: readonly EmailProductPick[];
+  userName: string;
+}>) {
   const shop = `${getPublicSiteUrl().replace(/\/$/, "")}/shop`;
   return (
-    <EmailShell preview="You're in">
+    <EmailShell
+      picksSubtitle="Popular right now on Culture"
+      preview="You're in"
+      productPicks={productPicks}
+      showBrandStoryFooter
+    >
       <Heading
         as="h1"
         style={{ color: "#0f172a", fontSize: "24px", margin: "0 0 16px" }}

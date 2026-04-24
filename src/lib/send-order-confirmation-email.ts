@@ -1,11 +1,14 @@
 /**
  * Sends the "order confirmed" transactional email (when order is marked paid).
- * Uses Resend when RESEND_API_KEY is set. Caller should check userWantsTransactionalEmail.
- * Uses shared email layout (header, footer, CTA) from ~/lib/email-layout.
+ * Caller should check userWantsTransactionalEmail.
  */
 
+import { createElement } from "react";
+
+import { OrderPlacedEmail } from "~/emails/order-placed";
 import { getPublicSiteUrl } from "~/lib/app-url";
-import { buildEmailHtml, plainTextToHtml } from "~/lib/email-layout";
+import { fetchRecommendedProductsForEmail } from "~/lib/email/email-product-recs";
+import { sendEmail } from "~/lib/email/send-email";
 import { getNotificationTemplate } from "~/lib/notification-templates";
 
 export interface SendOrderConfirmationEmailParams {
@@ -42,42 +45,33 @@ export async function sendOrderConfirmationEmail(
   }
   body += `\n\nOrder ID: ${shortId}`;
 
-  const contentHtml = plainTextToHtml(body);
-  const html = buildEmailHtml(contentHtml, {
-    ctaLabel,
-    ctaUrl,
+  const picks = await fetchRecommendedProductsForEmail({
+    orderId,
+    limit: 4,
   });
 
-  if (process.env.RESEND_API_KEY) {
-    try {
-      const { Resend } = await import("resend");
-      const resend = new Resend(process.env.RESEND_API_KEY);
-      const from =
-        typeof process.env.RESEND_FROM_EMAIL === "string" &&
-        process.env.RESEND_FROM_EMAIL.length > 0
-          ? process.env.RESEND_FROM_EMAIL
-          : "onboarding@resend.dev";
-      await resend.emails.send({
-        from,
-        html,
-        subject,
-        text: `${body}\n\n${ctaLabel}: ${ctaUrl}`,
-        to,
-      });
-    } catch (err) {
-      console.error("[sendOrderConfirmationEmail] Resend send failed:", err);
-    }
-    return;
+  try {
+    await sendEmail({
+      correlationId: orderId,
+      kind: "order_placed",
+      react: createElement(OrderPlacedEmail, {
+        bodyText: body,
+        ctaLabel,
+        ctaUrl,
+        productPicks: picks,
+      }),
+      subject,
+      to,
+    });
+  } catch (err) {
+    console.error("[sendOrderConfirmationEmail] send failed:", err);
   }
 
-  if (process.env.NODE_ENV === "development") {
-    console.log(
-      "[sendOrderConfirmationEmail] No RESEND_API_KEY - would send:",
-      {
-        body: body.slice(0, 200),
-        subject,
-        to,
-      },
-    );
+  if (process.env.NODE_ENV === "development" && !process.env.RESEND_API_KEY) {
+    console.log("[sendOrderConfirmationEmail] No RESEND_API_KEY - would send:", {
+      body: body.slice(0, 200),
+      subject,
+      to,
+    });
   }
 }

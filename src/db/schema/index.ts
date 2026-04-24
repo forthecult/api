@@ -24,6 +24,8 @@ export * from "./brands/relations";
 export * from "./brands/tables";
 export * from "./brands/types";
 
+export * from "./cart/tables";
+
 export * from "./categories/relations";
 export * from "./categories/tables";
 export * from "./categories/types";

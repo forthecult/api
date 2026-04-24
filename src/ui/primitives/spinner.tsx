@@ -9,6 +9,11 @@ const INLINE_SPINNER_CLASS =
   "h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent";
 
 interface SpinnerProps {
+  /**
+   * When set, the spinner is announced as a status (not aria-hidden).
+   * Omit for decorative spinners next to visible loading text.
+   */
+  "aria-label"?: string;
   className?: string;
   /** "page" = full-page centered style; "inline" = small inline (buttons, etc.) */
   variant?: "inline" | "page";
@@ -33,8 +38,20 @@ export function PageLoadingFallback() {
  * Shared spinner for loading states. Use "page" for route/section fallbacks,
  * "inline" for buttons and compact UI.
  */
-export function Spinner({ className, variant = "page" }: SpinnerProps) {
+export function Spinner({
+  "aria-label": ariaLabel,
+  className,
+  variant = "page",
+}: SpinnerProps) {
   const baseClass =
     variant === "page" ? PAGE_SPINNER_CLASS : INLINE_SPINNER_CLASS;
-  return <div aria-hidden className={cn(baseClass, className)} />;
+  const labeled = Boolean(ariaLabel);
+  return (
+    <div
+      aria-hidden={labeled ? undefined : true}
+      aria-label={ariaLabel}
+      className={cn(baseClass, className)}
+      role={labeled ? "status" : undefined}
+    />
+  );
 }

@@ -2,8 +2,8 @@
 
 import {
   Check,
+  FileText,
   Link2,
-  Loader2,
   Mail,
   Package,
   ShoppingBag,
@@ -25,6 +25,7 @@ import { isRealEmail } from "~/lib/is-real-email";
 import { Button } from "~/ui/primitives/button";
 import { Checkbox } from "~/ui/primitives/checkbox";
 import { Input } from "~/ui/primitives/input";
+import { Spinner } from "~/ui/primitives/spinner";
 
 const X_ICON = (
   <svg
@@ -45,6 +46,7 @@ interface OrderDetails {
   accessLevel?: AccessLevel;
   createdAt: string;
   cryptoCurrency?: string;
+  deliveredAt?: string;
   email?: string;
   items: {
     name: string;
@@ -55,6 +57,7 @@ interface OrderDetails {
   }[];
   orderId: string;
   paymentMethod?: string;
+  piiDeletionRequestedAt?: string;
   shipping?: ShippingAddress;
   totalCents: number;
 }
@@ -153,7 +156,7 @@ export function SuccessPageClient() {
     async function fetchOrder() {
       if (sessionIdParam) {
         // Stripe flow: use session_id, pass confirmation token if available
-        const ct = consumeConfirmationToken("checkout_stripe_ct");
+        const ct = peekConfirmationToken("checkout_stripe_ct");
         const ctParam = ct ? `&ct=${encodeURIComponent(ct)}` : "";
         const res = await fetch(
           `/api/orders/by-session?session_id=${encodeURIComponent(sessionIdParam)}${ctParam}`,
@@ -164,7 +167,7 @@ export function SuccessPageClient() {
         }
       } else if (orderIdParam) {
         // Crypto/direct flow: use orderId, pass confirmation token if available
-        const ct = consumeConfirmationToken(`checkout_ct_${orderIdParam}`);
+        const ct = peekConfirmationToken(`checkout_ct_${orderIdParam}`);
         const ctParam = ct ? `?ct=${encodeURIComponent(ct)}` : "";
         const res = await fetch(
           `/api/orders/${encodeURIComponent(orderIdParam)}${ctParam}`,
@@ -193,6 +196,7 @@ export function SuccessPageClient() {
             accessLevel: (data as { accessLevel?: AccessLevel }).accessLevel,
             createdAt: data.createdAt,
             cryptoCurrency: data.cryptoCurrency,
+            deliveredAt: (data as { deliveredAt?: string }).deliveredAt,
             email: data.email,
             items: (data.items ?? []).map((i) => ({
               name: i.name,
@@ -203,6 +207,9 @@ export function SuccessPageClient() {
             })),
             orderId: data.orderId,
             paymentMethod: data.paymentMethod,
+            piiDeletionRequestedAt: (
+              data as { piiDeletionRequestedAt?: string }
+            ).piiDeletionRequestedAt,
             shipping: data.shipping,
             totalCents: (data.totals?.totalUsd ?? 0) * 100,
           });
@@ -253,7 +260,7 @@ export function SuccessPageClient() {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <Loader2 className="size-8 animate-spin text-muted-foreground" />
+          <Spinner className="border-muted-foreground" variant="page" />
           <p className="text-sm text-muted-foreground">Loading your order…</p>
         </div>
       </div>
@@ -630,6 +637,14 @@ export function SuccessPageClient() {
               />
             </div>
           )}
+
+          {canSeePII && (order?.orderId ?? orderIdParam) ? (
+            <OrderDataRetentionCard
+              deliveredAt={order?.deliveredAt}
+              orderId={order?.orderId ?? orderIdParam ?? ""}
+              piiDeletionRequestedAt={order?.piiDeletionRequestedAt}
+            />
+          ) : null}
         </div>
       )}
 
@@ -747,17 +762,6 @@ export function SuccessPageClient() {
   );
 }
 
-/** Read and consume (delete) the confirmation token from sessionStorage. */
-function consumeConfirmationToken(key: string): null | string {
-  try {
-    const token = sessionStorage.getItem(key);
-    if (token) sessionStorage.removeItem(key);
-    return token;
-  } catch {
-    return null;
-  }
-}
-
 /* ---------- CreateAccount card wrapper ---------- */
 function CreateAccountCard({ email }: { email?: string }) {
   const { user } = useCurrentUser();
@@ -856,7 +860,7 @@ function CreateAccountViaEmail({ email }: { email?: string }) {
       >
         {sending ? (
           <>
-            <Loader2 className="mr-1.5 size-3.5 animate-spin" />
+            <Spinner className="mr-1.5 size-3.5" variant="inline" />
             Sending…
           </>
         ) : (
@@ -1002,13 +1006,155 @@ function MarketingConsent({
       >
         {saving ? (
           <>
-            <Loader2 className="mr-1.5 size-3.5 animate-spin" />
+            <Spinner className="mr-1.5 size-3.5" variant="inline" />
             Saving…
           </>
         ) : (
           "Save preferences"
         )}
       </Button>
+    </div>
+  );
+}
+
+function OrderDataRetentionCard({
+  deliveredAt,
+  orderId,
+  piiDeletionRequestedAt: initialRequestedAt,
+}: {
+  deliveredAt?: string;
+  orderId: string;
+  piiDeletionRequestedAt?: string;
+}) {
+  const [savedAt, setSavedAt] = useState(initialRequestedAt ?? "");
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    setSavedAt(initialRequestedAt ?? "");
+  }, [initialRequestedAt]);
+
+  const ct =
+    typeof window !== "undefined"
+      ? peekConfirmationToken(`checkout_ct_${orderId}`)
+      : null;
+
+  const purgeHint = (() => {
+    if (!savedAt) return null;
+    const base = deliveredAt
+      ? new Date(deliveredAt)
+      : typeof window !== "undefined"
+        ? new Date()
+        : null;
+    if (!base || Number.isNaN(base.getTime())) return null;
+    const due = new Date(base.getTime() + 60 * 24 * 60 * 60 * 1000);
+    return due.toLocaleDateString(undefined, {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  })();
+
+  const requestDeletion = async () => {
+    setBusy(true);
+    try {
+      const res = await fetch(
+        `/api/orders/${encodeURIComponent(orderId)}/pii-retention`,
+        {
+          body: JSON.stringify({ ct: ct ?? undefined, requestDeletion: true }),
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          method: "PATCH",
+        },
+      );
+      const data = (await res.json().catch(() => ({}))) as {
+        error?: { message?: string };
+        piiDeletionRequestedAt?: string;
+      };
+      if (!res.ok) {
+        throw new Error(data.error?.message ?? "Could not save preference");
+      }
+      if (data.piiDeletionRequestedAt) {
+        setSavedAt(data.piiDeletionRequestedAt);
+      }
+      toast.success("Preference saved");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not save");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const invoiceHref =
+    typeof window !== "undefined"
+      ? `/order/${encodeURIComponent(orderId)}/invoice${ct ? `?ct=${encodeURIComponent(ct)}` : ""}`
+      : "#";
+
+  return (
+    <div
+      className={`
+        rounded-xl border border-border bg-card p-5
+        sm:p-6
+      `}
+    >
+      <h2 className="text-lg font-semibold">Your data &amp; records</h2>
+      <p className="mt-2 text-sm text-muted-foreground">
+        Download a printable invoice for your files. You can also ask us to
+        delete shipping and phone details from this order{" "}
+        <strong>60 days after delivery is confirmed</strong>. After that purge
+        we will not be able to resend line-item or address details from this
+        order—keep anything you need before then.
+      </p>
+      <div
+        className={`
+        mt-4 flex flex-col gap-3
+        sm:flex-row sm:flex-wrap
+      `}
+      >
+        <Button
+          asChild
+          className={`
+          w-full
+          sm:w-auto
+        `}
+          variant="outline"
+        >
+          <Link href={invoiceHref} rel="noopener noreferrer" target="_blank">
+            <FileText className="mr-2 size-4" />
+            Open invoice (print / save as PDF)
+          </Link>
+        </Button>
+      </div>
+      <div className="mt-6 border-t border-border pt-6">
+        {savedAt ? (
+          <p className="text-sm text-muted-foreground">
+            You have opted in to delete personal shipping data for this order
+            {purgeHint
+              ? ` after ${purgeHint}`
+              : " once delivery is confirmed and the 60-day window has passed"}
+            .
+          </p>
+        ) : (
+          <div className="flex flex-col gap-3">
+            <p className="text-sm text-muted-foreground">
+              Delete my shipping address and phone from this order 60 days after
+              delivery is confirmed. We will not retain those fields afterward;
+              keep your own copy of this order if you need it later.
+            </p>
+            <Button
+              className={`
+                w-full
+                sm:w-auto
+              `}
+              disabled={busy}
+              onClick={() => void requestDeletion()}
+              type="button"
+              variant="secondary"
+            >
+              {busy ? "Saving…" : "Request deletion after delivery + 60 days"}
+            </Button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -1035,4 +1181,13 @@ function paymentMethodLabel(
   if (m === "ton_pay") return "TON";
   if (m === "crypto") return "Crypto";
   return method ?? "—";
+}
+
+/** Read confirmation token without removing (thank-you page may need it for PATCH / invoice). */
+function peekConfirmationToken(key: string): null | string {
+  try {
+    return sessionStorage.getItem(key);
+  } catch {
+    return null;
+  }
 }

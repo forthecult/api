@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronRight, Headphones, Loader2, Plus, Trash2 } from "lucide-react";
+import { ChevronRight, Headphones, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import * as React from "react";
 
@@ -18,6 +18,7 @@ import {
 } from "~/ui/primitives/card";
 import { Input } from "~/ui/primitives/input";
 import { Label } from "~/ui/primitives/label";
+import { Spinner } from "~/ui/primitives/spinner";
 
 interface Ticket {
   createdAt: string;
@@ -257,7 +258,7 @@ export function SupportTicketsPageClient() {
               <Button disabled={submitting} type="submit">
                 {submitting ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Spinner className="mr-2" variant="inline" />
                     Submitting…
                   </>
                 ) : (
@@ -284,7 +285,7 @@ export function SupportTicketsPageClient() {
                 text-muted-foreground
               `}
             >
-              <Loader2 aria-hidden className="h-6 w-6 animate-spin" />
+              <Spinner className="size-6 border-[3px]" variant="inline" />
             </div>
           ) : tickets.length === 0 ? (
             <p className="py-8 text-center text-sm text-muted-foreground">
@@ -351,7 +352,7 @@ export function SupportTicketsPageClient() {
                       variant="ghost"
                     >
                       {deletingId === ticket.id ? (
-                        <Loader2 aria-hidden className="h-4 w-4 animate-spin" />
+                        <Spinner variant="inline" />
                       ) : (
                         <Trash2 aria-hidden className="h-4 w-4" />
                       )}

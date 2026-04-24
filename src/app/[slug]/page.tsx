@@ -816,6 +816,7 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
           description={categoryDescription}
           initialCategories={categories}
           initialCategory={slug}
+          initialMerchCategory={merchParam || undefined}
           initialPage={page}
           initialProducts={products}
           initialSearch={searchQuery}
@@ -832,7 +833,6 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
           initialTotal={data.total ?? 0}
           initialTotalPages={data.totalPages ?? 1}
           merchFilterOptions={merchOptions}
-          initialMerchCategory={merchParam || undefined}
           subcategories={subcategories}
           title={category.name}
         />
@@ -848,7 +848,10 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
             suppressHydrationWarning
           >
             <div
-              className="prose prose-invert max-w-none dark:prose-invert"
+              className={`
+                prose prose-invert max-w-none
+                dark:prose-invert
+              `}
               // Admin-controlled HTML: sanitize in admin before save in production
               dangerouslySetInnerHTML={{ __html: category.marketingBlockHtml }}
             />
@@ -857,9 +860,7 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
       {category.footerReviewsEnabled && (
         <div className="border-t border-border">
           <ProductReviewsCarousel
-            forCategorySlug={
-              category.footerReviewsStoreWide ? undefined : slug
-            }
+            forCategorySlug={category.footerReviewsStoreWide ? undefined : slug}
           />
         </div>
       )}

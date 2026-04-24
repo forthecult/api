@@ -14,7 +14,10 @@ import {
   productsTable,
   productVariantsTable,
 } from "~/db/schema";
-import { onOrderStatusUpdate } from "~/lib/create-user-notification";
+import {
+  onOrderDeliveredForReviewFunnel,
+  onOrderStatusUpdate,
+} from "~/lib/create-user-notification";
 import {
   confirmPrintfulOrder,
   createPrintfulOrder,
@@ -629,11 +632,11 @@ export async function updateOrderFromPrintfulWebhook(
       break;
 
     case "order_put_hold":
-
-    case "order_put_hold_approval":
+    case "order_put_hold_approval": {
       // Order put on hold
       updates.fulfillmentStatus = "on_hold";
       break;
+    }
 
     case "order_refunded":
       // Printful-initiated refund
@@ -672,12 +675,12 @@ export async function updateOrderFromPrintfulWebhook(
       break;
 
     case "package_shipped":
-
-    case "shipment_sent":
+    case "shipment_sent": {
       // Package/shipment has shipped
       updates.fulfillmentStatus = "fulfilled";
       updates.status = "fulfilled";
       break;
+    }
 
     case "shipment_canceled":
       // Individual shipment cancelled
@@ -701,14 +704,14 @@ export async function updateOrderFromPrintfulWebhook(
       );
       break;
     case "shipment_put_hold":
-
-    case "shipment_put_hold_approval":
+    case "shipment_put_hold_approval": {
       // Shipment put on hold - alert admin but DO NOT change store fulfillment status
       console.warn(
         `[Printful] Shipment hold for order ${order.id} (Printful order ${printfulOrderId}): ${event.type}`,
       );
       // Only persist tracking/cost updates, no status change
       break;
+    }
 
     case "shipment_remove_hold":
       // Shipment hold removed - log only (status unchanged per shipment_put_hold policy)
@@ -732,17 +735,21 @@ export async function updateOrderFromPrintfulWebhook(
       `Updated order ${order.id} from Printful webhook: ${event.type}`,
     );
 
-    // Notify user of order status changes
+    // Shipment_sent = label / carrier handoff → shipped email. Delivered → review funnel (not another "shipped" email).
     const trackingNumber = shipment?.tracking_number;
     const trackingUrl = shipment?.tracking_url ?? undefined;
-    if (
-      updates.fulfillmentStatus === "fulfilled" ||
-      updates.status === "fulfilled"
-    ) {
+    if (event.type === "package_shipped" || event.type === "shipment_sent") {
       void onOrderStatusUpdate(order.id, "order_shipped", {
         trackingNumber: trackingNumber ?? undefined,
         trackingUrl,
       });
+    } else if (event.type === "shipment_delivered") {
+      void onOrderDeliveredForReviewFunnel(order.id);
+    } else if (
+      event.type === "order_updated" &&
+      event.data.order?.status === "fulfilled"
+    ) {
+      void onOrderDeliveredForReviewFunnel(order.id);
     } else if (updates.fulfillmentStatus === "on_hold") {
       void onOrderStatusUpdate(order.id, "order_on_hold");
     } else if (

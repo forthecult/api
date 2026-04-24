@@ -8,7 +8,6 @@
  * SOC 2: CC7.2 (monitoring of security events), CC7.3 (evaluation of events).
  */
 import crypto from "node:crypto";
-
 import { PostHog } from "posthog-node";
 
 import { db } from "~/db";
@@ -37,20 +36,6 @@ function getPosthog(): null | PostHogLike {
 }
 
 const IP_HASH_SECRET = process.env.ADMIN_AUDIT_IP_SALT ?? "";
-
-/**
- * Hash the caller IP so we have a stable identifier across sessions for
- * abuse detection, without storing raw IPs (GDPR + CC6.7 data minimization).
- * Requires ADMIN_AUDIT_IP_SALT to avoid rainbow-table attacks.
- */
-function hashIp(ip: null | string): null | string {
-  if (!ip || !IP_HASH_SECRET) return null;
-  return crypto
-    .createHmac("sha256", IP_HASH_SECRET)
-    .update(ip)
-    .digest("hex")
-    .slice(0, 32);
-}
 
 export interface AdminAuditRecord {
   authMethod: "api_key" | "session" | "unauthenticated";
@@ -108,4 +93,18 @@ export async function recordAdminAudit(rec: AdminAuditRecord): Promise<void> {
       });
     }
   }
+}
+
+/**
+ * Hash the caller IP so we have a stable identifier across sessions for
+ * abuse detection, without storing raw IPs (GDPR + CC6.7 data minimization).
+ * Requires ADMIN_AUDIT_IP_SALT to avoid rainbow-table attacks.
+ */
+function hashIp(ip: null | string): null | string {
+  if (!ip || !IP_HASH_SECRET) return null;
+  return crypto
+    .createHmac("sha256", IP_HASH_SECRET)
+    .update(ip)
+    .digest("hex")
+    .slice(0, 32);
 }

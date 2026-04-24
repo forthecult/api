@@ -20,6 +20,7 @@ export const NOTIFICATION_CLASSIFICATION = {
     "order_placed",
     "order_processing",
     "order_shipped",
+    "order_out_for_delivery",
     "order_on_hold",
     "order_cancelled",
     "refund",
@@ -117,6 +118,15 @@ export const NOTIFICATION_TEMPLATES: Record<
     title: "Order shipped",
     transactional: true,
   },
+  order_out_for_delivery: {
+    body: "Your package is out for delivery. Track it with the link in this email.",
+    emailBody:
+      "Great news — your package is out for delivery with the carrier. Keep an eye on tracking for the exact arrival window.",
+    emailSubject: "Your order is out for delivery",
+    id: "order_out_for_delivery",
+    title: "Out for delivery",
+    transactional: true,
+  },
   // ---- Transactional ----
   password_reset: {
     body: "We received a request to reset your password. Use the link in this email to set a new password. If you didn't request this, you can ignore this email.",
@@ -171,6 +181,7 @@ export function buildOrderNotificationCopy(
   type:
     | "order_cancelled"
     | "order_on_hold"
+    | "order_out_for_delivery"
     | "order_placed"
     | "order_processing"
     | "order_shipped",
@@ -207,6 +218,11 @@ export function buildOrderNotificationCopy(
         };
       }
       return { body: `Order ${shortId} has shipped!`, title: "Order shipped" };
+    case "order_out_for_delivery":
+      return {
+        body: `Order ${shortId} is out for delivery with the carrier.`,
+        title: "Out for delivery",
+      };
     default:
       return { body: `Order ${shortId} status update.`, title: "Order update" };
   }

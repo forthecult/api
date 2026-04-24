@@ -14,6 +14,7 @@ import {
   publicApiCorsPreflight,
   withPublicApiCors,
 } from "~/lib/cors-public-api";
+import { resolveStorefrontBrandNameFromSlug } from "~/lib/storefront-brands";
 import {
   computeCategoryIdAndDescendantIds,
   computeCryptoCategoryIdsIncludingDescendants,
@@ -95,6 +96,25 @@ export async function GET(request: NextRequest) {
       ? sortParam
       : "newest";
     const offset = (page - 1) * limit;
+
+    const brandSlugParam = searchParams.get("brandSlug")?.trim() || null;
+    const resolvedBrandName = brandSlugParam
+      ? await resolveStorefrontBrandNameFromSlug(brandSlugParam)
+      : null;
+    if (brandSlugParam && !resolvedBrandName) {
+      return withPublicApiCors(
+        NextResponse.json({
+          categories: await getCategoriesWithProductsAndDisplayImage({
+            topLevelOnly: true,
+          }),
+          items: [],
+          limit,
+          page: 1,
+          total: 0,
+          totalPages: 0,
+        }),
+      );
+    }
 
     let categorySlugToFilter = subcategory || category;
     // URL-friendly alias: "featured" → "__featured__" (products in featured categories)
@@ -258,9 +278,7 @@ export async function GET(request: NextRequest) {
           const merchProducts = await db
             .select({ productId: productCategoriesTable.productId })
             .from(productCategoriesTable)
-            .where(
-              inArray(productCategoriesTable.categoryId, [...merchIds]),
-            );
+            .where(inArray(productCategoriesTable.categoryId, [...merchIds]));
           const merchSet = new Set(merchProducts.map((r) => r.productId));
           productIdsFilter = productIdsFilter.filter((id) => merchSet.has(id));
         }
@@ -325,6 +343,13 @@ export async function GET(request: NextRequest) {
       whereClause = and(
         whereClause,
         ilike(productsTable.name, `%${escapedQ}%`),
+      );
+    }
+
+    if (resolvedBrandName) {
+      whereClause = and(
+        whereClause,
+        eq(productsTable.brand, resolvedBrandName),
       );
     }
 

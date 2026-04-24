@@ -1,5 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { createElement } from "react";
 
+import { StaffContactFormEmail } from "~/emails/staff-contact-form";
+import { sendEmail } from "~/lib/email/send-email";
 import {
   checkRateLimit,
   getClientIp,
@@ -58,13 +61,6 @@ export async function POST(request: NextRequest) {
 
     if (process.env.RESEND_API_KEY) {
       try {
-        const { Resend } = await import("resend");
-        const resend = new Resend(process.env.RESEND_API_KEY);
-        const from =
-          typeof process.env.RESEND_FROM_EMAIL === "string" &&
-          process.env.RESEND_FROM_EMAIL.length > 0
-            ? process.env.RESEND_FROM_EMAIL.trim()
-            : "onboarding@resend.dev";
         const safeMessage = message
           .trim()
           .replace(/</g, "&lt;")
@@ -81,23 +77,25 @@ export async function POST(request: NextRequest) {
           .trim()
           .replace(/</g, "&lt;")
           .replace(/>/g, "&gt;");
-        const { error } = await resend.emails.send({
-          from,
-          html: `<!DOCTYPE html><html><body><p><strong>From:</strong> ${safeName} &lt;${safeEmail}&gt;</p><p><strong>Subject:</strong> ${safeSubject}</p><hr/><pre style="white-space:pre-wrap;font-family:inherit;">${safeMessage}</pre></body></html>`,
+        const htmlBody = `<p><strong>From:</strong> ${safeName} &lt;${safeEmail}&gt;</p><p><strong>Subject:</strong> ${safeSubject}</p><hr/><pre style="white-space:pre-wrap;font-family:inherit;">${safeMessage}</pre>`;
+        const res = await sendEmail({
+          correlationId: `contact-${safeEmail}-${Date.now()}`,
+          internal: true,
+          kind: "internal_staff_contact",
+          react: createElement(StaffContactFormEmail, { htmlBody }),
           replyTo: email.trim(),
           subject: `[Contact] ${subject.trim()}`,
-          text: `From: ${name.trim()} <${email.trim()}>\nSubject: ${subject.trim()}\n\n${message.trim()}`,
           to,
         });
-        if (error) {
-          console.error("[Contact form] Resend error:", error);
+        if (res.ok === false && !("skipped" in res && res.skipped)) {
+          console.error("[Contact form] sendEmail failed:", res);
           return NextResponse.json(
             { error: "Failed to send message. Please try again." },
             { status: 500 },
           );
         }
       } catch (err) {
-        console.error("[Contact form] Resend send failed:", err);
+        console.error("[Contact form] send failed:", err);
         return NextResponse.json(
           { error: "Failed to send message. Please try again." },
           { status: 500 },

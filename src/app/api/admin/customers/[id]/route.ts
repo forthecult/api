@@ -23,10 +23,12 @@ export async function GET(
     const [user] = await db
       .select({
         createdAt: userTable.createdAt,
+        crmNotes: userTable.crmNotes,
         email: userTable.email,
         firstName: userTable.firstName,
         id: userTable.id,
         image: userTable.image,
+        interestTags: userTable.interestTags,
         lastName: userTable.lastName,
         marketingAiCompanion: userTable.marketingAiCompanion,
         marketingEmail: userTable.marketingEmail,
@@ -37,6 +39,7 @@ export async function GET(
         phone: userTable.phone,
         receiveMarketing: userTable.receiveMarketing,
         receiveSmsMarketing: userTable.receiveSmsMarketing,
+        sex: userTable.sex,
         transactionalAiCompanion: userTable.transactionalAiCompanion,
         // Notification preferences
         transactionalEmail: userTable.transactionalEmail,
@@ -138,10 +141,12 @@ export async function GET(
       city: loc?.shippingCity ?? null,
       country: loc?.shippingCountryCode ?? null,
       createdAt: user.createdAt?.toISOString() ?? null,
+      crmNotes: user.crmNotes ?? null,
       email: user.email,
       firstName: user.firstName,
       id: user.id,
       image: user.image,
+      interestTags: user.interestTags ?? null,
       lastName: user.lastName,
       latestShippingAddress: loc
         ? {
@@ -175,6 +180,7 @@ export async function GET(
       phone: user.phone,
       receiveMarketing: user.receiveMarketing ?? false,
       receiveSmsMarketing: user.receiveSmsMarketing ?? false,
+      sex: user.sex ?? null,
       tokenBalanceCents: null as null | number,
       twoFactorEnabled: user.twoFactorEnabled ?? false,
       updatedAt: user.updatedAt?.toISOString() ?? null,
@@ -219,6 +225,22 @@ export async function PATCH(
     if (body.phone !== undefined) {
       updates.phone =
         typeof body.phone === "string" ? body.phone.trim() || null : null;
+    }
+    if (body.sex !== undefined) {
+      updates.sex =
+        typeof body.sex === "string" ? body.sex.trim().slice(0, 64) || null : null;
+    }
+    if (body.interestTags !== undefined) {
+      updates.interestTags =
+        typeof body.interestTags === "string" ?
+          body.interestTags.trim().slice(0, 8000) || null
+        : null;
+    }
+    if (body.crmNotes !== undefined) {
+      updates.crmNotes =
+        typeof body.crmNotes === "string" ?
+          body.crmNotes.trim().slice(0, 16000) || null
+        : null;
     }
 
     // Notification preferences: single source of truth (keeps receiveMarketing/receiveSmsMarketing in sync)
@@ -277,12 +299,15 @@ export async function PATCH(
       .set({ ...updates, updatedAt: new Date() })
       .where(eq(userTable.id, id))
       .returning({
+        crmNotes: userTable.crmNotes,
         firstName: userTable.firstName,
         id: userTable.id,
+        interestTags: userTable.interestTags,
         lastName: userTable.lastName,
         phone: userTable.phone,
         receiveMarketing: userTable.receiveMarketing,
         receiveSmsMarketing: userTable.receiveSmsMarketing,
+        sex: userTable.sex,
       });
     if (!updated) {
       return NextResponse.json(
@@ -291,11 +316,14 @@ export async function PATCH(
       );
     }
     return NextResponse.json({
+      crmNotes: updated.crmNotes ?? null,
       firstName: updated.firstName,
+      interestTags: updated.interestTags ?? null,
       lastName: updated.lastName,
       phone: updated.phone ?? null,
       receiveMarketing: updated.receiveMarketing ?? false,
       receiveSmsMarketing: updated.receiveSmsMarketing ?? false,
+      sex: updated.sex ?? null,
     });
   } catch (err) {
     console.error("Admin customer PATCH error:", err);

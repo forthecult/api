@@ -60,7 +60,7 @@ export function CryptoPrice({ className, usdAmount }: CryptoPriceProps) {
   }
   return (
     <span
-      className={cn("flex flex-col gap-0.5 font-mono-crypto", className)}
+      className={cn("font-mono-crypto flex flex-col gap-0.5", className)}
       data-crypto-price
     >
       {lineRows.map(({ code, line }) => (

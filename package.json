@@ -31,6 +31,8 @@
     "db:migrate-user-role": "psql $DATABASE_URL -f scripts/migrate-add-user-role.sql",
     "db:migrate-esim-order-guest": "psql $DATABASE_URL -f scripts/migrate-esim-order-user-id-nullable.sql",
     "db:migrate-support-chat-source": "psql $DATABASE_URL -f scripts/migrate-support-chat-source.sql",
+    "db:migrate-cart-snapshot": "bun run scripts/run-psql-migration.ts scripts/migrate-shopping-cart-snapshot.sql",
+    "db:migrate-user-crm-profile": "bun run scripts/run-psql-migration.ts scripts/migrate-user-crm-profile.sql",
     "db:migrate-email": "bun run scripts/run-psql-migration.ts scripts/migrate-email-tables.sql",
     "db:migrate-rls": "bun run scripts/run-psql-migration.ts scripts/migrate-enable-rls-auth-tables.sql",
     "db:migrate-email-foundation": "bun run db:migrate-email && bun run db:migrate-rls",

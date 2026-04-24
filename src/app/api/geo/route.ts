@@ -1,31 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
 
-/**
- * Returns coarse client geo: ISO country and region (e.g. US state code) when available.
- * Sources (in order):
- * 1. Vercel: x-vercel-ip-country, x-vercel-ip-country-region
- * 2. Cloudflare: cf-ipcountry, cf-ipregion (when present)
- * 3. Generic: x-country, x-region-code
- * 4. ip-api.com (HTTP) for country/region from client IP
- *
- * GET /api/geo
- */
-function getClientIp(request: NextRequest): null | string {
-  const forwardedFor = request.headers.get("x-forwarded-for");
-  const realIp = request.headers.get("x-real-ip");
-  const ip = forwardedFor?.split(",")[0]?.trim() || realIp || null;
-  if (
-    !ip ||
-    ip === "127.0.0.1" ||
-    ip === "::1" ||
-    ip.startsWith("192.168.") ||
-    ip.startsWith("10.")
-  ) {
-    return null;
-  }
-  return ip;
-}
-
 export async function GET(request: NextRequest) {
   const vercelCountry = request.headers.get("x-vercel-ip-country");
   const cloudflareCountry = request.headers.get("cf-ipcountry");
@@ -92,4 +66,30 @@ export async function GET(request: NextRequest) {
     country: country && country.length === 2 ? country : null,
     region: regionCode,
   });
+}
+
+/**
+ * Returns coarse client geo: ISO country and region (e.g. US state code) when available.
+ * Sources (in order):
+ * 1. Vercel: x-vercel-ip-country, x-vercel-ip-country-region
+ * 2. Cloudflare: cf-ipcountry, cf-ipregion (when present)
+ * 3. Generic: x-country, x-region-code
+ * 4. ip-api.com (HTTP) for country/region from client IP
+ *
+ * GET /api/geo
+ */
+function getClientIp(request: NextRequest): null | string {
+  const forwardedFor = request.headers.get("x-forwarded-for");
+  const realIp = request.headers.get("x-real-ip");
+  const ip = forwardedFor?.split(",")[0]?.trim() || realIp || null;
+  if (
+    !ip ||
+    ip === "127.0.0.1" ||
+    ip === "::1" ||
+    ip.startsWith("192.168.") ||
+    ip.startsWith("10.")
+  ) {
+    return null;
+  }
+  return ip;
 }

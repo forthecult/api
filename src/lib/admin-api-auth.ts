@@ -200,6 +200,17 @@ export async function getAdminAuth(
   return { ok: false };
 }
 
+/** Timing-safe comparison to prevent key extraction via timing attacks. */
+function constantTimeEqual(a: string, b: string): boolean {
+  const sA = typeof a === "string" ? a : String(a);
+  const sB = typeof b === "string" ? b : String(b);
+  if (sA.length !== sB.length) return false;
+  const bufA = Buffer.from(sA, "utf8");
+  const bufB = Buffer.from(sB, "utf8");
+  if (bufA.length !== bufB.length) return false;
+  return crypto.timingSafeEqual(bufA, bufB);
+}
+
 async function userHasPasskey(userId: string): Promise<boolean> {
   try {
     const rows = await db
@@ -214,15 +225,4 @@ async function userHasPasskey(userId: string): Promise<boolean> {
     });
     return false;
   }
-}
-
-/** Timing-safe comparison to prevent key extraction via timing attacks. */
-function constantTimeEqual(a: string, b: string): boolean {
-  const sA = typeof a === "string" ? a : String(a);
-  const sB = typeof b === "string" ? b : String(b);
-  if (sA.length !== sB.length) return false;
-  const bufA = Buffer.from(sA, "utf8");
-  const bufB = Buffer.from(sB, "utf8");
-  if (bufA.length !== bufB.length) return false;
-  return crypto.timingSafeEqual(bufA, bufB);
 }

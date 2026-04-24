@@ -35,10 +35,12 @@ export async function GET(
       .select({
         createdAt: ordersTable.createdAt,
         cryptoCurrency: ordersTable.cryptoCurrency,
+        deliveredAt: ordersTable.deliveredAt,
         email: ordersTable.email,
         id: ordersTable.id,
         payerWalletAddress: ordersTable.payerWalletAddress,
         paymentMethod: ordersTable.paymentMethod,
+        piiDeletionRequestedAt: ordersTable.piiDeletionRequestedAt,
         shippingAddress1: ordersTable.shippingAddress1,
         shippingAddress2: ordersTable.shippingAddress2,
         shippingCity: ordersTable.shippingCity,
@@ -193,6 +195,9 @@ export async function GET(
       accessLevel,
       createdAt: order.createdAt.toISOString(),
       cryptoCurrency: order.cryptoCurrency ?? undefined,
+      deliveredAt: canSeePII
+        ? (order.deliveredAt?.toISOString() ?? undefined)
+        : undefined,
       email: canSeePII
         ? (order.email ?? undefined)
         : order.email
@@ -216,6 +221,9 @@ export async function GET(
           }
         : undefined,
       paymentMethod: order.paymentMethod ?? undefined,
+      piiDeletionRequestedAt: canSeePII
+        ? (order.piiDeletionRequestedAt?.toISOString() ?? undefined)
+        : undefined,
       shipping,
       status,
       totals: {

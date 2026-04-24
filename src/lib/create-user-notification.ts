@@ -18,7 +18,13 @@ import {
   userTable,
 } from "~/db/schema";
 import { getNotificationTemplate } from "~/lib/notification-templates";
+import {
+  enrollReviewMarketingSeries,
+} from "~/lib/email/funnel-enrollment";
+import { getEmailFunnelCouponExperimentVariant } from "~/lib/email/posthog-email-experiments";
+import { markShoppingCartSnapshotsPurchased } from "~/lib/cart/mark-shopping-cart-purchased";
 import { sendOrderConfirmationEmail } from "~/lib/send-order-confirmation-email";
+import { sendOrderOutForDeliveryEmail } from "~/lib/send-order-out-for-delivery-email";
 import { sendOrderShippedEmail } from "~/lib/send-order-shipped-email";
 import { sendRefundRequestSubmittedEmail } from "~/lib/send-refund-request-submitted-email";
 import {
@@ -69,6 +75,13 @@ export async function onOrderCreated(orderId: string): Promise<void> {
     .where(eq(ordersTable.id, orderId))
     .limit(1);
   if (!order) return;
+
+  if (order.email?.trim()) {
+    void markShoppingCartSnapshotsPurchased({
+      email: order.email.trim(),
+      userId: order.userId,
+    });
+  }
 
   const isEsimOnly = await orderIsEsimOnly(orderId);
   void notifyOrderUpdate(orderId, {
@@ -166,6 +179,7 @@ async function orderIsEsimOnly(orderId: string): Promise<boolean> {
 const ORDER_STATUS_NOTIFICATION_KINDS = [
   "order_processing",
   "order_shipped",
+  "order_out_for_delivery",
   "order_on_hold",
   "order_cancelled",
 ] as const;
@@ -174,6 +188,7 @@ const ORDER_STATUS_NOTIFICATION_KINDS = [
 export type OrderStatusKind =
   | "order_cancelled"
   | "order_on_hold"
+  | "order_out_for_delivery"
   | "order_processing"
   | "order_shipped";
 
@@ -200,7 +215,7 @@ export async function onOrderStatusUpdate(
   let telegramKind: "cancelled" | "fulfilled" | "on_hold" | "processing";
   if (kind === "order_processing") {
     telegramKind = "processing";
-  } else if (kind === "order_shipped") {
+  } else if (kind === "order_shipped" || kind === "order_out_for_delivery") {
     telegramKind = "fulfilled";
   } else if (kind === "order_on_hold") {
     telegramKind = "on_hold";
@@ -227,6 +242,11 @@ export async function onOrderStatusUpdate(
         description = options?.trackingNumber
           ? `Order ${shortId} has shipped. Tracking: ${options.trackingNumber}`
           : `Order ${shortId} has shipped!`;
+      } else if (kind === "order_out_for_delivery") {
+        title = "Out for delivery";
+        description = options?.trackingNumber
+          ? `Order ${shortId} is out for delivery. Tracking: ${options.trackingNumber}`
+          : `Order ${shortId} is out for delivery.`;
       } else if (kind === "order_on_hold") {
         title = "Order on hold";
         description = `Order ${shortId} is on hold. We'll update you when it's moving again.`;
@@ -261,6 +281,57 @@ export async function onOrderStatusUpdate(
       trackingUrl: options?.trackingUrl,
     });
   }
+
+  if (
+    kind === "order_out_for_delivery" &&
+    order.email?.trim() &&
+    (await userWantsTransactionalEmail(order.userId))
+  ) {
+    void sendOrderOutForDeliveryEmail({
+      orderId,
+      to: order.email.trim(),
+      trackingNumber: options?.trackingNumber,
+      trackingUrl: options?.trackingUrl,
+    });
+  }
+}
+
+/**
+ * After carrier-confirmed delivery, enroll the 3-step review / re-engagement marketing series.
+ * Marketing consent is enforced when each drip email sends.
+ */
+export async function onOrderDeliveredForReviewFunnel(orderId: string): Promise<void> {
+  const [order] = await db
+    .select({
+      email: ordersTable.email,
+      userId: ordersTable.userId,
+    })
+    .from(ordersTable)
+    .where(eq(ordersTable.id, orderId))
+    .limit(1);
+  if (!order?.email?.trim()) return;
+
+  let userId: null | string = order.userId;
+  if (!userId) {
+    const [userByEmail] = await db
+      .select({ id: userTable.id })
+      .from(userTable)
+      .where(eq(userTable.email, order.email.trim()))
+      .limit(1);
+    userId = userByEmail?.id ?? null;
+  }
+
+  const variant = await getEmailFunnelCouponExperimentVariant(
+    (userId && userId.trim()) || order.email.trim().toLowerCase(),
+    { email: order.email.trim(), userId },
+  );
+
+  await enrollReviewMarketingSeries({
+    context: { orderId },
+    email: order.email.trim(),
+    experimentVariant: variant,
+    userId,
+  });
 }
 
 /**

@@ -6,7 +6,6 @@ import {
   Clock,
   Copy,
   ExternalLink,
-  Loader2,
   Signal,
   Smartphone,
   Wifi,
@@ -20,6 +19,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Badge } from "~/ui/primitives/badge";
 import { Button } from "~/ui/primitives/button";
 import { Card, CardContent, CardHeader } from "~/ui/primitives/card";
+import { Spinner } from "~/ui/primitives/spinner";
 
 // ---------- Types ----------
 
@@ -182,7 +182,10 @@ export function MyEsimsClient() {
 
       {loading ? (
         <div className="flex items-center justify-center gap-2 py-16">
-          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          <Spinner
+            className="size-5 border-muted-foreground"
+            variant="inline"
+          />
           <span className="text-sm text-muted-foreground">
             Loading your eSIMs...
           </span>
@@ -429,7 +432,10 @@ function EsimOrderCard({
                 >
                   {isRetrying ? (
                     <>
-                      <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                      <Spinner
+                        className="mr-1 size-3 border"
+                        variant="inline"
+                      />
                       Checking…
                     </>
                   ) : (
@@ -445,7 +451,7 @@ function EsimOrderCard({
                   variant="outline"
                 >
                   {loadingUsage ? (
-                    <Loader2 className="h-3 w-3 animate-spin" />
+                    <Spinner className="size-3 border" variant="inline" />
                   ) : (
                     "Check Usage"
                   )}

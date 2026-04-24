@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, Headphones, Loader2, Send } from "lucide-react";
+import { ChevronLeft, Headphones, Send } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import * as React from "react";
@@ -9,6 +9,7 @@ import { cn } from "~/lib/cn";
 import { formatDateTime } from "~/lib/format";
 import { Button } from "~/ui/primitives/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/ui/primitives/card";
+import { Spinner } from "~/ui/primitives/spinner";
 
 interface Message {
   content: string;
@@ -148,10 +149,7 @@ export function SupportTicketDetailClient() {
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <Loader2
-          aria-hidden
-          className="h-8 w-8 animate-spin text-muted-foreground"
-        />
+        <Spinner className="border-muted-foreground" variant="page" />
       </div>
     );
   }

@@ -14,7 +14,10 @@ import {
   productsTable,
   productVariantsTable,
 } from "~/db/schema";
-import { onOrderStatusUpdate } from "~/lib/create-user-notification";
+import {
+  onOrderDeliveredForReviewFunnel,
+  onOrderStatusUpdate,
+} from "~/lib/create-user-notification";
 import {
   calculatePrintifyOrderShipping,
   cancelPrintifyOrder as cancelPrintifyOrderApi,
@@ -519,6 +522,8 @@ export async function updateOrderFromPrintifyWebhook(
     type: string;
   },
 ): Promise<{ error?: string; success: boolean }> {
+  const eventType: string = event.type;
+
   // Find our order by Printify order ID
   const [order] = await db
     .select({
@@ -539,7 +544,7 @@ export async function updateOrderFromPrintifyWebhook(
   };
 
   // Map Printify events to our fulfillment status
-  switch (event.type) {
+  switch (eventType) {
     case "order:sent-to-production":
       // Order is being produced
       if (order.fulfillmentStatus !== "fulfilled") {
@@ -611,7 +616,7 @@ export async function updateOrderFromPrintifyWebhook(
 
     default:
       // Unknown event type - log but don't fail
-      console.log(`Unhandled Printify webhook event: ${event.type}`);
+      console.log(`Unhandled Printify webhook event: ${eventType}`);
       return { success: true };
   }
 
@@ -622,35 +627,56 @@ export async function updateOrderFromPrintifyWebhook(
       .set(updates)
       .where(eq(ordersTable.id, order.id));
     console.log(
-      `Updated order ${order.id} from Printify webhook: ${event.type}`,
+      `Updated order ${order.id} from Printify webhook: ${eventType}`,
     );
 
-    // Notify user of order status changes
+    // Shipping / delivery notifications (do not treat "fulfilled" alone as shipped — delivered should enroll review funnel, not resend shipped.)
     const shipment = event.data.shipment;
     const trackingNumber = shipment?.number;
     const trackingUrl = shipment?.url ?? undefined;
-    if (
-      updates.fulfillmentStatus === "fulfilled" ||
-      updates.status === "fulfilled"
-    ) {
+    const statusLower = (event.data.status ?? "").toLowerCase();
+    // Widen so TS does not narrow `eventType` to only `order:sent-to-production` after prior branches.
+    const notifyEvent = `${eventType}`;
+
+    if (notifyEvent === "order:shipment:created") {
       void onOrderStatusUpdate(order.id, "order_shipped", {
         trackingNumber: trackingNumber ?? undefined,
         trackingUrl,
       });
+    } else if (notifyEvent === "order:shipment:delivered") {
+      void onOrderDeliveredForReviewFunnel(order.id);
+    } else if (notifyEvent === "order:updated") {
+      if (statusLower === "delivered") {
+        void onOrderDeliveredForReviewFunnel(order.id);
+      } else if (
+        statusLower === "shipping" ||
+        statusLower === "on_the_way" ||
+        statusLower.includes("out_for_delivery")
+      ) {
+        void onOrderStatusUpdate(order.id, "order_out_for_delivery", {
+          trackingNumber: trackingNumber ?? undefined,
+          trackingUrl,
+        });
+      } else if (statusLower === "shipped") {
+        void onOrderStatusUpdate(order.id, "order_shipped", {
+          trackingNumber: trackingNumber ?? undefined,
+          trackingUrl,
+        });
+      }
     } else if (updates.fulfillmentStatus === "on_hold") {
       void onOrderStatusUpdate(order.id, "order_on_hold");
     } else if (
       updates.fulfillmentStatus === "unfulfilled" &&
-      event.type !== "order:shipment:delivered"
+      notifyEvent !== "order:shipment:delivered"
     ) {
       const isCanceled =
-        event.type === "order:updated" && event.data.status === "canceled";
+        notifyEvent === "order:updated" && event.data.status === "canceled";
       if (isCanceled) {
         void onOrderStatusUpdate(order.id, "order_cancelled");
       }
     } else if (
       updates.fulfillmentStatus === "partially_fulfilled" &&
-      event.type === "order:sent-to-production"
+      notifyEvent === "order:sent-to-production"
     ) {
       void onOrderStatusUpdate(order.id, "order_processing");
     }

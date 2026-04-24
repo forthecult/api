@@ -22,9 +22,13 @@ const labelClass = "mb-1.5 block text-sm font-medium";
 interface Category {
   description: null | string;
   featured: boolean;
+  footerReviewsEnabled?: boolean;
+  footerReviewsStoreWide?: boolean;
   id: string;
   imageUrl: null | string;
   level: number;
+  marketingBlockEnabled?: boolean;
+  marketingBlockHtml?: null | string;
   metaDescription: null | string;
   name: string;
   parentId: null | string;
@@ -34,10 +38,6 @@ interface Category {
   tokenGated?: boolean;
   tokenGates?: TokenGateRow[];
   visible?: boolean;
-  footerReviewsEnabled?: boolean;
-  footerReviewsStoreWide?: boolean;
-  marketingBlockEnabled?: boolean;
-  marketingBlockHtml?: null | string;
 }
 
 interface CategoryOption {
@@ -145,16 +145,16 @@ export default function AdminCategoryEditPage() {
           false,
       );
       setFooterReviewsStoreWide(
-        (data as { footerReviewsStoreWide?: boolean })
-          .footerReviewsStoreWide ?? true,
+        (data as { footerReviewsStoreWide?: boolean }).footerReviewsStoreWide ??
+          true,
       );
       setMarketingBlockEnabled(
-        (data as { marketingBlockEnabled?: boolean })
-          .marketingBlockEnabled ?? false,
+        (data as { marketingBlockEnabled?: boolean }).marketingBlockEnabled ??
+          false,
       );
       setMarketingBlockHtml(
-        (data as { marketingBlockHtml?: null | string })
-          .marketingBlockHtml ?? "",
+        (data as { marketingBlockHtml?: null | string }).marketingBlockHtml ??
+          "",
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load category");
@@ -256,20 +256,20 @@ export default function AdminCategoryEditPage() {
           body: JSON.stringify({
             description: description.trim() || null,
             featured,
+            footerReviewsEnabled,
+            footerReviewsStoreWide,
             imageUrl: imageUrl.trim() || null,
             level,
+            marketingBlockEnabled,
+            marketingBlockHtml: marketingBlockEnabled
+              ? marketingBlockHtml || null
+              : null,
             metaDescription: metaDescription.trim() || null,
             name: name.trim() || undefined,
             parentId: parentId || null,
             seoOptimized,
             slug: slug.trim() || null,
             title: title.trim() || null,
-            footerReviewsEnabled,
-            footerReviewsStoreWide,
-            marketingBlockEnabled,
-            marketingBlockHtml: marketingBlockEnabled
-              ? marketingBlockHtml || null
-              : null,
             tokenGated,
             tokenGates,
             visible,
@@ -1079,7 +1079,9 @@ export default function AdminCategoryEditPage() {
                 space-y-3 rounded-md border border-border p-4
               `}
             >
-              <h3 className="text-sm font-semibold">Storefront: footer &amp; SEO block</h3>
+              <h3 className="text-sm font-semibold">
+                Storefront: footer &amp; SEO block
+              </h3>
               <div className="flex flex-wrap items-center gap-4">
                 <div className="flex items-center gap-2">
                   <input
@@ -1089,12 +1091,13 @@ export default function AdminCategoryEditPage() {
                       focus:ring-ring
                     `}
                     id="footerReviews"
-                    onChange={(e) =>
-                      setFooterReviewsEnabled(e.target.checked)
-                    }
+                    onChange={(e) => setFooterReviewsEnabled(e.target.checked)}
                     type="checkbox"
                   />
-                  <label className="text-sm font-medium" htmlFor="footerReviews">
+                  <label
+                    className="text-sm font-medium"
+                    htmlFor="footerReviews"
+                  >
                     Show reviews in category footer
                   </label>
                 </div>
@@ -1130,18 +1133,22 @@ export default function AdminCategoryEditPage() {
                       focus:ring-ring
                     `}
                     id="marketingBlock"
-                    onChange={(e) =>
-                      setMarketingBlockEnabled(e.target.checked)
-                    }
+                    onChange={(e) => setMarketingBlockEnabled(e.target.checked)}
                     type="checkbox"
                   />
-                  <label className="text-sm font-medium" htmlFor="marketingBlock">
+                  <label
+                    className="text-sm font-medium"
+                    htmlFor="marketingBlock"
+                  >
                     Show marketing / SEO content below products
                   </label>
                 </div>
                 {marketingBlockEnabled && (
                   <textarea
-                    className={cn(inputClass, "min-h-[120px] font-mono text-xs")}
+                    className={cn(
+                      inputClass,
+                      "min-h-[120px] font-mono text-xs",
+                    )}
                     id="marketingBlockHtml"
                     onChange={(e) => setMarketingBlockHtml(e.target.value)}
                     placeholder="HTML (sanitized on storefront)…"

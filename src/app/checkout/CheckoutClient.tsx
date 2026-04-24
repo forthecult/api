@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, Loader2, Lock, ShoppingBag, Sparkles } from "lucide-react";
+import { ArrowLeft, Lock, ShoppingBag, Sparkles } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import {
@@ -33,6 +33,7 @@ import {
   CardTitle,
 } from "~/ui/primitives/card";
 import { Skeleton } from "~/ui/primitives/skeleton";
+import { Spinner } from "~/ui/primitives/spinner";
 
 import type { BillingAddressFormRef } from "./components/BillingAddressForm";
 import type { PaymentMethodSectionRef } from "./components/PaymentMethodSection";
@@ -384,7 +385,7 @@ export function CheckoutClient() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Loader2 aria-hidden className="size-5 animate-spin" />
+            <Spinner className="size-5" variant="inline" />
             Loading…
           </CardTitle>
           <CardDescription>Checking your cart.</CardDescription>
@@ -395,10 +396,16 @@ export function CheckoutClient() {
 
   if (items.length === 0) {
     return (
-      <div className="mx-auto w-full max-w-lg px-4 py-8 sm:py-12">
+      <div
+        className={`
+          mx-auto w-full max-w-lg px-4 py-8
+          sm:py-12
+        `}
+      >
         <Card
           className={`
-            overflow-hidden border-border/60 shadow-sm
+            overflow-hidden border-primary/15 bg-gradient-to-b from-card
+            to-muted/20 shadow-md ring-1 ring-border/80
             sm:rounded-xl
           `}
         >
@@ -409,25 +416,28 @@ export function CheckoutClient() {
             `}
           >
             <div
-              className={`
-                mx-auto flex h-16 w-16 items-center justify-center
-                rounded-full bg-muted/50
-              `}
               aria-hidden
+              className={`
+                mx-auto flex h-20 w-20 items-center justify-center rounded-full
+                bg-primary/10 ring-2 ring-primary/20
+              `}
             >
-              <ShoppingBag className="h-7 w-7 text-muted-foreground" />
+              <ShoppingBag className="h-9 w-9 text-primary" />
             </div>
             <div>
-              <CardTitle className="text-xl sm:text-2xl">
-                Nothing to check out yet
-              </CardTitle>
-              <CardDescription
+              <CardTitle
                 className={`
-                  mt-2 text-base text-muted-foreground
+                  text-xl
+                  sm:text-2xl
                 `}
               >
-                Your bag is empty. Add something you love, then come back to
-                complete a secure, fast checkout.
+                Your cart is ready for something great
+              </CardTitle>
+              <CardDescription
+                className={`mt-2 text-base text-muted-foreground`}
+              >
+                You removed everything from checkout. Browse featured picks or
+                all products—checkout stays fast when you come back.
               </CardDescription>
             </div>
           </CardHeader>
@@ -443,21 +453,24 @@ export function CheckoutClient() {
               size="lg"
               variant="default"
             >
-              <Link href="/products">
+              <Link href="/featured">
                 <Sparkles className="h-4 w-4" />
-                Shop all products
+                Shop best sellers
               </Link>
+            </Button>
+            <Button
+              asChild
+              className="w-full gap-2"
+              size="lg"
+              variant="secondary"
+            >
+              <Link href="/products">Browse all products</Link>
             </Button>
             <Button asChild className="w-full" size="lg" variant="outline">
               <Link href="/">Back to home</Link>
             </Button>
-            <p
-              className={`
-                text-center text-sm text-muted-foreground
-              `}
-            >
-              You can return anytime — we&apos;ll keep your account and saved
-              addresses here.
+            <p className={`text-center text-sm text-muted-foreground`}>
+              Saved addresses and account perks stay here whenever you return.
             </p>
           </CardContent>
         </Card>
