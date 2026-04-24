@@ -36,6 +36,7 @@
     "db:migrate-email": "bun run scripts/run-psql-migration.ts scripts/migrate-email-tables.sql",
     "db:migrate-rls": "bun run scripts/run-psql-migration.ts scripts/migrate-enable-rls-auth-tables.sql",
     "db:migrate-email-foundation": "bun run db:migrate-email && bun run db:migrate-rls",
+    "db:migrate-acquisition": "bun run scripts/run-psql-migration.ts drizzle/0007_order_attribution_ad_conversion.sql",
     "db:verify-role": "bun run scripts/verify-role-migration.ts",
     "db:health-check": "bun run scripts/health-check.ts",
     "db:seed-admin": "bun run scripts/seed-admin-user.ts",

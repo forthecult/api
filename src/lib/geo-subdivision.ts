@@ -17,8 +17,8 @@ const CA_NAME_TO_CODE = new Map<string, string>([
   ["MANITOBA", "MB"],
   ["NEW BRUNSWICK", "NB"],
   ["NEWFOUNDLAND AND LABRADOR", "NL"],
-  ["NOVA SCOTIA", "NS"],
   ["NORTHWEST TERRITORIES", "NT"],
+  ["NOVA SCOTIA", "NS"],
   ["NUNAVUT", "NU"],
   ["ONTARIO", "ON"],
   ["PRINCE EDWARD ISLAND", "PE"],
@@ -56,32 +56,32 @@ const CA_CODES = new Set([
 ]);
 const AU_CODES = new Set(["ACT", "NSW", "NT", "QLD", "SA", "TAS", "VIC", "WA"]);
 
-function resolveCanada(
+/**
+ * Best value for checkout / estimate `state` / `stateCode` from IP geo
+ * (`region` is often a subdivision code; `regionName` is the long name).
+ * Supports US (strict ISO-3166-2 codes), CA, AU, and a safe fallback for any
+ * other ISO-3166-1 alpha-2 country.
+ */
+export function resolveGeoRegionForCheckout(
+  countryIso2: string,
   region: null | string | undefined,
   regionName: null | string | undefined,
 ): null | string {
-  const tryCode = (s: string) => {
-    const u = s.trim().toUpperCase();
-    if (u.length === 2 && CA_CODES.has(u)) return u;
-    return null;
-  };
-  const r = region?.trim();
-  if (r) {
-    const asCode = tryCode(r);
-    if (asCode) return asCode;
-    const fromHyphen = /^CA-?([A-Z]{2})$/i.exec(r);
-    if (fromHyphen?.[1] && CA_CODES.has(fromHyphen[1].toUpperCase())) {
-      return fromHyphen[1].toUpperCase();
-    }
+  const c = countryIso2.trim().toUpperCase().slice(0, 2);
+  if (c.length !== 2) return null;
+
+  if (c === "US") {
+    return resolveUsStateCodeFromGeo(region, regionName);
   }
-  if (regionName?.trim()) {
-    const key = normKey(regionName);
-    const fromName = CA_NAME_TO_CODE.get(key);
-    if (fromName) return fromName;
+  if (c === "CA") {
+    return resolveCanada(region, regionName);
   }
-  if (r) return r;
-  if (regionName?.trim()) return regionName.trim();
-  return null;
+  if (c === "AU") {
+    return resolveAustralia(region, regionName);
+  }
+  // BR, IN, MX and worldwide: ip-api usually returns a usable `region` code;
+  // otherwise prefer the human-readable subdivision name.
+  return resolveGeneric(region, regionName);
 }
 
 function resolveAustralia(
@@ -113,6 +113,34 @@ function resolveAustralia(
   return null;
 }
 
+function resolveCanada(
+  region: null | string | undefined,
+  regionName: null | string | undefined,
+): null | string {
+  const tryCode = (s: string) => {
+    const u = s.trim().toUpperCase();
+    if (u.length === 2 && CA_CODES.has(u)) return u;
+    return null;
+  };
+  const r = region?.trim();
+  if (r) {
+    const asCode = tryCode(r);
+    if (asCode) return asCode;
+    const fromHyphen = /^CA-?([A-Z]{2})$/i.exec(r);
+    if (fromHyphen?.[1] && CA_CODES.has(fromHyphen[1].toUpperCase())) {
+      return fromHyphen[1].toUpperCase();
+    }
+  }
+  if (regionName?.trim()) {
+    const key = normKey(regionName);
+    const fromName = CA_NAME_TO_CODE.get(key);
+    if (fromName) return fromName;
+  }
+  if (r) return r;
+  if (regionName?.trim()) return regionName.trim();
+  return null;
+}
+
 function resolveGeneric(
   region: null | string | undefined,
   regionName: null | string | undefined,
@@ -122,32 +150,4 @@ function resolveGeneric(
   const n = regionName?.trim();
   if (n) return n.length > 120 ? n.slice(0, 120) : n;
   return null;
-}
-
-/**
- * Best value for checkout / estimate `state` / `stateCode` from IP geo
- * (`region` is often a subdivision code; `regionName` is the long name).
- * Supports US (strict ISO-3166-2 codes), CA, AU, and a safe fallback for any
- * other ISO-3166-1 alpha-2 country.
- */
-export function resolveGeoRegionForCheckout(
-  countryIso2: string,
-  region: null | string | undefined,
-  regionName: null | string | undefined,
-): null | string {
-  const c = countryIso2.trim().toUpperCase().slice(0, 2);
-  if (c.length !== 2) return null;
-
-  if (c === "US") {
-    return resolveUsStateCodeFromGeo(region, regionName);
-  }
-  if (c === "CA") {
-    return resolveCanada(region, regionName);
-  }
-  if (c === "AU") {
-    return resolveAustralia(region, regionName);
-  }
-  // BR, IN, MX and worldwide: ip-api usually returns a usable `region` code;
-  // otherwise prefer the human-readable subdivision name.
-  return resolveGeneric(region, regionName);
 }

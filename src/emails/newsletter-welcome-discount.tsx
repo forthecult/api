@@ -2,7 +2,10 @@ import { Heading, Link, Text } from "@react-email/components";
 
 import { CtaButton, EmailShell } from "~/emails/shell";
 import { getPublicSiteUrl } from "~/lib/app-url";
-import { appendEmailUtm, emailUtmQueryString } from "~/lib/email/marketing-email-url";
+import {
+  appendEmailUtm,
+  emailUtmQueryString,
+} from "~/lib/email/marketing-email-url";
 
 export function NewsletterWelcomeDiscountEmail({
   discountCode,

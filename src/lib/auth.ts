@@ -20,22 +20,15 @@ import {
   userTable,
   verificationTable,
 } from "~/db/schema";
+import { getPublicSiteUrl } from "~/lib/app-url";
 import { ethereumAuthPlugin } from "~/lib/auth-ethereum-plugin";
 import { solanaAuthPlugin } from "~/lib/auth-solana-plugin";
 import { telegramAuthPlugin } from "~/lib/auth-telegram-plugin";
 import {
-  createUserNotification,
-  userWantsTransactionalWebsite,
-} from "~/lib/create-user-notification";
-import { getNotificationTemplate } from "~/lib/notification-templates";
-import { sendVerificationOTPEmail } from "~/lib/send-otp-email";
-import { sendResetPasswordEmail } from "~/lib/send-reset-password";
-import {
   getDevelopmentAuthOrigins,
   getProductionAuthOrigins,
 } from "~/lib/auth-trusted-origins";
-import { getPublicSiteUrl } from "~/lib/app-url";
-import { sendWelcomeEmail } from "~/lib/send-welcome-email";
+import { getNotificationTemplate } from "~/lib/notification-templates";
 
 interface DiscordProfile {
   [key: string]: unknown;
@@ -244,12 +237,13 @@ export const auth = betterAuth({
     user: {
       create: {
         after: async (user) => {
-          // Send welcome email after user is created (only if they have a real email)
+          const { sendWelcomeEmail } = await import("~/lib/send-welcome-email");
           void sendWelcomeEmail({
             to: user.email,
             user: { email: user.email, id: user.id, name: user.name },
           });
-          // In-app welcome notification for first-time signup (when transactional website is enabled)
+          const { createUserNotification, userWantsTransactionalWebsite } =
+            await import("~/lib/create-user-notification");
           if (await userWantsTransactionalWebsite(user.id)) {
             const template = getNotificationTemplate("welcome_email");
             void createUserNotification({
@@ -299,6 +293,9 @@ export const auth = betterAuth({
     // tail of low-effort guessing without requiring complexity rules.
     minPasswordLength: 8,
     sendResetPassword: async ({ url, user }, _request) => {
+      const { sendResetPasswordEmail } = await import(
+        "~/lib/send-reset-password"
+      );
       void sendResetPasswordEmail({ to: user.email, url, user });
     },
   },
@@ -315,7 +312,9 @@ export const auth = betterAuth({
       : {
           sendOnSignUp: true,
           sendVerificationEmail: async ({ url, user }) => {
-            // Production/staging: send verification email via configured provider
+            const { sendVerificationOTPEmail } = await import(
+              "~/lib/send-otp-email"
+            );
             void sendVerificationOTPEmail({
               otp: url,
               to: user.email,
@@ -354,6 +353,9 @@ export const auth = betterAuth({
     emailOTP({
       disableSignUp: true, // Only existing users (e.g. wallet users who added email) can sign in with email code
       async sendVerificationOTP({ email, otp, type }) {
+        const { sendVerificationOTPEmail } = await import(
+          "~/lib/send-otp-email"
+        );
         await sendVerificationOTPEmail({ otp, to: email, type });
       },
     }),
@@ -417,7 +419,19 @@ export const auth = betterAuth({
         required: false,
         type: "string",
       },
+      /** Internal admin CRM notes (not shown on storefront). */
+      crmNotes: {
+        input: false,
+        required: false,
+        type: "string",
+      },
       firstName: {
+        input: true,
+        required: false,
+        type: "string",
+      },
+      /** JSON array of interest slugs or comma-separated tags — admin/profile can normalize. */
+      interestTags: {
         input: true,
         required: false,
         type: "string",
@@ -475,24 +489,6 @@ export const auth = betterAuth({
         required: false,
         type: "string",
       },
-      /** Self-reported; optional CRM segmentation (e.g. prefer_not_to_say, female, male, non_binary). */
-      sex: {
-        input: true,
-        required: false,
-        type: "string",
-      },
-      /** JSON array of interest slugs or comma-separated tags — admin/profile can normalize. */
-      interestTags: {
-        input: true,
-        required: false,
-        type: "string",
-      },
-      /** Internal admin CRM notes (not shown on storefront). */
-      crmNotes: {
-        input: false,
-        required: false,
-        type: "string",
-      },
       // Legacy fields
       receiveMarketing: {
         defaultValue: false,
@@ -516,6 +512,12 @@ export const auth = betterAuth({
       role: {
         defaultValue: "user",
         input: false,
+        required: false,
+        type: "string",
+      },
+      /** Self-reported; optional CRM segmentation (e.g. prefer_not_to_say, female, male, non_binary). */
+      sex: {
+        input: true,
         required: false,
         type: "string",
       },
@@ -560,6 +562,16 @@ export const auth = betterAuth({
       transactionalWebsite: {
         defaultValue: true,
         input: false,
+        required: false,
+        type: "boolean",
+      },
+      /**
+       * When false, skip server-side ad-platform conversion forwarding (X / Reddit / YouTube CAPI)
+       * for this user’s purchases. First-party PostHog is unchanged.
+       */
+      adPlatformConversionForwarding: {
+        defaultValue: true,
+        input: true,
         required: false,
         type: "boolean",
       },

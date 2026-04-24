@@ -64,9 +64,9 @@ export function CryptoPricingSettingsPopover({
             `}
             id="crypto-pricing-hint"
           >
-            Check up to {String(MAX_PRICING_CRYPTO_LINES)} cryptos (right column)
-            for stacked price lines here, in the footer, and in quick view. Tap
-            the left column to set the footer spot ticker.
+            Check up to {String(MAX_PRICING_CRYPTO_LINES)} cryptos (right
+            column) for stacked price lines here, in the footer, and in quick
+            view. Tap the left column to set the footer spot ticker.
           </p>
           <div className="max-h-64 overflow-y-auto">
             <CryptoPricingTogglesList

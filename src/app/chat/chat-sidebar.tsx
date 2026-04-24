@@ -336,7 +336,10 @@ export function ChatSidebar({
                               <>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
-                                  className="text-destructive focus:text-destructive"
+                                  className={`
+                                    text-destructive
+                                    focus:text-destructive
+                                  `}
                                   onSelect={() => {
                                     onDeleteProject(p.id);
                                   }}

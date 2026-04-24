@@ -40,8 +40,7 @@ export function CryptoPricingTogglesList({
     >
       <span
         className={`
-          text-[10px] font-medium tracking-wide text-muted-foreground
-          uppercase
+          text-[10px] font-medium tracking-wide text-muted-foreground uppercase
         `}
       >
         Footer spot
@@ -61,8 +60,8 @@ export function CryptoPricingTogglesList({
   const pricingCell = (code: CryptoCode, label: string) => (
     <div
       className={`
-        flex h-full min-h-9 w-full flex-col items-center justify-center
-        gap-0.5 border-l border-border/60 pl-1
+        flex h-full min-h-9 w-full flex-col items-center justify-center gap-0.5
+        border-l border-border/60 pl-1
       `}
       data-crypto-pricing-toggle=""
       onClick={(e) => e.stopPropagation()}
@@ -120,7 +119,12 @@ export function CryptoPricingTogglesList({
                 />
                 <span className="truncate">{label}</span>
               </span>
-              <div className="flex w-[4.25rem] shrink-0 items-stretch justify-center py-1 pr-1">
+              <div
+                className={`
+                  flex w-[4.25rem] shrink-0 items-stretch justify-center py-1
+                  pr-1
+                `}
+              >
                 {pricingCell(code, label)}
               </div>
             </DropdownMenuItem>
@@ -131,7 +135,8 @@ export function CryptoPricingTogglesList({
           <div
             className={`
               grid grid-cols-[minmax(0,1fr)_4.25rem] items-stretch gap-0
-              border-b border-border/50 last:border-b-0
+              border-b border-border/50
+              last:border-b-0
             `}
             key={code}
           >
@@ -155,7 +160,12 @@ export function CryptoPricingTogglesList({
               />
               <span className="truncate">{label}</span>
             </button>
-            <div className="flex items-stretch justify-center border-l border-border/60 py-1 pr-1">
+            <div
+              className={`
+                flex items-stretch justify-center border-l border-border/60 py-1
+                pr-1
+              `}
+            >
               {pricingCell(code, label)}
             </div>
           </div>

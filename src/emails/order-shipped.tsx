@@ -1,15 +1,19 @@
 import { Text } from "@react-email/components";
 
-import { type EmailProductPick, CtaButton, EmailShell } from "~/emails/shell";
+import { CtaButton, type EmailProductPick, EmailShell } from "~/emails/shell";
 
 export function OrderShippedEmail({
   bodyText,
   ctaUrl,
   productPicks,
+  secondaryCtaHref,
+  secondaryCtaLabel,
 }: Readonly<{
   bodyText: string;
   ctaUrl: string;
   productPicks?: readonly EmailProductPick[];
+  secondaryCtaHref?: string;
+  secondaryCtaLabel?: string;
 }>) {
   return (
     <EmailShell
@@ -27,6 +31,9 @@ export function OrderShippedEmail({
         ))}
       </Text>
       <CtaButton href={ctaUrl} label="View order & track" />
+      {secondaryCtaHref && secondaryCtaLabel ? (
+        <CtaButton href={secondaryCtaHref} label={secondaryCtaLabel} variant="brand" />
+      ) : null}
     </EmailShell>
   );
 }

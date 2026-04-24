@@ -19,6 +19,7 @@ const PATH_TITLES: Record<string, string> = {
   "/dashboard/esim": "My eSIMs",
   "/dashboard/orders": "My Orders",
   "/dashboard/payment-methods": "Payment Methods",
+  "/dashboard/privacy": "Privacy & ads",
   "/dashboard/profile": "Profile Info",
   "/dashboard/reviews/write": "Write a review",
   "/dashboard/security": "Security",

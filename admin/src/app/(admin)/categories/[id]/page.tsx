@@ -26,6 +26,8 @@ interface Category {
   footerReviewsStoreWide?: boolean;
   id: string;
   imageUrl: null | string;
+  /** True when this category is under the Shop by Crypto tree (currency / network / dApp). */
+  isCryptoShopCategory?: boolean;
   level: number;
   marketingBlockEnabled?: boolean;
   marketingBlockHtml?: null | string;
@@ -33,6 +35,7 @@ interface Category {
   name: string;
   parentId: null | string;
   seoOptimized?: boolean;
+  showOnHomePage?: boolean;
   slug: null | string;
   title: null | string;
   tokenGated?: boolean;
@@ -74,6 +77,8 @@ export default function AdminCategoryEditPage() {
   const [footerReviewsStoreWide, setFooterReviewsStoreWide] = useState(true);
   const [marketingBlockEnabled, setMarketingBlockEnabled] = useState(false);
   const [marketingBlockHtml, setMarketingBlockHtml] = useState("");
+  const [showOnHomePage, setShowOnHomePage] = useState(false);
+  const [isCryptoShopCategory, setIsCryptoShopCategory] = useState(false);
 
   const [bulkTitleContains, setBulkTitleContains] = useState("");
   const [bulkCreatedWithinDays, setBulkCreatedWithinDays] = useState("");
@@ -155,6 +160,13 @@ export default function AdminCategoryEditPage() {
       setMarketingBlockHtml(
         (data as { marketingBlockHtml?: null | string }).marketingBlockHtml ??
           "",
+      );
+      setShowOnHomePage(
+        (data as { showOnHomePage?: boolean }).showOnHomePage ?? false,
+      );
+      setIsCryptoShopCategory(
+        (data as { isCryptoShopCategory?: boolean }).isCryptoShopCategory ??
+          false,
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load category");
@@ -268,6 +280,7 @@ export default function AdminCategoryEditPage() {
             name: name.trim() || undefined,
             parentId: parentId || null,
             seoOptimized,
+            showOnHomePage,
             slug: slug.trim() || null,
             title: title.trim() || null,
             tokenGated,
@@ -286,6 +299,12 @@ export default function AdminCategoryEditPage() {
         }
         const updated = (await res.json()) as Category;
         setCategory((prev) => (prev ? { ...prev, ...updated } : prev));
+        if (typeof updated.isCryptoShopCategory === "boolean") {
+          setIsCryptoShopCategory(updated.isCryptoShopCategory);
+        }
+        if (typeof updated.showOnHomePage === "boolean") {
+          setShowOnHomePage(updated.showOnHomePage);
+        }
         setError(null);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to save");
@@ -312,6 +331,7 @@ export default function AdminCategoryEditPage() {
       footerReviewsStoreWide,
       marketingBlockEnabled,
       marketingBlockHtml,
+      showOnHomePage,
     ],
   );
 
@@ -1071,6 +1091,35 @@ export default function AdminCategoryEditPage() {
                     Featured category
                   </label>
                 </div>
+                {isCryptoShopCategory && (
+                  <div className="flex max-w-xl flex-col gap-1">
+                    <div className="flex items-center gap-2">
+                      <input
+                        checked={showOnHomePage}
+                        className={cn(
+                          `
+                            size-4 rounded border-input text-primary
+                            focus:ring-ring
+                          `,
+                        )}
+                        id="showOnHomePage"
+                        onChange={(e) => setShowOnHomePage(e.target.checked)}
+                        type="checkbox"
+                      />
+                      <label
+                        className="text-sm font-medium"
+                        htmlFor="showOnHomePage"
+                      >
+                        Show on home &ldquo;Shop by category&rdquo;
+                      </label>
+                    </div>
+                    <p className="text-xs text-muted-foreground pl-6">
+                      Crypto categories are hidden from the home grid unless
+                      this is on. Main shop categories appear without this
+                      setting.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 

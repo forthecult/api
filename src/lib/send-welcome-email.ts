@@ -2,9 +2,7 @@ import { createElement } from "react";
 
 import { WelcomeEmail } from "~/emails/welcome";
 import { fetchRecommendedProductsForEmail } from "~/lib/email/email-product-recs";
-import {
-  enrollWelcomeMarketingSeries,
-} from "~/lib/email/funnel-enrollment";
+import { enrollWelcomeMarketingSeries } from "~/lib/email/funnel-enrollment";
 import { getEmailFunnelCouponExperimentVariant } from "~/lib/email/posthog-email-experiments";
 import { sendEmail } from "~/lib/email/send-email";
 import { getNotificationTemplate } from "~/lib/notification-templates";
@@ -44,7 +42,7 @@ export async function sendWelcomeEmail(params: {
     });
 
     if (res.ok === true) {
-      const distinct = (user.id && user.id.trim()) || to.trim().toLowerCase();
+      const distinct = user.id?.trim() || to.trim().toLowerCase();
       const variant = await getEmailFunnelCouponExperimentVariant(distinct, {
         email: to,
         userId: user.id ?? null,

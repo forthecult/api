@@ -1,6 +1,9 @@
 import { describe, expect, it } from "bun:test";
 
-import { appendEmailUtm, emailUtmQueryString } from "../src/lib/email/marketing-email-url";
+import {
+  appendEmailUtm,
+  emailUtmQueryString,
+} from "../src/lib/email/marketing-email-url";
 
 describe("marketing-email-url", () => {
   it("appendEmailUtm adds params", () => {

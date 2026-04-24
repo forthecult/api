@@ -29,6 +29,7 @@ import {
   visibleUsdcNetworks,
   visibleUsdtNetworks,
 } from "~/lib/checkout-payment-options";
+import { getAttributionJsonForStripeMetadata } from "~/lib/analytics/attribution-session";
 import { useCountryCurrency } from "~/lib/hooks/use-country-currency";
 import { usePaymentMethodSettings } from "~/lib/hooks/use-payment-method-settings";
 import { getSolanaPayRecipient } from "~/lib/solana-pay";
@@ -572,12 +573,14 @@ export const PaymentMethodSelector = forwardRef<
 
     try {
       const { commonBody, orderItems } = buildOrderPayload();
+      const attribution = getAttributionJsonForStripeMetadata();
       const res = await fetch("/api/payments/stripe/create-checkout-session", {
         body: JSON.stringify({
           affiliateCode:
             typeof commonBody.affiliateCode === "string"
               ? commonBody.affiliateCode
               : undefined,
+          ...(attribution ? { attribution } : {}),
           lineItems: orderItems.map((item) => ({
             productId: item.productId,
             productVariantId: item.productVariantId,

@@ -1481,11 +1481,7 @@ function ProjectsBrowseView({
             <span className="truncate">{p.name}</span>
           </div>
           {p.instructions ? (
-            <p
-              className={`
-                mt-2 line-clamp-2 text-sm text-muted-foreground
-              `}
-            >
+            <p className={`mt-2 line-clamp-2 text-sm text-muted-foreground`}>
               {p.instructions}
             </p>
           ) : null}
@@ -1534,11 +1530,14 @@ function ProjectsBrowseView({
                 Archive
               </Button>
               <Button
+                className={`
+                  text-destructive
+                  hover:bg-destructive/10
+                `}
                 onClick={() => onDeleteProject(p.id)}
                 size="sm"
                 type="button"
                 variant="outline"
-                className="text-destructive hover:bg-destructive/10"
               >
                 Delete
               </Button>
@@ -1606,8 +1605,9 @@ function ProjectsBrowseView({
                   Archived ({archivedProjects.length})
                 </h2>
                 <p className="mb-3 text-xs text-muted-foreground">
-                  Archived projects stay in your browser only. Restore to use them
-                  in the sidebar again, or delete to remove them permanently.
+                  Archived projects stay in your browser only. Restore to use
+                  them in the sidebar again, or delete to remove them
+                  permanently.
                 </p>
                 <div
                   className={`
@@ -1615,7 +1615,9 @@ function ProjectsBrowseView({
                     sm:grid-cols-2
                   `}
                 >
-                  {archivedProjects.map((p) => projectCard(p, { archived: true }))}
+                  {archivedProjects.map((p) =>
+                    projectCard(p, { archived: true }),
+                  )}
                 </div>
               </div>
             ) : null}

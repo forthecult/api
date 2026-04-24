@@ -52,8 +52,8 @@ export async function sendEsimActivationEmail(
   const subject = "Your eSIM is ready to activate";
 
   const picks = await fetchRecommendedProductsForEmail({
-    orderId,
     limit: 4,
+    orderId,
   });
 
   try {

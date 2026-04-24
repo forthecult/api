@@ -67,7 +67,13 @@ export function CryptoPrice({ className, usdAmount }: CryptoPriceProps) {
       data-crypto-price
     >
       {lineRows.map(({ code, line }) => (
-        <span className="text-xs text-muted-foreground sm:text-sm" key={code}>
+        <span
+          className={`
+            text-xs text-muted-foreground
+            sm:text-sm
+          `}
+          key={code}
+        >
           {line}
         </span>
       ))}

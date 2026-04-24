@@ -3,32 +3,37 @@
  *
  * To modify the schema, edit src/lib/auth.ts instead,
  * then run 'bun db:auth' to regenerate this file.
+ * After regenerating, run 'bun db:push' so the database matches the new schema;
+ * otherwise sign-in/sign-up can return 500.
  *
  * Any direct changes to this file will be overwritten.
  */
 
 import {
-  boolean,
-  index,
-  integer,
   pgTable,
   text,
   timestamp,
+  boolean,
+  integer,
+  index,
 } from "drizzle-orm/pg-core";
 
 export const userTable = pgTable("user", {
-  age: integer("age"),
-  /** ISO 8601 date string YYYY-MM-DD */
-  birthDate: text("birth_date"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  /** Internal admin CRM notes (not exposed on storefront). */
-  crmNotes: text("crm_notes"),
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
   email: text("email").notNull().unique(),
   emailVerified: boolean("email_verified").default(false).notNull(),
-  firstName: text("first_name"),
-  id: text("id").primaryKey(),
   image: text("image"),
-  /** JSON array string or comma-separated interest slugs for segmentation. */
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => /* @__PURE__ */ new Date())
+    .notNull(),
+  twoFactorEnabled: boolean("two_factor_enabled").default(false),
+  age: integer("age"),
+  birthDate: text("birth_date"),
+  crmNotes: text("crm_notes"),
+  firstName: text("first_name"),
   interestTags: text("interest_tags"),
   lastName: text("last_name"),
   marketingAiCompanion: boolean("marketing_ai_companion").default(false),
@@ -37,9 +42,7 @@ export const userTable = pgTable("user", {
   marketingSms: boolean("marketing_sms").default(false),
   marketingTelegram: boolean("marketing_telegram").default(false),
   marketingWebsite: boolean("marketing_website").default(false),
-  name: text("name").notNull(),
   phone: text("phone"),
-  /** ISO 3166-1 alpha-2 default for phone dial code. */
   phoneCountry: text("phone_country"),
   receiveMarketing: boolean("receive_marketing").default(false),
   receiveOrderNotificationsViaTelegram: boolean(
@@ -47,7 +50,6 @@ export const userTable = pgTable("user", {
   ).default(false),
   receiveSmsMarketing: boolean("receive_sms_marketing").default(false),
   role: text("role").default("user"),
-  /** Self-reported segmentation (e.g. prefer_not_to_say, female, male, non_binary). */
   sex: text("sex"),
   theme: text("theme").default("system"),
   transactionalAiCompanion: boolean("transactional_ai_companion").default(
@@ -58,24 +60,24 @@ export const userTable = pgTable("user", {
   transactionalSms: boolean("transactional_sms").default(false),
   transactionalTelegram: boolean("transactional_telegram").default(false),
   transactionalWebsite: boolean("transactional_website").default(true),
-  twoFactorEnabled: boolean("two_factor_enabled").default(false),
-  updatedAt: timestamp("updated_at")
-    .defaultNow()
-    .$onUpdate(() => /* @__PURE__ */ new Date())
-    .notNull(),
+  adPlatformConversionForwarding: boolean(
+    "ad_platform_conversion_forwarding",
+  )
+    .notNull()
+    .default(true),
 });
 
 export const sessionTable = pgTable(
   "session",
   {
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    expiresAt: timestamp("expires_at").notNull(),
     id: text("id").primaryKey(),
-    ipAddress: text("ip_address"),
+    expiresAt: timestamp("expires_at").notNull(),
     token: text("token").notNull().unique(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .$onUpdate(() => /* @__PURE__ */ new Date())
       .notNull(),
+    ipAddress: text("ip_address"),
     userAgent: text("user_agent"),
     userId: text("user_id")
       .notNull()
@@ -87,23 +89,23 @@ export const sessionTable = pgTable(
 export const accountTable = pgTable(
   "account",
   {
-    accessToken: text("access_token"),
-    accessTokenExpiresAt: timestamp("access_token_expires_at"),
-    accountId: text("account_id").notNull(),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
     id: text("id").primaryKey(),
-    idToken: text("id_token"),
-    password: text("password"),
+    accountId: text("account_id").notNull(),
     providerId: text("provider_id").notNull(),
-    refreshToken: text("refresh_token"),
-    refreshTokenExpiresAt: timestamp("refresh_token_expires_at"),
-    scope: text("scope"),
-    updatedAt: timestamp("updated_at")
-      .$onUpdate(() => /* @__PURE__ */ new Date())
-      .notNull(),
     userId: text("user_id")
       .notNull()
       .references(() => userTable.id, { onDelete: "cascade" }),
+    accessToken: text("access_token"),
+    refreshToken: text("refresh_token"),
+    idToken: text("id_token"),
+    accessTokenExpiresAt: timestamp("access_token_expires_at"),
+    refreshTokenExpiresAt: timestamp("refresh_token_expires_at"),
+    scope: text("scope"),
+    password: text("password"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
   },
   (table) => [index("account_userId_idx").on(table.userId)],
 );
@@ -111,15 +113,15 @@ export const accountTable = pgTable(
 export const verificationTable = pgTable(
   "verification",
   {
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    expiresAt: timestamp("expires_at").notNull(),
     id: text("id").primaryKey(),
     identifier: text("identifier").notNull(),
+    value: text("value").notNull(),
+    expiresAt: timestamp("expires_at").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()
       .$onUpdate(() => /* @__PURE__ */ new Date())
       .notNull(),
-    value: text("value").notNull(),
   },
   (table) => [index("verification_identifier_idx").on(table.identifier)],
 );
@@ -127,12 +129,13 @@ export const verificationTable = pgTable(
 export const twoFactorTable = pgTable(
   "two_factor",
   {
-    backupCodes: text("backup_codes").notNull(),
     id: text("id").primaryKey(),
     secret: text("secret").notNull(),
+    backupCodes: text("backup_codes").notNull(),
     userId: text("user_id")
       .notNull()
       .references(() => userTable.id, { onDelete: "cascade" }),
+    verified: boolean("verified").default(true),
   },
   (table) => [
     index("twoFactor_secret_idx").on(table.secret),
@@ -143,19 +146,19 @@ export const twoFactorTable = pgTable(
 export const passkeyTable = pgTable(
   "passkey",
   {
-    aaguid: text("aaguid"),
-    backedUp: boolean("backed_up").notNull(),
-    counter: integer("counter").notNull(),
-    createdAt: timestamp("created_at"),
-    credentialID: text("credential_id").notNull(),
-    deviceType: text("device_type").notNull(),
     id: text("id").primaryKey(),
     name: text("name"),
     publicKey: text("public_key").notNull(),
-    transports: text("transports"),
     userId: text("user_id")
       .notNull()
       .references(() => userTable.id, { onDelete: "cascade" }),
+    credentialID: text("credential_id").notNull(),
+    counter: integer("counter").notNull(),
+    deviceType: text("device_type").notNull(),
+    backedUp: boolean("backed_up").notNull(),
+    transports: text("transports"),
+    createdAt: timestamp("created_at"),
+    aaguid: text("aaguid"),
   },
   (table) => [
     index("passkey_userId_idx").on(table.userId),

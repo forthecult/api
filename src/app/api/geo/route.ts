@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     (vercelRegion || cloudflareRegion || genericRegion)?.trim() || null;
   if (regionCode === "") regionCode = null;
 
-  let regionName: string | null = null;
+  let regionName: null | string = null;
 
   const clientIp = getClientIp(request);
   if (clientIp) {

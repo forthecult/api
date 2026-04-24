@@ -6,12 +6,13 @@ import "server-only";
  * - EMAIL_FUNNEL_WELCOME_COUPON_CODE
  * - EMAIL_FUNNEL_ABANDON_COUPON_CODE
  * - EMAIL_FUNNEL_REVIEW_COUPON_CODE
+ * - EMAIL_FUNNEL_WIN_BACK_COUPON_CODE
  *
  * Example PostHog variants: `none`, `coupon_step_2`, `coupon_step_3`, `coupon_both`.
  */
 export function resolveCouponCodeForFunnelStep(options: {
   experimentVariant: string;
-  funnel: "abandon_cart_3" | "review_3" | "welcome_3";
+  funnel: "abandon_cart_3" | "review_3" | "welcome_3" | "win_back_3";
   step: number;
 }): string | undefined {
   const { experimentVariant, funnel, step } = options;
@@ -20,7 +21,9 @@ export function resolveCouponCodeForFunnelStep(options: {
       ? process.env.EMAIL_FUNNEL_WELCOME_COUPON_CODE?.trim()
       : funnel === "abandon_cart_3"
         ? process.env.EMAIL_FUNNEL_ABANDON_COUPON_CODE?.trim()
-        : process.env.EMAIL_FUNNEL_REVIEW_COUPON_CODE?.trim();
+        : funnel === "review_3"
+          ? process.env.EMAIL_FUNNEL_REVIEW_COUPON_CODE?.trim()
+          : process.env.EMAIL_FUNNEL_WIN_BACK_COUPON_CODE?.trim();
   if (!code) return undefined;
 
   const ev = experimentVariant.toLowerCase();
@@ -36,7 +39,18 @@ export function resolveCouponCodeForFunnelStep(options: {
   if (
     step === 1 &&
     funnel === "abandon_cart_3" &&
-    (ev.includes("coupon_1") || ev.includes("coupon_early") || ev === "coupon_both")
+    (ev.includes("coupon_1") ||
+      ev.includes("coupon_early") ||
+      ev === "coupon_both")
+  ) {
+    return code;
+  }
+  if (
+    step === 1 &&
+    funnel === "win_back_3" &&
+    (ev.includes("coupon_1") ||
+      ev.includes("coupon_early") ||
+      ev === "coupon_both")
   ) {
     return code;
   }

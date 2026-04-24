@@ -85,9 +85,9 @@ export default async function BrandDetailPage({
 
       <header
         className={`
-        mt-6 flex flex-col gap-4
-        md:flex-row md:items-start md:justify-between
-      `}
+          mt-6 flex flex-col gap-4
+          md:flex-row md:items-start md:justify-between
+        `}
       >
         <div className="max-w-3xl">
           <h1

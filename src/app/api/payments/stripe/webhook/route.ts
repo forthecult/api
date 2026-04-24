@@ -8,6 +8,7 @@ import { db } from "~/db";
 import { affiliateTable, orderItemsTable, ordersTable } from "~/db/schema";
 import { resolveAffiliateForOrder } from "~/lib/affiliate";
 import { onOrderCreated } from "~/lib/create-user-notification";
+import { attributionJsonFromStripeMetadata } from "~/lib/stripe-checkout-attribution";
 import { fulfillEsimOrder, hasEsimItems } from "~/lib/esim-fulfillment";
 import {
   createAndConfirmPrintfulOrder,
@@ -304,6 +305,10 @@ export async function POST(request: NextRequest) {
         ? userIdFromMeta
         : null;
 
+    const attributionSnapshotJson = attributionJsonFromStripeMetadata(
+      session.metadata,
+    );
+
     // Shipping/customer address from Stripe Checkout (when collection enabled)
     const addr = session.customer_details?.address;
     const shippingFromSession =
@@ -348,6 +353,7 @@ export async function POST(request: NextRequest) {
       await db
         .update(ordersTable)
         .set({
+          ...(attributionSnapshotJson ? { attributionSnapshotJson } : {}),
           paymentStatus: "paid",
           status: "paid",
           updatedAt: new Date(),
@@ -378,6 +384,7 @@ export async function POST(request: NextRequest) {
     }
 
     await db.insert(ordersTable).values({
+      ...(attributionSnapshotJson ? { attributionSnapshotJson } : {}),
       createdAt: now,
       email,
       fulfillmentStatus: "unfulfilled",

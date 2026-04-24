@@ -35,8 +35,8 @@ export async function sendOrderOutForDeliveryEmail(params: {
   body += `\n\nOrder ID: ${shortId}`;
 
   const picks = await fetchRecommendedProductsForEmail({
-    orderId,
     limit: 4,
+    orderId,
   });
 
   try {

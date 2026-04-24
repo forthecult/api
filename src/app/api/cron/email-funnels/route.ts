@@ -5,11 +5,14 @@
  * Configure PostHog flags `email_funnel_coupon_ab` and `email_funnel_content_ab` for A/B tests
  * (coupon timing, amounts, creative, segments). Abandon-cart **enrollment** runs on
  * `GET /api/cron/cart-abandon-enroll` (idle server cart snapshots).
+ * This cron also runs abandon-cart **enrollment** so one scheduler can cover both.
  */
 
 import { NextResponse } from "next/server";
 
+import { processCartAbandonmentEnrollments } from "~/lib/email/process-cart-abandonment-enrollments";
 import { processDueEmailFunnels } from "~/lib/email/process-email-funnels";
+import { processWinBackEnrollments } from "~/lib/email/process-win-back-enrollments";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
@@ -29,12 +32,22 @@ export async function GET(request: Request) {
   }
 
   if (token !== secret) {
-    return NextResponse.json({ error: "Unauthorized", ok: false }, { status: 401 });
+    return NextResponse.json(
+      { error: "Unauthorized", ok: false },
+      { status: 401 },
+    );
   }
 
   try {
-    const result = await processDueEmailFunnels();
-    return NextResponse.json({ ok: true, ...result });
+    const drip = await processDueEmailFunnels();
+    const cart = await processCartAbandonmentEnrollments();
+    const winBack = await processWinBackEnrollments();
+    return NextResponse.json({
+      ok: true,
+      cartAbandonEnrolled: cart.enrolled,
+      winBackEnrolled: winBack.enrolled,
+      ...drip,
+    });
   } catch (err) {
     console.error("[cron] email-funnels error:", err);
     return NextResponse.json(

@@ -26,6 +26,19 @@ export const CRYPTO_CATEGORY_NAMES_SET = new Set<string>(CRYPTO_CATEGORY_NAMES);
 export const SHOW_IN_ALL_PRODUCTS_CATEGORY_SLUG = "show-in-all-products";
 
 /**
+ * Home "Shop by category" grid: non-crypto categories are allowed; crypto-tree
+ * categories require `showOnHomePage` from admin.
+ */
+export function categoryAllowedOnHomeCategoryGrid(
+  categoryId: string,
+  showOnHomePage: boolean,
+  allRows: { id: string; name: string; parentId: null | string }[],
+): boolean {
+  if (!isStorefrontCryptoCategoryId(categoryId, allRows)) return true;
+  return showOnHomePage === true;
+}
+
+/**
  * Given category rows and a category slug, returns the set of category IDs
  * that are the category (matched by slug) plus all its descendants.
  * Used so category pages show products from the category and all subcategories.
@@ -97,4 +110,12 @@ export function isCryptoStorefrontCategorySlug(
     rows.map((r) => ({ id: r.id, name: r.name, parentId: r.parentId })),
   );
   return cryptoIds.has(root.id);
+}
+
+/** True when this category id is in the Shop by Crypto tree (currency / network / dApp and descendants). */
+export function isStorefrontCryptoCategoryId(
+  categoryId: string,
+  rows: { id: string; name: string; parentId: null | string }[],
+): boolean {
+  return computeCryptoCategoryIdsIncludingDescendants(rows).has(categoryId);
 }

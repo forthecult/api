@@ -8,11 +8,11 @@ import {
   US_STATE_OPTIONS,
 } from "~/app/checkout/checkout-shared";
 import { cn } from "~/lib/cn";
+import { resolveGeoRegionForCheckout } from "~/lib/geo-subdivision";
 import {
   COUNTRY_OPTIONS_ALPHABETICAL,
   useCountryCurrency,
 } from "~/lib/hooks/use-country-currency";
-import { resolveGeoRegionForCheckout } from "~/lib/geo-subdivision";
 import { isShippingExcluded } from "~/lib/shipping-restrictions";
 import { FiatPrice } from "~/ui/components/FiatPrice";
 import { Button } from "~/ui/primitives/button";

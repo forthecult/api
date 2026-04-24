@@ -12,7 +12,7 @@ const tempSchemaPath = "./src/db/schema/users/tables.generated.ts";
 async function main() {
   // 1. Generate to a TEMP file (auth.ts imports from schema, so the real tables.ts must stay valid)
   await execaCommand(
-    `npx @better-auth/cli@latest generate --config ${configPath} --output ${tempSchemaPath}`,
+    `bun x @better-auth/cli@latest generate --yes --config ${configPath} --output ${tempSchemaPath}`,
     { stdio: "inherit" },
   );
 
@@ -103,6 +103,15 @@ async function main() {
   receiveOrderNotificationsViaTelegram: boolean("receive_order_notifications_via_telegram").notNull().default(false),
   /** UI theme: "light" | "dark" | "system". Persisted for logged-in users. */
   theme: text("theme").default("system"),
+  /**
+   * When false, skip server-side ad-platform conversion (CAPI) forwarding for this user.
+   * Synced with Better Auth additionalFields.adPlatformConversionForwarding.
+   */
+  adPlatformConversionForwarding: boolean(
+    "ad_platform_conversion_forwarding",
+  )
+    .notNull()
+    .default(true),
 });`,
     );
   }

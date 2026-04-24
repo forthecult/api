@@ -46,8 +46,8 @@ export async function sendOrderConfirmationEmail(
   body += `\n\nOrder ID: ${shortId}`;
 
   const picks = await fetchRecommendedProductsForEmail({
-    orderId,
     limit: 4,
+    orderId,
   });
 
   try {
@@ -68,10 +68,13 @@ export async function sendOrderConfirmationEmail(
   }
 
   if (process.env.NODE_ENV === "development" && !process.env.RESEND_API_KEY) {
-    console.log("[sendOrderConfirmationEmail] No RESEND_API_KEY - would send:", {
-      body: body.slice(0, 200),
-      subject,
-      to,
-    });
+    console.log(
+      "[sendOrderConfirmationEmail] No RESEND_API_KEY - would send:",
+      {
+        body: body.slice(0, 200),
+        subject,
+        to,
+      },
+    );
   }
 }

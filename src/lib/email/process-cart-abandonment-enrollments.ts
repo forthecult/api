@@ -3,9 +3,7 @@ import { and, eq, isNull, lte, sql } from "drizzle-orm";
 
 import { db } from "~/db";
 import { shoppingCartSnapshotTable } from "~/db/schema";
-import {
-  ABANDON_CART_IDLE_SYNC_HOURS,
-} from "~/lib/email/abandon-cart-schedule";
+import { ABANDON_CART_IDLE_SYNC_HOURS } from "~/lib/email/abandon-cart-schedule";
 import { userWantsMarketingEmail } from "~/lib/email/consent";
 import {
   enrollAbandonCartMarketingSeries,
@@ -47,9 +45,7 @@ export async function processCartAbandonmentEnrollments(): Promise<{
     if (!(await userWantsMarketingEmail(row.userId))) continue;
 
     const emailNorm = row.email.trim().toLowerCase();
-    if (
-      await hasActiveEmailFunnelEnrollment(emailNorm, "abandon_cart_3")
-    ) {
+    if (await hasActiveEmailFunnelEnrollment(emailNorm, "abandon_cart_3")) {
       await db
         .update(shoppingCartSnapshotTable)
         .set({

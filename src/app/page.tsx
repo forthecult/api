@@ -4,10 +4,10 @@ import {
   ArrowRight,
   Clock,
   Globe,
+  Quote,
   Shield,
   Star,
   Truck,
-  Zap,
 } from "lucide-react";
 import nextDynamic from "next/dynamic";
 import { cookies } from "next/headers";
@@ -16,13 +16,17 @@ import Link from "next/link";
 
 import { SEO_CONFIG } from "~/app";
 import {
+  getHomeCategoryCryptoTreeRows,
   getHomeFeaturedProducts,
   getHomePublicCategories,
   getHomeTestimonials,
 } from "~/app/home-page-data";
 import { getPublicSiteUrl } from "~/lib/app-url";
 import { getCategoriesWithProductsAndDisplayImage } from "~/lib/categories";
-import { SHOW_IN_ALL_PRODUCTS_CATEGORY_SLUG } from "~/lib/storefront-categories";
+import {
+  categoryAllowedOnHomeCategoryGrid,
+  SHOW_IN_ALL_PRODUCTS_CATEGORY_SLUG,
+} from "~/lib/storefront-categories";
 import { COOKIE_NAME as TOKEN_GATE_COOKIE } from "~/lib/token-gate-cookie";
 import { PageContainer } from "~/ui/components/layout/page-container";
 import { Button } from "~/ui/primitives/button";
@@ -34,6 +38,8 @@ import {
   CardTitle,
 } from "~/ui/primitives/card";
 import { Skeleton } from "~/ui/primitives/skeleton";
+
+import { HomeHeroAbSection } from "~/app/home-hero-conversion.client";
 
 import { testimonials as mockTestimonials } from "./mocks";
 
@@ -146,6 +152,7 @@ const EXCLUDED_SLUGS = [
   "dapp",
   SHOW_IN_ALL_PRODUCTS_CATEGORY_SLUG,
 ];
+const HOME_CATEGORY_LIMIT = 8;
 
 /* ---------------------------------------------------------------------------
  * Main page — fetch all data up front, then render (no Suspense streaming)
@@ -161,6 +168,7 @@ export default async function HomePage() {
   const settled = await Promise.allSettled([
     getHomePublicCategories(),
     getCategoriesWithProductsAndDisplayImage({ topLevelOnly: true }),
+    getHomeCategoryCryptoTreeRows(),
     getHomeFeaturedProducts(tgCookieValue),
     getHomeTestimonials(),
   ]);
@@ -168,10 +176,12 @@ export default async function HomePage() {
     settled[0].status === "fulfilled" ? settled[0].value : [];
   const categoriesWithImage =
     settled[1].status === "fulfilled" ? settled[1].value : [];
-  const featuredProducts =
+  const cryptoTreeRows =
     settled[2].status === "fulfilled" ? settled[2].value : [];
-  const reviewTestimonials =
+  const featuredProducts =
     settled[3].status === "fulfilled" ? settled[3].value : [];
+  const reviewTestimonials =
+    settled[4].status === "fulfilled" ? settled[4].value : [];
   for (const [i, r] of settled.entries()) {
     if (r.status === "rejected") {
       console.error(`[HomePage] data fetch failed (index ${i}):`, r.reason);
@@ -187,8 +197,23 @@ export default async function HomePage() {
   const countBySlug = new Map(
     shopCategories.map((c) => [c.slug, c.productCount] as const),
   );
+  const homeGridMetaBySlug = new Map(
+    shopCategories.map((c) => [
+      c.slug,
+      { id: c.id, showOnHomePage: c.showOnHomePage },
+    ]),
+  );
   const topLevelShop = categoriesWithImage
     .filter((c) => c.slug && !EXCLUDED_SLUGS.includes(c.slug))
+    .filter((c) => {
+      const meta = homeGridMetaBySlug.get(c.slug);
+      if (!meta) return false;
+      return categoryAllowedOnHomeCategoryGrid(
+        meta.id,
+        meta.showOnHomePage,
+        cryptoTreeRows,
+      );
+    })
     .map((c) => ({
       id: c.slug,
       image: c.image ?? null,
@@ -196,10 +221,27 @@ export default async function HomePage() {
       productCount: countBySlug.get(c.slug) ?? 0,
       slug: c.slug,
     }))
-    .filter((c) => c.productCount > 0);
+    .filter((c) => c.productCount > 0)
+    .sort((a, b) => b.productCount - a.productCount)
+    .slice(0, HOME_CATEGORY_LIMIT);
 
   const testimonials: TestimonialItem[] =
     reviewTestimonials.length > 0 ? reviewTestimonials : mockTestimonials;
+  const heroQuote = testimonials[0];
+  const heroFaces = testimonials.slice(0, 4);
+  const heroLifestyleTiles = featuredProducts
+    .filter(
+      (p) =>
+        p.slug &&
+        p.image &&
+        (!p.tokenGated || p.tokenGatePassed),
+    )
+    .slice(0, 4)
+    .map((p) => ({
+      href: `/products/${p.slug}`,
+      image: p.image,
+      name: p.name,
+    }));
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -227,97 +269,136 @@ export default async function HomePage() {
           `}
         />
         <PageContainer className="relative z-10">
-          <div className="mx-auto w-full max-w-4xl text-center">
-            <div
-              className={`
-                mb-6 inline-flex items-center gap-2 rounded-full border
-                border-border bg-card/80 px-4 py-1.5 text-sm font-medium
-                tracking-[0.15em] text-muted-foreground uppercase
-                backdrop-blur-sm
-                dark:border-border dark:bg-card/80
-              `}
-            >
-              <Zap className="h-3 w-3 text-primary" />
-              For the Cult
-            </div>
-            <h1
-              className={`
-                font-heading-lcp text-4xl leading-tight font-extrabold
-                tracking-tight text-foreground
-                sm:text-5xl
-                md:text-7xl
-                lg:leading-[1.05]
-              `}
-            >
-              Where culture and{" "}
-              <span className="text-gradient-brand">technology</span> converge
-            </h1>
-            <p
-              className={`
-                mx-auto mt-6 max-w-2xl text-lg text-muted-foreground
-                md:text-xl
-              `}
-            >
-              Curated tech, premium apparel, wellness gear, and travel
-              essentials — for people who invest in themselves and the future
-              they&apos;re building.
-            </p>
-            <div
-              className={`
-                mt-10 flex flex-col items-center justify-center gap-4
-                sm:flex-row
-              `}
-            >
-              <Link href="/products">
-                <Button
-                  className="h-12 gap-2 px-8 text-sm tracking-wider uppercase"
-                  size="lg"
+          <HomeHeroAbSection tiles={heroLifestyleTiles}>
+            {heroQuote ? (
+              <figure
+                className={`
+                  mx-auto mt-10 max-w-2xl rounded-xl border border-border/80
+                  bg-card/60 px-6 py-5 text-left shadow-sm backdrop-blur-sm
+                  dark:bg-card/40
+                `}
+              >
+                <Quote aria-hidden className="mb-2 h-5 w-5 text-primary/80" />
+                <blockquote
+                  className={`
+                    text-base leading-relaxed text-foreground
+                    md:text-lg
+                  `}
                 >
-                  Enter the shop <ArrowRight className="h-4 w-4" />
-                </Button>
-              </Link>
-              <Link href="/about">
-                <Button
-                  className="h-12 px-8 text-sm tracking-wider uppercase"
-                  size="lg"
-                  variant="outline"
+                  {heroQuote.text.length > 220
+                    ? `${heroQuote.text.slice(0, 220)}…`
+                    : heroQuote.text}
+                </blockquote>
+                <figcaption
+                  className={`
+                    mt-3 flex items-center gap-3 text-sm text-muted-foreground
+                  `}
                 >
-                  Read the manifesto
-                </Button>
-              </Link>
-            </div>
-            {/* Trust signals */}
-            <div
-              className={`
-                mt-12 flex flex-wrap items-center justify-center gap-6 text-sm
-                tracking-wider text-muted-foreground uppercase
-                dark:text-muted-foreground
-              `}
-            >
-              <div className="flex items-center gap-2">
-                <Globe className="h-4 w-4 text-primary/70" />
-                <span>Ships worldwide</span>
-              </div>
+                  {heroQuote.author.avatar ? (
+                    <Image
+                      alt=""
+                      className="h-9 w-9 rounded-full object-cover"
+                      height={36}
+                      src={heroQuote.author.avatar}
+                      width={36}
+                    />
+                  ) : (
+                    <span
+                      className={`
+                        flex h-9 w-9 items-center justify-center rounded-full
+                        bg-muted text-xs font-semibold text-muted-foreground
+                      `}
+                      aria-hidden
+                    >
+                      {heroQuote.author.name.slice(0, 1).toUpperCase()}
+                    </span>
+                  )}
+                  <span>
+                    <span className="font-medium text-foreground">
+                      {heroQuote.author.name}
+                    </span>
+                    {heroQuote.author.handle
+                      ? ` · ${heroQuote.author.handle}`
+                      : null}
+                  </span>
+                </figcaption>
+              </figure>
+            ) : null}
+            {heroFaces.length > 1 ? (
               <div
                 className={`
-                  h-3 w-px bg-border
-                  dark:bg-border
+                  mt-8 flex items-center justify-center gap-2
+                  text-xs text-muted-foreground
                 `}
-              />
-              <div className="flex items-center gap-2">
-                <Shield className="h-4 w-4 text-primary/70" />
-                <span>Card &amp; crypto</span>
+              >
+                <div className="flex -space-x-2">
+                  {heroFaces.map((t, i) => (
+                    <span
+                      className={`
+                        relative inline-block h-9 w-9 overflow-hidden rounded-full
+                        ring-2 ring-background
+                      `}
+                      key={`${t.author.name}-${i}`}
+                    >
+                      {t.author.avatar ? (
+                        <Image
+                          alt=""
+                          className="object-cover"
+                          fill
+                          sizes="36px"
+                          src={t.author.avatar}
+                        />
+                      ) : (
+                        <span
+                          className={`
+                            flex h-full w-full items-center justify-center
+                            bg-muted text-[10px] font-semibold uppercase
+                            text-muted-foreground
+                          `}
+                        >
+                          {t.author.name.slice(0, 1)}
+                        </span>
+                      )}
+                    </span>
+                  ))}
+                </div>
+                <span className="max-w-[14rem] text-left leading-snug">
+                  Loved by members shipping gear worldwide
+                </span>
               </div>
-              <div
-                className={`
-                  h-3 w-px bg-border
-                  dark:bg-border
-                `}
-              />
-              <div className="flex items-center gap-2">
-                <Truck className="h-4 w-4 text-primary/70" />
-                <span>Free shipping over $200</span>
-              </div>
+            ) : null}
+          </HomeHeroAbSection>
+          {/* Trust signals */}
+          <div
+            className={`
+              mx-auto mt-12 flex max-w-4xl flex-wrap items-center justify-center
+              gap-6 text-sm tracking-wider text-muted-foreground uppercase
+              dark:text-muted-foreground
+            `}
+          >
+            <div className="flex items-center gap-2">
+              <Globe className="h-4 w-4 text-primary/70" />
+              <span>Ships worldwide</span>
+            </div>
+            <div
+              className={`
+                h-3 w-px bg-border
+                dark:bg-border
+              `}
+            />
+            <div className="flex items-center gap-2">
+              <Shield className="h-4 w-4 text-primary/70" />
+              <span>Card &amp; crypto</span>
+            </div>
+            <div
+              className={`
+                h-3 w-px bg-border
+                dark:bg-border
+              `}
+            />
+            <div className="flex items-center gap-2">
+              <Truck className="h-4 w-4 text-primary/70" />
+              <span>Free shipping over $200</span>
             </div>
           </div>
         </PageContainer>

@@ -15,7 +15,10 @@ export async function sendAddEmailVerificationCode(params: {
   const appName = "For the Culture";
   const subject = `Your verification code — ${appName}`;
 
-  if (process.env.NODE_ENV === "development" && !process.env.RESEND_API_KEY?.trim()) {
+  if (
+    process.env.NODE_ENV === "development" &&
+    !process.env.RESEND_API_KEY?.trim()
+  ) {
     console.log(
       "[sendAddEmailVerificationCode] No RESEND_API_KEY - verification code for",
       to,

@@ -20,14 +20,10 @@ export async function markShoppingCartSnapshotsPurchased(params: {
     emailNorm,
   );
 
-  const whereExpr =
-    params.userId?.trim() ?
-      and(
+  const whereExpr = params.userId?.trim()
+    ? and(
         isNull(shoppingCartSnapshotTable.purchaseCompletedAt),
-        or(
-          eq(shoppingCartSnapshotTable.userId, params.userId),
-          emailMatch,
-        ),
+        or(eq(shoppingCartSnapshotTable.userId, params.userId), emailMatch),
       )
     : and(isNull(shoppingCartSnapshotTable.purchaseCompletedAt), emailMatch);
 

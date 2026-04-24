@@ -35,7 +35,10 @@ interface CartSnapshotItem {
 
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request.headers);
-  const rl = await checkRateLimit(`cart-snapshot:${ip}`, RATE_LIMITS.cartSnapshot);
+  const rl = await checkRateLimit(
+    `cart-snapshot:${ip}`,
+    RATE_LIMITS.cartSnapshot,
+  );
   if (!rl.success) return rateLimitResponse(rl);
 
   const session = await auth.api.getSession({ headers: request.headers });
@@ -59,9 +62,9 @@ export async function POST(request: NextRequest) {
   const subtotalCents =
     typeof body.subtotalCents === "number" &&
     Number.isFinite(body.subtotalCents) &&
-    body.subtotalCents >= 0 ?
-      Math.min(2_000_000_00, Math.floor(body.subtotalCents))
-    : 0;
+    body.subtotalCents >= 0
+      ? Math.min(2_000_000_00, Math.floor(body.subtotalCents))
+      : 0;
 
   const userId = session.user.id;
   const email = session.user.email.trim();
@@ -108,13 +111,14 @@ function sanitizeItems(raw: unknown): unknown[] {
     const o = row as CartSnapshotItem;
     const id = typeof o.id === "string" ? o.id : null;
     const name = typeof o.name === "string" ? o.name.slice(0, 400) : "";
-    const price = typeof o.price === "number" && Number.isFinite(o.price) ? o.price : 0;
+    const price =
+      typeof o.price === "number" && Number.isFinite(o.price) ? o.price : 0;
     const quantity =
       typeof o.quantity === "number" &&
       Number.isFinite(o.quantity) &&
-      o.quantity > 0 ?
-        Math.min(999, Math.floor(o.quantity))
-      : 1;
+      o.quantity > 0
+        ? Math.min(999, Math.floor(o.quantity))
+        : 1;
     const productId = typeof o.productId === "string" ? o.productId : null;
     const productVariantId =
       typeof o.productVariantId === "string" ? o.productVariantId : null;

@@ -1,6 +1,6 @@
 import { Text } from "@react-email/components";
 
-import { type EmailProductPick, CtaButton, EmailShell } from "~/emails/shell";
+import { CtaButton, type EmailProductPick, EmailShell } from "~/emails/shell";
 
 export function RefundRequestReceivedEmail({
   bodyText,

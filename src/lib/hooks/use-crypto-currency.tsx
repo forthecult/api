@@ -223,7 +223,8 @@ export function CryptoCurrencyProvider({ children }: React.PropsWithChildren) {
         selectedCrypto,
         ...p.filter((c) => c !== selectedCrypto),
       ];
-      if (next.length > MAX_PRICING_CRYPTO_LINES) next.length = MAX_PRICING_CRYPTO_LINES;
+      if (next.length > MAX_PRICING_CRYPTO_LINES)
+        next.length = MAX_PRICING_CRYPTO_LINES;
       try {
         localStorage.setItem(PRICING_STORAGE_KEY, JSON.stringify(next));
       } catch {

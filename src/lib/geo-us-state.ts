@@ -35,7 +35,10 @@ export function resolveUsStateCodeFromGeo(
   if (fromRegion) return fromRegion;
 
   if (!region?.trim()) return null;
-  const compact = region.trim().toUpperCase().replace(/[^A-Z]/g, "");
+  const compact = region
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z]/g, "");
   if (compact.length === 2 && US_STATE_VALUES.has(compact)) return compact;
   return null;
 }

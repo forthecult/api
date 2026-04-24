@@ -118,8 +118,8 @@ export default async function BrandsIndexPage() {
                       {b.description ? (
                         <p
                           className={`
-                          line-clamp-3 text-sm text-muted-foreground
-                        `}
+                            line-clamp-3 text-sm text-muted-foreground
+                          `}
                         >
                           {b.description}
                         </p>
@@ -131,8 +131,8 @@ export default async function BrandsIndexPage() {
                       )}
                       <span
                         className={`
-                        mt-auto pt-2 text-sm font-medium text-primary
-                      `}
+                          mt-auto pt-2 text-sm font-medium text-primary
+                        `}
                       >
                         View brand →
                       </span>

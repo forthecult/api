@@ -5,6 +5,8 @@
 
 import posthog from "posthog-js";
 
+import { getAttributionEventProps } from "~/lib/analytics/attribution-session";
+
 export function trackAddToCart(payload: {
   currency?: string;
   price: number;
@@ -114,7 +116,10 @@ export function trackViewItemList(payload: {
 function capture(event: string, properties?: Record<string, unknown>): void {
   if (typeof window === "undefined" || !enabled()) return;
   try {
-    posthog.capture(event, properties);
+    posthog.capture(event, {
+      ...getAttributionEventProps(),
+      ...properties,
+    });
   } catch {
     // ignore
   }

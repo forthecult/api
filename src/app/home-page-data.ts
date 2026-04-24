@@ -25,7 +25,10 @@ import { hasValidTokenGateCookie } from "~/lib/token-gate-cookie";
 export interface HomeCategoryListItem {
   id: string;
   name: string;
+  parentId: null | string;
   productCount: number;
+  /** When true, Shop by Crypto tree categories may appear on the home category grid. */
+  showOnHomePage: boolean;
   slug: string;
 }
 
@@ -49,6 +52,24 @@ export interface HomeTestimonial {
   productTitle?: string;
   rating?: number;
   text: string;
+}
+
+/** Full category tree rows for Shop-by-Crypto detection on the home grid (all rows, any visibility). */
+export async function getHomeCategoryCryptoTreeRows(): Promise<
+  { id: string; name: string; parentId: null | string }[]
+> {
+  const rows = await db
+    .select({
+      id: categoriesTable.id,
+      name: categoriesTable.name,
+      parentId: categoriesTable.parentId,
+    })
+    .from(categoriesTable);
+  return rows.map((r) => ({
+    id: r.id,
+    name: r.name,
+    parentId: r.parentId ?? null,
+  }));
 }
 
 /**
@@ -215,6 +236,7 @@ export async function getHomePublicCategories(): Promise<
     id: string;
     name: string;
     parentId: null | string;
+    showOnHomePage: boolean;
     slug: null | string;
     visible: boolean;
   }[];
@@ -224,6 +246,7 @@ export async function getHomePublicCategories(): Promise<
         id: categoriesTable.id,
         name: categoriesTable.name,
         parentId: categoriesTable.parentId,
+        showOnHomePage: categoriesTable.showOnHomePage,
         slug: categoriesTable.slug,
         visible: categoriesTable.visible,
       })
@@ -236,10 +259,15 @@ export async function getHomePublicCategories(): Promise<
         name: categoriesTable.name,
         parentId: categoriesTable.parentId,
         slug: categoriesTable.slug,
+        visible: categoriesTable.visible,
       })
       .from(categoriesTable)
       .orderBy(asc(categoriesTable.name));
-    allCategories = rows.map((r) => ({ ...r, visible: true }));
+    allCategories = rows.map((r) => ({
+      ...r,
+      showOnHomePage: false,
+      visible: r.visible ?? true,
+    }));
   }
 
   allCategories = allCategories
@@ -272,7 +300,9 @@ export async function getHomePublicCategories(): Promise<
     .map((c) => ({
       id: c.id,
       name: c.name,
+      parentId: c.parentId ?? null,
       productCount: countByCategoryId.get(c.id) ?? 0,
+      showOnHomePage: c.showOnHomePage ?? false,
       slug: c.slug,
     }));
 }

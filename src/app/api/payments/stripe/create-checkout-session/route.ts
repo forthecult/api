@@ -16,6 +16,8 @@ import { getStripe } from "~/lib/stripe";
 
 const createCheckoutBodySchema = z.object({
   affiliateCode: z.string().max(64).optional(),
+  /** Pre-serialized JSON from `getAttributionJsonForStripeMetadata()` (≤450 chars). */
+  attribution: z.string().max(480).optional(),
   lineItems: z
     .array(
       z.object({
@@ -141,6 +143,9 @@ export async function POST(request: NextRequest) {
     }
     if (body.affiliateCode?.trim()) {
       metadata.affiliateCode = body.affiliateCode.trim();
+    }
+    if (body.attribution?.trim()) {
+      metadata.attribution = body.attribution.trim();
     }
 
     const checkoutSession = await stripe.checkout.sessions.create({

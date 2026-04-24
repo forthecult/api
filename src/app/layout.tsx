@@ -7,6 +7,7 @@ import { Suspense } from "react";
 import { SEO_CONFIG } from "~/app";
 import { LazySolanaWalletProvider } from "~/app/checkout/crypto/lazy-solana-wallet-provider";
 import { AnalyticsProvider } from "~/lib/analytics/analytics-provider";
+import { UtmCapture } from "~/lib/analytics/utm-capture";
 import { PostHogIdentityBridge } from "~/lib/analytics/posthog-identity-bridge";
 import { getPublicSiteUrl, isAgentSubdomain } from "~/lib/app-url";
 import { CartProvider } from "~/lib/hooks/use-cart";
@@ -177,6 +178,7 @@ export default async function RootLayout({
           enableSystem
         >
           <AnalyticsProvider>
+            <UtmCapture />
             <WebVitalsReporter />
             <PostHogIdentityBridge />
             {/* no initial theme is fetched server-side: next-themes restores from localStorage for

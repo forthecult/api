@@ -4,6 +4,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { db } from "~/db";
 import { categoriesTable, categoryTokenGateTable } from "~/db/schema";
 import { adminAuthFailureResponse, getAdminAuth } from "~/lib/admin-api-auth";
+import { isStorefrontCryptoCategoryId } from "~/lib/storefront-categories";
 
 export async function DELETE(
   _request: NextRequest,
@@ -68,6 +69,7 @@ export async function GET(
         name: categoriesTable.name,
         parentId: categoriesTable.parentId,
         seoOptimized: categoriesTable.seoOptimized,
+        showOnHomePage: categoriesTable.showOnHomePage,
         slug: categoriesTable.slug,
         title: categoriesTable.title,
         tokenGateContractAddress: categoriesTable.tokenGateContractAddress,
@@ -108,6 +110,23 @@ export async function GET(
       tokenSymbol: r.tokenSymbol,
     }));
 
+    const treeRows = await db
+      .select({
+        id: categoriesTable.id,
+        name: categoriesTable.name,
+        parentId: categoriesTable.parentId,
+      })
+      .from(categoriesTable);
+    const cryptoTreeRows = treeRows.map((r) => ({
+      id: r.id,
+      name: r.name,
+      parentId: r.parentId ?? null,
+    }));
+    const isCryptoShopCategory = isStorefrontCryptoCategoryId(
+      id,
+      cryptoTreeRows,
+    );
+
     return NextResponse.json({
       createdAt: category.createdAt,
       description: category.description,
@@ -116,6 +135,7 @@ export async function GET(
       footerReviewsStoreWide: category.footerReviewsStoreWide ?? true,
       id: category.id,
       imageUrl: category.imageUrl,
+      isCryptoShopCategory,
       level: category.level,
       marketingBlockEnabled: category.marketingBlockEnabled ?? false,
       marketingBlockHtml: category.marketingBlockHtml ?? null,
@@ -123,6 +143,7 @@ export async function GET(
       name: category.name,
       parentId: category.parentId,
       seoOptimized: category.seoOptimized,
+      showOnHomePage: category.showOnHomePage ?? false,
       slug: category.slug,
       title: category.title,
       tokenGateContractAddress: category.tokenGateContractAddress,
@@ -165,6 +186,7 @@ export async function PATCH(
       name?: string;
       parentId?: null | string;
       seoOptimized?: boolean;
+      showOnHomePage?: boolean;
       slug?: null | string;
       title?: null | string;
       tokenGateContractAddress?: null | string;
@@ -204,6 +226,8 @@ export async function PATCH(
       updates.marketingBlockHtml = body.marketingBlockHtml;
     if (typeof body.seoOptimized === "boolean")
       updates.seoOptimized = body.seoOptimized;
+    if (typeof body.showOnHomePage === "boolean")
+      updates.showOnHomePage = body.showOnHomePage;
     if (body.parentId !== undefined) updates.parentId = body.parentId ?? null;
     if (typeof body.tokenGated === "boolean")
       updates.tokenGated = body.tokenGated;
@@ -281,16 +305,39 @@ export async function PATCH(
       tokenSymbol: r.tokenSymbol,
     }));
 
+    const treeRowsAfter = await db
+      .select({
+        id: categoriesTable.id,
+        name: categoriesTable.name,
+        parentId: categoriesTable.parentId,
+      })
+      .from(categoriesTable);
+    const cryptoTreeAfter = treeRowsAfter.map((r) => ({
+      id: r.id,
+      name: r.name,
+      parentId: r.parentId ?? null,
+    }));
+    const isCryptoShopCategory = isStorefrontCryptoCategoryId(
+      id,
+      cryptoTreeAfter,
+    );
+
     return NextResponse.json({
       description: updated.description,
       featured: updated.featured,
+      footerReviewsEnabled: updated.footerReviewsEnabled ?? false,
+      footerReviewsStoreWide: updated.footerReviewsStoreWide ?? true,
       id: updated.id,
       imageUrl: updated.imageUrl,
+      isCryptoShopCategory,
       level: updated.level,
+      marketingBlockEnabled: updated.marketingBlockEnabled ?? false,
+      marketingBlockHtml: updated.marketingBlockHtml ?? null,
       metaDescription: updated.metaDescription,
       name: updated.name,
       parentId: updated.parentId,
       seoOptimized: updated.seoOptimized,
+      showOnHomePage: updated.showOnHomePage ?? false,
       slug: updated.slug,
       title: updated.title,
       tokenGateContractAddress: updated.tokenGateContractAddress,

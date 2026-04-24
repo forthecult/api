@@ -14,6 +14,7 @@ export const NOTIFICATION_CLASSIFICATION = {
     "welcome_email",
     "abandon_cart_series",
     "order_review_request",
+    "win_back_series",
   ] as const,
   transactional: [
     "password_reset",
@@ -83,6 +84,15 @@ export const NOTIFICATION_TEMPLATES: Record<
     title: "Order on hold",
     transactional: true,
   },
+  order_out_for_delivery: {
+    body: "Your package is out for delivery. Track it with the link in this email.",
+    emailBody:
+      "Great news — your package is out for delivery with the carrier. Keep an eye on tracking for the exact arrival window.",
+    emailSubject: "Your order is out for delivery",
+    id: "order_out_for_delivery",
+    title: "Out for delivery",
+    transactional: true,
+  },
   order_placed: {
     body: "Your order has been received. We'll notify you when it ships.",
     emailBody: "Thanks for your order. We'll send another email when it ships.",
@@ -116,15 +126,6 @@ export const NOTIFICATION_TEMPLATES: Record<
     emailSubject: "Your order has shipped",
     id: "order_shipped",
     title: "Order shipped",
-    transactional: true,
-  },
-  order_out_for_delivery: {
-    body: "Your package is out for delivery. Track it with the link in this email.",
-    emailBody:
-      "Great news — your package is out for delivery with the carrier. Keep an eye on tracking for the exact arrival window.",
-    emailSubject: "Your order is out for delivery",
-    id: "order_out_for_delivery",
-    title: "Out for delivery",
     transactional: true,
   },
   // ---- Transactional ----
@@ -174,6 +175,15 @@ export const NOTIFICATION_TEMPLATES: Record<
     title: "You're in",
     transactional: false,
   },
+  win_back_series: {
+    body: "We have missed you — new drops and member perks are live.",
+    emailBody:
+      "It has been a while since your last Culture delivery. Here is what is new — plus picks tailored to what shoppers like you reorder most.",
+    emailSubject: "We saved you a spot — here is what is new",
+    id: "win_back_series",
+    title: "Come back to Culture",
+    transactional: false,
+  },
 };
 
 /** Templates for order-related Telegram/widget (orderId + optional tracking). */
@@ -200,6 +210,11 @@ export function buildOrderNotificationCopy(
         body: `Order ${shortId} is on hold. We'll update you when it's moving again.`,
         title: "Order on hold",
       };
+    case "order_out_for_delivery":
+      return {
+        body: `Order ${shortId} is out for delivery with the carrier.`,
+        title: "Out for delivery",
+      };
     case "order_placed":
       return {
         body: `Order ${shortId} has been received. We'll notify you when it ships.`,
@@ -218,11 +233,6 @@ export function buildOrderNotificationCopy(
         };
       }
       return { body: `Order ${shortId} has shipped!`, title: "Order shipped" };
-    case "order_out_for_delivery":
-      return {
-        body: `Order ${shortId} is out for delivery with the carrier.`,
-        title: "Out for delivery",
-      };
     default:
       return { body: `Order ${shortId} status update.`, title: "Order update" };
   }

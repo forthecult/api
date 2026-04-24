@@ -4,14 +4,16 @@ import { NOTIFICATION_CLASSIFICATION } from "~/lib/notification-templates";
 
 const MARKETING_KINDS = new Set<string>([
   ...NOTIFICATION_CLASSIFICATION.marketing,
+  "abandon_cart_series_2",
+  "abandon_cart_series_3",
   "newsletter_welcome_discount",
+  "order_review_series_2",
+  "order_review_series_3",
   /** Drip funnel steps (PostHog `email_funnel_coupon_ab` drives coupon timing & amount). */
   "welcome_series_2",
   "welcome_series_3",
-  "abandon_cart_series_2",
-  "abandon_cart_series_3",
-  "order_review_series_2",
-  "order_review_series_3",
+  "win_back_series_2",
+  "win_back_series_3",
 ]);
 
 export type EmailSendKind = ExtraEmailSendKind | NotificationType;
@@ -30,7 +32,9 @@ export type ExtraEmailSendKind =
   | "order_review_series_3"
   | "otp"
   | "welcome_series_2"
-  | "welcome_series_3";
+  | "welcome_series_3"
+  | "win_back_series_2"
+  | "win_back_series_3";
 
 const CONSENT_BYPASS_KINDS = new Set<string>([
   "add_email_verification",

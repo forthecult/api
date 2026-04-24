@@ -1,9 +1,9 @@
-import { createElement } from "react";
 import { eq } from "drizzle-orm";
+import { createElement } from "react";
 
-import { PasswordResetEmail } from "~/emails/password-reset";
 import { db } from "~/db";
 import { userTable } from "~/db/schema";
+import { PasswordResetEmail } from "~/emails/password-reset";
 import {
   createUserNotification,
   userWantsTransactionalWebsite,

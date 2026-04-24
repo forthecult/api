@@ -1106,16 +1106,16 @@ function OrderDataRetentionCard({
       </p>
       <div
         className={`
-        mt-4 flex flex-col gap-3
-        sm:flex-row sm:flex-wrap
-      `}
+          mt-4 flex flex-col gap-3
+          sm:flex-row sm:flex-wrap
+        `}
       >
         <Button
           asChild
           className={`
-          w-full
-          sm:w-auto
-        `}
+            w-full
+            sm:w-auto
+          `}
           variant="outline"
         >
           <Link href={invoiceHref} rel="noopener noreferrer" target="_blank">

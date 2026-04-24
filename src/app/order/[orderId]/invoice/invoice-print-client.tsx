@@ -100,15 +100,15 @@ export function InvoicePrintClient({ orderId }: { orderId: string }) {
   return (
     <div
       className={`
-      mx-auto max-w-3xl px-4 py-8
-      print:max-w-none print:py-4
-    `}
+        mx-auto max-w-3xl px-4 py-8
+        print:max-w-none print:py-4
+      `}
     >
       <div
         className={`
-        mb-6 flex flex-wrap items-center justify-between gap-3
-        print:hidden
-      `}
+          mb-6 flex flex-wrap items-center justify-between gap-3
+          print:hidden
+        `}
       >
         <h1 className="text-lg font-semibold">Invoice</h1>
         <Button onClick={print} type="button" variant="default">
@@ -166,8 +166,8 @@ export function InvoicePrintClient({ orderId }: { orderId: string }) {
           <thead>
             <tr
               className={`
-              border-b border-border text-xs text-muted-foreground uppercase
-            `}
+                border-b border-border text-xs text-muted-foreground uppercase
+              `}
             >
               <th className="py-2 pr-2">Item</th>
               <th className="py-2 pr-2 text-right">Qty</th>
@@ -204,9 +204,9 @@ export function InvoicePrintClient({ orderId }: { orderId: string }) {
           </div>
           <div
             className={`
-            flex w-full max-w-xs justify-between border-t border-border pt-2
-            font-semibold
-          `}
+              flex w-full max-w-xs justify-between border-t border-border pt-2
+              font-semibold
+            `}
           >
             <span>Total (USD)</span>
             <span className="tabular-nums">${total.toFixed(2)}</span>

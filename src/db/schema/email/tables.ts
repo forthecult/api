@@ -74,7 +74,7 @@ export const newsletterSubscriberTable = pgTable("newsletter_subscriber", {
 });
 
 /**
- * Multi-step marketing funnels (welcome follow-up, abandon cart, post-delivery review).
+ * Multi-step marketing funnels (welcome, abandon cart, post-delivery review, win-back).
  * Cron advances `last_step_sent` and schedules `next_send_at`. A/B variant from PostHog is stored for analysis.
  */
 export const emailFunnelEnrollmentTable = pgTable(
@@ -98,7 +98,10 @@ export const emailFunnelEnrollmentTable = pgTable(
     }),
   },
   (t) => [
-    index("email_funnel_enrollment_next_send_idx").on(t.nextSendAt, t.completed),
+    index("email_funnel_enrollment_next_send_idx").on(
+      t.nextSendAt,
+      t.completed,
+    ),
     index("email_funnel_enrollment_email_funnel_idx").on(t.email, t.funnel),
   ],
 );

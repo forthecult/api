@@ -63,11 +63,6 @@ export const PAYMENT_METHOD_NETWORKS: Record<
   ],
 };
 
-/** Coerce to a non-negative integer for DB `display_order` (Postgres `integer`). */
-export function toPaymentMethodDisplayOrder(displayOrder: number): number {
-  return Math.max(0, Math.round(displayOrder));
-}
-
 export interface PaymentMethodSetting {
   displayOrder: number;
   enabled: boolean;
@@ -75,4 +70,9 @@ export interface PaymentMethodSetting {
   enabledNetworks?: null | string[];
   label: string;
   methodKey: string;
+}
+
+/** Coerce to a non-negative integer for DB `display_order` (Postgres `integer`). */
+export function toPaymentMethodDisplayOrder(displayOrder: number): number {
+  return Math.max(0, Math.round(displayOrder));
 }

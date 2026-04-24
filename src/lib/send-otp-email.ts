@@ -33,7 +33,10 @@ export async function sendVerificationOTPEmail(params: {
           ? "confirm your new email address"
           : "reset your password";
 
-  if (process.env.NODE_ENV === "development" && !process.env.RESEND_API_KEY?.trim()) {
+  if (
+    process.env.NODE_ENV === "development" &&
+    !process.env.RESEND_API_KEY?.trim()
+  ) {
     console.log(
       "[sendVerificationOTPEmail] No RESEND_API_KEY - OTP for",
       to,
@@ -54,12 +57,7 @@ export async function sendVerificationOTPEmail(params: {
       to,
     });
     if (process.env.NODE_ENV === "development") {
-      console.log(
-        "[sendVerificationOTPEmail] OTP sent to:",
-        to,
-        "type:",
-        type,
-      );
+      console.log("[sendVerificationOTPEmail] OTP sent to:", to, "type:", type);
     }
   } catch (err) {
     console.error("[sendVerificationOTPEmail] send failed:", err);

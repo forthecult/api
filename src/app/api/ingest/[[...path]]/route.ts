@@ -35,7 +35,12 @@ async function forward(
   const path = pathSegments.join("/");
   const url = `${upstreamHost()}/${path}${request.nextUrl.search}`;
   const headers = new Headers();
-  for (const name of ["authorization", "content-type", "user-agent"]) {
+  for (const name of [
+    "authorization",
+    "content-type",
+    "sec-gpc",
+    "user-agent",
+  ]) {
     const v = request.headers.get(name);
     if (v) headers.set(name, v);
   }

@@ -228,19 +228,21 @@ export async function PATCH(
     }
     if (body.sex !== undefined) {
       updates.sex =
-        typeof body.sex === "string" ? body.sex.trim().slice(0, 64) || null : null;
+        typeof body.sex === "string"
+          ? body.sex.trim().slice(0, 64) || null
+          : null;
     }
     if (body.interestTags !== undefined) {
       updates.interestTags =
-        typeof body.interestTags === "string" ?
-          body.interestTags.trim().slice(0, 8000) || null
-        : null;
+        typeof body.interestTags === "string"
+          ? body.interestTags.trim().slice(0, 8000) || null
+          : null;
     }
     if (body.crmNotes !== undefined) {
       updates.crmNotes =
-        typeof body.crmNotes === "string" ?
-          body.crmNotes.trim().slice(0, 16000) || null
-        : null;
+        typeof body.crmNotes === "string"
+          ? body.crmNotes.trim().slice(0, 16000) || null
+          : null;
     }
 
     // Notification preferences: single source of truth (keeps receiveMarketing/receiveSmsMarketing in sync)

@@ -191,6 +191,17 @@ export function Footer({ className }: { className?: string }) {
                     text-muted-foreground transition-colors
                     hover:text-foreground
                   `}
+                  href="/ai"
+                >
+                  Chat
+                </Link>
+              </li>
+              <li>
+                <Link
+                  className={`
+                    text-muted-foreground transition-colors
+                    hover:text-foreground
+                  `}
                   href="/esim"
                 >
                   eSIMs
@@ -225,31 +236,9 @@ export function Footer({ className }: { className?: string }) {
                     text-muted-foreground transition-colors
                     hover:text-foreground
                   `}
-                  href="/token"
-                >
-                  CULT token
-                </Link>
-              </li>
-              <li>
-                <Link
-                  className={`
-                    text-muted-foreground transition-colors
-                    hover:text-foreground
-                  `}
                   href="/membership"
                 >
                   Membership
-                </Link>
-              </li>
-              <li>
-                <Link
-                  className={`
-                    text-muted-foreground transition-colors
-                    hover:text-foreground
-                  `}
-                  href="/lookbook"
-                >
-                  Lookbook
                 </Link>
               </li>
               <li>
@@ -269,9 +258,9 @@ export function Footer({ className }: { className?: string }) {
                     text-muted-foreground transition-colors
                     hover:text-foreground
                   `}
-                  href="/changelog"
+                  href="/lookbook"
                 >
-                  Changelog
+                  Lookbook
                 </Link>
               </li>
               <li>
@@ -280,9 +269,20 @@ export function Footer({ className }: { className?: string }) {
                     text-muted-foreground transition-colors
                     hover:text-foreground
                   `}
-                  href="/ai"
+                  href="/token"
                 >
-                  Chat
+                  CULT token
+                </Link>
+              </li>
+              <li>
+                <Link
+                  className={`
+                    text-muted-foreground transition-colors
+                    hover:text-foreground
+                  `}
+                  href="/changelog"
+                >
+                  Changelog
                 </Link>
               </li>
               <li>

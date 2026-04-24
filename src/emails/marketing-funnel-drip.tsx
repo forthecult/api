@@ -1,45 +1,47 @@
 import { Heading, Link, Text } from "@react-email/components";
 
-import {
-  type EmailProductPick,
-  CtaButton,
-  EmailShell,
-} from "~/emails/shell";
+import { CtaButton, type EmailProductPick, EmailShell } from "~/emails/shell";
 import { getPublicSiteUrl } from "~/lib/app-url";
-import { appendEmailUtm, emailUtmQueryString } from "~/lib/email/marketing-email-url";
+import {
+  appendEmailUtm,
+  emailUtmQueryString,
+} from "~/lib/email/marketing-email-url";
 
 export function MarketingFunnelDripEmail({
   bodyLines,
   couponCode,
   headline,
+  picksSubtitle,
   preview,
   primaryCtaHref,
   primaryCtaLabel,
   productPicks,
-  picksSubtitle,
   utmCampaign = "email_funnel",
   utmContent = "drip",
 }: Readonly<{
   bodyLines: readonly string[];
   couponCode?: string;
   headline: string;
+  picksSubtitle?: string;
   preview: string;
   primaryCtaHref: string;
   primaryCtaLabel: string;
   productPicks?: readonly EmailProductPick[];
-  picksSubtitle?: string;
   utmCampaign?: string;
   utmContent?: string;
 }>) {
   const base = getPublicSiteUrl().replace(/\/$/, "");
-  const banner =
-    couponCode ?
-      `Your code: ${couponCode} — enter it at checkout. One use per customer unless noted in admin.`
+  const banner = couponCode
+    ? `Your code: ${couponCode} — enter it at checkout. One use per customer unless noted in admin.`
     : undefined;
 
   const taggedPrimary = appendEmailUtm(primaryCtaHref, utmCampaign, utmContent);
   const heroHref = appendEmailUtm(primaryCtaHref, utmCampaign, "hero_banner");
-  const videoHref = appendEmailUtm(`${base}/shop`, utmCampaign, "video_spotlight");
+  const videoHref = appendEmailUtm(
+    `${base}/shop`,
+    utmCampaign,
+    "video_spotlight",
+  );
   const utmFooterQuery = emailUtmQueryString(utmCampaign, "footer_links");
   const utmProductQuery = emailUtmQueryString(utmCampaign, "product_recs");
 
@@ -47,7 +49,9 @@ export function MarketingFunnelDripEmail({
     <EmailShell
       couponBanner={banner}
       marketingHeroHref={heroHref}
-      picksSubtitle={picksSubtitle ?? "You might be interested in these products"}
+      picksSubtitle={
+        picksSubtitle ?? "You might be interested in these products"
+      }
       preview={preview}
       productPicks={productPicks}
       showBrandStoryFooter
@@ -75,13 +79,27 @@ export function MarketingFunnelDripEmail({
         </Text>
       ))}
       <CtaButton href={taggedPrimary} label={primaryCtaLabel} variant="brand" />
-      <Text style={{ color: "#64748b", fontSize: "13px", lineHeight: 1.7, margin: "16px 0 0" }}>
-        <Link href={appendEmailUtm(`${base}/shop`, utmCampaign, "nav_shop")} style={{ color: "#0f172a" }}>
+      <Text
+        style={{
+          color: "#64748b",
+          fontSize: "13px",
+          lineHeight: 1.7,
+          margin: "16px 0 0",
+        }}
+      >
+        <Link
+          href={appendEmailUtm(`${base}/shop`, utmCampaign, "nav_shop")}
+          style={{ color: "#0f172a" }}
+        >
           Shop
         </Link>
         {" · "}
         <Link
-          href={appendEmailUtm(`${base}/membership`, utmCampaign, "nav_membership")}
+          href={appendEmailUtm(
+            `${base}/membership`,
+            utmCampaign,
+            "nav_membership",
+          )}
           style={{ color: "#0f172a" }}
         >
           Membership

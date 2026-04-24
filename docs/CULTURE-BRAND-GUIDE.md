@@ -7,9 +7,11 @@
 
 ## PREAMBLE: WHAT THIS BRAND ACTUALLY IS
 
-Culture is not a store. It is a lfestyle brand.
+Culture is not a store. It is a lifestyle brand.
 
 It began in 2015 selling crypto merch to cypherpunks. It shut down in 2019. It came back as something larger: a curated collection of products that protect your health and expand your autonomy — from organic cotton apparel to hardware wallets, from mycotoxin-tested coffee to GrapheneOS phones.
+
+**Freedom is a through-line, not a slogan.** Our goal is to give customers **more freedom** — in their health, their money, their data, their time, and their choices. We talk about **personal and financial responsibility** because freedom without responsibility is drift: we mean the kind of responsibility that builds **character** and a life you actually want. We hold a **"you do you"** philosophy in the best sense: we are not here to dictate the life you should live; we offer products, ideas, and services so **you can live the life you want to live**. That thread runs through **marketing, sales copy, curation, and every offer we make** — if it does not expand real options for a real person, it does not clear the bar. **More freedom, more flourishing:** we hold that a better world is one where people are **more human** and **more free to be themselves**.
 
 The future will be decentralized, open source, and enable human flourishing. We bring these ideas to customers who understand this first.
 
@@ -23,6 +25,10 @@ The future will be decentralized, open source, and enable human flourishing. We 
 
 **The feeling when you encounter Culture should be:**
 The quiet confidence of someone who has already done the research. They are not trying to convince you. But if you are here, you already know.
+
+## Small details, compounding care
+
+We ship **exceptional products and services** and treat **preferences and context** as first-class: where it is appropriate, transparent, and secure, we remember what helps a customer and we look for **unique** touches — product, service, and site — that go **above and beyond**. Those touches should align with **open source**, **performance**, **security**, **sustainable profit**, and **customer sovereignty**: each detail should be a good idea on its own (sometimes barely noticed), and in aggregate should **improve life or experience** immediately and over time. Canonical ops framing: [docs/operations/SMALL-DETAILS-PHILOSOPHY.md](../../docs/operations/SMALL-DETAILS-PHILOSOPHY.md).
 
 ---
 
@@ -282,7 +288,7 @@ A minimal geometric shape: an open-topped rectangle or arch — like a container
 
 ### 5. Customer-first (lifestyle brand, not a catalog robot)
 
-**Description:** A lifestyle brand is not "we have SKUs, pick one." The customer is the point of the story. They should feel **seen and wanted** — not flattered, not manipulated; **genuinely considered**. We meet them with warmth, help them toward **where they are trying to go**, and hold a high bar for **how** we do it: especially in **customer support** (response quality, follow-through, ownership, going past the first script answer). When someone needs something we do not sell, we do not shrug. We help them get there: a vetted link, a referral, a half-step we can own — so they leave the interaction with their problem *handled*, not with a "not our problem." That is not scope creep; it is **integrity**. It is the brand a person **chooses** to be part of, not a transaction they forget.
+**Description:** A lifestyle brand is not "we have SKUs, pick one." The customer is the point of the story. They should feel **seen and wanted** — not flattered, not manipulated; **genuinely considered**. We meet them with warmth, help them toward **where they are trying to go** — their version of a good life, not ours — and hold a high bar for **how** we do it: especially in **customer support** (response quality, follow-through, ownership, going past the first script answer). When someone needs something we do not sell, we do not shrug. We help them get there: a vetted link, a referral, a half-step we can own — so they leave the interaction with their problem *handled*, not with a "not our problem." That is not scope creep; it is **integrity**. It is the brand a person **chooses** to be part of, not a transaction they forget. That posture is **freedom-respecting**: we do not trap people in our catalog; we help them move.
 
 - **Do:** "We do not stock that, but here are two options that fit what you asked for, and what to look for in the spec."
 - **Do:** (Support) Resolve the case; if handoff is needed, the customer gets a name, a next step, and a time window — not a closed ticket in limbo.
@@ -322,7 +328,9 @@ These words appear regularly. They define the lexicon. (The count is not the poi
 | **Toxin-free** | Direct. Says what it means. |
 | **Open-source** | Technology you can inspect and trust. Our default for what we sell, what we recommend, and what we build with. |
 | **Flourishing** | Our north star. Human thriving. |
-| **Pillar** | Our framework. Health, Autonomy. |
+| **Pillar** | Our framework. Health, Autonomy. (Freedom is the experience we sell; autonomy is often how you get there.) |
+| **Freedom** | More options, fewer dependencies, less lock-in. We name it in plain language; we do not use it as empty hype. |
+| **Responsibility** | Personal and financial. The natural partner of freedom — the brand discusses both without preaching. |
 | **Lock** | How members commit CULT for member benefits (preferred verb over "stake"). Use "lock," "hold," or "member" rather than "stake" / "stakeholder" when describing CULT. "Stake" is fine in the idiomatic "skin in the game" sense. |
 | **Considered** | Thoughtful purchase. Thoughtful brand. |
 | **Privacy** | Not a feature. A right. |
@@ -377,6 +385,8 @@ These words appear regularly. They define the lexicon. (The count is not the poi
 **Innovation in behavior, not in adjectives:** We push forward in how we curate, how we build (APIs, structure, support). We do not **claim** "innovative" or "pioneering" in copy. Demonstrate it — a faster answer, a clearer spec table, a problem solved off-catalog — and let the customer conclude.
 
 **Product descriptions:** Lead with what the product does, not what it is. "Filters 99.9% of contaminants from tap water" before "Stainless steel gravity-fed filtration system." Benefits first, specifications second.
+
+**Freedom, responsibility, and flourishing in copy:** When you speak to the **outcome** of a product, tie it to **expanded choice** and **self-directed life** in concrete terms — not the word *freedom* in every sentence. Same for **responsibility**: we discuss savings, custody, health tradeoffs, and trade-offs between convenience and control where they help someone decide. We never moralize. The vision is: **we help you get where *you* want to go**; **we believe more freedom supports human flourishing**; we strive for a world where people are **more fully themselves**. Express that in the brand's voice: considered, direct, never preachy. (Internal shorthand **"you do you"** maps to: respect for the reader's path; in customer copy, use full sentences, not the phrase on repeat.)
 
 ---
 
@@ -576,9 +586,11 @@ SPECIFICATIONS
 >
 > When we came back, we came back different. Not as a crypto store — as a lifestyle brand built on everything that community taught us. Self-sovereignty is not just for your money. It is for your body, your data, your attention, and your choices.
 >
+> We are here to **expand your freedom** — with better options, fewer strings, and honest information. We talk about **responsibility** because a free life is not a careless one: personal and financial responsibility are how you keep the life you build. **Flourishing** is what we think happens when people have both: room to choose, and the character to choose well.
+>
 > **What we sell, and why**
 >
-> Every product in our catalog serves at least one of two pillars: health or autonomy.
+> Every product in our catalog serves at least one of two pillars: health or autonomy — and both exist in service of a life **you** choose.
 >
 > Health means the products touching your skin, entering your body, and filling your home are not slowly harming you. We sell apparel made from natural fibers only — organic cotton, bamboo, alpaca. Never polyester. We sell water filters that work off-grid. Coffee tested for mold toxins. Red light therapy backed by research, not marketing.
 >

@@ -2,6 +2,8 @@
  * GET /api/cron/cart-abandon-enroll
  *
  * Enrolls idle signed-in carts into the 3-step abandon series. Secured with CRON_SECRET.
+ * Note: `GET /api/cron/email-funnels` also runs this enrollment after processing drips,
+ * so you can rely on a single cron if preferred.
  */
 
 import { NextResponse } from "next/server";
@@ -26,7 +28,10 @@ export async function GET(request: Request) {
   }
 
   if (token !== secret) {
-    return NextResponse.json({ error: "Unauthorized", ok: false }, { status: 401 });
+    return NextResponse.json(
+      { error: "Unauthorized", ok: false },
+      { status: 401 },
+    );
   }
 
   try {

@@ -221,6 +221,13 @@ export const productVariantsTable = pgTable(
 export const ordersTable = pgTable(
   "order",
   {
+    /**
+     * First-touch campaign params (UTM + click ids) from checkout, JSON string.
+     * Filled from Stripe session metadata; used for CAPI + analytics (no extra marketing cookie).
+     */
+    attributionSnapshotJson: text("attribution_snapshot_json"),
+    /** Idempotent marker: server-side ad-platform conversion stub (or real CAPI) has completed for this order. */
+    adServerConversionSentAt: timestamp("ad_server_conversion_sent_at"),
     affiliateCode: text("affiliate_code"),
     affiliateCommissionCents: integer("affiliate_commission_cents"),
     affiliateDiscountCents: integer("affiliate_discount_cents"),

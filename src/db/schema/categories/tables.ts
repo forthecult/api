@@ -40,6 +40,11 @@ export const categoriesTable = pgTable(
     name: text("name").notNull(),
     parentId: text("parent_id"),
     seoOptimized: boolean("seo_optimized").notNull().default(false),
+    /**
+     * When true, a category in the Shop by Crypto tree may appear on the home
+     * "Shop by category" grid. Non-crypto categories do not require this flag.
+     */
+    showOnHomePage: boolean("show_on_home_page").notNull().default(false),
     slug: text("slug").unique(),
     title: text("title"),
     tokenGateContractAddress: text("token_gate_contract_address"),

@@ -23,16 +23,16 @@ export function CartMarketingSync() {
     const handle = window.setTimeout(() => {
       const payload = JSON.stringify({
         items:
-          items.length === 0 ?
-            []
-          : items.map((i) => ({
-              id: i.id,
-              name: i.name,
-              price: i.price,
-              productId: i.productId,
-              productVariantId: i.productVariantId,
-              quantity: i.quantity,
-            })),
+          items.length === 0
+            ? []
+            : items.map((i) => ({
+                id: i.id,
+                name: i.name,
+                price: i.price,
+                productId: i.productId,
+                productVariantId: i.productVariantId,
+                quantity: i.quantity,
+              })),
         subtotalCents,
       });
 
@@ -57,16 +57,16 @@ export function CartMarketingSync() {
       const subtotalCents = Math.round(subtotal * 100);
       const payload = JSON.stringify({
         items:
-          items.length === 0 ?
-            []
-          : items.map((i) => ({
-              id: i.id,
-              name: i.name,
-              price: i.price,
-              productId: i.productId,
-              productVariantId: i.productVariantId,
-              quantity: i.quantity,
-            })),
+          items.length === 0
+            ? []
+            : items.map((i) => ({
+                id: i.id,
+                name: i.name,
+                price: i.price,
+                productId: i.productId,
+                productVariantId: i.productVariantId,
+                quantity: i.quantity,
+              })),
         subtotalCents,
       });
       void navigator.sendBeacon(

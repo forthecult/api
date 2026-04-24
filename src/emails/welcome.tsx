@@ -1,8 +1,11 @@
 import { Heading, Text } from "@react-email/components";
 
-import { type EmailProductPick, CtaButton, EmailShell } from "~/emails/shell";
+import { CtaButton, type EmailProductPick, EmailShell } from "~/emails/shell";
 import { getPublicSiteUrl } from "~/lib/app-url";
-import { appendEmailUtm, emailUtmQueryString } from "~/lib/email/marketing-email-url";
+import {
+  appendEmailUtm,
+  emailUtmQueryString,
+} from "~/lib/email/marketing-email-url";
 
 export function WelcomeEmail({
   bodyText,

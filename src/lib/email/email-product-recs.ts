@@ -1,9 +1,7 @@
 import "server-only";
-
 import { and, desc, eq, inArray, notInArray, sql } from "drizzle-orm";
 
 import { db } from "~/db";
-import { getPublicSiteUrl } from "~/lib/app-url";
 import {
   categoriesTable,
   orderItemsTable,
@@ -11,19 +9,13 @@ import {
   productCategoriesTable,
   productsTable,
 } from "~/db/schema";
+import { getPublicSiteUrl } from "~/lib/app-url";
 
 export interface RecommendedProductForEmail {
   href: string;
   imageUrl: string;
   name: string;
   priceLabel: string;
-}
-
-function formatPrice(cents: number): string {
-  return new Intl.NumberFormat("en-US", {
-    currency: "USD",
-    style: "currency",
-  }).format(cents / 100);
 }
 
 /**
@@ -48,7 +40,7 @@ export async function fetchRecommendedProductsForEmail(options: {
     name: string;
     priceCents: number;
     slug: null | string;
-  }): RecommendedProductForEmail | null => {
+  }): null | RecommendedProductForEmail => {
     if (!p.slug) return null;
     return {
       href: hrefFor(p.slug),
@@ -170,10 +162,7 @@ export async function fetchRecommendedProductsForEmail(options: {
           : sql`true`,
       ),
     )
-    .orderBy(
-      desc(categoriesTable.featured),
-      desc(productsTable.createdAt),
-    )
+    .orderBy(desc(categoriesTable.featured), desc(productsTable.createdAt))
     .limit(limit * 3);
 
   const out: RecommendedProductForEmail[] = [];
@@ -184,4 +173,11 @@ export async function fetchRecommendedProductsForEmail(options: {
     if (out.length >= limit) break;
   }
   return out;
+}
+
+function formatPrice(cents: number): string {
+  return new Intl.NumberFormat("en-US", {
+    currency: "USD",
+    style: "currency",
+  }).format(cents / 100);
 }

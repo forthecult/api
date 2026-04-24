@@ -6,26 +6,11 @@
 
 import { getPublicSiteUrl } from "~/lib/app-url";
 
-export function normalizeWebOrigin(value: string | undefined): string {
-  if (!value?.trim()) return "";
-  let s = value.trim();
-  if (!/^https?:\/\//i.test(s)) {
-    s = `https://${s.replace(/^\/+/, "")}`;
+export function getCorsAllowedAuthOrigins(): string[] {
+  if (process.env.NODE_ENV === "development") {
+    return getDevelopmentAuthOrigins();
   }
-  try {
-    const u = new URL(s);
-    return `${u.protocol}//${u.host}`;
-  } catch {
-    return s.replace(/\/+$/, "");
-  }
-}
-
-export function parseCommaSeparatedOrigins(raw: string | undefined): string[] {
-  if (!raw?.trim()) return [];
-  return raw
-    .split(",")
-    .map((part) => normalizeWebOrigin(part.trim()))
-    .filter(Boolean);
+  return getProductionAuthOrigins();
 }
 
 export function getDevelopmentAuthOrigins(): string[] {
@@ -60,23 +45,38 @@ export function getProductionAuthOrigins(): string[] {
   const railwayPublic = process.env.RAILWAY_PUBLIC_DOMAIN?.trim();
   if (railwayPublic) {
     push(
-      /^https?:\/\//i.test(railwayPublic) ?
-        railwayPublic
-      : `https://${railwayPublic}`,
+      /^https?:\/\//i.test(railwayPublic)
+        ? railwayPublic
+        : `https://${railwayPublic}`,
     );
   }
   return [...set];
 }
 
-export function getCorsAllowedAuthOrigins(): string[] {
-  if (process.env.NODE_ENV === "development") {
-    return getDevelopmentAuthOrigins();
-  }
-  return getProductionAuthOrigins();
-}
-
-export function isAllowedAuthCorsOrigin(requestOrigin: string | null): boolean {
+export function isAllowedAuthCorsOrigin(requestOrigin: null | string): boolean {
   if (!requestOrigin) return false;
   const norm = normalizeWebOrigin(requestOrigin);
   return getCorsAllowedAuthOrigins().includes(norm);
+}
+
+export function normalizeWebOrigin(value: string | undefined): string {
+  if (!value?.trim()) return "";
+  let s = value.trim();
+  if (!/^https?:\/\//i.test(s)) {
+    s = `https://${s.replace(/^\/+/, "")}`;
+  }
+  try {
+    const u = new URL(s);
+    return `${u.protocol}//${u.host}`;
+  } catch {
+    return s.replace(/\/+$/, "");
+  }
+}
+
+export function parseCommaSeparatedOrigins(raw: string | undefined): string[] {
+  if (!raw?.trim()) return [];
+  return raw
+    .split(",")
+    .map((part) => normalizeWebOrigin(part.trim()))
+    .filter(Boolean);
 }

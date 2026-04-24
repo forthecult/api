@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Fingerprint,
   Headphones,
   Heart,
   Link2,
@@ -227,6 +228,14 @@ export function DashboardNavContent({
                 <span className="flex items-center gap-2">
                   <Settings aria-hidden className="h-4 w-4 shrink-0" />
                   Notifications
+                </span>
+              </Link>
+            </li>
+            <li>
+              <Link {...linkProps("/dashboard/privacy")}>
+                <span className="flex items-center gap-2">
+                  <Fingerprint aria-hidden className="h-4 w-4 shrink-0" />
+                  Privacy & ads
                 </span>
               </Link>
             </li>

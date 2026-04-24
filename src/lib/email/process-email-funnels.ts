@@ -1,17 +1,16 @@
 import "server-only";
-
+import { and, eq, lte } from "drizzle-orm";
 import { createElement, type ReactElement } from "react";
 
-import { and, eq, lte } from "drizzle-orm";
+import type { EmailSendKind } from "~/lib/email/email-send-kind";
+import type { EmailFunnelId } from "~/lib/email/funnel-enrollment";
 
 import { db } from "~/db";
 import { emailFunnelEnrollmentTable } from "~/db/schema";
 import { MarketingFunnelDripEmail } from "~/emails/marketing-funnel-drip";
 import { getPublicSiteUrl } from "~/lib/app-url";
-import type { EmailSendKind } from "~/lib/email/email-send-kind";
 import { fetchRecommendedProductsForEmail } from "~/lib/email/email-product-recs";
 import { resolveCouponCodeForFunnelStep } from "~/lib/email/funnel-coupon";
-import type { EmailFunnelId } from "~/lib/email/funnel-enrollment";
 import {
   getEmailFunnelContentVariant,
   getEmailFunnelCouponExperimentVariant,
@@ -21,59 +20,6 @@ import { getNotificationTemplate } from "~/lib/notification-templates";
 
 const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * HOUR_MS;
-
-function distinctId(
-  userId: null | string | undefined,
-  email: string,
-): string {
-  return (userId && userId.trim()) || email;
-}
-
-async function sendFunnelMessage(options: {
-  correlationId: string;
-  email: string;
-  kind: EmailSendKind;
-  nextLastStep: number;
-  nextSendAt: Date | null;
-  rowId: string;
-  subject: string;
-  userId: null | string;
-  react: ReactElement;
-}): Promise<void> {
-  const res = await sendEmail({
-    correlationId: options.correlationId,
-    kind: options.kind,
-    react: options.react,
-    subject: options.subject,
-    to: options.email,
-  });
-
-  if ("skipped" in res && res.skipped) {
-    await db
-      .update(emailFunnelEnrollmentTable)
-      .set({
-        completed: true,
-        nextSendAt: new Date(),
-        updatedAt: new Date(),
-      })
-      .where(eq(emailFunnelEnrollmentTable.id, options.rowId));
-    return;
-  }
-
-  if (!("ok" in res) || res.ok !== true) {
-    return;
-  }
-
-  await db
-    .update(emailFunnelEnrollmentTable)
-    .set({
-      completed: options.nextSendAt == null,
-      lastStepSent: options.nextLastStep,
-      nextSendAt: options.nextSendAt ?? new Date(),
-      updatedAt: new Date(),
-    })
-    .where(eq(emailFunnelEnrollmentTable.id, options.rowId));
-}
 
 /** Process due rows (call from cron). */
 export async function processDueEmailFunnels(): Promise<{ processed: number }> {
@@ -106,7 +52,13 @@ export async function processDueEmailFunnels(): Promise<{ processed: number }> {
     );
 
     const orderId =
-      typeof row.context?.orderId === "string" ? row.context.orderId : undefined;
+      typeof row.context?.orderId === "string"
+        ? row.context.orderId
+        : undefined;
+    const anchorOrderId =
+      typeof row.context?.anchorOrderId === "string"
+        ? row.context.anchorOrderId
+        : undefined;
     const cartProductIdsRaw = row.context?.cartProductIds;
     const cartProductIds = Array.isArray(cartProductIdsRaw)
       ? cartProductIdsRaw.filter(
@@ -116,7 +68,7 @@ export async function processDueEmailFunnels(): Promise<{ processed: number }> {
 
     const picks = await fetchRecommendedProductsForEmail({
       cartProductIds,
-      orderId,
+      orderId: orderId ?? anchorOrderId,
       userId: row.userId,
     });
 
@@ -130,9 +82,9 @@ export async function processDueEmailFunnels(): Promise<{ processed: number }> {
           step: 2,
         });
         const extra =
-          contentVariant === "web3_forward" ?
-            "Pay your way — card today, crypto at checkout when you want self-custody."
-          : "New drops land weekly across apparel, longevity, and culture-forward gear.";
+          contentVariant === "web3_forward"
+            ? "Pay your way — card today, crypto at checkout when you want self-custody."
+            : "New drops land weekly across apparel, longevity, and culture-forward gear.";
         await sendFunnelMessage({
           correlationId: `${row.id}-welcome-2`,
           email: row.email,
@@ -172,9 +124,9 @@ export async function processDueEmailFunnels(): Promise<{ processed: number }> {
           react: createElement(MarketingFunnelDripEmail, {
             bodyLines: [
               "We appreciate you being here. When you are ready, use the perks below and come back anytime — membership unlocks deeper discounts and early access.",
-              coupon ?
-                "A small welcome gift is attached below — our way of saying thanks."
-              : "Your member dashboard has personalized recommendations as you shop more.",
+              coupon
+                ? "A small welcome gift is attached below — our way of saying thanks."
+                : "Your member dashboard has personalized recommendations as you shop more.",
             ],
             couponCode: coupon,
             headline: "A thank-you from Culture",
@@ -186,7 +138,9 @@ export async function processDueEmailFunnels(): Promise<{ processed: number }> {
             utmContent: "welcome_series_3",
           }),
           rowId: row.id,
-          subject: coupon ? "A thank-you + something extra" : "Thanks for being part of Culture",
+          subject: coupon
+            ? "A thank-you + something extra"
+            : "Thanks for being part of Culture",
           userId: row.userId,
         });
       }
@@ -280,7 +234,9 @@ export async function processDueEmailFunnels(): Promise<{ processed: number }> {
             utmContent: "abandon_cart_3",
           }),
           rowId: row.id,
-          subject: coupon ? "A little extra to complete your order" : "We would love to see you back",
+          subject: coupon
+            ? "A little extra to complete your order"
+            : "We would love to see you back",
           userId: row.userId,
         });
       }
@@ -309,7 +265,9 @@ export async function processDueEmailFunnels(): Promise<{ processed: number }> {
             couponCode: coupon,
             headline: t.title,
             preview: t.emailSubject ?? "How was your order?",
-            primaryCtaHref: orderId ? `${base}/dashboard/orders/${orderId}` : `${base}/shop`,
+            primaryCtaHref: orderId
+              ? `${base}/dashboard/orders/${orderId}`
+              : `${base}/shop`,
             primaryCtaLabel: orderId ? "Leave a review" : "View orders",
             productPicks: picks,
             utmCampaign: "review_funnel",
@@ -338,7 +296,9 @@ export async function processDueEmailFunnels(): Promise<{ processed: number }> {
             couponCode: coupon,
             headline: "Help the next shopper",
             preview: "Help the next shopper",
-            primaryCtaHref: orderId ? `${base}/dashboard/orders/${orderId}` : `${base}/shop`,
+            primaryCtaHref: orderId
+              ? `${base}/dashboard/orders/${orderId}`
+              : `${base}/shop`,
             primaryCtaLabel: "Write a quick review",
             productPicks: picks,
             utmCampaign: "review_funnel",
@@ -374,12 +334,161 @@ export async function processDueEmailFunnels(): Promise<{ processed: number }> {
             utmContent: "order_review_3",
           }),
           rowId: row.id,
-          subject: coupon ? "A perk for your next order" : "Thanks again from Culture",
+          subject: coupon
+            ? "A perk for your next order"
+            : "Thanks again from Culture",
           userId: row.userId,
         });
       }
+      continue;
+    }
+
+    if (funnel === "win_back_3") {
+      const t = getNotificationTemplate("win_back_series");
+      if (nextStep === 1) {
+        const coupon = resolveCouponCodeForFunnelStep({
+          experimentVariant: variant,
+          funnel: "win_back_3",
+          step: 1,
+        });
+        await sendFunnelMessage({
+          correlationId: `${row.id}-winback-1`,
+          email: row.email,
+          kind: "win_back_series",
+          nextLastStep: 1,
+          nextSendAt: new Date(Date.now() + 3 * DAY_MS),
+          react: createElement(MarketingFunnelDripEmail, {
+            bodyLines: [
+              t.emailBody ??
+                "It has been a while since we shipped your last Culture order. New gear is in — here is what is moving fastest right now.",
+            ],
+            couponCode: coupon,
+            headline: t.title,
+            preview: t.emailSubject ?? "Here is what is new at Culture",
+            primaryCtaHref: `${base}/products`,
+            primaryCtaLabel: "Shop new arrivals",
+            productPicks: picks,
+            utmCampaign: "win_back_funnel",
+            utmContent: "win_back_1",
+          }),
+          rowId: row.id,
+          subject: t.emailSubject ?? "We saved you a spot — here is what is new",
+          userId: row.userId,
+        });
+      } else if (nextStep === 2) {
+        const coupon = resolveCouponCodeForFunnelStep({
+          experimentVariant: variant,
+          funnel: "win_back_3",
+          step: 2,
+        });
+        await sendFunnelMessage({
+          correlationId: `${row.id}-winback-2`,
+          email: row.email,
+          kind: "win_back_series_2",
+          nextLastStep: 2,
+          nextSendAt: new Date(Date.now() + 5 * DAY_MS),
+          react: createElement(MarketingFunnelDripEmail, {
+            bodyLines: [
+              "Still on the fence? Members get early access and deeper discounts — and checkout stays fast whether you pay card or crypto.",
+            ],
+            couponCode: coupon,
+            headline: "A quiet perk if you come back this week",
+            preview: "A quiet perk if you come back this week",
+            primaryCtaHref: `${base}/membership`,
+            primaryCtaLabel: "See membership",
+            productPicks: picks,
+            utmCampaign: "win_back_funnel",
+            utmContent: "win_back_2",
+          }),
+          rowId: row.id,
+          subject: "Members are saving more on the same cart",
+          userId: row.userId,
+        });
+      } else if (nextStep === 3) {
+        const coupon = resolveCouponCodeForFunnelStep({
+          experimentVariant: variant,
+          funnel: "win_back_3",
+          step: 3,
+        });
+        await sendFunnelMessage({
+          correlationId: `${row.id}-winback-3`,
+          email: row.email,
+          kind: "win_back_series_3",
+          nextLastStep: 3,
+          nextSendAt: null,
+          react: createElement(MarketingFunnelDripEmail, {
+            bodyLines: [
+              "This is our last nudge for a while — if you are not ready, no worries. When you are, your next order still ships with the same care as always.",
+            ],
+            couponCode: coupon,
+            headline: "We will be here",
+            preview: "We will be here",
+            primaryCtaHref: `${base}/products`,
+            primaryCtaLabel: "Browse the shop",
+            productPicks: picks,
+            utmCampaign: "win_back_funnel",
+            utmContent: "win_back_3",
+          }),
+          rowId: row.id,
+          subject: coupon
+            ? "One more reason to come back"
+            : "Whenever you are ready",
+          userId: row.userId,
+        });
+      }
+      continue;
     }
   }
 
   return { processed };
+}
+
+function distinctId(userId: null | string | undefined, email: string): string {
+  return userId?.trim() || email;
+}
+
+async function sendFunnelMessage(options: {
+  correlationId: string;
+  email: string;
+  kind: EmailSendKind;
+  nextLastStep: number;
+  nextSendAt: Date | null;
+  react: ReactElement;
+  rowId: string;
+  subject: string;
+  userId: null | string;
+}): Promise<void> {
+  const res = await sendEmail({
+    correlationId: options.correlationId,
+    kind: options.kind,
+    react: options.react,
+    subject: options.subject,
+    to: options.email,
+  });
+
+  if ("skipped" in res && res.skipped) {
+    await db
+      .update(emailFunnelEnrollmentTable)
+      .set({
+        completed: true,
+        nextSendAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(emailFunnelEnrollmentTable.id, options.rowId));
+    return;
+  }
+
+  if (!("ok" in res) || res.ok !== true) {
+    return;
+  }
+
+  await db
+    .update(emailFunnelEnrollmentTable)
+    .set({
+      completed: options.nextSendAt == null,
+      lastStepSent: options.nextLastStep,
+      nextSendAt: options.nextSendAt ?? new Date(),
+      updatedAt: new Date(),
+    })
+    .where(eq(emailFunnelEnrollmentTable.id, options.rowId));
 }

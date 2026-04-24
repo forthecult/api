@@ -99,12 +99,11 @@ export default function TermsOfServicePage() {
           <p className="mt-3 leading-relaxed text-muted-foreground">
             You must be of legal age where you live to use the Service (in many
             places, that means you have reached the age of majority). You may
-            not use the Service for any illegal or
-            unauthorized purpose, or in violation of any applicable laws
-            (including intellectual property laws). You must not transmit
-            malware or any code of a destructive nature. We may refuse service
-            or terminate access at any time for breach of these Terms or for any
-            other reason.
+            not use the Service for any illegal or unauthorized purpose, or in
+            violation of any applicable laws (including intellectual property
+            laws). You must not transmit malware or any code of a destructive
+            nature. We may refuse service or terminate access at any time for
+            breach of these Terms or for any other reason.
           </p>
         </section>
 

@@ -236,10 +236,10 @@ export const RATE_LIMITS = {
    * When client IP is missing (e.g. proxy not forwarding x-forwarded-for), all traffic shares one bucket.
    */
   authUnknownIp: { limit: 300, windowSeconds: 60 } as RateLimitConfig,
-  /** Checkout: create-order + confirm per payment method. Generous so normal use (retries, back button, one extra tab) doesn’t 429. */
-  checkout: { limit: 20, windowSeconds: 60 } as RateLimitConfig,
   /** Cart snapshot sync (debounced client) — generous per IP */
   cartSnapshot: { limit: 40, windowSeconds: 60 } as RateLimitConfig,
+  /** Checkout: create-order + confirm per payment method. Generous so normal use (retries, back button, one extra tab) doesn’t 429. */
+  checkout: { limit: 20, windowSeconds: 60 } as RateLimitConfig,
   /** Contact form: 5 submissions per minute per IP (spam protection) */
   contact: { limit: 5, windowSeconds: 60 } as RateLimitConfig,
   /** Loqate address lookup: 30 requests per minute per IP (quota protection) */

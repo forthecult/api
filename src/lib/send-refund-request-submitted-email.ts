@@ -32,8 +32,8 @@ export async function sendRefundRequestSubmittedEmail(
   body += `\n\nTrack or submit another request: ${refundPageUrl}`;
 
   const picks = await fetchRecommendedProductsForEmail({
-    orderId,
     limit: 4,
+    orderId,
   });
 
   try {

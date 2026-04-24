@@ -37,10 +37,14 @@ export async function sendOrderShippedEmail(
     body += `\nTrack your package: ${trackingUrl}`;
   }
   body += `\n\nOrder ID: ${shortId}`;
+  body +=
+    "\n\nWhen it arrives: try it on, then tell us how it fits — a one-line note or photo helps the next person choose with confidence.";
+
+  const browseWithUtm = `${baseUrl.replace(/\/$/, "")}/products?utm_source=email&utm_medium=transactional&utm_campaign=order_shipped`;
 
   const picks = await fetchRecommendedProductsForEmail({
-    orderId,
     limit: 4,
+    orderId,
   });
 
   try {
@@ -51,6 +55,8 @@ export async function sendOrderShippedEmail(
         bodyText: body,
         ctaUrl: orderStatusUrl,
         productPicks: picks,
+        secondaryCtaHref: browseWithUtm,
+        secondaryCtaLabel: "Complete the look",
       }),
       subject,
       to,
