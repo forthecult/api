@@ -1,0 +1,109 @@
+name: Staging Deploy Watchdog
+
+on:
+  workflow_run:
+    workflows: ["CI (typecheck + build)"]
+    types: [completed]
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: webapp-staging-deploy-watchdog
+  cancel-in-progress: true
+
+jobs:
+  verify-and-heal:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.head_branch == 'staging'
+    runs-on: ubuntu-latest
+    env:
+      BASE_URL: ${{ secrets.STAGING_BASE_URL }}
+      STAGING_REDEPLOY_WEBHOOK_URL: ${{ secrets.STAGING_REDEPLOY_WEBHOOK_URL }}
+      TARGET_SHA: ${{ github.event.workflow_run.head_sha || '' }}
+      REPO: ${{ github.repository }}
+    steps:
+      - name: Validate required secrets
+        run: |
+          test -n "$BASE_URL" || {
+            echo "Missing STAGING_BASE_URL secret";
+            exit 1;
+          }
+
+      - name: Resolve expected staging SHA
+        id: expected_sha
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -n "$TARGET_SHA" ]; then
+            EXPECTED_SHA="$TARGET_SHA"
+          else
+            EXPECTED_SHA=$(curl -fsSL \
+              -H "Authorization: Bearer $GITHUB_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/$REPO/git/ref/heads/staging" | jq -r '.object.sha')
+          fi
+          test -n "$EXPECTED_SHA"
+          echo "expected_sha=$EXPECTED_SHA" >> "$GITHUB_OUTPUT"
+          echo "Expected staging SHA: $EXPECTED_SHA"
+
+      - name: Verify deployed revision (attempt 1)
+        id: verify_1
+        continue-on-error: true
+        env:
+          EXPECTED_SHA: ${{ steps.expected_sha.outputs.expected_sha }}
+        run: |
+          set -euo pipefail
+          target_short=$(echo "$EXPECTED_SHA" | cut -c1-12)
+          for i in $(seq 1 24); do
+            code=$(curl -s -o /tmp/health.json -w "%{http_code}" "$BASE_URL/api/health" || true)
+            if [ "$code" = "200" ]; then
+              commit_short=$(node -e "try { const fs = require('fs'); const j = JSON.parse(fs.readFileSync('/tmp/health.json', 'utf8')); process.stdout.write(j.commitShaShort || ''); } catch { process.stdout.write(''); }")
+              if [ -n "$commit_short" ] && [ "$commit_short" = "$target_short" ]; then
+                echo "Staging deploy verified at $commit_short"
+                exit 0
+              fi
+              echo "Health check up but commit mismatch (got '$commit_short', expected '$target_short')"
+            else
+              echo "Health endpoint not ready (HTTP $code)"
+            fi
+            sleep 10
+          done
+          exit 1
+
+      - name: Trigger auto-redeploy
+        if: steps.verify_1.outcome == 'failure' && env.STAGING_REDEPLOY_WEBHOOK_URL != ''
+        run: curl -sS -X POST "$STAGING_REDEPLOY_WEBHOOK_URL"
+
+      - name: Verify deployed revision (attempt 2)
+        id: verify_2
+        if: steps.verify_1.outcome == 'failure' && env.STAGING_REDEPLOY_WEBHOOK_URL != ''
+        env:
+          EXPECTED_SHA: ${{ steps.expected_sha.outputs.expected_sha }}
+        run: |
+          set -euo pipefail
+          target_short=$(echo "$EXPECTED_SHA" | cut -c1-12)
+          for i in $(seq 1 24); do
+            code=$(curl -s -o /tmp/health.json -w "%{http_code}" "$BASE_URL/api/health" || true)
+            if [ "$code" = "200" ]; then
+              commit_short=$(node -e "try { const fs = require('fs'); const j = JSON.parse(fs.readFileSync('/tmp/health.json', 'utf8')); process.stdout.write(j.commitShaShort || ''); } catch { process.stdout.write(''); }")
+              if [ -n "$commit_short" ] && [ "$commit_short" = "$target_short" ]; then
+                echo "Staging deploy verified after auto-redeploy at $commit_short"
+                exit 0
+              fi
+              echo "Health check up but commit mismatch (got '$commit_short', expected '$target_short')"
+            else
+              echo "Health endpoint not ready (HTTP $code)"
+            fi
+            sleep 10
+          done
+          exit 1
+
+      - name: Fail if staging deploy is still not healthy/current
+        if: steps.verify_1.outcome == 'failure' && (env.STAGING_REDEPLOY_WEBHOOK_URL == '' || steps.verify_2.outcome == 'failure')
+        run: |
+          echo "Staging deployment is not at expected commit and auto-heal did not recover."
+          exit 1

@@ -7,12 +7,18 @@ const wagmiStub = path.resolve(
   process.cwd(),
   "src/lib/wagmi-connector-stub.js",
 );
+const emptyModuleStub = path.resolve(
+  process.cwd(),
+  "src/lib/empty-module-stub.js",
+);
 
 function resolveWalletConnect(): string {
   try {
-    return require.resolve("@walletconnect/ethereum-provider", {
+    // Turbopack resolveAlias expects module specifiers, not absolute filesystem paths.
+    require.resolve("@walletconnect/ethereum-provider", {
       paths: [process.cwd()],
     });
+    return "@walletconnect/ethereum-provider";
   } catch {
     return wagmiStub;
   }
@@ -274,30 +280,31 @@ const config = {
   },
 
   // Optional wagmi connectors + pino: alias/stub so build always resolves (Railway, strict installs)
-  webpack: (config) => {
-    config.resolve.fallback = {
-      ...config.resolve.fallback,
-      "@safe-global/safe-apps-provider": false,
-      "@safe-global/safe-apps-sdk": false,
-      "pino-pretty": false,
-      porto: false,
-    };
-    config.resolve.alias = {
-      ...config.resolve.alias,
+  turbopack: {
+    resolveAlias: {
       "@base-org/account": wagmiStub,
       "@coinbase/wallet-sdk": wagmiStub,
       "@gemini-wallet/core": wagmiStub,
       "@metamask/connect-evm": wagmiStub,
+      "@safe-global/safe-apps-provider": emptyModuleStub,
+      "@safe-global/safe-apps-sdk": emptyModuleStub,
       "@walletconnect/ethereum-provider": resolveWalletConnect(),
-      // @wagmi/core tempo connectors use dynamic import('accounts'); webpack must resolve the optional peer.
+      // @wagmi/core tempo connectors use dynamic import('accounts'); resolve optional peer.
       accounts: wagmiStub,
-    };
-    return config;
+      "pino-pretty": emptyModuleStub,
+      porto: emptyModuleStub,
+    },
+    // Avoid monorepo lockfile root mis-detection warnings in CI/build output.
+    root: process.cwd(),
   },
 } as NextConfig;
 
+const shouldAnalyze = process.env.ANALYZE === "true";
 const withBundleAnalyzer = createBundleAnalyzer({
-  enabled: process.env.ANALYZE === "true",
+  enabled: true,
 });
 
-export default withBundleAnalyzer(config);
+// Important: when disabled, avoid wrapping config at all.
+// The wrapper can still inject a webpack hook shape that makes Next 16 treat
+// the config as webpack-customized, which blocks default Turbopack builds.
+export default shouldAnalyze ? withBundleAnalyzer(config) : config;
