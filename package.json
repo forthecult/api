@@ -66,6 +66,7 @@
     "db:seed-shipping-by-brand": "bun run scripts/seed-shipping-by-brand.ts",
     "db:seed-bon-charge": "bun run scripts/seed-bon-charge-via-api.ts",
     "tests": "bun test ./.tests",
+    "test:review-normalization": "bun test ./.tests/review-normalization.test.ts",
     "smoketest": "playwright test",
     "smoketest:ci": "next build && CI=1 playwright test",
     "smoketest:no-compile": "playwright test --reuse-existing-server",

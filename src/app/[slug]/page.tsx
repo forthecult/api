@@ -687,6 +687,16 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
   if (!category) {
     notFound();
   }
+  const categoryName =
+    typeof category.name === "string" && category.name.trim().length > 0
+      ? category.name
+      : slug;
+  const categoryDescriptionFull =
+    typeof category.description === "string" ? category.description : "";
+  const categoryMarketingBlockHtml =
+    typeof category.marketingBlockHtml === "string"
+      ? category.marketingBlockHtml
+      : "";
 
   if (category.tokenGated) {
     const cookieStore = await cookies();
@@ -768,13 +778,13 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
     { name: "All", slug: "all" },
     ...(parent ? [parent] : []),
     ...(subcategories.length > 0
-      ? [{ name: category.name, slug }]
+      ? [{ name: categoryName, slug }]
       : subcategories),
   ];
 
   const categoryDescription =
-    category.description?.slice(0, 160) ??
-    `Browse ${category.name} at ${SEO_CONFIG.name}.`;
+    categoryDescriptionFull.slice(0, 160) ??
+    `Browse ${categoryName} at ${SEO_CONFIG.name}.`;
 
   const publicSiteUrl = getPublicSiteUrl();
   const categoryCanonicalUrl = `${publicSiteUrl}/${slug}`;
@@ -784,7 +794,7 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
     ...(parent
       ? [{ name: parent.name, url: `${publicSiteUrl}/${parent.slug}` }]
       : []),
-    { name: category.name, url: categoryCanonicalUrl },
+    { name: categoryName, url: categoryCanonicalUrl },
   ];
 
   return (
@@ -800,7 +810,7 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
           priceCurrency: "USD",
           url: `${publicSiteUrl}/${p.slug ?? p.id}`,
         }))}
-        name={category.name}
+        name={categoryName}
         numberOfItems={data.total ?? 0}
         url={categoryCanonicalUrl}
       />
@@ -810,9 +820,9 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
             { href: "/", name: "Home" },
             { href: "/products", name: "Products" },
             ...(parent ? [{ href: `/${parent.slug}`, name: parent.name }] : []),
-            { href: `/${slug}`, name: category.name },
+            { href: `/${slug}`, name: categoryName },
           ]}
-          categoryDescriptionFull={category.description ?? undefined}
+          categoryDescriptionFull={categoryDescriptionFull || undefined}
           description={categoryDescription}
           initialCategories={categories}
           initialCategory={slug}
@@ -834,12 +844,12 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
           initialTotalPages={data.totalPages ?? 1}
           merchFilterOptions={merchOptions}
           subcategories={subcategories}
-          title={category.name}
+          title={categoryName}
         />
       </Suspense>
       {category.marketingBlockEnabled &&
-        category.marketingBlockHtml &&
-        category.marketingBlockHtml.trim().length > 0 && (
+        categoryMarketingBlockHtml &&
+        categoryMarketingBlockHtml.trim().length > 0 && (
           <section
             className={`
               mx-auto max-w-4xl border-t border-border px-4 py-10
@@ -853,7 +863,7 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
                 dark:prose-invert
               `}
               // Admin-controlled HTML: sanitize in admin before save in production
-              dangerouslySetInnerHTML={{ __html: category.marketingBlockHtml }}
+              dangerouslySetInnerHTML={{ __html: categoryMarketingBlockHtml }}
             />
           </section>
         )}

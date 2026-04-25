@@ -43,5 +43,8 @@ jobs:
       - name: Email templates render check
         run: bun run email:templates-check
 
+      - name: Category page runtime guard test
+        run: bun run test:review-normalization
+
       - name: Build
         run: bun run build

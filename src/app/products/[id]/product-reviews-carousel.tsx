@@ -19,6 +19,29 @@ interface ReviewItem {
   rating: number;
 }
 
+function coerceReviewText(value: unknown): string {
+  return typeof value === "string" ? value : "";
+}
+
+export function normalizeReviewItem(input: unknown): null | ReviewItem {
+  if (!input || typeof input !== "object") return null;
+  const candidate = input as Partial<ReviewItem>;
+  const id = typeof candidate.id === "string" ? candidate.id : null;
+  if (!id) return null;
+  const ratingRaw =
+    typeof candidate.rating === "number" && Number.isFinite(candidate.rating)
+      ? candidate.rating
+      : 0;
+  return {
+    comment: coerceReviewText(candidate.comment),
+    displayName: coerceReviewText(candidate.displayName) || "Verified Buyer",
+    id,
+    productName:
+      typeof candidate.productName === "string" ? candidate.productName : null,
+    rating: Math.min(5, Math.max(0, ratingRaw)),
+  };
+}
+
 /**
  * Reviews carousel for product pages with product name headers.
  * Fetches reviews from API and displays in a marquee animation.
@@ -43,9 +66,12 @@ export function ProductReviewsCarousel({
         if (t) qs.set("forCategory", t);
         const res = await fetch(`/api/reviews?${qs.toString()}`);
         if (!res.ok) throw new Error("Failed to fetch reviews");
-        const data = (await res.json()) as { items: ReviewItem[] };
+        const data = (await res.json()) as { items?: unknown[] };
+        const normalized = (data.items ?? [])
+          .map((item) => normalizeReviewItem(item))
+          .filter((item): item is ReviewItem => item != null);
         if (!cancelled) {
-          setReviews(data.items ?? []);
+          setReviews(normalized);
         }
       } catch (err) {
         console.error("Failed to load reviews:", err);
