@@ -37,6 +37,7 @@ export interface SendEmailParams {
   correlationId?: string;
   internal?: boolean;
   kind: EmailSendKind;
+  metadata?: Record<string, unknown>;
   react: ReactElement;
   replyTo?: string;
   subject: string;
@@ -56,7 +57,8 @@ export type SendEmailResult =
 export async function sendEmail(
   params: SendEmailParams,
 ): Promise<SendEmailResult> {
-  const { correlationId, internal, kind, react, replyTo, subject, to } = params;
+  const { correlationId, internal, kind, metadata, react, replyTo, subject, to } =
+    params;
   const toNorm = to.trim().toLowerCase();
   if (!toNorm) {
     return { ok: false, reason: "invalid_to", skipped: true };
@@ -181,7 +183,7 @@ export async function sendEmail(
     errorMessage: null,
     id: eventId,
     kind,
-    metadata: null,
+    metadata: metadata ?? null,
     resendId: null,
     status: "queued",
     subject,
@@ -241,6 +243,7 @@ export async function sendEmail(
       await db
         .update(emailEventTable)
         .set({
+          metadata: metadata ?? null,
           resendId: resendId || null,
           status: "sent",
           updatedAt: new Date(),
@@ -249,6 +252,7 @@ export async function sendEmail(
       captureServerEvent(userId ?? toNorm, "email_sent", {
         email_event_id: eventId,
         kind,
+        ...metadata,
         resend_id: resendId,
         subject,
       });

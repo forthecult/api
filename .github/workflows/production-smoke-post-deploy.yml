@@ -25,7 +25,6 @@ jobs:
     env:
       BASE_URL: ${{ secrets.PRODUCTION_BASE_URL }}
       PRODUCTION_SMOKE_WEBHOOK_URL: ${{ secrets.PRODUCTION_SMOKE_WEBHOOK_URL }}
-      PRODUCTION_ROLLBACK_WEBHOOK_URL: ${{ secrets.PRODUCTION_ROLLBACK_WEBHOOK_URL }}
       PLAYWRIGHT_SKIP_WEBSERVER: "1"
       TARGET_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
     steps:
@@ -101,17 +100,3 @@ jobs:
             -H "Content-Type: application/json" \
             --data "$payload"
 
-      - if: failure() && env.PRODUCTION_ROLLBACK_WEBHOOK_URL != ''
-        name: Trigger production rollback webhook
-        run: |
-          payload=$(cat <<EOF
-          {
-            "reason": "post_deploy_production_smoke_failed",
-            "run_url": "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}",
-            "target_sha": "${TARGET_SHA}"
-          }
-          EOF
-          )
-          curl -sS -X POST "$PRODUCTION_ROLLBACK_WEBHOOK_URL" \
-            -H "Content-Type: application/json" \
-            --data "$payload"

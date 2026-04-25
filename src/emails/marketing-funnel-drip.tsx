@@ -18,6 +18,7 @@ export function MarketingFunnelDripEmail({
   productPicks,
   utmCampaign = "email_funnel",
   utmContent = "drip",
+  videoLabel = "Spotlight: shop preview",
 }: Readonly<{
   bodyLines: readonly string[];
   couponCode?: string;
@@ -29,6 +30,7 @@ export function MarketingFunnelDripEmail({
   productPicks?: readonly EmailProductPick[];
   utmCampaign?: string;
   utmContent?: string;
+  videoLabel?: string;
 }>) {
   const base = getPublicSiteUrl().replace(/\/$/, "");
   const banner = couponCode
@@ -61,7 +63,7 @@ export function MarketingFunnelDripEmail({
       utmProductQuery={utmProductQuery}
       videoSpotlight={{
         href: videoHref,
-        label: "Spotlight: shop preview",
+        label: videoLabel,
       }}
     >
       <Heading

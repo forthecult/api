@@ -32,6 +32,13 @@ export async function sendWelcomeEmail(params: {
     const res = await sendEmail({
       correlationId: user.id ? `welcome-${user.id}` : `welcome-${to}`,
       kind: "welcome_email",
+      metadata: {
+        campaign_id: "welcome_series_1",
+        funnel: "welcome_3",
+        funnel_step: 1,
+        utm_campaign: "welcome_funnel",
+        utm_content: "welcome_series_1",
+      },
       react: createElement(WelcomeEmail, {
         bodyText,
         productPicks: picks,

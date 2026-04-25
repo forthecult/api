@@ -52,7 +52,7 @@ Post-deploy production checks:
 - `Production Runtime Guard` probes critical endpoints every 15 minutes.
 - On failure:
   - alert webhook
-  - optional rollback webhook (production-only automation)
+  - centralized `Production Rollback Hook` workflow (production-only automation)
 
 ## 6) Incident / Rollback
 

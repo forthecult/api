@@ -11,12 +11,12 @@ import { MarketingFunnelDripEmail } from "~/emails/marketing-funnel-drip";
 import { getPublicSiteUrl } from "~/lib/app-url";
 import { fetchRecommendedProductsForEmail } from "~/lib/email/email-product-recs";
 import { resolveCouponCodeForFunnelStep } from "~/lib/email/funnel-coupon";
+import { getMarketingSeriesEmailPlan } from "~/lib/email/marketing-series-framework";
 import {
   getEmailFunnelContentVariant,
   getEmailFunnelCouponExperimentVariant,
 } from "~/lib/email/posthog-email-experiments";
 import { sendEmail } from "~/lib/email/send-email";
-import { getNotificationTemplate } from "~/lib/notification-templates";
 
 const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * HOUR_MS;
@@ -81,32 +81,41 @@ export async function processDueEmailFunnels(): Promise<{ processed: number }> {
           funnel: "welcome_3",
           step: 2,
         });
-        const extra =
-          contentVariant === "web3_forward"
-            ? "Pay your way — card today, crypto at checkout when you want self-custody."
-            : "New drops land weekly across apparel, longevity, and culture-forward gear.";
+        const plan = getMarketingSeriesEmailPlan({
+          baseUrl: base,
+          contentVariant,
+          funnel,
+          hasCoupon: Boolean(coupon),
+          step: 2,
+        });
         await sendFunnelMessage({
           correlationId: `${row.id}-welcome-2`,
           email: row.email,
           kind: "welcome_series_2",
+          metadata: {
+            campaign_id: plan.campaignId,
+            funnel,
+            funnel_step: 2,
+            utm_campaign: plan.utmCampaign,
+            utm_content: plan.utmContent,
+          },
           nextLastStep: 2,
           nextSendAt: new Date(Date.now() + 72 * HOUR_MS),
           react: createElement(MarketingFunnelDripEmail, {
-            bodyLines: [
-              "Thanks again for joining For the Culture. If you have not checked out yet, here is a quick snapshot of what shoppers pick up first.",
-              extra,
-            ],
+            bodyLines: plan.bodyLines,
             couponCode: coupon,
-            headline: "Here is what is trending at Culture",
-            preview: "Trending picks for you",
-            primaryCtaHref: `${base}/shop`,
-            primaryCtaLabel: "Browse the shop",
+            headline: plan.headline,
+            picksSubtitle: plan.picksSubtitle,
+            preview: plan.preview,
+            primaryCtaHref: plan.primaryCtaHref,
+            primaryCtaLabel: plan.primaryCtaLabel,
             productPicks: picks,
-            utmCampaign: "welcome_funnel",
-            utmContent: "welcome_series_2",
+            utmCampaign: plan.utmCampaign,
+            utmContent: plan.utmContent,
+            videoLabel: plan.videoLabel,
           }),
           rowId: row.id,
-          subject: "Still exploring? Here is what is popular",
+          subject: plan.subject,
           userId: row.userId,
         });
       } else if (nextStep === 3) {
@@ -115,32 +124,40 @@ export async function processDueEmailFunnels(): Promise<{ processed: number }> {
           funnel: "welcome_3",
           step: 3,
         });
+        const plan = getMarketingSeriesEmailPlan({
+          baseUrl: base,
+          contentVariant,
+          funnel,
+          hasCoupon: Boolean(coupon),
+          step: 3,
+        });
         await sendFunnelMessage({
           correlationId: `${row.id}-welcome-3`,
           email: row.email,
           kind: "welcome_series_3",
+          metadata: {
+            campaign_id: plan.campaignId,
+            funnel,
+            funnel_step: 3,
+            utm_campaign: plan.utmCampaign,
+            utm_content: plan.utmContent,
+          },
           nextLastStep: 3,
           nextSendAt: null,
           react: createElement(MarketingFunnelDripEmail, {
-            bodyLines: [
-              "We appreciate you being here. When you are ready, use the perks below and come back anytime — membership unlocks deeper discounts and early access.",
-              coupon
-                ? "A small welcome gift is attached below — our way of saying thanks."
-                : "Your member dashboard has personalized recommendations as you shop more.",
-            ],
+            bodyLines: plan.bodyLines,
             couponCode: coupon,
-            headline: "A thank-you from Culture",
-            preview: "A thank-you from Culture",
-            primaryCtaHref: `${base}/membership`,
-            primaryCtaLabel: "Explore membership",
+            headline: plan.headline,
+            picksSubtitle: plan.picksSubtitle,
+            preview: plan.preview,
+            primaryCtaHref: plan.primaryCtaHref,
+            primaryCtaLabel: plan.primaryCtaLabel,
             productPicks: picks,
-            utmCampaign: "welcome_funnel",
-            utmContent: "welcome_series_3",
+            utmCampaign: plan.utmCampaign,
+            utmContent: plan.utmContent,
           }),
           rowId: row.id,
-          subject: coupon
-            ? "A thank-you + something extra"
-            : "Thanks for being part of Culture",
+          subject: plan.subject,
           userId: row.userId,
         });
       }
@@ -148,35 +165,46 @@ export async function processDueEmailFunnels(): Promise<{ processed: number }> {
     }
 
     if (funnel === "abandon_cart_3") {
-      const t = getNotificationTemplate("abandon_cart_series");
       if (nextStep === 1) {
         const coupon = resolveCouponCodeForFunnelStep({
           experimentVariant: variant,
           funnel: "abandon_cart_3",
           step: 1,
         });
+        const plan = getMarketingSeriesEmailPlan({
+          baseUrl: base,
+          contentVariant,
+          funnel,
+          hasCoupon: Boolean(coupon),
+          step: 1,
+        });
         await sendFunnelMessage({
           correlationId: `${row.id}-abandon-1`,
           email: row.email,
           kind: "abandon_cart_series",
+          metadata: {
+            campaign_id: plan.campaignId,
+            funnel,
+            funnel_step: 1,
+            utm_campaign: plan.utmCampaign,
+            utm_content: plan.utmContent,
+          },
           nextLastStep: 1,
           nextSendAt: new Date(Date.now() + 24 * HOUR_MS),
           react: createElement(MarketingFunnelDripEmail, {
-            bodyLines: [
-              t.emailBody ??
-                "You left something behind. Your picks are still waiting — checkout takes under a minute.",
-            ],
+            bodyLines: plan.bodyLines,
             couponCode: coupon,
-            headline: t.title,
-            preview: t.emailSubject ?? "Your cart is waiting",
-            primaryCtaHref: `${base}/shop`,
-            primaryCtaLabel: "Return to shop",
+            headline: plan.headline,
+            picksSubtitle: plan.picksSubtitle,
+            preview: plan.preview,
+            primaryCtaHref: plan.primaryCtaHref,
+            primaryCtaLabel: plan.primaryCtaLabel,
             productPicks: picks,
-            utmCampaign: "abandon_cart_funnel",
-            utmContent: "abandon_cart_1",
+            utmCampaign: plan.utmCampaign,
+            utmContent: plan.utmContent,
           }),
           rowId: row.id,
-          subject: t.emailSubject ?? "You left something in your cart",
+          subject: plan.subject,
           userId: row.userId,
         });
       } else if (nextStep === 2) {
@@ -185,27 +213,40 @@ export async function processDueEmailFunnels(): Promise<{ processed: number }> {
           funnel: "abandon_cart_3",
           step: 2,
         });
+        const plan = getMarketingSeriesEmailPlan({
+          baseUrl: base,
+          contentVariant,
+          funnel,
+          hasCoupon: Boolean(coupon),
+          step: 2,
+        });
         await sendFunnelMessage({
           correlationId: `${row.id}-abandon-2`,
           email: row.email,
           kind: "abandon_cart_series_2",
+          metadata: {
+            campaign_id: plan.campaignId,
+            funnel,
+            funnel_step: 2,
+            utm_campaign: plan.utmCampaign,
+            utm_content: plan.utmContent,
+          },
           nextLastStep: 2,
           nextSendAt: new Date(Date.now() + 48 * HOUR_MS),
           react: createElement(MarketingFunnelDripEmail, {
-            bodyLines: [
-              "Still thinking it over? Inventory moves fast on limited runs — grab your size while it is here.",
-            ],
+            bodyLines: plan.bodyLines,
             couponCode: coupon,
-            headline: "Your cart is still saved",
-            preview: "Your cart is still saved",
-            primaryCtaHref: `${base}/shop`,
-            primaryCtaLabel: "Finish checkout",
+            headline: plan.headline,
+            picksSubtitle: plan.picksSubtitle,
+            preview: plan.preview,
+            primaryCtaHref: plan.primaryCtaHref,
+            primaryCtaLabel: plan.primaryCtaLabel,
             productPicks: picks,
-            utmCampaign: "abandon_cart_funnel",
-            utmContent: "abandon_cart_2",
+            utmCampaign: plan.utmCampaign,
+            utmContent: plan.utmContent,
           }),
           rowId: row.id,
-          subject: "Still interested? Your cart is open",
+          subject: plan.subject,
           userId: row.userId,
         });
       } else if (nextStep === 3) {
@@ -214,29 +255,40 @@ export async function processDueEmailFunnels(): Promise<{ processed: number }> {
           funnel: "abandon_cart_3",
           step: 3,
         });
+        const plan = getMarketingSeriesEmailPlan({
+          baseUrl: base,
+          contentVariant,
+          funnel,
+          hasCoupon: Boolean(coupon),
+          step: 3,
+        });
         await sendFunnelMessage({
           correlationId: `${row.id}-abandon-3`,
           email: row.email,
           kind: "abandon_cart_series_3",
+          metadata: {
+            campaign_id: plan.campaignId,
+            funnel,
+            funnel_step: 3,
+            utm_campaign: plan.utmCampaign,
+            utm_content: plan.utmContent,
+          },
           nextLastStep: 3,
           nextSendAt: null,
           react: createElement(MarketingFunnelDripEmail, {
-            bodyLines: [
-              "Last nudge from us — if you complete your order soon, you will lock in today’s pricing and fulfillment queue.",
-            ],
+            bodyLines: plan.bodyLines,
             couponCode: coupon,
-            headline: "One more reason to check out",
-            preview: "One more reason to check out",
-            primaryCtaHref: `${base}/shop`,
-            primaryCtaLabel: "Complete purchase",
+            headline: plan.headline,
+            picksSubtitle: plan.picksSubtitle,
+            preview: plan.preview,
+            primaryCtaHref: plan.primaryCtaHref,
+            primaryCtaLabel: plan.primaryCtaLabel,
             productPicks: picks,
-            utmCampaign: "abandon_cart_funnel",
-            utmContent: "abandon_cart_3",
+            utmCampaign: plan.utmCampaign,
+            utmContent: plan.utmContent,
           }),
           rowId: row.id,
-          subject: coupon
-            ? "A little extra to complete your order"
-            : "We would love to see you back",
+          subject: plan.subject,
           userId: row.userId,
         });
       }
@@ -244,37 +296,47 @@ export async function processDueEmailFunnels(): Promise<{ processed: number }> {
     }
 
     if (funnel === "review_3") {
-      const t = getNotificationTemplate("order_review_request");
       if (nextStep === 1) {
         const coupon = resolveCouponCodeForFunnelStep({
           experimentVariant: variant,
           funnel: "review_3",
           step: 1,
         });
+        const plan = getMarketingSeriesEmailPlan({
+          baseUrl: base,
+          contentVariant,
+          funnel,
+          hasCoupon: Boolean(coupon),
+          orderId,
+          step: 1,
+        });
         await sendFunnelMessage({
           correlationId: `${row.id}-review-1`,
           email: row.email,
           kind: "order_review_request",
+          metadata: {
+            campaign_id: plan.campaignId,
+            funnel,
+            funnel_step: 1,
+            utm_campaign: plan.utmCampaign,
+            utm_content: plan.utmContent,
+          },
           nextLastStep: 1,
           nextSendAt: new Date(Date.now() + 4 * DAY_MS),
           react: createElement(MarketingFunnelDripEmail, {
-            bodyLines: [
-              t.emailBody ??
-                "Your order was delivered. If everything looks good, a quick star rating helps the next shopper choose with confidence.",
-            ],
+            bodyLines: plan.bodyLines,
             couponCode: coupon,
-            headline: t.title,
-            preview: t.emailSubject ?? "How was your order?",
-            primaryCtaHref: orderId
-              ? `${base}/dashboard/orders/${orderId}`
-              : `${base}/shop`,
-            primaryCtaLabel: orderId ? "Leave a review" : "View orders",
+            headline: plan.headline,
+            picksSubtitle: plan.picksSubtitle,
+            preview: plan.preview,
+            primaryCtaHref: plan.primaryCtaHref,
+            primaryCtaLabel: plan.primaryCtaLabel,
             productPicks: picks,
-            utmCampaign: "review_funnel",
-            utmContent: "order_review_1",
+            utmCampaign: plan.utmCampaign,
+            utmContent: plan.utmContent,
           }),
           rowId: row.id,
-          subject: t.emailSubject ?? "How was your order?",
+          subject: plan.subject,
           userId: row.userId,
         });
       } else if (nextStep === 2) {
@@ -283,29 +345,41 @@ export async function processDueEmailFunnels(): Promise<{ processed: number }> {
           funnel: "review_3",
           step: 2,
         });
+        const plan = getMarketingSeriesEmailPlan({
+          baseUrl: base,
+          contentVariant,
+          funnel,
+          hasCoupon: Boolean(coupon),
+          orderId,
+          step: 2,
+        });
         await sendFunnelMessage({
           correlationId: `${row.id}-review-2`,
           email: row.email,
           kind: "order_review_series_2",
+          metadata: {
+            campaign_id: plan.campaignId,
+            funnel,
+            funnel_step: 2,
+            utm_campaign: plan.utmCampaign,
+            utm_content: plan.utmContent,
+          },
           nextLastStep: 2,
           nextSendAt: new Date(Date.now() + 5 * DAY_MS),
           react: createElement(MarketingFunnelDripEmail, {
-            bodyLines: [
-              "Reviews power small brands — if you have two minutes, share what fit, fabric, or delivery was like for you.",
-            ],
+            bodyLines: plan.bodyLines,
             couponCode: coupon,
-            headline: "Help the next shopper",
-            preview: "Help the next shopper",
-            primaryCtaHref: orderId
-              ? `${base}/dashboard/orders/${orderId}`
-              : `${base}/shop`,
-            primaryCtaLabel: "Write a quick review",
+            headline: plan.headline,
+            picksSubtitle: plan.picksSubtitle,
+            preview: plan.preview,
+            primaryCtaHref: plan.primaryCtaHref,
+            primaryCtaLabel: plan.primaryCtaLabel,
             productPicks: picks,
-            utmCampaign: "review_funnel",
-            utmContent: "order_review_2",
+            utmCampaign: plan.utmCampaign,
+            utmContent: plan.utmContent,
           }),
           rowId: row.id,
-          subject: "Quick favor — leave a review?",
+          subject: plan.subject,
           userId: row.userId,
         });
       } else if (nextStep === 3) {
@@ -314,29 +388,41 @@ export async function processDueEmailFunnels(): Promise<{ processed: number }> {
           funnel: "review_3",
           step: 3,
         });
+        const plan = getMarketingSeriesEmailPlan({
+          baseUrl: base,
+          contentVariant,
+          funnel,
+          hasCoupon: Boolean(coupon),
+          orderId,
+          step: 3,
+        });
         await sendFunnelMessage({
           correlationId: `${row.id}-review-3`,
           email: row.email,
           kind: "order_review_series_3",
+          metadata: {
+            campaign_id: plan.campaignId,
+            funnel,
+            funnel_step: 3,
+            utm_campaign: plan.utmCampaign,
+            utm_content: plan.utmContent,
+          },
           nextLastStep: 3,
           nextSendAt: null,
           react: createElement(MarketingFunnelDripEmail, {
-            bodyLines: [
-              "Whether you already reviewed or not — thank you. Here is a small perk for your next Culture order.",
-            ],
+            bodyLines: plan.bodyLines,
             couponCode: coupon,
-            headline: "Thanks for shopping with us",
-            preview: "Thanks for shopping with us",
-            primaryCtaHref: `${base}/shop`,
-            primaryCtaLabel: "Shop again",
+            headline: plan.headline,
+            picksSubtitle: plan.picksSubtitle,
+            preview: plan.preview,
+            primaryCtaHref: plan.primaryCtaHref,
+            primaryCtaLabel: plan.primaryCtaLabel,
             productPicks: picks,
-            utmCampaign: "review_funnel",
-            utmContent: "order_review_3",
+            utmCampaign: plan.utmCampaign,
+            utmContent: plan.utmContent,
           }),
           rowId: row.id,
-          subject: coupon
-            ? "A perk for your next order"
-            : "Thanks again from Culture",
+          subject: plan.subject,
           userId: row.userId,
         });
       }
@@ -344,35 +430,46 @@ export async function processDueEmailFunnels(): Promise<{ processed: number }> {
     }
 
     if (funnel === "win_back_3") {
-      const t = getNotificationTemplate("win_back_series");
       if (nextStep === 1) {
         const coupon = resolveCouponCodeForFunnelStep({
           experimentVariant: variant,
           funnel: "win_back_3",
           step: 1,
         });
+        const plan = getMarketingSeriesEmailPlan({
+          baseUrl: base,
+          contentVariant,
+          funnel,
+          hasCoupon: Boolean(coupon),
+          step: 1,
+        });
         await sendFunnelMessage({
           correlationId: `${row.id}-winback-1`,
           email: row.email,
           kind: "win_back_series",
+          metadata: {
+            campaign_id: plan.campaignId,
+            funnel,
+            funnel_step: 1,
+            utm_campaign: plan.utmCampaign,
+            utm_content: plan.utmContent,
+          },
           nextLastStep: 1,
           nextSendAt: new Date(Date.now() + 3 * DAY_MS),
           react: createElement(MarketingFunnelDripEmail, {
-            bodyLines: [
-              t.emailBody ??
-                "It has been a while since we shipped your last Culture order. New gear is in — here is what is moving fastest right now.",
-            ],
+            bodyLines: plan.bodyLines,
             couponCode: coupon,
-            headline: t.title,
-            preview: t.emailSubject ?? "Here is what is new at Culture",
-            primaryCtaHref: `${base}/products`,
-            primaryCtaLabel: "Shop new arrivals",
+            headline: plan.headline,
+            picksSubtitle: plan.picksSubtitle,
+            preview: plan.preview,
+            primaryCtaHref: plan.primaryCtaHref,
+            primaryCtaLabel: plan.primaryCtaLabel,
             productPicks: picks,
-            utmCampaign: "win_back_funnel",
-            utmContent: "win_back_1",
+            utmCampaign: plan.utmCampaign,
+            utmContent: plan.utmContent,
           }),
           rowId: row.id,
-          subject: t.emailSubject ?? "We saved you a spot — here is what is new",
+          subject: plan.subject,
           userId: row.userId,
         });
       } else if (nextStep === 2) {
@@ -381,27 +478,40 @@ export async function processDueEmailFunnels(): Promise<{ processed: number }> {
           funnel: "win_back_3",
           step: 2,
         });
+        const plan = getMarketingSeriesEmailPlan({
+          baseUrl: base,
+          contentVariant,
+          funnel,
+          hasCoupon: Boolean(coupon),
+          step: 2,
+        });
         await sendFunnelMessage({
           correlationId: `${row.id}-winback-2`,
           email: row.email,
           kind: "win_back_series_2",
+          metadata: {
+            campaign_id: plan.campaignId,
+            funnel,
+            funnel_step: 2,
+            utm_campaign: plan.utmCampaign,
+            utm_content: plan.utmContent,
+          },
           nextLastStep: 2,
           nextSendAt: new Date(Date.now() + 5 * DAY_MS),
           react: createElement(MarketingFunnelDripEmail, {
-            bodyLines: [
-              "Still on the fence? Members get early access and deeper discounts — and checkout stays fast whether you pay card or crypto.",
-            ],
+            bodyLines: plan.bodyLines,
             couponCode: coupon,
-            headline: "A quiet perk if you come back this week",
-            preview: "A quiet perk if you come back this week",
-            primaryCtaHref: `${base}/membership`,
-            primaryCtaLabel: "See membership",
+            headline: plan.headline,
+            picksSubtitle: plan.picksSubtitle,
+            preview: plan.preview,
+            primaryCtaHref: plan.primaryCtaHref,
+            primaryCtaLabel: plan.primaryCtaLabel,
             productPicks: picks,
-            utmCampaign: "win_back_funnel",
-            utmContent: "win_back_2",
+            utmCampaign: plan.utmCampaign,
+            utmContent: plan.utmContent,
           }),
           rowId: row.id,
-          subject: "Members are saving more on the same cart",
+          subject: plan.subject,
           userId: row.userId,
         });
       } else if (nextStep === 3) {
@@ -410,29 +520,40 @@ export async function processDueEmailFunnels(): Promise<{ processed: number }> {
           funnel: "win_back_3",
           step: 3,
         });
+        const plan = getMarketingSeriesEmailPlan({
+          baseUrl: base,
+          contentVariant,
+          funnel,
+          hasCoupon: Boolean(coupon),
+          step: 3,
+        });
         await sendFunnelMessage({
           correlationId: `${row.id}-winback-3`,
           email: row.email,
           kind: "win_back_series_3",
+          metadata: {
+            campaign_id: plan.campaignId,
+            funnel,
+            funnel_step: 3,
+            utm_campaign: plan.utmCampaign,
+            utm_content: plan.utmContent,
+          },
           nextLastStep: 3,
           nextSendAt: null,
           react: createElement(MarketingFunnelDripEmail, {
-            bodyLines: [
-              "This is our last nudge for a while — if you are not ready, no worries. When you are, your next order still ships with the same care as always.",
-            ],
+            bodyLines: plan.bodyLines,
             couponCode: coupon,
-            headline: "We will be here",
-            preview: "We will be here",
-            primaryCtaHref: `${base}/products`,
-            primaryCtaLabel: "Browse the shop",
+            headline: plan.headline,
+            picksSubtitle: plan.picksSubtitle,
+            preview: plan.preview,
+            primaryCtaHref: plan.primaryCtaHref,
+            primaryCtaLabel: plan.primaryCtaLabel,
             productPicks: picks,
-            utmCampaign: "win_back_funnel",
-            utmContent: "win_back_3",
+            utmCampaign: plan.utmCampaign,
+            utmContent: plan.utmContent,
           }),
           rowId: row.id,
-          subject: coupon
-            ? "One more reason to come back"
-            : "Whenever you are ready",
+          subject: plan.subject,
           userId: row.userId,
         });
       }
@@ -451,6 +572,7 @@ async function sendFunnelMessage(options: {
   correlationId: string;
   email: string;
   kind: EmailSendKind;
+  metadata?: Record<string, unknown>;
   nextLastStep: number;
   nextSendAt: Date | null;
   react: ReactElement;
@@ -461,6 +583,7 @@ async function sendFunnelMessage(options: {
   const res = await sendEmail({
     correlationId: options.correlationId,
     kind: options.kind,
+    metadata: options.metadata,
     react: options.react,
     subject: options.subject,
     to: options.email,

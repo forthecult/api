@@ -1,0 +1,57 @@
+name: Production Rollback Hook
+
+on:
+  workflow_run:
+    workflows: ["Production Smoke (post-deploy)", "Production Runtime Guard"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: "Rollback reason"
+        required: true
+        type: string
+      run_url:
+        description: "Source workflow run URL"
+        required: true
+        type: string
+      target_sha:
+        description: "Optional target SHA"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  trigger-rollback:
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'failure')
+    runs-on: ubuntu-latest
+    env:
+      PRODUCTION_ROLLBACK_WEBHOOK_URL: ${{ secrets.PRODUCTION_ROLLBACK_WEBHOOK_URL }}
+      REASON: ${{ github.event_name == 'workflow_dispatch' && inputs.reason || format('automatic_rollback_from_{0}', github.event.workflow_run.name) }}
+      RUN_URL: ${{ github.event_name == 'workflow_dispatch' && inputs.run_url || github.event.workflow_run.html_url }}
+      TARGET_SHA: ${{ github.event_name == 'workflow_dispatch' && inputs.target_sha || github.event.workflow_run.head_sha }}
+    steps:
+      - name: Validate rollback hook secret
+        run: |
+          test -n "$PRODUCTION_ROLLBACK_WEBHOOK_URL" || {
+            echo "Missing PRODUCTION_ROLLBACK_WEBHOOK_URL secret";
+            exit 1;
+          }
+
+      - name: Trigger production rollback webhook
+        run: |
+          payload=$(cat <<EOF
+          {
+            "reason": "${REASON}",
+            "run_url": "${RUN_URL}",
+            "target_sha": "${TARGET_SHA}"
+          }
+          EOF
+          )
+          curl -sS -X POST "$PRODUCTION_ROLLBACK_WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            --data "$payload"

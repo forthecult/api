@@ -13,6 +13,11 @@ export async function sendNewsletterWelcomeDiscountEmail(params: {
 
   await sendEmail({
     kind: "newsletter_welcome_discount",
+    metadata: {
+      campaign_id: "newsletter_welcome_discount",
+      utm_campaign: "newsletter_welcome",
+      utm_content: "welcome_discount",
+    },
     react: createElement(NewsletterWelcomeDiscountEmail, {
       discountCode: params.discountCode,
       unsubscribeUrl,
