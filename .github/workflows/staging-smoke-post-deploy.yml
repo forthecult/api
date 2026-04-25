@@ -25,6 +25,7 @@ jobs:
     env:
       BASE_URL: ${{ secrets.STAGING_BASE_URL }}
       STAGING_SMOKE_WEBHOOK_URL: ${{ secrets.STAGING_SMOKE_WEBHOOK_URL }}
+      STAGING_REDEPLOY_WEBHOOK_URL: ${{ secrets.STAGING_REDEPLOY_WEBHOOK_URL }}
       PLAYWRIGHT_SKIP_WEBSERVER: "1"
       TARGET_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
     steps:
@@ -43,21 +44,60 @@ jobs:
             exit 1;
           }
 
-      - name: Wait for staging health endpoint
+      - name: Verify deployed revision (attempt 1)
+        id: verify_deploy_1
+        continue-on-error: true
         run: |
           set -euo pipefail
-          echo "Waiting for $BASE_URL/api/health ..."
+          echo "Waiting for $BASE_URL/api/health and commit $TARGET_SHA ..."
           for i in $(seq 1 30); do
-            code=$(curl -s -o /tmp/health.txt -w "%{http_code}" "$BASE_URL/api/health" || true)
+            code=$(curl -s -o /tmp/health.json -w "%{http_code}" "$BASE_URL/api/health" || true)
             if [ "$code" = "200" ]; then
-              echo "Staging is healthy"
-              cat /tmp/health.txt || true
-              exit 0
+              commit_short=$(node -e "try { const fs = require('fs'); const j = JSON.parse(fs.readFileSync('/tmp/health.json', 'utf8')); process.stdout.write(j.commitShaShort || ''); } catch { process.stdout.write(''); }")
+              target_short=$(echo "$TARGET_SHA" | cut -c1-12)
+              if [ -n "$commit_short" ] && [ "$commit_short" = "$target_short" ]; then
+                echo "Staging deploy verified at target commit prefix $commit_short"
+                exit 0
+              fi
+              echo "Health is up but commit mismatch (got '$commit_short', expected '$target_short')"
             fi
-            echo "Attempt $i/30: health not ready (HTTP $code)"
+            echo "Attempt $i/30: deploy not verified yet (HTTP $code)"
             sleep 10
           done
-          echo "Timed out waiting for staging health"
+          echo "Timed out verifying deployed revision on staging"
+          exit 1
+
+      - name: Trigger one auto-redeploy attempt
+        if: steps.verify_deploy_1.outcome == 'failure' && env.STAGING_REDEPLOY_WEBHOOK_URL != ''
+        run: curl -sS -X POST "$STAGING_REDEPLOY_WEBHOOK_URL"
+
+      - name: Verify deployed revision (attempt 2 after auto-redeploy)
+        id: verify_deploy_2
+        if: steps.verify_deploy_1.outcome == 'failure' && env.STAGING_REDEPLOY_WEBHOOK_URL != ''
+        run: |
+          set -euo pipefail
+          echo "Re-checking $BASE_URL/api/health for commit $TARGET_SHA after auto-redeploy ..."
+          for i in $(seq 1 30); do
+            code=$(curl -s -o /tmp/health.json -w "%{http_code}" "$BASE_URL/api/health" || true)
+            if [ "$code" = "200" ]; then
+              commit_short=$(node -e "try { const fs = require('fs'); const j = JSON.parse(fs.readFileSync('/tmp/health.json', 'utf8')); process.stdout.write(j.commitShaShort || ''); } catch { process.stdout.write(''); }")
+              target_short=$(echo "$TARGET_SHA" | cut -c1-12)
+              if [ -n "$commit_short" ] && [ "$commit_short" = "$target_short" ]; then
+                echo "Staging deploy verified at target commit prefix $commit_short"
+                exit 0
+              fi
+              echo "Health is up but commit mismatch (got '$commit_short', expected '$target_short')"
+            fi
+            echo "Attempt $i/30: deploy not verified yet (HTTP $code)"
+            sleep 10
+          done
+          echo "Timed out verifying deployed revision after auto-redeploy"
+          exit 1
+
+      - name: Fail when deploy is not verified
+        if: steps.verify_deploy_1.outcome == 'failure' && (env.STAGING_REDEPLOY_WEBHOOK_URL == '' || steps.verify_deploy_2.outcome == 'failure')
+        run: |
+          echo "Staging deployment verification failed (target commit not active)."
           exit 1
 
       - name: Install dependencies
