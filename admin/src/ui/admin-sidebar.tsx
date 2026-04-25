@@ -140,9 +140,12 @@ const ADMIN_SECTIONS: NavSection[] = [
     label: "Support",
   },
   {
-    href: "/notifications",
+    children: [
+      { href: "/notifications", label: "History & suppression" },
+      { href: "/email-settings", label: "Email settings" },
+    ],
     icon: Mail,
-    label: "Notifications",
+    label: "Email",
   },
   {
     children: [

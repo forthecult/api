@@ -22,6 +22,7 @@ import { getAdminApiBaseUrl } from "~/lib/env";
 import { mapRetrieveToShipping } from "~/lib/loqate";
 import { Button } from "~/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/ui/card";
+import { EmailPreviewSendForm } from "~/ui/email-preview-send-form";
 import {
   Table,
   TableBody,
@@ -1997,6 +1998,14 @@ export default function AdminCustomerDetailPage() {
             </CardContent>
           </Card>
         )}
+
+      <EmailPreviewSendForm
+        defaultTo={customer.email}
+        defaultUserId={customer.id}
+        intro="Sends a rendered preview to the address above (or override). Use for QA or to resend a specific template the customer should see."
+        orders={orders.map((o) => ({ id: o.id }))}
+        title="Send email preview to this customer"
+      />
 
       {/* Customer orders */}
       <Card>
