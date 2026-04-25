@@ -29,7 +29,6 @@ After merge to `staging`:
 - Extended + web3 suites run for additional signal
 - On failure:
   - alert webhook
-  - optional rollback webhook
   - optional auto-heal redeploy (`Staging Auto Heal`)
 
 ## 4) Continuous Staging QA
@@ -47,9 +46,17 @@ Promote only when:
 - no unresolved high/critical security findings
 - migration (if any) applied via controlled migration runner
 
+Post-deploy production checks:
+
+- `Production Smoke (post-deploy)` runs against deployed production SHA.
+- On failure:
+  - alert webhook
+  - optional rollback webhook (production-only automation)
+
 ## 6) Incident / Rollback
 
-- Rollback to previous healthy commit when post-deploy checks fail.
+- Rollback automation is production-only.
+- Staging failures should auto-heal or be fixed forward, then re-tested.
 - For migration incidents, use DR runbook in `docs/DISASTER-RECOVERY.md`.
 
 ## 7) Principle
@@ -58,4 +65,4 @@ Default to blocking bad code before humans test it:
 
 - automate detection early (PR + pre-staging)
 - automate verification late (post-deploy + nightly)
-- automate safe response (alert + optional rollback/redeploy)
+- automate safe response (alert + auto-heal on staging, rollback on production)

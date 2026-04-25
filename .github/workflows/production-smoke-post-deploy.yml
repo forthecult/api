@@ -1,4 +1,4 @@
-name: Staging Smoke (post-deploy)
+name: Production Smoke (post-deploy)
 
 on:
   workflow_run:
@@ -10,21 +10,22 @@ permissions:
   contents: read
 
 concurrency:
-  group: webapp-staging-smoke
+  group: webapp-production-smoke
   cancel-in-progress: true
 
 jobs:
-  smoke-staging:
+  smoke-production:
     if: >
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'workflow_run' &&
        github.event.workflow_run.conclusion == 'success' &&
-       github.event.workflow_run.head_branch == 'staging')
+       github.event.workflow_run.head_branch == 'production')
     runs-on: ubuntu-latest
     timeout-minutes: 40
     env:
-      BASE_URL: ${{ secrets.STAGING_BASE_URL }}
-      STAGING_SMOKE_WEBHOOK_URL: ${{ secrets.STAGING_SMOKE_WEBHOOK_URL }}
+      BASE_URL: ${{ secrets.PRODUCTION_BASE_URL }}
+      PRODUCTION_SMOKE_WEBHOOK_URL: ${{ secrets.PRODUCTION_SMOKE_WEBHOOK_URL }}
+      PRODUCTION_ROLLBACK_WEBHOOK_URL: ${{ secrets.PRODUCTION_ROLLBACK_WEBHOOK_URL }}
       PLAYWRIGHT_SKIP_WEBSERVER: "1"
       TARGET_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
     steps:
@@ -39,25 +40,25 @@ jobs:
       - name: Validate required secrets
         run: |
           test -n "$BASE_URL" || {
-            echo "Missing STAGING_BASE_URL secret";
+            echo "Missing PRODUCTION_BASE_URL secret";
             exit 1;
           }
 
-      - name: Wait for staging health endpoint
+      - name: Wait for production health endpoint
         run: |
           set -euo pipefail
           echo "Waiting for $BASE_URL/api/health ..."
           for i in $(seq 1 30); do
             code=$(curl -s -o /tmp/health.txt -w "%{http_code}" "$BASE_URL/api/health" || true)
             if [ "$code" = "200" ]; then
-              echo "Staging is healthy"
+              echo "Production is healthy"
               cat /tmp/health.txt || true
               exit 0
             fi
             echo "Attempt $i/30: health not ready (HTTP $code)"
             sleep 10
           done
-          echo "Timed out waiting for staging health"
+          echo "Timed out waiting for production health"
           exit 1
 
       - name: Install dependencies
@@ -74,45 +75,43 @@ jobs:
       - name: Install Playwright browser
         run: bunx playwright install --with-deps chromium
 
-      - name: Run staging core smoke suite (retry once)
-        run: |
-          set -euo pipefail
-          for attempt in 1 2; do
-            echo "Core smoke attempt $attempt/2"
-            if bun run smoke:staging; then
-              exit 0
-            fi
-            if [ "$attempt" -eq 1 ]; then
-              echo "First run failed; retrying after short delay..."
-              sleep 20
-            fi
-          done
-          exit 1
-
-      - name: Run staging extended smoke suite (non-blocking signal)
-        continue-on-error: true
-        run: bun run smoke:staging:extended
+      - name: Run production core smoke suite
+        run: bun run smoke:staging
 
       - if: failure()
         name: Upload Playwright report
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report-staging-smoke
+          name: playwright-report-production-smoke
           path: |
             playwright-report
             test-results
           if-no-files-found: ignore
 
-      - if: failure() && env.STAGING_SMOKE_WEBHOOK_URL != ''
-        name: Alert smoke failure webhook
+      - if: failure() && env.PRODUCTION_SMOKE_WEBHOOK_URL != ''
+        name: Alert production smoke failure webhook
         run: |
           payload=$(cat <<EOF
           {
-            "text": "Staging smoke failed for branch ${GITHUB_REF_NAME}. Run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+            "text": "Production smoke failed for branch ${GITHUB_REF_NAME}. Run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
           }
           EOF
           )
-          curl -sS -X POST "$STAGING_SMOKE_WEBHOOK_URL" \
+          curl -sS -X POST "$PRODUCTION_SMOKE_WEBHOOK_URL" \
             -H "Content-Type: application/json" \
             --data "$payload"
 
+      - if: failure() && env.PRODUCTION_ROLLBACK_WEBHOOK_URL != ''
+        name: Trigger production rollback webhook
+        run: |
+          payload=$(cat <<EOF
+          {
+            "reason": "post_deploy_production_smoke_failed",
+            "run_url": "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}",
+            "target_sha": "${TARGET_SHA}"
+          }
+          EOF
+          )
+          curl -sS -X POST "$PRODUCTION_ROLLBACK_WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            --data "$payload"

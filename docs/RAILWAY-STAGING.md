@@ -121,8 +121,22 @@ Rollback:
 - Failed migration: restore from backup + run DR steps in `docs/DISASTER-RECOVERY.md`.
 - Failed smoke: block promotion, fix, and re-run full gate chain.
 - Optional automation hooks:
-  - `STAGING_ROLLBACK_WEBHOOK_URL` (trigger rollback when post-deploy smoke fails)
-  - `STAGING_REDEPLOY_WEBHOOK_URL` (trigger one automated redeploy auto-heal attempt)
+  - Staging only: `STAGING_REDEPLOY_WEBHOOK_URL` (trigger one automated redeploy auto-heal attempt)
+  - Production only: `PRODUCTION_ROLLBACK_WEBHOOK_URL` (trigger rollback when post-deploy production smoke fails)
+
+## Required GitHub secrets
+
+Staging:
+
+- `STAGING_BASE_URL`
+- `STAGING_SMOKE_WEBHOOK_URL` (optional alerts)
+- `STAGING_REDEPLOY_WEBHOOK_URL` (optional auto-heal redeploy)
+
+Production:
+
+- `PRODUCTION_BASE_URL`
+- `PRODUCTION_SMOKE_WEBHOOK_URL` (optional alerts)
+- `PRODUCTION_ROLLBACK_WEBHOOK_URL` (optional rollback automation)
 
 ## Branch protection (required)
 
