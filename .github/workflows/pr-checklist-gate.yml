@@ -1,0 +1,37 @@
+name: PR Checklist Gate
+
+on:
+  pull_request:
+    branches: [main, master, staging, production]
+
+permissions:
+  contents: read
+
+jobs:
+  checklist-gate:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate required checklist items are checked
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          set -euo pipefail
+          test -n "$PR_BODY" || { echo "PR description is required."; exit 1; }
+
+          echo "$PR_BODY" | grep -Eiq '\- \[x\] I ran `bun run check`\.' || {
+            echo "Missing checklist: I ran bun run check";
+            exit 1;
+          }
+          echo "$PR_BODY" | grep -Eiq '\- \[x\] I ran `bun run smoke:core -- --list` \(or full `bun run smoke:core` for risky changes\)\.' || {
+            echo "Missing checklist: smoke core verification";
+            exit 1;
+          }
+          echo "$PR_BODY" | grep -Eiq '\- \[x\] I verified no customer-data/security regressions \(auth, PII, payments, rate limits\)\.' || {
+            echo "Missing checklist: customer data/security verification";
+            exit 1;
+          }
+          echo "$PR_BODY" | grep -Eiq '\- \[x\] I confirmed no shared-env `db:push` usage was introduced\.' || {
+            echo "Missing checklist: no shared-env db:push verification";
+            exit 1;
+          }

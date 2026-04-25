@@ -1,0 +1,60 @@
+name: Staging Nightly Extended QA
+
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  nightly-extended:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      BASE_URL: ${{ secrets.STAGING_BASE_URL }}
+      PLAYWRIGHT_SKIP_WEBSERVER: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Validate required secrets
+        run: |
+          test -n "$BASE_URL" || {
+            echo "Missing STAGING_BASE_URL secret";
+            exit 1;
+          }
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Restore Playwright browser cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('bun.lock', 'bun.lockb') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
+      - name: Install Playwright browser
+        run: bunx playwright install --with-deps chromium
+
+      - name: Run staging extended suite
+        run: bun run smoke:staging:extended
+
+      - name: Run staging web3 suite
+        run: bun run smoke:staging:web3
+
+      - if: failure()
+        name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-staging-nightly-extended
+          path: |
+            playwright-report
+            test-results
+          if-no-files-found: ignore

@@ -99,7 +99,7 @@ test.describe("site shell @core", () => {
   });
 });
 
-test.describe("authentication pages @extended", () => {
+test.describe("authentication pages @extended @web3", () => {
   test("signup page shows email + password inputs", async ({ page }) => {
     await page.goto("/signup");
     await expect(
@@ -197,7 +197,7 @@ test.describe("checkout surfaces @core", () => {
   });
 });
 
-test.describe("web3 marketing @extended", () => {
+test.describe("web3 marketing @extended @web3", () => {
   test("membership page loads", async ({ page }) => {
     await page.goto("/membership");
     await expect(page.getByRole("heading").first()).toBeVisible();
