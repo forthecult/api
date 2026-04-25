@@ -1,0 +1,75 @@
+name: Production Runtime Guard
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: webapp-production-runtime-guard
+  cancel-in-progress: true
+
+jobs:
+  runtime-guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      BASE_URL: ${{ secrets.PRODUCTION_BASE_URL }}
+      PRODUCTION_SMOKE_WEBHOOK_URL: ${{ secrets.PRODUCTION_SMOKE_WEBHOOK_URL }}
+      PRODUCTION_ROLLBACK_WEBHOOK_URL: ${{ secrets.PRODUCTION_ROLLBACK_WEBHOOK_URL }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate required secret
+        run: |
+          test -n "$BASE_URL" || {
+            echo "Missing PRODUCTION_BASE_URL secret";
+            exit 1;
+          }
+
+      - name: Probe production runtime (attempt 1)
+        id: probe1
+        continue-on-error: true
+        run: bash scripts/production-runtime-guard.sh
+
+      - name: Probe production runtime (attempt 2)
+        id: probe2
+        if: steps.probe1.outcome == 'failure'
+        continue-on-error: true
+        run: |
+          sleep 30
+          bash scripts/production-runtime-guard.sh
+
+      - name: Fail if repeated probe failed
+        if: steps.probe1.outcome == 'failure' && (steps.probe2.outcome == 'failure' || steps.probe2.outcome == 'skipped')
+        run: exit 1
+
+      - if: failure() && env.PRODUCTION_SMOKE_WEBHOOK_URL != ''
+        name: Alert production runtime failure
+        run: |
+          payload=$(cat <<EOF
+          {
+            "text": "Production runtime guard failed. Run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          }
+          EOF
+          )
+          curl -sS -X POST "$PRODUCTION_SMOKE_WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            --data "$payload"
+
+      - if: failure() && env.PRODUCTION_ROLLBACK_WEBHOOK_URL != ''
+        name: Trigger production rollback webhook
+        run: |
+          payload=$(cat <<EOF
+          {
+            "reason": "production_runtime_guard_failed",
+            "run_url": "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          }
+          EOF
+          )
+          curl -sS -X POST "$PRODUCTION_ROLLBACK_WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            --data "$payload"

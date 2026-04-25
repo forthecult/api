@@ -137,6 +137,7 @@ Production:
 - `PRODUCTION_BASE_URL`
 - `PRODUCTION_SMOKE_WEBHOOK_URL` (optional alerts)
 - `PRODUCTION_ROLLBACK_WEBHOOK_URL` (optional rollback automation)
+- `Production Runtime Guard` runs every 15 minutes and can trigger rollback on repeated failures.
 
 ## Branch protection (required)
 

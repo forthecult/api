@@ -49,6 +49,7 @@ Promote only when:
 Post-deploy production checks:
 
 - `Production Smoke (post-deploy)` runs against deployed production SHA.
+- `Production Runtime Guard` probes critical endpoints every 15 minutes.
 - On failure:
   - alert webhook
   - optional rollback webhook (production-only automation)
@@ -66,3 +67,12 @@ Default to blocking bad code before humans test it:
 - automate detection early (PR + pre-staging)
 - automate verification late (post-deploy + nightly)
 - automate safe response (alert + auto-heal on staging, rollback on production)
+
+## 8) Runtime auto-fix policy (best practice)
+
+- Do **not** auto-commit/apply code patches directly from production log events.
+- Do auto-remediate safe operational actions:
+  - retry/redeploy (staging)
+  - rollback (production) when repeated probe failures occur
+  - alert with precise failing probe context
+- Keep human review in the loop for code-level fixes.
