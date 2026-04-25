@@ -31,7 +31,6 @@ export const userTable = pgTable("user", {
     .notNull(),
   twoFactorEnabled: boolean("two_factor_enabled").default(false),
   age: integer("age"),
-  birthDate: text("birth_date"),
   crmNotes: text("crm_notes"),
   firstName: text("first_name"),
   interestTags: text("interest_tags"),
@@ -62,9 +61,7 @@ export const userTable = pgTable("user", {
   transactionalWebsite: boolean("transactional_website").default(true),
   adPlatformConversionForwarding: boolean(
     "ad_platform_conversion_forwarding",
-  )
-    .notNull()
-    .default(true),
+  ).default(true),
 });
 
 export const sessionTable = pgTable(

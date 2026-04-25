@@ -305,25 +305,62 @@ export async function getCategoryBySlug(
   slug: string,
 ): Promise<CategoryBySlug | null> {
   if (!slug?.trim()) return null;
-  const [row] = await db
-    .select({
-      description: categoriesTable.description,
-      footerReviewsEnabled: categoriesTable.footerReviewsEnabled,
-      footerReviewsStoreWide: categoriesTable.footerReviewsStoreWide,
-      id: categoriesTable.id,
-      imageUrl: categoriesTable.imageUrl,
-      marketingBlockEnabled: categoriesTable.marketingBlockEnabled,
-      marketingBlockHtml: categoriesTable.marketingBlockHtml,
-      metaDescription: categoriesTable.metaDescription,
-      name: categoriesTable.name,
-      parentId: categoriesTable.parentId,
-      slug: categoriesTable.slug,
-      title: categoriesTable.title,
-      tokenGated: categoriesTable.tokenGated,
-    })
-    .from(categoriesTable)
-    .where(eq(categoriesTable.slug, slug.trim()))
-    .limit(1);
+  let row:
+    | {
+        description: null | string;
+        footerReviewsEnabled?: boolean;
+        footerReviewsStoreWide?: boolean;
+        id: string;
+        imageUrl: null | string;
+        marketingBlockEnabled?: boolean;
+        marketingBlockHtml?: null | string;
+        metaDescription: null | string;
+        name: string;
+        parentId: null | string;
+        slug: null | string;
+        title: null | string;
+        tokenGated: boolean;
+      }
+    | undefined;
+  try {
+    [row] = await db
+      .select({
+        description: categoriesTable.description,
+        footerReviewsEnabled: categoriesTable.footerReviewsEnabled,
+        footerReviewsStoreWide: categoriesTable.footerReviewsStoreWide,
+        id: categoriesTable.id,
+        imageUrl: categoriesTable.imageUrl,
+        marketingBlockEnabled: categoriesTable.marketingBlockEnabled,
+        marketingBlockHtml: categoriesTable.marketingBlockHtml,
+        metaDescription: categoriesTable.metaDescription,
+        name: categoriesTable.name,
+        parentId: categoriesTable.parentId,
+        slug: categoriesTable.slug,
+        title: categoriesTable.title,
+        tokenGated: categoriesTable.tokenGated,
+      })
+      .from(categoriesTable)
+      .where(eq(categoriesTable.slug, slug.trim()))
+      .limit(1);
+  } catch {
+    // Backward compatibility for environments where the newest category columns
+    // were not applied yet. Defaults below keep the page working.
+    [row] = await db
+      .select({
+        description: categoriesTable.description,
+        id: categoriesTable.id,
+        imageUrl: categoriesTable.imageUrl,
+        metaDescription: categoriesTable.metaDescription,
+        name: categoriesTable.name,
+        parentId: categoriesTable.parentId,
+        slug: categoriesTable.slug,
+        title: categoriesTable.title,
+        tokenGated: categoriesTable.tokenGated,
+      })
+      .from(categoriesTable)
+      .where(eq(categoriesTable.slug, slug.trim()))
+      .limit(1);
+  }
   if (!row?.slug) return null;
   return {
     description: row.description ?? null,

@@ -23,6 +23,23 @@ test.describe("site shell", () => {
     await expect(page.locator('a[href^="/products/"]').first()).toBeVisible();
   });
 
+  test("first category page loads without runtime error fallback", async ({
+    page,
+    request,
+  }) => {
+    const categoriesRes = await request.get("/api/categories");
+    expect(categoriesRes.ok()).toBeTruthy();
+    const categoriesJson = (await categoriesRes.json()) as {
+      categories?: { slug?: string }[];
+    };
+    const slug = categoriesJson.categories?.find((c) => c.slug)?.slug;
+    expect(slug).toBeTruthy();
+    const response = await page.goto(`/${slug}`);
+    expect(response?.status()).toBeLessThan(500);
+    await expect(page.getByText("Something went wrong")).toHaveCount(0);
+    await expect(page.getByRole("heading").first()).toBeVisible();
+  });
+
   test("404 page handles unknown routes", async ({ page }) => {
     const response = await page.goto("/page-does-not-exist-12345", {
       waitUntil: "domcontentloaded",
@@ -142,6 +159,16 @@ test.describe("support surfaces", () => {
 });
 
 test.describe("public api contract", () => {
+  test("auth session endpoint never returns 5xx", async ({ request }) => {
+    const sessionRes = await request.get("/api/auth/session");
+    const getSessionRes = await request.get("/api/auth/get-session");
+    // Better Auth can expose either path depending on version/config; at least
+    // one must respond without a server error.
+    expect(
+      sessionRes.status() < 500 || getSessionRes.status() < 500,
+    ).toBeTruthy();
+  });
+
   test("shipping calculate accepts a valid US cart", async ({ request }) => {
     const response = await request.post("/api/shipping/calculate", {
       data: {

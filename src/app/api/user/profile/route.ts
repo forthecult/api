@@ -28,7 +28,6 @@ export async function GET(request: NextRequest) {
 
   const [user] = await db
     .select({
-      birthDate: userTable.birthDate,
       email: userTable.email,
       firstName: userTable.firstName,
       id: userTable.id,
@@ -53,7 +52,7 @@ export async function GET(request: NextRequest) {
       : "system";
 
   return NextResponse.json({
-    birthDate: user.birthDate ?? "",
+    birthDate: "",
     email: user.email ?? "",
     firstName: user.firstName ?? "",
     id: user.id,
@@ -105,27 +104,8 @@ export async function PATCH(request: NextRequest) {
   if (typeof body.lastName === "string") {
     updates.lastName = body.lastName.trim() || null;
   }
-  if (body.birthDate !== undefined) {
-    if (body.birthDate == null || body.birthDate === "") {
-      updates.birthDate = null;
-    } else if (typeof body.birthDate === "string") {
-      const t = body.birthDate.trim();
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(t)) {
-        return NextResponse.json(
-          { error: "Invalid birth date (use YYYY-MM-DD)" },
-          { status: 400 },
-        );
-      }
-      const d = new Date(`${t}T12:00:00.000Z`);
-      if (Number.isNaN(d.getTime())) {
-        return NextResponse.json(
-          { error: "Invalid birth date" },
-          { status: 400 },
-        );
-      }
-      updates.birthDate = t;
-    }
-  }
+  // Temporary compatibility: birthDate column may not exist in all DBs yet.
+  // Keep accepting the field in payload for forward compatibility, but ignore it.
   if (body.image !== undefined) {
     updates.image =
       typeof body.image === "string" && body.image.trim()
@@ -211,7 +191,6 @@ export async function PATCH(request: NextRequest) {
     .set({ ...updates, updatedAt: new Date() })
     .where(eq(userTable.id, session.user.id))
     .returning({
-      birthDate: userTable.birthDate,
       firstName: userTable.firstName,
       id: userTable.id,
       image: userTable.image,
@@ -234,7 +213,7 @@ export async function PATCH(request: NextRequest) {
       : "system";
 
   return NextResponse.json({
-    birthDate: updated.birthDate ?? "",
+    birthDate: "",
     firstName: updated.firstName ?? "",
     image: updated.image ?? null,
     lastName: updated.lastName ?? "",

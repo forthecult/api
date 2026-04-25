@@ -413,12 +413,6 @@ export const auth = betterAuth({
         required: false,
         type: "number",
       },
-      /** ISO 8601 date (YYYY-MM-DD) for profile / age-gated flows. */
-      birthDate: {
-        input: true,
-        required: false,
-        type: "string",
-      },
       /** Internal admin CRM notes (not shown on storefront). */
       crmNotes: {
         input: false,
