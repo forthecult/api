@@ -3,6 +3,7 @@ import { defineConfig, devices } from "@playwright/test";
 const PORT = process.env.PORT ?? "3000";
 const BASE_URL = process.env.BASE_URL ?? `http://localhost:${PORT}`;
 const IS_CI = Boolean(process.env.CI);
+const SKIP_WEBSERVER = process.env.PLAYWRIGHT_SKIP_WEBSERVER === "1";
 
 /**
  * Smoke + a11y Playwright config.
@@ -47,16 +48,18 @@ export default defineConfig({
     trace: "on-first-retry",
     video: "retain-on-failure",
   },
-  webServer: {
-    // CI exercises the production build; local stays on dev for speed. The
-    // `smoketest:ci` script handles `next build` before Playwright starts.
-    command: IS_CI ? "bun run start" : "bun run dev",
-    reuseExistingServer: !IS_CI,
-    stderr: "pipe",
-    stdout: "pipe",
-    timeout: 120_000,
-    url: BASE_URL,
-  },
+  webServer: SKIP_WEBSERVER
+    ? undefined
+    : {
+        // CI exercises the production build; local stays on dev for speed. The
+        // `smoketest:ci` script handles `next build` before Playwright starts.
+        command: IS_CI ? "bun run start" : "bun run dev",
+        reuseExistingServer: !IS_CI,
+        stderr: "pipe",
+        stdout: "pipe",
+        timeout: 120_000,
+        url: BASE_URL,
+      },
   // Let Playwright size workers; 1 worker hides races and triples wall time.
   workers: IS_CI ? 2 : undefined,
 });

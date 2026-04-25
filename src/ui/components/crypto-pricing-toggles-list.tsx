@@ -6,7 +6,6 @@ import { cn } from "~/lib/cn";
 import {
   CRYPTO_OPTIONS,
   type CryptoCode,
-  MAX_PRICING_CRYPTO_LINES,
   useCryptoCurrency,
 } from "~/lib/hooks/use-crypto-currency";
 import { Checkbox } from "~/ui/primitives/checkbox";
@@ -29,33 +28,6 @@ export function CryptoPricingTogglesList({
   onCryptoSelect: (code: CryptoCode) => void;
 }) {
   const { pricingCryptoCodes, togglePricingCrypto } = useCryptoCurrency();
-
-  const header = (
-    <div
-      className={`
-        grid grid-cols-[minmax(0,1fr)_4.25rem] items-center gap-1 border-b
-        border-border px-2 py-1.5
-      `}
-      role="presentation"
-    >
-      <span
-        className={`
-          text-[10px] font-medium tracking-wide text-muted-foreground uppercase
-        `}
-      >
-        Footer spot
-      </span>
-      <span
-        className={`
-          text-center text-[10px] font-medium tracking-wide
-          text-muted-foreground uppercase
-        `}
-        title={`Show on product cards (max ${String(MAX_PRICING_CRYPTO_LINES)})`}
-      >
-        Cards
-      </span>
-    </div>
-  );
 
   const pricingCell = (code: CryptoCode, label: string) => (
     <div
@@ -80,7 +52,6 @@ export function CryptoPricingTogglesList({
 
   return (
     <div className={cn("flex min-w-0 flex-col", className)}>
-      {header}
       {CRYPTO_OPTIONS.map(({ code, iconSrc, label }) => {
         if (menuMode) {
           return (

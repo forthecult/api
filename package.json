@@ -69,6 +69,8 @@
     "test:review-normalization": "bun test ./.tests/review-normalization.test.ts",
     "smoketest": "playwright test",
     "smoketest:ci": "next build && CI=1 playwright test",
+    "smoke:core": "CI=1 playwright test e2e/smoke.spec.ts --project=chromium",
+    "smoke:staging": "PLAYWRIGHT_SKIP_WEBSERVER=1 CI=1 playwright test e2e/smoke.spec.ts --project=chromium",
     "smoketest:no-compile": "playwright test --reuse-existing-server",
     "smoketest:ui": "playwright test --ui",
     "email:templates-check": "bun run scripts/render-email-templates.ts",

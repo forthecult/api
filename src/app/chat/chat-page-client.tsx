@@ -997,41 +997,39 @@ export function ChatPageClient() {
             ) : null}
 
             {messages.length === 0 ? (
-              <div className="shrink-0 border-b border-border px-4 py-3">
-                <ChatComposer
-                  busy={busy}
-                  input={input}
-                  onImagePicked={(files) => void handleImages(files)}
-                  onInputChange={setInput}
-                  onStartSpeech={startSpeech}
-                  onStop={stop}
-                  onSubmit={handleSubmit}
+              <div className="flex min-h-0 flex-1 flex-col px-4 py-3">
+                <div
+                  className={`
+                    h-[40vh] min-h-[160px] max-h-[420px]
+                    md:h-[45vh]
+                  `}
                 />
+                <div className="mx-auto w-full max-w-3xl">
+                  <ChatComposer
+                    busy={busy}
+                    input={input}
+                    onImagePicked={(files) => void handleImages(files)}
+                    onInputChange={setInput}
+                    onStartSpeech={startSpeech}
+                    onStop={stop}
+                    onSubmit={handleSubmit}
+                  />
+                  <p className="mt-3 text-center text-sm text-muted-foreground">
+                    {selectedProject
+                      ? "Start a new conversation. Project instructions and knowledge apply to this chat."
+                      : "Start a conversation. Your messages stay private to this browser unless you use account backups."}
+                  </p>
+                </div>
               </div>
-            ) : null}
-
-            <div className="relative min-h-0 flex-1">
-              <div
-                className={`absolute inset-0 overflow-y-auto px-4 py-6`}
-                onScroll={onScrollMessages}
-                ref={scrollRef}
-              >
-                <div className="mx-auto flex max-w-3xl flex-col gap-4">
-                  {messages.length === 0 ? (
-                    <div
-                      className={`
-                        flex flex-col items-center justify-center gap-2 py-4
-                        text-center
-                      `}
-                    >
-                      <p className="max-w-sm text-sm text-muted-foreground">
-                        {selectedProject
-                          ? "Start a new conversation. Project instructions and knowledge apply to this chat."
-                          : "Start a conversation. Your messages stay private to this browser unless you use account backups."}
-                      </p>
-                    </div>
-                  ) : null}
-                  {messages.map((m) => {
+            ) : (
+              <div className="relative min-h-0 flex-1">
+                <div
+                  className={`absolute inset-0 overflow-y-auto px-4 py-6`}
+                  onScroll={onScrollMessages}
+                  ref={scrollRef}
+                >
+                  <div className="mx-auto flex max-w-3xl flex-col gap-4">
+                    {messages.map((m) => {
                     const isUser = m.role === "user";
                     const isAssistant = m.role === "assistant";
                     const text = isAssistant ? messageText(m) : "";
@@ -1141,35 +1139,36 @@ export function ChatPageClient() {
                         </div>
                       </div>
                     );
-                  })}
-                  {busy ? (
-                    <div
-                      className={`
-                        flex items-center gap-2 text-sm text-muted-foreground
-                      `}
-                    >
-                      <Spinner variant="inline" />
-                      Thinking…
-                    </div>
-                  ) : null}
+                    })}
+                    {busy ? (
+                      <div
+                        className={`
+                          flex items-center gap-2 text-sm text-muted-foreground
+                        `}
+                      >
+                        <Spinner variant="inline" />
+                        Thinking…
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
+                {!atBottom ? (
+                  <Button
+                    aria-label="Scroll to latest"
+                    className={`
+                      absolute right-4 bottom-4 z-10 h-9 w-9 rounded-full
+                      shadow-md
+                    `}
+                    onClick={scrollToBottom}
+                    size="icon"
+                    type="button"
+                    variant="secondary"
+                  >
+                    <ArrowDown aria-hidden className="h-4 w-4" />
+                  </Button>
+                ) : null}
               </div>
-              {messages.length > 0 && !atBottom ? (
-                <Button
-                  aria-label="Scroll to latest"
-                  className={`
-                    absolute right-4 bottom-4 z-10 h-9 w-9 rounded-full
-                    shadow-md
-                  `}
-                  onClick={scrollToBottom}
-                  size="icon"
-                  type="button"
-                  variant="secondary"
-                >
-                  <ArrowDown aria-hidden className="h-4 w-4" />
-                </Button>
-              ) : null}
-            </div>
+            )}
 
             {messages.length > 0 ? (
               <div className="shrink-0 border-t border-border px-4 py-3">

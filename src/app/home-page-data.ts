@@ -95,7 +95,22 @@ export async function getHomeFeaturedProducts(
     ...new Set(featuredProductRows.map((r) => r.productId)),
   ];
 
-  if (productIdsFilter.length === 0) return [];
+  const basePublishedWhere = and(
+    eq(productsTable.published, true),
+    eq(productsTable.hidden, false),
+  );
+  if (productIdsFilter.length === 0) {
+    const newestRows = await db.query.productsTable.findMany({
+      limit,
+      orderBy: [desc(productsTable.createdAt)],
+      where: basePublishedWhere,
+      with: {
+        productCategories: { with: { category: true } },
+        productVariants: { columns: { stockQuantity: true } },
+      },
+    });
+    return mapHomeFeaturedProducts(newestRows, tgCookieValue);
+  }
 
   let manualSortMap: Map<string, number> | null = null;
   try {
@@ -122,8 +137,7 @@ export async function getHomeFeaturedProducts(
   }
 
   const whereClause = and(
-    eq(productsTable.published, true),
-    eq(productsTable.hidden, false),
+    basePublishedWhere,
     inArray(productsTable.id, productIdsFilter),
   );
 
@@ -168,8 +182,24 @@ export async function getHomeFeaturedProducts(
     });
   }
 
-  if (rows.length === 0) return [];
+  return mapHomeFeaturedProducts(rows, tgCookieValue);
+}
 
+type HomeFeaturedDbRow = Awaited<
+  ReturnType<typeof db.query.productsTable.findMany>
+>[number] & {
+  productCategories?: {
+    category?: { name?: string; slug?: null | string };
+    isMain?: boolean;
+  }[];
+  productVariants?: { stockQuantity?: null | number }[];
+};
+
+async function mapHomeFeaturedProducts(
+  rows: HomeFeaturedDbRow[],
+  tgCookieValue: string | undefined,
+): Promise<HomeFeaturedProduct[]> {
+  if (rows.length === 0) return [];
   const ids = rows.map((r) => r.id);
   let productIdsWithTokenGates = new Set<string>();
   try {
@@ -182,15 +212,7 @@ export async function getHomeFeaturedProducts(
     // product_token_gate table may be missing on fresh deploys
   }
 
-  type Row = (typeof rows)[number] & {
-    productCategories?: {
-      category?: { name?: string; slug?: string };
-      isMain?: boolean;
-    }[];
-    productVariants?: { stockQuantity?: null | number }[];
-  };
-
-  return rows.map((p: Row): HomeFeaturedProduct => {
+  return rows.map((p): HomeFeaturedProduct => {
     const mainPc =
       p.productCategories?.find((pc) => pc.isMain) ?? p.productCategories?.[0];
     const tokenGated =

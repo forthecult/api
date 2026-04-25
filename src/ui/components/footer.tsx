@@ -180,17 +180,6 @@ export function Footer({ className }: { className?: string }) {
                     text-muted-foreground transition-colors
                     hover:text-foreground
                   `}
-                  href="/brands"
-                >
-                  Brands
-                </Link>
-              </li>
-              <li>
-                <Link
-                  className={`
-                    text-muted-foreground transition-colors
-                    hover:text-foreground
-                  `}
                   href="/ai"
                 >
                   Chat

@@ -5,7 +5,6 @@ import { useState } from "react";
 
 import {
   type CryptoCode,
-  MAX_PRICING_CRYPTO_LINES,
   useCryptoCurrency,
 } from "~/lib/hooks/use-crypto-currency";
 import { CryptoPricingTogglesList } from "~/ui/components/crypto-pricing-toggles-list";
@@ -58,16 +57,6 @@ export function CryptoPricingSettingsPopover({
           )}
         </PopoverTrigger>
         <PopoverContent align={align} className="w-[min(100vw-2rem,26rem)] p-0">
-          <p
-            className={`
-              border-b border-border px-3 py-2 text-xs text-muted-foreground
-            `}
-            id="crypto-pricing-hint"
-          >
-            Check up to {String(MAX_PRICING_CRYPTO_LINES)} cryptos (right
-            column) for stacked price lines here, in the footer, and in quick
-            view. Tap the left column to set the footer spot ticker.
-          </p>
           <div className="max-h-64 overflow-y-auto">
             <CryptoPricingTogglesList
               onCryptoSelect={(code: CryptoCode) => {

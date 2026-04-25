@@ -74,7 +74,6 @@ export function BrandProductsClient({
       try {
         const params = new URLSearchParams({
           brandSlug,
-          forStorefront: "1",
           limit: String(limit),
           page: String(nextPage),
           sort: "newest",

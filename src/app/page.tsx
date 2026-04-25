@@ -153,6 +153,16 @@ const EXCLUDED_SLUGS = [
   SHOW_IN_ALL_PRODUCTS_CATEGORY_SLUG,
 ];
 const HOME_CATEGORY_LIMIT = 8;
+const HOME_CATEGORY_CURATED_ORDER = [
+  "featured",
+  "health-wellness",
+  "mens-clothing",
+  "home-living",
+  "smart-home",
+  "accessories",
+  "ai",
+  "meme-novelty",
+] as const;
 
 /* ---------------------------------------------------------------------------
  * Main page — fetch all data up front, then render (no Suspense streaming)
@@ -219,11 +229,37 @@ export default async function HomePage() {
       image: c.image ?? null,
       name: c.name,
       productCount: countBySlug.get(c.slug) ?? 0,
+      showOnHomePage: homeGridMetaBySlug.get(c.slug)?.showOnHomePage ?? false,
       slug: c.slug,
     }))
-    .filter((c) => c.productCount > 0)
-    .sort((a, b) => b.productCount - a.productCount)
-    .slice(0, HOME_CATEGORY_LIMIT);
+    .filter((c) => c.productCount > 0);
+
+  const curatedRankBySlug = new Map<string, number>(
+    HOME_CATEGORY_CURATED_ORDER.map((slug, index) => [slug, index] as const),
+  );
+  const compareByCuratedThenName = (
+    a: (typeof topLevelShop)[number],
+    b: (typeof topLevelShop)[number],
+  ) => {
+    const aRank = curatedRankBySlug.get(a.slug ?? "") ?? Number.POSITIVE_INFINITY;
+    const bRank = curatedRankBySlug.get(b.slug ?? "") ?? Number.POSITIVE_INFINITY;
+    if (aRank !== bRank) return aRank - bRank;
+    return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
+  };
+  const pinnedHomeCategories = topLevelShop
+    .filter((c) => c.showOnHomePage)
+    .sort(compareByCuratedThenName);
+  const fallbackHomeCategories = topLevelShop
+    .filter((c) => !c.showOnHomePage)
+    .sort(compareByCuratedThenName);
+  const mergedHomeCategories = [...pinnedHomeCategories, ...fallbackHomeCategories];
+  const seenHomeCategorySlugs = new Set<string>();
+  const orderedHomeCategories = mergedHomeCategories.filter((c) => {
+    if (!c.slug || seenHomeCategorySlugs.has(c.slug)) return false;
+    seenHomeCategorySlugs.add(c.slug);
+    return true;
+  });
+  const homeCategories = orderedHomeCategories.slice(0, HOME_CATEGORY_LIMIT);
 
   const testimonials: TestimonialItem[] =
     reviewTestimonials.length > 0 ? reviewTestimonials : mockTestimonials;
@@ -582,11 +618,11 @@ export default async function HomePage() {
             className={`
               grid grid-cols-2 gap-4
               md:grid-cols-3 md:gap-5
-              lg:grid-cols-6
+              lg:grid-cols-4
             `}
           >
-            {topLevelShop.length > 0 ? (
-              topLevelShop.map((category, index) => (
+            {homeCategories.length > 0 ? (
+              homeCategories.map((category, index) => (
                 <Link
                   aria-label={`Browse ${category.name} products`}
                   className={`
@@ -623,7 +659,7 @@ export default async function HomePage() {
                       }
                     />
                   </div>
-                  <div className="flex flex-col p-5">
+                  <div className="flex min-h-[96px] flex-col p-5">
                     <div
                       className={`
                         text-base font-medium text-foreground transition-colors

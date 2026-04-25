@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { eq } from "drizzle-orm";
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -50,6 +51,7 @@ export default async function BrandDetailPage({
       description: brandTable.description,
       logoUrl: brandTable.logoUrl,
       name: brandTable.name,
+      websiteUrl: brandTable.websiteUrl,
     })
     .from(brandTable)
     .where(eq(brandTable.slug, slug.trim().toLowerCase()))
@@ -66,6 +68,13 @@ export default async function BrandDetailPage({
     inStock: p.inStock ?? true,
     rating: p.rating ?? 0,
   }));
+  const uniqueCategories = Array.from(
+    new Set(
+      items
+        .map((p) => p.category?.trim())
+        .filter((v): v is string => Boolean(v && v.length > 0)),
+    ),
+  );
 
   return (
     <div
@@ -99,13 +108,51 @@ export default async function BrandDetailPage({
             {displayName}
           </h1>
           <p className="mt-3 text-base text-muted-foreground">{description}</p>
+          {curated?.websiteUrl ? (
+            <p className="mt-3 text-sm text-muted-foreground">
+              Official site:{" "}
+              <a
+                className="text-primary underline"
+                href={curated.websiteUrl}
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                {curated.websiteUrl}
+              </a>
+            </p>
+          ) : null}
+        </div>
+        <div
+          className={`
+            mx-auto flex w-full max-w-sm items-center justify-center rounded-xl
+            border border-border/70 bg-muted/30 px-8 py-8
+            md:mx-0
+          `}
+        >
+          {curated?.logoUrl ? (
+            <Image
+              alt={`${displayName} logo`}
+              className="max-h-24 w-auto object-contain"
+              height={96}
+              src={curated.logoUrl}
+              unoptimized={
+                curated.logoUrl.startsWith("data:") ||
+                curated.logoUrl.startsWith("http://")
+              }
+              width={260}
+            />
+          ) : (
+            <span className="text-center text-xl font-semibold tracking-tight">
+              {displayName}
+            </span>
+          )}
         </div>
       </header>
 
       <section aria-label="Products" className="mt-10">
         {items.length === 0 ? (
           <p className="text-muted-foreground">
-            No products for this brand are in stock right now.{" "}
+            No products are available for this brand right now.{" "}
             <Link className="text-primary underline" href="/brands">
               Back to brands
             </Link>{" "}
@@ -123,6 +170,23 @@ export default async function BrandDetailPage({
             initialTotalPages={data.totalPages ?? 1}
           />
         )}
+      </section>
+      <section className="mt-12 max-w-4xl border-t border-border pt-8">
+        <h2 className="text-xl font-semibold tracking-tight">
+          About {displayName}
+        </h2>
+        <p className="mt-3 text-base leading-relaxed text-muted-foreground">
+          {displayName} is part of our curated brand catalog focused on quality,
+          formulation integrity, and practical daily use. We keep this page
+          updated with what is currently published so shoppers and AI agents can
+          quickly understand what the brand is known for.
+        </p>
+        {uniqueCategories.length > 0 ? (
+          <p className="mt-3 text-base leading-relaxed text-muted-foreground">
+            Current catalog focus: {uniqueCategories.join(", ")}. Inventory and
+            selection can rotate as new products are released.
+          </p>
+        ) : null}
       </section>
     </div>
   );
@@ -148,7 +212,6 @@ async function fetchBrandProducts(slug: string): Promise<ProductListResponse> {
   try {
     const params = new URLSearchParams({
       brandSlug: slug,
-      forStorefront: "1",
       limit: "24",
       page: "1",
       sort: "newest",

@@ -17,10 +17,60 @@ test.describe("site shell", () => {
     await expect(page.getByRole("navigation").first()).toBeVisible();
   });
 
+  test("homepage featured products section renders product cards when catalog has products", async ({
+    page,
+    request,
+  }) => {
+    const productsRes = await request.get(
+      "/api/products?forStorefront=1&limit=1&sort=newest",
+    );
+    expect(productsRes.status()).toBeLessThan(500);
+    const body = (await productsRes.json()) as { total?: number };
+    const total = typeof body.total === "number" ? body.total : 0;
+
+    await page.goto("/");
+    const featuredSection = page.locator("section").filter({
+      has: page.getByRole("heading", { name: /featured products/i }),
+    });
+    await expect(featuredSection).toBeVisible();
+    if (total > 0) {
+      await expect(
+        featuredSection.locator('a[href^="/products/"]').first(),
+      ).toBeVisible({ timeout: 15_000 });
+    } else {
+      await expect(
+        featuredSection.getByRole("link", { name: /view all products/i }),
+      ).toBeVisible();
+    }
+  });
+
   test("products listing renders product links", async ({ page }) => {
     await page.goto("/products");
     await expect(page.getByRole("heading").first()).toBeVisible();
     await expect(page.locator('a[href^="/products/"]').first()).toBeVisible();
+  });
+
+  test("product detail page loads from products listing", async ({ page }) => {
+    await page.goto("/products");
+    const firstProductLink = page.locator('a[href^="/products/"]').first();
+    await expect(firstProductLink).toBeVisible();
+    const href = await firstProductLink.getAttribute("href");
+    expect(href).toBeTruthy();
+    const response = await page.goto(String(href));
+    expect(response?.status()).toBeLessThan(500);
+    await expect(page.getByRole("heading").first()).toBeVisible();
+  });
+
+  test("brand detail page loads from brands listing", async ({ page }) => {
+    const response = await page.goto("/brands");
+    expect(response?.status()).toBeLessThan(500);
+    const firstBrandLink = page.locator('a[href^="/brands/"]').first();
+    await expect(firstBrandLink).toBeVisible();
+    const brandHref = await firstBrandLink.getAttribute("href");
+    expect(brandHref).toBeTruthy();
+    const brandResponse = await page.goto(String(brandHref));
+    expect(brandResponse?.status()).toBeLessThan(500);
+    await expect(page.getByRole("heading").first()).toBeVisible();
   });
 
   test("first category page loads without runtime error fallback", async ({
@@ -87,6 +137,19 @@ test.describe("authentication pages", () => {
     await expect(page.getByRole("alert").first()).toBeVisible({
       timeout: 5_000,
     });
+  });
+
+  test("wallet sign-in modal opens from login", async ({ page }) => {
+    await page.goto("/login");
+    const walletTrigger = page
+      .getByRole("button", { name: /sign in with wallet|connect wallet/i })
+      .first();
+    await expect(walletTrigger).toBeVisible();
+    await walletTrigger.click();
+    await expect(page.getByRole("dialog")).toBeVisible();
+    await expect(
+      page.getByText(/sign in with wallet|connect wallet|solana|ethereum/i),
+    ).toBeVisible();
   });
 });
 
