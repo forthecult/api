@@ -60,6 +60,7 @@
     "db:seed-bon-charge": "bun run scripts/seed-bon-charge-via-api.ts",
     "tests": "bun test ./.tests",
     "smoketest": "playwright test",
+    "smoketest:ci": "next build && CI=1 playwright test",
     "smoketest:no-compile": "playwright test --reuse-existing-server",
     "smoketest:ui": "playwright test --ui",
     "email:test": "bun run scripts/send-test-email.ts",
@@ -167,6 +168,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.11.2",
     "@biomejs/biome": "^2.4.12",
     "@eslint-react/eslint-plugin": "^4.2.3",
     "@eslint/js": "^10.0.1",
