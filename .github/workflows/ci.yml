@@ -5,9 +5,9 @@ name: CI (typecheck + build)
 
 on:
   push:
-    branches: [main, master]
+    branches: [main, master, staging, production]
   pull_request:
-    branches: [main, master]
+    branches: [main, master, staging, production]
 
 # Pin default permissions to read-only so a compromised action can't push,
 # release, or mutate issues/PRs on our behalf. Jobs that need write access
@@ -30,6 +30,9 @@ jobs:
 
       - name: Typecheck
         run: bun run check
+
+      - name: Block invalid import specifiers
+        run: bun run check:imports
 
       - name: Verify admin auth wiring
         run: bun run scripts/verify-admin-auth.ts
