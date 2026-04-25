@@ -14,6 +14,23 @@
  *
  * The `error`, `request`, and `context` arguments are typed by Next.js itself.
  */
+
+/** Expected noise: deploy skew, tab close, proxy drops — do not send to error analytics. */
+function isBenignServerRequestError(error: unknown): boolean {
+  const msg =
+    error instanceof Error ? `${error.name}: ${error.message}` : String(error);
+  const lower = msg.toLowerCase();
+  if (lower.includes("failed to find server action")) return true;
+  if (lower.includes("econnreset")) return true;
+  if (lower.includes("socket hang up")) return true;
+  if (lower.includes("aborted")) return true;
+  const code =
+    error instanceof Error ?
+      (error as NodeJS.ErrnoException).code
+    : undefined;
+  return code === "ECONNRESET" || code === "EPIPE";
+}
+
 export const onRequestError: (
   error: unknown,
   request: {
@@ -34,6 +51,7 @@ export const onRequestError: (
   },
 ) => Promise<void> = async (error, request, context) => {
   try {
+    if (isBenignServerRequestError(error)) return;
     const { getPostHogServer } = await import("./lib/analytics/posthog-server");
     const ph = getPostHogServer();
     if (!ph) return;
@@ -74,14 +92,8 @@ export function register(): void {
   // These occur when the client navigates away, closes the tab, or cancels the request
   // before the server finishes; they are expected and noisy in production logs.
   if (process.env.NEXT_RUNTIME === "nodejs") {
-    const isClientDisconnect = (err: unknown): boolean => {
-      if (err instanceof Error) {
-        const code = (err as NodeJS.ErrnoException).code;
-        const msg = err.message ?? "";
-        return code === "ECONNRESET" || /aborted/i.test(msg);
-      }
-      return false;
-    };
+    const isClientDisconnect = (err: unknown): boolean =>
+      isBenignServerRequestError(err);
 
     process.on("unhandledRejection", (reason: unknown) => {
       if (isClientDisconnect(reason)) {

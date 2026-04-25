@@ -34,6 +34,24 @@ Optional:
 | `RATE_LIMIT_ALLOW_IN_MEMORY=true` | Only if staging runs `NODE_ENV=production` without Upstash **and** a single instance |
 | `TRUSTED_PROXY_HEADER` | Set to `cf-connecting-ip`, `fly-client-ip`, or another header your edge sets (see `TRUSTED_PROXY_HEADERS` in `webapp/src/lib/rate-limit.ts`) — fixes “rate limits are not per-client-ip” warnings |
 
+### Server Actions: “Failed to find Server Action” (after deploy)
+
+Next.js encrypts Server Action payloads. If each build uses a **new** secret, tabs that still have **old JS** from the previous deploy call actions the new server cannot decode — you see [Failed to find Server Action](https://nextjs.org/docs/messages/failed-to-find-server-action). Mitigations:
+
+1. **Stable key (recommended for self‑hosted / Railway)** — set a fixed secret at **build time** and runtime (same value on every deploy):
+
+   ```bash
+   openssl rand -base64 32
+   ```
+
+   Add to Railway (or CI) as **`NEXT_SERVER_ACTIONS_ENCRYPTION_KEY`** (see Next.js docs for length: use a 32‑byte AES key as base64). Rebuild after setting.
+
+2. **Same artifact everywhere** — one image/build per release on all replicas (avoid per‑machine `next build` with different keys).
+
+3. **User impact** — a hard refresh usually clears it; skew is worst in the minutes after a deploy.
+
+`ECONNRESET` / `aborted` around the same time is often the client closing the tab or the proxy resetting the connection; it is not the same root cause as (1).
+
 ## Health
 
 - Railway can HTTP-check the storefront root or `/api/health` if exposed.
