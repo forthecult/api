@@ -5,6 +5,7 @@ import { passkey } from "@better-auth/passkey";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { emailOTP, twoFactor } from "better-auth/plugins";
+import { boolean, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
@@ -17,7 +18,6 @@ import {
   passkeyTable,
   sessionTable,
   twoFactorTable,
-  userTable,
   verificationTable,
 } from "~/db/schema";
 import { getPublicSiteUrl } from "~/lib/app-url";
@@ -67,6 +67,25 @@ interface TwitterProfile {
   name?: string;
   username?: string;
 }
+
+/**
+ * Keep auth session queries resilient across environments with schema drift.
+ * Better Auth selects all columns declared on the mapped user table; production
+ * currently has older user columns, so we map only the stable core columns here.
+ */
+const authUserTable = pgTable("user", {
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  email: text("email").notNull().unique(),
+  emailVerified: boolean("email_verified").default(false).notNull(),
+  id: text("id").primaryKey(),
+  image: text("image"),
+  name: text("name").notNull(),
+  twoFactorEnabled: boolean("two_factor_enabled").default(false),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => /* @__PURE__ */ new Date())
+    .notNull(),
+});
 
 /** Ensure URL has a protocol so Better Auth and redirects don't throw Invalid URL (e.g. Railway env without https://). */
 function ensureAbsoluteUrl(value: string | undefined): string | undefined {
@@ -227,7 +246,7 @@ export const auth = betterAuth({
       passkey: passkeyTable,
       session: sessionTable,
       twoFactor: twoFactorTable,
-      user: userTable,
+      user: authUserTable,
       verification: verificationTable,
     },
   }),

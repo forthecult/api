@@ -38,7 +38,9 @@ export default function TrackOrderPage() {
         </p>
       </header>
 
-      <TrackOrderForm />
+      <div className="mx-auto w-full max-w-2xl">
+        <TrackOrderForm />
+      </div>
     </div>
   );
 }
