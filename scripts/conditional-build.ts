@@ -19,6 +19,11 @@ const forceWebpack =
   process.env.NEXT_BUILD_FORCE_WEBPACK === "1" ||
   process.env.NEXT_BUILD_FORCE_WEBPACK === "true";
 
+/** Opt in to Turbopack-first; default is webpack-first (swagger-ui-react + others are not Turbopack-clean yet). */
+const tryTurbopackFirst =
+  process.env.NEXT_BUILD_TRY_TURBOPACK === "1" ||
+  process.env.NEXT_BUILD_TRY_TURBOPACK === "true";
+
 function runNextBuild(args: string[]) {
   const result = spawnSync("bun", args, {
     encoding: "utf8",
@@ -38,6 +43,14 @@ if (forceWebpack) {
   );
   const forcedWebpackResult = runNextBuild(["x", "next", "build", "--webpack"]);
   process.exit(forcedWebpackResult.status ?? 1);
+}
+
+if (!tryTurbopackFirst) {
+  console.log(
+    "Using webpack production build (default). Set NEXT_BUILD_TRY_TURBOPACK=1 to attempt Turbopack first.",
+  );
+  const webpackResult = runNextBuild(["x", "next", "build", "--webpack"]);
+  process.exit(webpackResult.status ?? 1);
 }
 
 const defaultBuildResult = runNextBuild(["x", "next", "build"]);

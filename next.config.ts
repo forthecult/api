@@ -279,6 +279,28 @@ const config = {
     ];
   },
 
+  // Webpack path (`next build --webpack`, used by scripts/conditional-build.ts fallback). Must
+  // mirror turbopack.resolveAlias so WalletConnect / wagmi optional peers resolve on Railway.
+  webpack: (webpackConfig) => {
+    webpackConfig.resolve.fallback = {
+      ...webpackConfig.resolve.fallback,
+      "@safe-global/safe-apps-provider": false,
+      "@safe-global/safe-apps-sdk": false,
+      "pino-pretty": false,
+      porto: false,
+    };
+    webpackConfig.resolve.alias = {
+      ...webpackConfig.resolve.alias,
+      "@base-org/account": wagmiStub,
+      "@coinbase/wallet-sdk": wagmiStub,
+      "@gemini-wallet/core": wagmiStub,
+      "@metamask/connect-evm": wagmiStub,
+      "@walletconnect/ethereum-provider": resolveWalletConnect(),
+      accounts: wagmiStub,
+    };
+    return webpackConfig;
+  },
+
   // Optional wagmi connectors + pino: alias/stub so build always resolves (Railway, strict installs)
   turbopack: {
     resolveAlias: {
