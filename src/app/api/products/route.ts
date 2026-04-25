@@ -387,7 +387,11 @@ export async function GET(request: NextRequest) {
         const found = await db.query.productsTable.findMany({
           where: inArray(productsTable.id, sortedIds),
           with: {
-            productCategories: { with: { category: true } },
+            productCategories: {
+              with: {
+                category: { columns: { name: true, slug: true } },
+              },
+            },
             productVariants: { columns: { stockQuantity: true } },
           },
         });
@@ -426,7 +430,9 @@ export async function GET(request: NextRequest) {
           where: inArray(productsTable.id, ids),
           with: {
             productCategories: {
-              with: { category: true },
+              with: {
+                category: { columns: { name: true, slug: true } },
+              },
             },
             productVariants: { columns: { stockQuantity: true } },
           },
@@ -444,7 +450,9 @@ export async function GET(request: NextRequest) {
         where: whereClause,
         with: {
           productCategories: {
-            with: { category: true },
+            with: {
+              category: { columns: { name: true, slug: true } },
+            },
           },
           productVariants: { columns: { stockQuantity: true } },
         },
@@ -514,7 +522,7 @@ export async function GET(request: NextRequest) {
 
     type ProductWithRelations = (typeof rows)[number] & {
       productCategories?: {
-        category?: { name?: string; slug?: string };
+        category?: { name?: string; slug?: null | string };
         isMain?: boolean;
       }[];
       productVariants?: { stockQuantity?: null | number }[];

@@ -105,7 +105,11 @@ export async function getHomeFeaturedProducts(
       orderBy: [desc(productsTable.createdAt)],
       where: basePublishedWhere,
       with: {
-        productCategories: { with: { category: true } },
+        productCategories: {
+          with: {
+            category: { columns: { name: true, slug: true } },
+          },
+        },
         productVariants: { columns: { stockQuantity: true } },
       },
     });
@@ -161,7 +165,11 @@ export async function getHomeFeaturedProducts(
       const found = await db.query.productsTable.findMany({
         where: inArray(productsTable.id, sortedIds),
         with: {
-          productCategories: { with: { category: true } },
+          productCategories: {
+            with: {
+              category: { columns: { name: true, slug: true } },
+            },
+          },
           productVariants: { columns: { stockQuantity: true } },
         },
       });
@@ -176,7 +184,11 @@ export async function getHomeFeaturedProducts(
       orderBy: [desc(productsTable.createdAt)],
       where: whereClause,
       with: {
-        productCategories: { with: { category: true } },
+        productCategories: {
+          with: {
+            category: { columns: { name: true, slug: true } },
+          },
+        },
         productVariants: { columns: { stockQuantity: true } },
       },
     });
