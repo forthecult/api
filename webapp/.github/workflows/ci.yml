@@ -1,0 +1,275 @@
+# Run typecheck and build on push/PR so deployment never gets broken code.
+# Catches: missing imports, type errors, and any failure that would break "bun run build".
+
+name: CI (typecheck + build)
+
+on:
+  push:
+    branches: [main, master, staging, production]
+    paths-ignore:
+      - "docs/**"
+      - "**/*.md"
+  pull_request:
+    branches: [main, master, staging, production]
+    paths-ignore:
+      - "docs/**"
+      - "**/*.md"
+
+# Pin default permissions to read-only so a compromised action can't push,
+# release, or mutate issues/PRs on our behalf. Jobs that need write access
+# request it explicitly.
+permissions:
+  contents: read
+
+concurrency:
+  group: webapp-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      runtime: ${{ steps.filter.outputs.runtime }}
+      web3: ${{ steps.filter.outputs.web3 }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            runtime:
+              - "src/**"
+              - "app/**"
+              - "admin/**"
+              - "e2e/**"
+              - "scripts/**"
+              - "package.json"
+              - "bun.lock"
+              - "bun.lockb"
+              - "playwright.config.ts"
+              - "next.config.ts"
+              - ".github/workflows/**"
+            web3:
+              - "src/ui/components/auth/**"
+              - "src/app/checkout/crypto/**"
+              - "src/app/token/**"
+              - "src/app/membership/**"
+              - "src/lib/auth.ts"
+              - "e2e/**"
+              - ".github/workflows/**"
+
+  check:
+    needs: changes
+    if: needs.changes.outputs.runtime == 'true' && github.ref != 'refs/heads/staging'
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci -d ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # Next.js production builds invoke Node with a default ~2GB heap; CI runners OOM without this.
+      NODE_OPTIONS: --max-old-space-size=8192
+      # `next build` collects page data; some routes import `~/db`, which requires a parseable URL.
+      DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/ci
+      # Build-time auth config required by server modules imported during page data collection.
+      AUTH_SECRET: ci-build-auth-secret-not-for-runtime
+      # Placeholder secrets for production-only guards triggered during `next build`.
+      VIRUSTOTAL_API_KEY: ci-build-placeholder
+      RESEND_API_KEY: ci-build-placeholder
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Restore Next.js cache
+        uses: actions/cache@v4
+        with:
+          path: .next/cache
+          key: ${{ runner.os }}-next-${{ hashFiles('bun.lock', 'bun.lockb') }}-${{ hashFiles('src/**/*', 'app/**/*') }}
+          restore-keys: |
+            ${{ runner.os }}-next-${{ hashFiles('bun.lock', 'bun.lockb') }}-
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Typecheck
+        run: bun run typecheck
+
+      - name: Block invalid import specifiers
+        run: bun run check:imports
+
+      - name: Verify admin auth wiring
+        run: bun run scripts/verify-admin-auth.ts
+
+      - name: Verify CSRF origin coverage (SOC 2 CC6.1)
+        run: bun run scripts/verify-csrf-origin.ts
+
+      - name: Enforce deployment policies
+        run: bun run check:deploy-policies
+
+      - name: Email templates render check
+        run: bun run email:templates-check
+
+      - name: Category page runtime guard test
+        run: bun run test:review-normalization
+
+      - name: Build
+        run: bun run build
+
+      - name: Upload Next.js build output
+        uses: actions/upload-artifact@v4
+        with:
+          name: next-build-output
+          include-hidden-files: true
+          path: |
+            .next
+            public
+            package.json
+            next.config.ts
+          if-no-files-found: error
+
+  smoke-core:
+    name: Smoke core flows (pre-staging gate)
+    needs: [changes, check]
+    if: needs.changes.outputs.runtime == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci -d ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/ci
+      AUTH_SECRET: ci-build-auth-secret-not-for-runtime
+      VIRUSTOTAL_API_KEY: ci-build-placeholder
+      RESEND_API_KEY: ci-build-placeholder
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Download build output
+        uses: actions/download-artifact@v4
+        with:
+          name: next-build-output
+          path: .
+
+      - name: Restore Playwright browser cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('bun.lock', 'bun.lockb') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
+      - name: Install Playwright browser
+        run: bunx playwright install --with-deps chromium
+
+      - name: Run core smoke suite (chromium)
+        env:
+          CI: "1"
+        run: bun run smoke:core
+
+      - if: failure()
+        name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-core-smoke
+          path: |
+            playwright-report
+            test-results
+          if-no-files-found: ignore
+
+  smoke-web3:
+    name: Smoke web3 flows (blocking when web3 changes)
+    needs: [changes, check]
+    if: needs.changes.outputs.runtime == 'true' && needs.changes.outputs.web3 == 'true' && github.ref != 'refs/heads/staging'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci -d ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/ci
+      AUTH_SECRET: ci-build-auth-secret-not-for-runtime
+      VIRUSTOTAL_API_KEY: ci-build-placeholder
+      RESEND_API_KEY: ci-build-placeholder
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Download build output
+        uses: actions/download-artifact@v4
+        with:
+          name: next-build-output
+          path: .
+
+      - name: Restore Playwright browser cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('bun.lock', 'bun.lockb') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
+      - name: Install Playwright browser
+        run: bunx playwright install --with-deps chromium
+
+      - name: Run web3 smoke suite (chromium)
+        env:
+          CI: "1"
+        run: bun run smoke:web3
+
+      - if: failure()
+        name: Upload Playwright report (web3)
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-web3-smoke
+          path: |
+            playwright-report
+            test-results
+          if-no-files-found: ignore
