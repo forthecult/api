@@ -10,6 +10,7 @@ import { useAccount, useConnect, useConnectors, useSignMessage } from "wagmi";
 import { SYSTEM_CONFIG } from "~/app";
 import { useSolanaWallet } from "~/app/checkout/crypto/solana-wallet-stub";
 import { cn } from "~/lib/cn";
+import { useIsMobile } from "~/lib/hooks/use-mobile";
 import { WALLET_LINKED_EVENT } from "~/ui/components/auth/auth-wallet-modal-events";
 import { Button } from "~/ui/primitives/button";
 import { Dialog, DialogContent, DialogTitle } from "~/ui/primitives/dialog";
@@ -171,6 +172,7 @@ export function AuthWalletModal({
   solanaOnly = false,
 }: AuthWalletModalProps) {
   const router = useRouter();
+  const isMobile = useIsMobile();
   const {
     connect,
     connected,
@@ -225,10 +227,13 @@ export function AuthWalletModal({
   const { signMessageAsync } = useSignMessage();
   const wcSignDoneRef = useRef(false);
 
-  const solanaWallets = wallets.filter(
-    (w) =>
-      w.readyState === WalletReadyState.Installed ||
-      w.readyState === WalletReadyState.Loadable,
+  // Desktop should only show installed wallets. Including "Loadable" (not installed)
+  // causes adapters to open install/deeplink flows in another browser/app.
+  const solanaWallets = wallets.filter((w) =>
+    isMobile
+      ? w.readyState === WalletReadyState.Installed ||
+        w.readyState === WalletReadyState.Loadable
+      : w.readyState === WalletReadyState.Installed,
   );
 
   const handleSelectEthereumOption = useCallback(
@@ -1043,6 +1048,12 @@ export function AuthWalletModal({
 
           {step === "wallet" && (
             <div className="flex flex-col gap-4">
+              {!isMobile && solanaWallets.length === 0 && (
+                <p className="text-sm text-muted-foreground">
+                  No Solana wallet extension detected in this browser. Install
+                  Phantom for this browser profile and try again.
+                </p>
+              )}
               <p
                 className={`
                   text-xs font-medium tracking-wider text-muted-foreground
