@@ -21,13 +21,19 @@ jobs:
        github.event.workflow_run.conclusion == 'success' &&
        github.event.workflow_run.head_branch == 'staging')
     runs-on: ubuntu-latest
+    environment:
+      name: staging
     timeout-minutes: 40
     env:
       BASE_URL: ${{ secrets.STAGING_BASE_URL }}
       STAGING_SMOKE_WEBHOOK_URL: ${{ secrets.STAGING_SMOKE_WEBHOOK_URL }}
+      STAGING_ROLLBACK_WEBHOOK_URL: ${{ secrets.STAGING_ROLLBACK_WEBHOOK_URL }}
       PLAYWRIGHT_SKIP_WEBSERVER: "1"
+      TARGET_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TARGET_SHA }}
 
       - uses: oven-sh/setup-bun@v2
         with:
@@ -60,14 +66,22 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Restore Playwright browser cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('bun.lock', 'bun.lockb') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
       - name: Install Playwright browser
         run: bunx playwright install --with-deps chromium
 
-      - name: Run staging smoke suite (retry once on transient failure)
+      - name: Run staging core smoke suite (retry once)
         run: |
           set -euo pipefail
           for attempt in 1 2; do
-            echo "Smoke attempt $attempt/2"
+            echo "Core smoke attempt $attempt/2"
             if bun run smoke:staging; then
               exit 0
             fi
@@ -78,14 +92,18 @@ jobs:
           done
           exit 1
 
+      - name: Run staging extended smoke suite (non-blocking signal)
+        continue-on-error: true
+        run: bun run smoke:staging:extended
+
       - if: failure()
         name: Upload Playwright report
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report-staging-smoke
           path: |
-            webapp/playwright-report
-            webapp/test-results
+            playwright-report
+            test-results
           if-no-files-found: ignore
 
       - if: failure() && env.STAGING_SMOKE_WEBHOOK_URL != ''
@@ -98,5 +116,20 @@ jobs:
           EOF
           )
           curl -sS -X POST "$STAGING_SMOKE_WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            --data "$payload"
+
+      - if: failure() && env.STAGING_ROLLBACK_WEBHOOK_URL != ''
+        name: Trigger staging rollback webhook
+        run: |
+          payload=$(cat <<EOF
+          {
+            "reason": "post_deploy_staging_smoke_failed",
+            "run_url": "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}",
+            "target_sha": "${TARGET_SHA}"
+          }
+          EOF
+          )
+          curl -sS -X POST "$STAGING_ROLLBACK_WEBHOOK_URL" \
             -H "Content-Type: application/json" \
             --data "$payload"

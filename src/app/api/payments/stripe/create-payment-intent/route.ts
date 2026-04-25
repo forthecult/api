@@ -69,7 +69,17 @@ export async function POST(request: NextRequest) {
     }
     const body = parsed.data;
 
-    const session = await auth.api.getSession({ headers: request.headers });
+    let session: Awaited<ReturnType<typeof auth.api.getSession>> = null;
+    try {
+      session = await auth.api.getSession({ headers: request.headers });
+    } catch (sessionError) {
+      // Schema drift can break session queries in shared envs. Continue as guest.
+      console.error(
+        "Stripe payment-intent session lookup failed; continuing as guest:",
+        sessionError,
+      );
+      session = null;
+    }
     const lineItems = body.lineItems.filter(
       (i) => i?.productId && typeof i.quantity === "number" && i.quantity >= 1,
     );

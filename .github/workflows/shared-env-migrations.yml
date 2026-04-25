@@ -1,0 +1,36 @@
+name: Shared Env Migration Runner
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment"
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+      migration:
+        description: "Relative SQL path (e.g. drizzle/0007_order_attribution_ad_conversion.sql)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: Apply reviewed migration
+        run: |
+          bun run scripts/run-psql-migration.ts "${{ inputs.migration }}" --env="${{ inputs.environment }}" --yes

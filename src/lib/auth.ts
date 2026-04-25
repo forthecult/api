@@ -593,13 +593,20 @@ export const auth = betterAuth({
 });
 
 export const getCurrentUser = async (): Promise<null | UserDbType> => {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-  if (!session) {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+    if (!session) {
+      return null;
+    }
+    return session.user as UserDbType;
+  } catch (error) {
+    // In drifted environments, session lookup can fail at runtime.
+    // Treat as unauthenticated so checkout/purchase flows can continue.
+    console.error("getCurrentUser session lookup failed:", error);
     return null;
   }
-  return session.user as UserDbType;
 };
 
 export const getCurrentUserOrRedirect = async (

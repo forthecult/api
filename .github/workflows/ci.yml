@@ -6,8 +6,14 @@ name: CI (typecheck + build)
 on:
   push:
     branches: [main, master, staging, production]
+    paths-ignore:
+      - "docs/**"
+      - "**/*.md"
   pull_request:
     branches: [main, master, staging, production]
+    paths-ignore:
+      - "docs/**"
+      - "**/*.md"
 
 # Pin default permissions to read-only so a compromised action can't push,
 # release, or mutate issues/PRs on our behalf. Jobs that need write access
@@ -20,7 +26,32 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      runtime: ${{ steps.filter.outputs.runtime }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            runtime:
+              - "src/**"
+              - "app/**"
+              - "admin/**"
+              - "e2e/**"
+              - "scripts/**"
+              - "package.json"
+              - "bun.lock"
+              - "bun.lockb"
+              - "playwright.config.ts"
+              - "next.config.ts"
+              - ".github/workflows/**"
+
   check:
+    needs: changes
+    if: needs.changes.outputs.runtime == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -28,6 +59,14 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
+
+      - name: Restore Next.js cache
+        uses: actions/cache@v4
+        with:
+          path: .next/cache
+          key: ${{ runner.os }}-next-${{ hashFiles('bun.lock', 'bun.lockb') }}-${{ hashFiles('src/**/*', 'app/**/*') }}
+          restore-keys: |
+            ${{ runner.os }}-next-${{ hashFiles('bun.lock', 'bun.lockb') }}-
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
@@ -44,6 +83,9 @@ jobs:
       - name: Verify CSRF origin coverage (SOC 2 CC6.1)
         run: bun run scripts/verify-csrf-origin.ts
 
+      - name: Enforce deployment policies
+        run: bun run check:deploy-policies
+
       - name: Email templates render check
         run: bun run email:templates-check
 
@@ -53,9 +95,21 @@ jobs:
       - name: Build
         run: bun run build
 
+      - name: Upload Next.js build output
+        uses: actions/upload-artifact@v4
+        with:
+          name: next-build-output
+          path: |
+            .next
+            public
+            package.json
+            next.config.ts
+          if-no-files-found: error
+
   smoke-core:
     name: Smoke core flows (pre-staging gate)
-    needs: check
+    needs: [changes, check]
+    if: needs.changes.outputs.runtime == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -68,11 +122,22 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Download build output
+        uses: actions/download-artifact@v4
+        with:
+          name: next-build-output
+          path: .
+
+      - name: Restore Playwright browser cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('bun.lock', 'bun.lockb') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
       - name: Install Playwright browser
         run: bunx playwright install --with-deps chromium
-
-      - name: Build app for production-mode smoke
-        run: bun run build
 
       - name: Run core smoke suite (chromium)
         env:
@@ -85,6 +150,6 @@ jobs:
         with:
           name: playwright-report-core-smoke
           path: |
-            webapp/playwright-report
-            webapp/test-results
+            playwright-report
+            test-results
           if-no-files-found: ignore

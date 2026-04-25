@@ -9,8 +9,6 @@ import { useCountryCurrency } from "~/lib/hooks/use-country-currency";
 import { useShippingCountry } from "~/lib/hooks/use-shipping-country";
 import { useWishlist } from "~/lib/hooks/use-wishlist";
 import { isShippingExcluded } from "~/lib/shipping-restrictions";
-import { CryptoPricingSettingsPopover } from "~/ui/components/crypto-pricing-settings-popover";
-import { CryptoPrice } from "~/ui/components/CryptoPrice";
 import { FiatPrice } from "~/ui/components/FiatPrice";
 import { Button } from "~/ui/primitives/button";
 
@@ -329,7 +327,7 @@ export function ProductPriceDisplay({
   price,
 }: ProductPriceDisplayProps) {
   return (
-    <div className="flex flex-col gap-0.5">
+    <div className="flex flex-col">
       <div className="flex items-center gap-2">
         <FiatPrice className="text-3xl font-bold" usdAmount={price} />
         {originalPrice && (
@@ -338,10 +336,6 @@ export function ProductPriceDisplay({
             usdAmount={originalPrice}
           />
         )}
-      </div>
-      <div className="flex min-w-0 items-start justify-between gap-2">
-        <CryptoPrice className="text-muted-foreground" usdAmount={price} />
-        <CryptoPricingSettingsPopover className="shrink-0" />
       </div>
     </div>
   );

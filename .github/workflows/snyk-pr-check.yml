@@ -2,7 +2,7 @@ name: Snyk PR Security Gate
 
 on:
   pull_request:
-    branches: [main, master]
+    branches: [main, master, staging, production]
     paths:
       - 'package.json'
       - 'bun.lock'
@@ -91,7 +91,7 @@ jobs:
 
               # Suggest fixes
               jq -r '.vulnerabilities[]? | select(.severity == "high" or .severity == "critical") |
-                "- **\(.packageName)**: Upgrade to \(.fixedIn // "latest version")"' snyk-gate-report.md >> snyk-pr-comment.md 2>/dev/null
+                "- **\(.packageName)**: Upgrade to \(.fixedIn // "latest version")"' snyk-gate-report.json >> snyk-pr-comment.md 2>/dev/null
             fi
 
             # Add dependency tree info

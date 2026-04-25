@@ -1,3 +1,2 @@
-# Force Node/Next.js build and start (avoids Rust detection from programs/Cargo.toml)
-[start]
-cmd = "bun run start"
+# Railway command authority lives in `railway.json`.
+# Keep nixpacks config commandless to avoid split-brain build/start behavior.

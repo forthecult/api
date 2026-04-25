@@ -15,7 +15,19 @@ if (
   process.exit(0);
 }
 
-const r = spawnSync("bun", ["x", "next", "build", "--webpack"], {
+const forceWebpack =
+  process.env.NEXT_BUILD_FORCE_WEBPACK === "1" ||
+  process.env.NEXT_BUILD_FORCE_WEBPACK === "true";
+
+const nextBuildArgs = ["x", "next", "build"];
+if (forceWebpack) {
+  console.log(
+    "NEXT_BUILD_FORCE_WEBPACK enabled. Using webpack fallback build path.",
+  );
+  nextBuildArgs.push("--webpack");
+}
+
+const r = spawnSync("bun", nextBuildArgs, {
   stdio: "inherit",
   shell: false,
 });

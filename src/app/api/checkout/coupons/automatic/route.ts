@@ -74,7 +74,17 @@ const validateSchema = {
  */
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth.api.getSession({ headers: request.headers });
+    let session: Awaited<ReturnType<typeof auth.api.getSession>> = null;
+    try {
+      session = await auth.api.getSession({ headers: request.headers });
+    } catch (sessionError) {
+      // Session lookup can fail during schema drift; continue as guest.
+      console.error(
+        "Automatic coupon session lookup failed; continuing as guest:",
+        sessionError,
+      );
+      session = null;
+    }
     const body = (await request.json()) as Record<string, unknown>;
     const subtotalCents = validateSchema.subtotalCents(body?.subtotalCents);
     const shippingFeeCents = validateSchema.shippingFeeCents(

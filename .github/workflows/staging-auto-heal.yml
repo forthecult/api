@@ -1,0 +1,66 @@
+name: Staging Auto Heal
+
+on:
+  workflow_run:
+    workflows: ["Staging Smoke (post-deploy)"]
+    types: [completed]
+
+permissions:
+  contents: read
+
+jobs:
+  auto-heal:
+    if: github.event.workflow_run.conclusion == 'failure'
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+    env:
+      BASE_URL: ${{ secrets.STAGING_BASE_URL }}
+      STAGING_REDEPLOY_WEBHOOK_URL: ${{ secrets.STAGING_REDEPLOY_WEBHOOK_URL }}
+      PLAYWRIGHT_SKIP_WEBSERVER: "1"
+    steps:
+      - name: Exit if redeploy hook is not configured
+        run: |
+          if [ -z "$STAGING_REDEPLOY_WEBHOOK_URL" ]; then
+            echo "No STAGING_REDEPLOY_WEBHOOK_URL configured. Skipping auto-heal."
+            exit 0
+          fi
+
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Restore Playwright browser cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('bun.lock', 'bun.lockb') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
+      - name: Install Playwright browser
+        run: bunx playwright install --with-deps chromium
+
+      - name: Trigger redeploy
+        run: curl -sS -X POST "$STAGING_REDEPLOY_WEBHOOK_URL"
+
+      - name: Wait for health endpoint
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 30); do
+            code=$(curl -s -o /tmp/health.txt -w "%{http_code}" "$BASE_URL/api/health" || true)
+            if [ "$code" = "200" ]; then
+              exit 0
+            fi
+            echo "Attempt $i/30 health not ready (HTTP $code)"
+            sleep 10
+          done
+          exit 1
+
+      - name: Re-run core staging smoke once
+        run: bun run smoke:staging

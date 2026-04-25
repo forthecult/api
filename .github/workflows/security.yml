@@ -2,9 +2,9 @@ name: Security Audit
 
 on:
   push:
-    branches: [main, master]
+    branches: [main, master, staging, production]
   pull_request:
-    branches: [main, master]
+    branches: [main, master, staging, production]
   schedule:
     # Run weekly on Sundays at 00:00 UTC
     - cron: "0 0 * * 0"
@@ -13,6 +13,9 @@ on:
 # which already declares its own permissions; nothing here needs write.
 permissions:
   contents: read
+
+env:
+  SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
 jobs:
   security-check:
@@ -46,14 +49,12 @@ jobs:
           args: detect --source . --verbose
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: true
 
       - name: Run NPM Audit
         working-directory: ${{ steps.wd.outputs.dir }}
         run: |
-          npm audit --audit-level=moderate --json > npm-audit-report.json || true
+          npm audit --audit-level=high --json > npm-audit-report.json
           cat npm-audit-report.json | jq '.metadata // {"vulnerabilities": "check report"}' || true
-        continue-on-error: true
 
       - name: Run Semgrep (SAST)
         uses: returntocorp/semgrep-action@v1
@@ -64,22 +65,28 @@ jobs:
             p/cwe-top-25
             p/typescript
             p/javascript
-        continue-on-error: true
 
       - name: Run Grype (Dependency Scanning)
         uses: anchore/scan-action@v3
         with:
           image: ""
           path: ${{ steps.wd.outputs.dir }}
-          severity-cutoff: medium
-          fail-build: false
+          severity-cutoff: high
+          fail-build: true
+
+      - name: Generate SBOM (CycloneDX)
+        working-directory: ${{ steps.wd.outputs.dir }}
+        run: |
+          npm install -g @cyclonedx/cyclonedx-npm
+          cyclonedx-npm --output-file sbom.cdx.json
 
       - name: Run Snyk SCA Scan
+        if: env.SNYK_TOKEN != ''
         working-directory: ${{ steps.wd.outputs.dir }}
         run: |
           echo "🔐 Running Snyk SCA scan..."
           npm install -g snyk
-          snyk test --severity-threshold=high --json > snyk-report.json || true
+          snyk test --severity-threshold=high --json > snyk-report.json
           # Parse and display summary
           cat snyk-report.json | jq -r '
             if .vulnerabilities then
@@ -96,17 +103,21 @@ jobs:
           ' || echo "Scan completed - see snyk-report.json for details"
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        continue-on-error: true
+      
+      - name: Require SNYK_TOKEN on protected branches
+        if: env.SNYK_TOKEN == '' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/staging' || github.ref == 'refs/heads/production')
+        run: |
+          echo "SNYK_TOKEN is required for strict high/critical security gating."
+          exit 1
 
       - name: Snyk Monitor (Continuous Monitoring)
-        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+        if: env.SNYK_TOKEN != '' && github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
         working-directory: ${{ steps.wd.outputs.dir }}
         run: |
           echo "🔄 Setting up Snyk continuous monitoring..."
           snyk monitor --org=for-the-cult || echo "Monitor setup completed"
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        continue-on-error: true
 
       - name: Upload Security Reports
         uses: actions/upload-artifact@v4
@@ -116,6 +127,7 @@ jobs:
           path: |
             ${{ steps.wd.outputs.dir }}/npm-audit-report.json
             ${{ steps.wd.outputs.dir }}/snyk-report.json
+            ${{ steps.wd.outputs.dir }}/sbom.cdx.json
           retention-days: 30
 
   dependency-update:

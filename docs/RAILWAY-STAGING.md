@@ -4,6 +4,15 @@
 
 - **Storefront (`webapp/`)** — main Next.js app; owns `/api/*`, auth, Resend sends, webhooks (`/api/webhooks/resend`), PostHog proxy (`/api/ingest/*`).
 - **Admin (`webapp/admin/`)** — separate Next deploy; rewrites `/api/*` to the storefront URL (`NEXT_PUBLIC_MAIN_APP_URL` / `NEXT_PUBLIC_APP_URL`). See [admin/README.md](../admin/README.md).
+- Use path-based deploy triggers per Railway service:
+  - storefront service: `webapp/**` excluding `webapp/admin/**`
+  - admin service: `webapp/admin/**`
+  This prevents duplicate cross-service builds for unrelated changes.
+
+Build/deploy source of truth:
+
+- `railway.json` owns build and start commands.
+- `nixpacks.toml` intentionally does not set commands.
 
 ## Required env (storefront)
 
@@ -59,13 +68,27 @@ Next.js encrypts Server Action payloads. If each build uses a **new** secret, ta
 
 ## Migrations
 
+Shared environment policy (staging/production):
+
+- Do **not** run `db:push` in shared environments.
+- Apply only reviewed SQL migrations via `scripts/run-psql-migration.ts`.
+- Require explicit targeting + confirmation: `--env=staging|production --yes`.
+- Migration runs are fail-fast (`ON_ERROR_STOP=1`), single-transaction, and lock-protected.
+
 `db:migrate-email` and `db:migrate-rls` use `scripts/run-psql-migration.ts` so `DATABASE_URL` is read from `webapp/.env` and `webapp/.env.local` (plain `psql $DATABASE_URL` in package scripts does not load those files).
 
 From a machine that can reach the database (local Postgres, tunnel, or Railway’s `DATABASE_URL`):
 
 ```bash
 cd webapp
-bun run db:push
+## Generate Drizzle artifacts (PR validation/local only)
+bun run db:generate
+bun run db:migrate
+
+## Apply reviewed SQL migration(s) to staging/prod
+bun run db:migrate:shared -- --env=staging --yes
+
+## Existing targeted migrations
 bun run db:migrate-email-foundation   # migrate-email-tables.sql + migrate-enable-rls-auth-tables.sql
 ```
 
@@ -79,4 +102,33 @@ If you use raw SQL only: `bun run db:migrate-email` then `bun run db:migrate-rls
 
 ## Cron
 
-- Creator-fee cron: `GET /api/cron/distribute-creator-fees` with `Authorization: Bearer $CRON_SECRET` (see `vercel.json` / Railway cron scheduler).
+- Scheduler authority: **Railway only** (Vercel cron disabled) to prevent duplicate execution.
+- Creator-fee cron: `GET /api/cron/distribute-creator-fees` with `Authorization: Bearer $CRON_SECRET`.
+
+## Rollout checklist (staging -> production)
+
+1. Run CI + `smoke:core` on the release commit.
+2. Deploy to staging and run post-deploy staging smoke.
+3. Apply required shared-env migration using `db:migrate:shared -- --env=staging --yes`.
+4. Verify health endpoint and key checkout/payment/user flows.
+5. Promote the same commit to production.
+6. Apply required migration using `db:migrate:shared -- --env=production --yes`.
+7. Verify production smoke + health.
+
+Rollback:
+
+- Failed deploy: redeploy previous healthy commit.
+- Failed migration: restore from backup + run DR steps in `docs/DISASTER-RECOVERY.md`.
+- Failed smoke: block promotion, fix, and re-run full gate chain.
+- Optional automation hooks:
+  - `STAGING_ROLLBACK_WEBHOOK_URL` (trigger rollback when post-deploy smoke fails)
+  - `STAGING_REDEPLOY_WEBHOOK_URL` (trigger one automated redeploy auto-heal attempt)
+
+## Branch protection (required)
+
+Set required checks on `staging` and `production` branches:
+
+- `CI (typecheck + build) / check`
+- `CI (typecheck + build) / smoke-core`
+- `Security Audit / security-check`
+- `Snyk PR Security Gate / snyk-security-gate`

@@ -10,7 +10,7 @@ import { addCurrentProductToCart, gotoFirstProduct } from "./helpers";
  * smoke must fail the build, not quietly pass.
  */
 
-test.describe("site shell", () => {
+test.describe("site shell @core", () => {
   test("homepage loads with branded title", async ({ page }) => {
     await page.goto("/");
     await expect(page).toHaveTitle(/Culture|For the Cult/i);
@@ -99,7 +99,7 @@ test.describe("site shell", () => {
   });
 });
 
-test.describe("authentication pages", () => {
+test.describe("authentication pages @extended", () => {
   test("signup page shows email + password inputs", async ({ page }) => {
     await page.goto("/signup");
     await expect(
@@ -153,7 +153,7 @@ test.describe("authentication pages", () => {
   });
 });
 
-test.describe("cart flow", () => {
+test.describe("cart flow @core", () => {
   // One shared serial flow: add → open → increase → remove. Each step relies
   // on the previous step's state, so describe-level serial mode keeps them
   // from racing each other across workers.
@@ -183,7 +183,7 @@ test.describe("cart flow", () => {
   });
 });
 
-test.describe("checkout surfaces", () => {
+test.describe("checkout surfaces @core", () => {
   test("checkout route responds", async ({ page }) => {
     const response = await page.goto("/checkout");
     expect(response?.status()).toBeLessThan(500);
@@ -197,7 +197,7 @@ test.describe("checkout surfaces", () => {
   });
 });
 
-test.describe("web3 marketing", () => {
+test.describe("web3 marketing @extended", () => {
   test("membership page loads", async ({ page }) => {
     await page.goto("/membership");
     await expect(page.getByRole("heading").first()).toBeVisible();
@@ -209,7 +209,7 @@ test.describe("web3 marketing", () => {
   });
 });
 
-test.describe("support surfaces", () => {
+test.describe("support surfaces @extended", () => {
   test("chat page loads", async ({ page }) => {
     await page.goto("/chat");
     await expect(page.getByRole("heading").first()).toBeVisible();
@@ -221,7 +221,7 @@ test.describe("support surfaces", () => {
   });
 });
 
-test.describe("public api contract", () => {
+test.describe("public api contract @core", () => {
   test("auth session endpoint never returns 5xx", async ({ request }) => {
     const sessionRes = await request.get("/api/auth/session");
     const getSessionRes = await request.get("/api/auth/get-session");
@@ -277,5 +277,45 @@ test.describe("public api contract", () => {
     expect(response.ok()).toBeTruthy();
     const body = (await response.json()) as { success?: boolean };
     expect(body.success).toBe(true);
+  });
+
+  test("stripe create-payment-intent never returns 5xx on invalid payload", async ({
+    request,
+  }) => {
+    const response = await request.post(
+      "/api/payments/stripe/create-payment-intent",
+      {
+        data: { invalid: true },
+      },
+    );
+    expect(response.status()).toBeLessThan(500);
+  });
+
+  test("stripe create-checkout-session never returns 5xx on invalid payload", async ({
+    request,
+  }) => {
+    const response = await request.post(
+      "/api/payments/stripe/create-checkout-session",
+      {
+        data: { invalid: true },
+      },
+    );
+    expect(response.status()).toBeLessThan(500);
+  });
+
+  test("automatic coupon endpoint never returns 5xx", async ({ request }) => {
+    const response = await request.post("/api/checkout/coupons/automatic", {
+      data: { invalid: true },
+    });
+    expect(response.status()).toBeLessThan(500);
+  });
+
+  test("esim purchase endpoint never returns 5xx on invalid payload", async ({
+    request,
+  }) => {
+    const response = await request.post("/api/esim/purchase", {
+      data: { invalid: true },
+    });
+    expect(response.status()).toBeLessThan(500);
   });
 });

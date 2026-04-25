@@ -1243,7 +1243,7 @@ export const ShippingAddressForm = function ShippingAddressForm({
                       : (shippingLabel ?? "Standard")}
                   </span>
                   {!shippingLoading && form.country?.trim() && (
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-[13px] text-muted-foreground">
                       {form.country === "US"
                         ? "Estimated delivery: 2–4 business days"
                         : "Estimated delivery: 5–14 business days"}

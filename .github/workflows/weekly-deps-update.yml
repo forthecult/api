@@ -12,6 +12,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: weekly-deps-update
+  cancel-in-progress: true
+
 jobs:
   update-dependencies:
     name: Update Dependencies
@@ -89,6 +93,6 @@ jobs:
           commit-message: "chore(deps): weekly dependency update"
           title: "chore(deps): weekly dependency update"
           body: ${{ steps.summary.outputs.summary }}
-          branch: chore/weekly-deps-update
+          branch: chore/weekly-deps-update-${{ github.run_id }}
           delete-branch: true
           labels: dependencies, automated
