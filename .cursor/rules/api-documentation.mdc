@@ -1,0 +1,28 @@
+---
+description: Shopping API docs repo — OpenAPI accuracy, agent-friendly examples, no secrets
+globs: "api/**/*.{yaml,yml,md,mdx,json}"
+alwaysApply: false
+---
+
+# `api/` — documentation and contract
+
+this tree is the **public contract and guides** for the shopping api (`openapi.yaml`, `guides/`, `examples/`). it is not the next.js runtime and **does not host drizzle** — the real database is the shared postgres model maintained in `webapp/` (drizzle). this documentation describes **http behavior** that ultimately reads/writes that database through authenticated server paths.
+
+## openapi
+
+- `openapi.yaml` is the source of truth for public paths, schemas, and examples. when webapp routes or payloads change, update openapi in the **same** change set when feasible.
+- examples must use **anonymous** emails, addresses, and ids — never real customer or staff data.
+- keep **base url** and path prefixes accurate relative to production.
+
+## security and positioning
+
+- do not document admin authentication, internal env vars, deployment hosts, or vendor identities that must stay internal (align with root `no-sensitive-auth-in-public-docs.mdc` and `no-vendor-names-in-public-api.mdc`).
+- public endpoints stay **honest** about what is unauthenticated vs what requires user context; do not imply secret headers exist.
+
+## agent guides
+
+- agent-focused markdown should emphasize **safe** tool use (confirm checkout, verify order lookups) and avoid leaking implementation of privileged routes.
+
+## versioning
+
+- breaking changes need visible versioning notes in changelog-style sections or bump guidance — coordinate with maintainers if consumers depend on stable fields.
