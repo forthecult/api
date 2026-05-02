@@ -1,0 +1,95 @@
+name: Validate API docs
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "openapi.yaml"
+      - "**.md"
+      - "examples/**"
+      - "guides/**"
+      - "skills/**"
+      - ".github/workflows/validate.yml"
+  push:
+    branches: [main]
+    paths:
+      - "openapi.yaml"
+      - "**.md"
+      - "examples/**"
+      - "guides/**"
+      - "skills/**"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  openapi:
+    name: OpenAPI lint (Redocly)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Lint openapi.yaml
+        run: |
+          npx --yes @redocly/cli@latest lint openapi.yaml --skip-rule no-server-example.com
+
+      - name: Bundle openapi.yaml (smoke check)
+        run: |
+          npx --yes @redocly/cli@latest bundle openapi.yaml -o /tmp/bundled.yaml
+          test -s /tmp/bundled.yaml
+
+  markdown-links:
+    name: Markdown link check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Lychee link check
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: >-
+            --no-progress
+            --max-concurrency 4
+            --exclude-mail
+            --exclude-loopback
+            --exclude-private
+            --accept 200,206,429
+            "**/*.md"
+          fail: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  examples-syntax:
+    name: Example code syntax
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Node example syntax check
+        run: |
+          if [ -f examples/javascript_example.js ]; then
+            node --check examples/javascript_example.js
+          fi
+
+      - name: Python example syntax check
+        run: |
+          if [ -f examples/python_example.py ]; then
+            python -m py_compile examples/python_example.py
+          fi

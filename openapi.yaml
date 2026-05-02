@@ -204,7 +204,7 @@ paths:
                   subtotal: { type: object, properties: { usd: { type: number } } }
                   shipping: { type: object, properties: { usd: { type: number }, method: { type: string }, estimatedDays: { type: string } } }
                   total: { type: object, properties: { usd: { type: number } } }
-                  crypto: { type: object, description: Approximate amounts in ETH, SOL, USDC, USDT }
+                  crypto: { type: object, description: "Approximate amounts in ETH, SOL, USDC, USDT" }
                   expiresAt: { type: string, format: date-time }
                   _note: { type: string, example: "Prices are estimates. Final amounts calculated at checkout." }
 
