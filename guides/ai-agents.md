@@ -16,6 +16,8 @@ GET /api/agent/capabilities
 
 This returns what the API can do, limitations, and supported payment methods in natural language.
 
+Prefer MCP tools over ad-hoc HTTP? See **[MCP integration](./mcp.md)** (`npx -y @forthecult/mcp` or `https://mcp.forthecult.store`).
+
 ### Step 2: Common Workflows
 
 #### Workflow A: Help User Find Products

@@ -353,9 +353,9 @@ Search returns only in-stock items.
 
 **Important:** Use the `id` field from products when creating orders. For store products use the `slug` field when fetching product details. When `source=all` or `source=marketplace`, some items may include `source: "marketplace"` and `productUrl`; use that item's `id` as the **asin** in checkout (see POST `/api/checkout`).
 
-### GET `/api/products/store/search`
+### Store-only search
 
-Store catalog only (no marketplace). Same query parameters and response shape as `/api/products/search` with `source=store`. Use when the client only wants products from the store catalog.
+Use **GET `/api/products/search?source=store`** (or POST with `"source": "store"`). Same parameters and response shape as combined search; marketplace results are omitted.
 
 ### GET `/api/agent/products`
 

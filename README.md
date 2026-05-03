@@ -46,6 +46,7 @@ curl https://forthecult.store/api/products/dark-roasted-coffee-beans
 - **[ChatGPT (OpenAI)](./guides/ai-agents.md#chatgpt-openai)** -- GPT Actions & function calling
 - **[OpenClaw (Moltbook)](./guides/openclaw-integration.md)** -- Full agent framework integration
 - **[LangChain](./guides/ai-agents.md#custom-agents-langchain)** -- Custom tools integration
+- **[MCP (Model Context Protocol)](./guides/mcp.md)** -- `npx -y @forthecult/mcp` (stdio) or `https://mcp.forthecult.store` (remote HTTPS)
 
 **[Complete AI Agent Guide →](./guides/ai-agents.md)**
 
