@@ -486,7 +486,7 @@ class ShoppingAgent:
             return self._handle_general(message)
     
     def _detect_intent(self, message):
-        """Simple intent detection (use NLP/LLM in production)"""
+        """Simple intent detection (replace with NLP/LLM in a full implementation)"""
         message_lower = message.lower()
         
         if any(w in message_lower for w in ["search", "find", "looking for", "need", "want"]):

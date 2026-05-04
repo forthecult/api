@@ -297,8 +297,8 @@ if __name__ == "__main__":
         order = example_create_order()
 
         if order:
-            # Example 4: Wait for payment (in production)
-            print("\n[In production, customer would send payment now]")
+            # Example 4: Wait for payment (real checkout step)
+            print("\n[In a live checkout, the customer would send payment now]")
             print("[Agent would poll order status until 'paid']")
 
             # Example 5: Track order (after payment)

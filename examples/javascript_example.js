@@ -307,7 +307,7 @@ async function runExamples() {
       const order = await exampleCreateOrder();
 
       if (order) {
-        console.log('\n[In production, customer would send payment now]');
+        console.log('\n[In a live checkout, the customer would send payment now]');
         console.log('[Agent would poll order status until \'paid\']');
       }
     }

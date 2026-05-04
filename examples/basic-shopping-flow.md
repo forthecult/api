@@ -207,7 +207,7 @@ curl https://forthecult.store/api/payment-methods
 
 ## Step 6: Create Order
 
-**Important:** Use the product **`id`** from the search or product-detail response (e.g. Step 3 or 4). Do not use placeholder IDs from examples—they may not exist in production. Each item needs `productId` (required) and `quantity`; `variantId` is optional.
+**Important:** Use the product **`id`** from the search or product-detail response (e.g. Step 3 or 4). Do not use placeholder IDs from examples—they may not exist on the live catalog. Each item needs `productId` (required) and `quantity`; `variantId` is optional.
 
 Request body must use **`payment`** (with `chain` and `token`) and **`shipping`** (with `address1`, `stateCode`, `postalCode`, `countryCode`), not top-level `chain`/`token` or `shippingAddress`/`line1`/`state`/`zip`/`country`.
 
